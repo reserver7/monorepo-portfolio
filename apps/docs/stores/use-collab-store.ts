@@ -1,0 +1,172 @@
+import { create } from "zustand";
+import {
+  AccessRole,
+  ConnectionState,
+  DocumentComment,
+  DocumentRecord,
+  Participant,
+  SaveState
+} from "@/lib/types";
+
+interface CollabStore {
+  activeDocumentId: string | null;
+  role: AccessRole;
+  title: string;
+  content: string;
+  version: number;
+  updatedAt: string | null;
+  participants: Participant[];
+  comments: DocumentComment[];
+  connection: ConnectionState;
+  saveState: SaveState;
+  conflictMessage: string | null;
+  eventLog: string[];
+  resetForDocument: (documentId: string, seed?: DocumentRecord | null) => void;
+  hydrateFromServer: (document: DocumentRecord, role: AccessRole, comments: DocumentComment[]) => void;
+  setRole: (role: AccessRole) => void;
+  setTitle: (title: string) => void;
+  setContent: (content: string) => void;
+  setParticipants: (participants: Participant[]) => void;
+  upsertParticipant: (participant: Participant) => void;
+  setComments: (comments: DocumentComment[]) => void;
+  addComment: (comment: DocumentComment) => void;
+  updateComment: (comment: DocumentComment) => void;
+  removeComment: (commentId: string) => void;
+  setConnection: (state: ConnectionState) => void;
+  setSaveState: (state: SaveState) => void;
+  markSavedCheckpoint: (updatedAt: string, version: number) => void;
+  setConflictMessage: (message: string | null) => void;
+  pushEvent: (message: string) => void;
+}
+
+const MAX_LOG = 24;
+
+const toLogLine = (message: string): string => {
+  const timestamp = new Intl.DateTimeFormat("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  }).format(new Date());
+
+  return `${timestamp} · ${message}`;
+};
+
+const sortParticipants = (participants: Participant[]): Participant[] => {
+  return [...participants].sort((left, right) => left.displayName.localeCompare(right.displayName, "ko"));
+};
+
+export const useCollabStore = create<CollabStore>((set, get) => ({
+  activeDocumentId: null,
+  role: "editor",
+  title: "",
+  content: "",
+  version: 0,
+  updatedAt: null,
+  participants: [],
+  comments: [],
+  connection: "offline",
+  saveState: "idle",
+  conflictMessage: null,
+  eventLog: [],
+  resetForDocument: (documentId, seed) => {
+    set({
+      activeDocumentId: documentId,
+      role: "editor",
+      title: seed?.title ?? "Untitled document",
+      content: seed?.content ?? "",
+      version: seed?.version ?? 0,
+      updatedAt: seed?.updatedAt ?? null,
+      participants: [],
+      comments: seed?.comments ?? [],
+      connection: "connecting",
+      saveState: "idle",
+      conflictMessage: null,
+      eventLog: []
+    });
+  },
+  hydrateFromServer: (document, role, comments) => {
+    set((state) => ({
+      role,
+      title: document.title,
+      content: document.content,
+      version: Math.max(state.version, document.version),
+      updatedAt: document.updatedAt,
+      comments,
+      saveState: "saved"
+    }));
+  },
+  setRole: (role) => {
+    set({ role });
+  },
+  setTitle: (title) => {
+    set({ title });
+  },
+  setContent: (content) => {
+    set({ content });
+  },
+  setParticipants: (participants) => {
+    set({ participants: sortParticipants(participants) });
+  },
+  upsertParticipant: (participant) => {
+    set((state) => {
+      const normalized = {
+        ...participant,
+        cursorIndex: participant.cursorIndex ?? 0
+      };
+      const existingIndex = state.participants.findIndex((item) => item.sessionId === normalized.sessionId);
+
+      if (existingIndex === -1) {
+        return {
+          participants: sortParticipants([...state.participants, normalized])
+        };
+      }
+
+      const nextParticipants = [...state.participants];
+      nextParticipants[existingIndex] = normalized;
+
+      return {
+        participants: nextParticipants
+      };
+    });
+  },
+  setComments: (comments) => {
+    set({ comments });
+  },
+  addComment: (comment) => {
+    set((state) => ({
+      comments: [comment, ...state.comments.filter((item) => item.id !== comment.id)]
+    }));
+  },
+  updateComment: (comment) => {
+    set((state) => ({
+      comments: state.comments.map((existingComment) =>
+        existingComment.id === comment.id ? comment : existingComment
+      )
+    }));
+  },
+  removeComment: (commentId) => {
+    set((state) => ({
+      comments: state.comments.filter((comment) => comment.id !== commentId)
+    }));
+  },
+  setConnection: (state) => {
+    set({ connection: state });
+  },
+  setSaveState: (state) => {
+    set({ saveState: state });
+  },
+  markSavedCheckpoint: (updatedAt, version) => {
+    set((state) => ({
+      updatedAt,
+      version: Math.max(state.version, version),
+      saveState: "saved"
+    }));
+  },
+  setConflictMessage: (message) => {
+    set({ conflictMessage: message });
+  },
+  pushEvent: (message) => {
+    const existing = get().eventLog;
+    set({ eventLog: [toLogLine(message), ...existing].slice(0, MAX_LOG) });
+  }
+}));
