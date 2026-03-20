@@ -1,5 +1,6 @@
 export { createClientEnv } from "./env";
 export { requestJson } from "./http";
+export { navigateToApp } from "./navigation";
 export { navigateToPort } from "./navigation";
 export {
   createGuestName,
