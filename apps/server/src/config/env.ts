@@ -1,3 +1,5 @@
+const DEFAULT_SESSION_SECRET = "dev-collab-session-secret";
+
 const toPort = (rawValue: string | undefined, fallback: number): number => {
   if (!rawValue) {
     return fallback;
@@ -11,6 +13,35 @@ const toPort = (rawValue: string | undefined, fallback: number): number => {
   return parsedPort;
 };
 
+const toPositiveInt = (rawValue: string | undefined, fallback: number): number => {
+  if (!rawValue) {
+    return fallback;
+  }
+
+  const parsed = Number(rawValue);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return parsed;
+};
+
+const toBool = (rawValue: string | undefined, fallback: boolean): boolean => {
+  if (!rawValue) {
+    return fallback;
+  }
+
+  if (rawValue === "1" || rawValue.toLowerCase() === "true") {
+    return true;
+  }
+
+  if (rawValue === "0" || rawValue.toLowerCase() === "false") {
+    return false;
+  }
+
+  return fallback;
+};
+
 const parseCsv = (rawValue: string | undefined): string[] => {
   if (!rawValue) {
     return [];
@@ -22,8 +53,56 @@ const parseCsv = (rawValue: string | undefined): string[] => {
     .filter((item) => item.length > 0);
 };
 
-export const serverEnv = {
-  port: toPort(process.env.PORT, 4000),
-  corsOrigins: parseCsv(process.env.CORS_ORIGINS),
-  stateFilePath: process.env.STATE_FILE_PATH?.trim() || undefined
+export interface ServerEnv {
+  nodeEnv: string;
+  isProduction: boolean;
+  port: number;
+  corsOrigins: string[];
+  allowAllCors: boolean;
+  stateFilePath: string | undefined;
+  collabSessionSecret: string;
+  editorAccessKey: string | undefined;
+  socketRateLimitWindowMs: number;
+  socketWriteEventsPerWindow: number;
+  socketCursorEventsPerWindow: number;
+  maxYjsUpdateBase64Chars: number;
+  maxSocketJsonChars: number;
+}
+
+export const createServerEnv = (rawEnv: NodeJS.ProcessEnv = process.env): ServerEnv => {
+  const nodeEnv = (rawEnv.NODE_ENV?.trim() || "development").toLowerCase();
+  const isProduction = nodeEnv === "production";
+
+  const corsOrigins = parseCsv(rawEnv.CORS_ORIGINS);
+  const allowAllCorsExplicit = toBool(rawEnv.ALLOW_ALL_CORS, false);
+  const allowAllCors = allowAllCorsExplicit || (!isProduction && corsOrigins.length === 0);
+
+  if (isProduction && !allowAllCors && corsOrigins.length === 0) {
+    throw new Error(
+      "CORS_ORIGINS is required in production. Set CORS_ORIGINS or explicitly ALLOW_ALL_CORS=true."
+    );
+  }
+
+  const collabSessionSecret = rawEnv.COLLAB_SESSION_SECRET?.trim() || DEFAULT_SESSION_SECRET;
+  if (isProduction && collabSessionSecret === DEFAULT_SESSION_SECRET) {
+    throw new Error("COLLAB_SESSION_SECRET must be configured in production.");
+  }
+
+  return {
+    nodeEnv,
+    isProduction,
+    port: toPort(rawEnv.PORT, 4000),
+    corsOrigins,
+    allowAllCors,
+    stateFilePath: rawEnv.STATE_FILE_PATH?.trim() || undefined,
+    collabSessionSecret,
+    editorAccessKey: rawEnv.EDITOR_ACCESS_KEY?.trim() || undefined,
+    socketRateLimitWindowMs: toPositiveInt(rawEnv.SOCKET_RATE_LIMIT_WINDOW_MS, 10_000),
+    socketWriteEventsPerWindow: toPositiveInt(rawEnv.SOCKET_WRITE_EVENTS_PER_WINDOW, 120),
+    socketCursorEventsPerWindow: toPositiveInt(rawEnv.SOCKET_CURSOR_EVENTS_PER_WINDOW, 300),
+    maxYjsUpdateBase64Chars: toPositiveInt(rawEnv.MAX_YJS_UPDATE_BASE64_CHARS, 300_000),
+    maxSocketJsonChars: toPositiveInt(rawEnv.MAX_SOCKET_JSON_CHARS, 80_000)
+  };
 };
+
+export const serverEnv = createServerEnv();

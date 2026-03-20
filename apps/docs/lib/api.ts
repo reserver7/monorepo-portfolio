@@ -60,18 +60,30 @@ export const getDocumentComments = async (
 
 export const createDocumentComment = async (input: {
   documentId: string;
-  authorSessionId: string;
+  sessionId?: string;
+  sessionToken?: string;
   authorName: string;
   body: string;
   mentions?: string[];
-}): Promise<{ documentId: string; comment: DocumentComment }> => {
-  return requestJson<{ documentId: string; comment: DocumentComment }>(
+}): Promise<{
+  documentId: string;
+  comment: DocumentComment;
+  session?: { id: string; token: string; trusted: boolean };
+}> => {
+  return requestJson<{
+    documentId: string;
+    comment: DocumentComment;
+    session?: { id: string; token: string; trusted: boolean };
+  }>(
     API_BASE_URL,
     `/api/documents/${input.documentId}/comments`,
     {
       method: "POST",
+      headers: {
+        ...(input.sessionId ? { "x-collab-session-id": input.sessionId } : {}),
+        ...(input.sessionToken ? { "x-collab-session-token": input.sessionToken } : {})
+      },
       body: JSON.stringify({
-        authorSessionId: input.authorSessionId,
         authorName: input.authorName,
         body: input.body,
         mentions: input.mentions

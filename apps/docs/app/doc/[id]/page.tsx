@@ -8,7 +8,15 @@ import { useQuery } from "@tanstack/react-query";
 import { Button, Card, Input, Textarea } from "@repo/ui";
 import { useCollaboration } from "@/hooks/use-collaboration";
 import { getDocument, getDocumentHistory } from "@/lib/api";
-import { createGuestName, getStoredDisplayName, getStoredRole, setStoredDisplayName } from "@/lib/session";
+import { docsClientEnv } from "@/lib/env";
+import {
+  createGuestName,
+  getStoredDisplayName,
+  getStoredEditorAccessKey,
+  getStoredRole,
+  setStoredDisplayName,
+  setStoredEditorAccessKey
+} from "@/lib/session";
 import { formatExactTime, formatRelativeTime } from "@/lib/time";
 import { useCollabStore } from "@/stores/use-collab-store";
 
@@ -47,14 +55,17 @@ export default function DocumentRoomPage() {
 
   const [displayName, setDisplayName] = useState<string>("게스트");
   const [requestedRole, setRequestedRole] = useState<"viewer" | "editor">("editor");
+  const [editorAccessKey, setEditorAccessKey] = useState<string>("");
 
   useEffect(() => {
     const stored = getStoredDisplayName();
     const storedRole = getStoredRole();
+    const storedEditorAccessKey = getStoredEditorAccessKey();
     const nextValue = stored?.trim() ? stored : createGuestName();
     setDisplayName(nextValue);
     setStoredDisplayName(nextValue);
     setRequestedRole(storedRole ?? "editor");
+    setEditorAccessKey(storedEditorAccessKey ?? docsClientEnv.editorAccessKey ?? "");
   }, []);
 
   const documentQuery = useQuery({
@@ -86,6 +97,7 @@ export default function DocumentRoomPage() {
     documentId,
     displayName,
     role: requestedRole,
+    editorAccessKey,
     initialDocument: documentQuery.data?.document
   });
 
@@ -145,6 +157,17 @@ export default function DocumentRoomPage() {
               setStoredDisplayName(nextValue.trim() || createGuestName());
             }}
             className="w-36"
+          />
+          <Input
+            type="password"
+            value={editorAccessKey}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+              setEditorAccessKey(nextValue);
+              setStoredEditorAccessKey(nextValue);
+            }}
+            placeholder="편집 키(선택)"
+            className="w-40"
           />
           <Button variant="outline" size="sm" onClick={forceSave} disabled={isReadOnly}>
             지금 저장

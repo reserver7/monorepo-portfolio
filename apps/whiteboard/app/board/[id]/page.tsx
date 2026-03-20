@@ -22,10 +22,17 @@ import {
   SelectValue
 } from "@repo/ui";
 import { getBoard } from "@/lib/api";
+import { whiteboardClientEnv } from "@/lib/env";
 import { useWhiteboardRealtime } from "@/hooks/use-whiteboard-realtime";
 import { useWhiteboardStore } from "@/stores/use-whiteboard-store";
 import { WhiteboardShape } from "@/lib/types";
-import { createGuestName, getStoredDisplayName, getStoredRole } from "@/lib/session";
+import {
+  createGuestName,
+  getStoredDisplayName,
+  getStoredEditorAccessKey,
+  getStoredRole,
+  setStoredEditorAccessKey
+} from "@/lib/session";
 import { formatExactTime, formatRelativeTime } from "@/lib/time";
 
 type WhiteboardTool = "select" | "rect" | "ellipse" | "diamond" | "text" | "connector";
@@ -168,14 +175,17 @@ export default function WhiteboardRoomPage() {
 
   const [displayName, setDisplayName] = useState("게스트");
   const [requestedRole, setRequestedRole] = useState<"viewer" | "editor">("editor");
+  const [editorAccessKey, setEditorAccessKey] = useState<string>("");
   const [activeTool, setActiveTool] = useState<WhiteboardTool>("select");
   const [connectorFromShapeId, setConnectorFromShapeId] = useState<string | null>(null);
 
   useEffect(() => {
     const stored = getStoredDisplayName();
     const storedRole = getStoredRole();
+    const storedEditorAccessKey = getStoredEditorAccessKey();
     setDisplayName(stored?.trim() ? stored : createGuestName());
     setRequestedRole(storedRole ?? "editor");
+    setEditorAccessKey(storedEditorAccessKey ?? whiteboardClientEnv.editorAccessKey ?? "");
   }, []);
 
   const boardQuery = useQuery({
@@ -199,6 +209,7 @@ export default function WhiteboardRoomPage() {
     boardId,
     displayName,
     role: requestedRole,
+    editorAccessKey,
     initialBoard: boardQuery.data?.board
   });
 
@@ -524,12 +535,23 @@ export default function WhiteboardRoomPage() {
         </div>
       </header>
 
-      <div className="mb-4 grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-center">
+      <div className="mb-4 grid gap-3 md:grid-cols-[1fr_220px_auto_auto] md:items-center">
         <Input
           value={title}
           onChange={(event) => updateTitle(event.target.value)}
           readOnly={isReadOnly}
           className="h-11 text-base font-semibold"
+        />
+        <Input
+          type="password"
+          value={editorAccessKey}
+          onChange={(event) => {
+            const nextValue = event.target.value;
+            setEditorAccessKey(nextValue);
+            setStoredEditorAccessKey(nextValue);
+          }}
+          placeholder="편집 키 (선택)"
+          className="h-11"
         />
         <Card className="px-3 py-2 text-xs text-slate-600">버전 {version}</Card>
         <Card className="px-3 py-2 text-xs text-slate-600">

@@ -8,8 +8,10 @@ import { navigateToWhiteboardApp } from "@/lib/cross-app";
 import { docsClientEnv } from "@/lib/env";
 import {
   createGuestName,
+  getStoredEditorAccessKey,
   getStoredDisplayName,
   getStoredRole,
+  setStoredEditorAccessKey,
   setStoredDisplayName,
   setStoredRole
 } from "@/lib/session";
@@ -33,14 +35,17 @@ export default function HomePage() {
   const [displayName, setDisplayName] = useState<string>("");
   const [draftTitle, setDraftTitle] = useState<string>("협업 문서");
   const [role, setRole] = useState<"viewer" | "editor">(docsClientEnv.defaultRole);
+  const [editorAccessKey, setEditorAccessKey] = useState<string>("");
 
   useEffect(() => {
     const stored = getStoredDisplayName();
     const storedRole = getStoredRole();
+    const storedEditorAccessKey = getStoredEditorAccessKey();
     const nextName = stored?.trim() ? stored : createGuestName();
     setDisplayName(nextName);
     setStoredDisplayName(nextName);
     setRole(storedRole ?? docsClientEnv.defaultRole);
+    setEditorAccessKey(storedEditorAccessKey ?? docsClientEnv.editorAccessKey ?? "");
   }, []);
 
   const documentsQuery = useQuery({
@@ -100,7 +105,7 @@ export default function HomePage() {
           저장, Yjs 기반 CRDT 충돌 처리까지 포함한 포트폴리오형 아키텍처를 확인할 수 있습니다.
         </p>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-[1fr_1fr_220px_auto]">
+        <div className="mt-8 grid gap-4 md:grid-cols-[1fr_1fr_220px_220px_auto]">
           <div>
             <p className="mb-2 text-xs font-medium text-slate-600">표시 이름</p>
             <Input
@@ -135,6 +140,19 @@ export default function HomePage() {
                 <SelectItem value="viewer">viewer (보기 전용)</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <p className="mb-2 text-xs font-medium text-slate-600">편집 키 (선택)</p>
+            <Input
+              type="password"
+              value={editorAccessKey}
+              onChange={(event) => {
+                const nextValue = event.target.value;
+                setEditorAccessKey(nextValue);
+                setStoredEditorAccessKey(nextValue);
+              }}
+              placeholder="서버 편집 키"
+            />
           </div>
           <div className="flex items-end">
             <Button
@@ -188,6 +206,7 @@ export default function HomePage() {
                     onClick={() => {
                       setStoredDisplayName(displayName.trim() || createGuestName());
                       setStoredRole(role);
+                      setStoredEditorAccessKey(editorAccessKey);
                       router.push(`/doc/${document.id}`);
                     }}
                   >

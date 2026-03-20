@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { API_BASE_URL } from "@/lib/api";
-import { getOrCreateSessionId } from "@/lib/session";
+import {
+  getOrCreateSessionId,
+  getStoredEditorAccessKey,
+  getStoredSessionToken,
+  setStoredSessionIdentity
+} from "@/lib/session";
 import { AccessRole, Participant, WhiteboardRecord, WhiteboardShape } from "@/lib/types";
 import { useWhiteboardStore } from "@/stores/use-whiteboard-store";
 
@@ -11,12 +16,16 @@ interface UseWhiteboardRealtimeOptions {
   boardId: string;
   displayName: string;
   role: AccessRole;
+  editorAccessKey?: string | null;
   initialBoard?: WhiteboardRecord | null;
 }
 
 interface BoardStatePayload {
   board: WhiteboardRecord;
   role: AccessRole;
+  sessionId?: string;
+  sessionToken?: string;
+  sessionTrusted?: boolean;
 }
 
 interface BoardUpdatePayload {
@@ -53,6 +62,7 @@ export const useWhiteboardRealtime = ({
   boardId,
   displayName,
   role,
+  editorAccessKey,
   initialBoard
 }: UseWhiteboardRealtimeOptions): {
   sessionId: string;
@@ -85,6 +95,7 @@ export const useWhiteboardRealtime = ({
 
   const socketRef = useRef<Socket | null>(null);
   const sessionIdRef = useRef<string>("");
+  const sessionTokenRef = useRef<string>("");
   const roleRef = useRef<AccessRole>(role);
   const versionRef = useRef<number>(initialBoard?.version ?? 0);
   const titleRef = useRef<string>(initialBoard?.title ?? "화이트보드");
@@ -93,6 +104,7 @@ export const useWhiteboardRealtime = ({
 
   if (!sessionIdRef.current && typeof window !== "undefined") {
     sessionIdRef.current = getOrCreateSessionId();
+    sessionTokenRef.current = getStoredSessionToken() ?? "";
   }
 
   useEffect(() => {
@@ -144,8 +156,10 @@ export const useWhiteboardRealtime = ({
       socket.emit("board:join", {
         boardId,
         sessionId: sessionIdRef.current,
+        sessionToken: sessionTokenRef.current || undefined,
         displayName,
-        role: roleRef.current
+        role: roleRef.current,
+        editorAccessKey: editorAccessKey ?? getStoredEditorAccessKey() ?? undefined
       });
     });
 
@@ -159,7 +173,13 @@ export const useWhiteboardRealtime = ({
       pushEvent("서버 연결 실패. 자동 재시도 중입니다.");
     });
 
-    socket.on("board:state", ({ board, role: nextRole }: BoardStatePayload) => {
+    socket.on("board:state", ({ board, role: nextRole, sessionId, sessionToken }: BoardStatePayload) => {
+      if (typeof sessionId === "string" && typeof sessionToken === "string") {
+        sessionIdRef.current = sessionId;
+        sessionTokenRef.current = sessionToken;
+        setStoredSessionIdentity(sessionId, sessionToken);
+      }
+
       roleRef.current = nextRole;
       hydrateBoard(board, nextRole);
       versionRef.current = board.version;
@@ -236,7 +256,8 @@ export const useWhiteboardRealtime = ({
     setConnection,
     setParticipants,
     setRole,
-    upsertParticipant
+    upsertParticipant,
+    editorAccessKey
   ]);
 
   const updateTitle = useCallback(

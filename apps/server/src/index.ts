@@ -1,17 +1,21 @@
 import { randomUUID } from "node:crypto";
 import http from "node:http";
 import cors from "cors";
-import express from "express";
+import express, { Request } from "express";
 import { Server, Socket } from "socket.io";
 import type { AccessRole, EditorSnapshot, Participant, WhiteboardShape } from "@repo/shared-types";
 import { serverEnv } from "./config/env";
+import { EventRateLimiter } from "./security/rate-limit";
+import { issueSessionToken, verifySessionToken } from "./security/session";
 import { RealtimeStore } from "./store";
 
 interface DocumentJoinPayload {
   documentId: string;
   sessionId?: string;
+  sessionToken?: string;
   displayName?: string;
   role?: AccessRole;
+  editorAccessKey?: string;
   clientYjsState?: string;
 }
 
@@ -53,8 +57,10 @@ interface CursorPayload {
 interface BoardJoinPayload {
   boardId: string;
   sessionId?: string;
+  sessionToken?: string;
   displayName?: string;
   role?: AccessRole;
+  editorAccessKey?: string;
 }
 
 interface BoardTitlePayload {
@@ -91,7 +97,7 @@ interface BoardCursorPayload {
 const app = express();
 const store = new RealtimeStore(serverEnv.stateFilePath);
 
-const corsOrigins = serverEnv.corsOrigins.length > 0 ? serverEnv.corsOrigins : true;
+const corsOrigins = serverEnv.allowAllCors ? true : serverEnv.corsOrigins;
 
 app.use(
   cors({
@@ -113,6 +119,9 @@ const documentParticipants = new Map<string, Map<string, Participant>>();
 const boardParticipants = new Map<string, Map<string, Participant>>();
 const documentBySocket = new Map<string, string>();
 const boardBySocket = new Map<string, string>();
+const documentRolesBySession = new Map<string, Map<string, AccessRole>>();
+const boardRolesBySession = new Map<string, Map<string, AccessRole>>();
+const socketLimiter = new EventRateLimiter();
 
 const documentRoom = (documentId: string): string => `document:${documentId}`;
 const boardRoom = (boardId: string): string => `board:${boardId}`;
@@ -145,6 +154,110 @@ const sanitizeRole = (rawRole?: AccessRole): AccessRole => {
   }
 
   return "editor";
+};
+
+const trimOptional = (value: string | undefined): string | undefined => {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : undefined;
+};
+
+const enforceRateLimit = (
+  socket: Socket,
+  eventName: string,
+  maxEventsPerWindow: number,
+  windowMs = serverEnv.socketRateLimitWindowMs
+): boolean => {
+  const allowed = socketLimiter.allow(
+    `${socket.id}:${eventName}`,
+    maxEventsPerWindow,
+    windowMs
+  );
+  if (allowed) {
+    return true;
+  }
+
+  socket.emit("error", {
+    message: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."
+  });
+  return false;
+};
+
+const safeJsonLength = (value: unknown): number => {
+  try {
+    return JSON.stringify(value).length;
+  } catch {
+    return Number.MAX_SAFE_INTEGER;
+  }
+};
+
+const resolveSessionFromSocketPayload = (
+  requestedSessionId: string | undefined,
+  requestedSessionToken: string | undefined
+): { sessionId: string; sessionToken: string; trusted: boolean } => {
+  const normalizedSessionId = trimOptional(requestedSessionId);
+  const normalizedToken = trimOptional(requestedSessionToken);
+
+  if (normalizedSessionId && normalizedToken) {
+    const verification = verifySessionToken(normalizedToken, serverEnv.collabSessionSecret);
+    if (verification.valid && verification.sessionId === normalizedSessionId) {
+      return {
+        sessionId: normalizedSessionId,
+        sessionToken: issueSessionToken(normalizedSessionId, serverEnv.collabSessionSecret),
+        trusted: true
+      };
+    }
+  }
+
+  const sessionId = randomUUID();
+  return {
+    sessionId,
+    sessionToken: issueSessionToken(sessionId, serverEnv.collabSessionSecret),
+    trusted: false
+  };
+};
+
+const resolveSessionFromRequest = (req: Request): { sessionId: string; sessionToken: string; trusted: boolean } => {
+  const sessionIdHeader = req.header("x-collab-session-id");
+  const sessionTokenHeader = req.header("x-collab-session-token");
+
+  return resolveSessionFromSocketPayload(sessionIdHeader ?? undefined, sessionTokenHeader ?? undefined);
+};
+
+const resolveLockedRole = (
+  scope: "document" | "board",
+  entityId: string,
+  sessionId: string,
+  requestedRole: AccessRole,
+  editorAccessKey?: string
+): AccessRole => {
+  const roleLocks = scope === "document" ? documentRolesBySession : boardRolesBySession;
+
+  if (!roleLocks.has(entityId)) {
+    roleLocks.set(entityId, new Map());
+  }
+
+  const sessionRoles = roleLocks.get(entityId);
+  if (!sessionRoles) {
+    return "viewer";
+  }
+
+  const lockedRole = sessionRoles.get(sessionId);
+  if (lockedRole) {
+    return lockedRole;
+  }
+
+  let nextRole = requestedRole;
+  const requiresEditorAccessKey = Boolean(serverEnv.editorAccessKey);
+  if (
+    nextRole === "editor" &&
+    requiresEditorAccessKey &&
+    trimOptional(editorAccessKey) !== serverEnv.editorAccessKey
+  ) {
+    nextRole = "viewer";
+  }
+
+  sessionRoles.set(sessionId, nextRole);
+  return nextRole;
 };
 
 const extractMentions = (rawBody: string): string[] => {
@@ -222,6 +335,7 @@ const leaveDocument = (socketId: string): void => {
     members.delete(socketId);
     if (members.size === 0) {
       documentParticipants.delete(joinedDocumentId);
+      documentRolesBySession.delete(joinedDocumentId);
     }
   }
 
@@ -240,6 +354,7 @@ const leaveBoard = (socketId: string): void => {
     members.delete(socketId);
     if (members.size === 0) {
       boardParticipants.delete(joinedBoardId);
+      boardRolesBySession.delete(joinedBoardId);
     }
   }
 
@@ -299,10 +414,11 @@ app.post("/api/documents/:id/comments", (req, res) => {
     return;
   }
 
+  const session = resolveSessionFromRequest(req);
   const body = typeof req.body?.body === "string" ? req.body.body : "";
   const comment = store.addDocumentComment({
     documentId: document.id,
-    authorSessionId: typeof req.body?.authorSessionId === "string" ? req.body.authorSessionId : randomUUID(),
+    authorSessionId: session.sessionId,
     authorName: sanitizeDisplayName(req.body?.authorName as string | undefined),
     body,
     mentions: Array.isArray(req.body?.mentions)
@@ -315,7 +431,15 @@ app.post("/api/documents/:id/comments", (req, res) => {
     return;
   }
 
-  res.status(201).json({ documentId: document.id, comment });
+  res.status(201).json({
+    documentId: document.id,
+    comment,
+    session: {
+      id: session.sessionId,
+      token: session.sessionToken,
+      trusted: session.trusted
+    }
+  });
 });
 
 app.get("/api/boards", (_req, res) => {
@@ -341,6 +465,10 @@ app.get("/api/boards/:id", (req, res) => {
 
 io.on("connection", (socket) => {
   socket.on("document:join", (payload: DocumentJoinPayload) => {
+    if (!enforceRateLimit(socket, "document:join", serverEnv.socketWriteEventsPerWindow)) {
+      return;
+    }
+
     if (!payload?.documentId) {
       socket.emit("error", { message: "documentId is required" });
       return;
@@ -354,13 +482,20 @@ io.on("connection", (socket) => {
 
     leaveDocument(socket.id);
 
-    const sessionId = payload.sessionId?.trim() || randomUUID();
-    const role = sanitizeRole(payload.role);
+    const session = resolveSessionFromSocketPayload(payload.sessionId, payload.sessionToken);
+    const requestedRole = sanitizeRole(payload.role);
+    const role = resolveLockedRole(
+      "document",
+      document.id,
+      session.sessionId,
+      requestedRole,
+      payload.editorAccessKey
+    );
     const participant: Participant = {
       socketId: socket.id,
-      sessionId,
+      sessionId: session.sessionId,
       displayName: sanitizeDisplayName(payload.displayName),
-      color: colorFromSession(sessionId),
+      color: colorFromSession(session.sessionId),
       role,
       cursorIndex: 0,
       isOnline: true,
@@ -377,11 +512,15 @@ io.on("connection", (socket) => {
     documentBySocket.set(socket.id, document.id);
 
     if (typeof payload.clientYjsState === "string" && payload.clientYjsState.length > 0) {
-      store.mergeDocumentYjsUpdate({
-        documentId: document.id,
-        encodedUpdate: payload.clientYjsState,
-        actor: participant.displayName
-      });
+      if (payload.clientYjsState.length > serverEnv.maxYjsUpdateBase64Chars) {
+        socket.emit("error", { message: "문서 동기화 데이터가 허용 크기를 초과했습니다." });
+      } else {
+        store.mergeDocumentYjsUpdate({
+          documentId: document.id,
+          encodedUpdate: payload.clientYjsState,
+          actor: participant.displayName
+        });
+      }
     }
 
     const latestDocument = store.getDocument(document.id);
@@ -393,13 +532,24 @@ io.on("connection", (socket) => {
     socket.emit("document:state", {
       document: latestDocument,
       role,
-      comments: store.listDocumentComments(document.id)
+      comments: store.listDocumentComments(document.id),
+      sessionId: session.sessionId,
+      sessionToken: session.sessionToken,
+      sessionTrusted: session.trusted
     });
+
+    if (requestedRole === "editor" && role !== "editor") {
+      emitPermissionDenied(socket, "document", role);
+    }
 
     broadcastDocumentParticipants(document.id);
   });
 
   socket.on("document:yjs:update", (payload: DocumentYjsUpdatePayload) => {
+    if (!enforceRateLimit(socket, "document:yjs:update", serverEnv.socketWriteEventsPerWindow)) {
+      return;
+    }
+
     const documentId = documentBySocket.get(socket.id);
     if (!documentId || payload.documentId !== documentId) {
       socket.emit("error", { message: "Join the document first" });
@@ -407,6 +557,11 @@ io.on("connection", (socket) => {
     }
 
     if (!payload.encodedUpdate) {
+      return;
+    }
+
+    if (payload.encodedUpdate.length > serverEnv.maxYjsUpdateBase64Chars) {
+      socket.emit("error", { message: "문서 업데이트 데이터가 허용 크기를 초과했습니다." });
       return;
     }
 
@@ -438,9 +593,18 @@ io.on("connection", (socket) => {
   });
 
   socket.on("document:update", (payload: DocumentLegacyUpdatePayload) => {
+    if (!enforceRateLimit(socket, "document:update", serverEnv.socketWriteEventsPerWindow)) {
+      return;
+    }
+
     const documentId = documentBySocket.get(socket.id);
     if (!documentId || payload.documentId !== documentId) {
       socket.emit("error", { message: "Join the document first" });
+      return;
+    }
+
+    if (safeJsonLength(payload) > serverEnv.maxSocketJsonChars) {
+      socket.emit("error", { message: "요청 본문이 허용 크기를 초과했습니다." });
       return;
     }
 
@@ -482,9 +646,18 @@ io.on("connection", (socket) => {
   });
 
   socket.on("document:comment:add", (payload: DocumentCommentPayload) => {
+    if (!enforceRateLimit(socket, "document:comment:add", serverEnv.socketWriteEventsPerWindow)) {
+      return;
+    }
+
     const documentId = documentBySocket.get(socket.id);
     if (!documentId || payload.documentId !== documentId) {
       socket.emit("error", { message: "Join the document first" });
+      return;
+    }
+
+    if (safeJsonLength(payload) > serverEnv.maxSocketJsonChars) {
+      socket.emit("error", { message: "요청 본문이 허용 크기를 초과했습니다." });
       return;
     }
 
@@ -513,9 +686,18 @@ io.on("connection", (socket) => {
   });
 
   socket.on("document:comment:update", (payload: DocumentCommentUpdatePayload) => {
+    if (!enforceRateLimit(socket, "document:comment:update", serverEnv.socketWriteEventsPerWindow)) {
+      return;
+    }
+
     const documentId = documentBySocket.get(socket.id);
     if (!documentId || payload.documentId !== documentId) {
       socket.emit("error", { message: "Join the document first" });
+      return;
+    }
+
+    if (safeJsonLength(payload) > serverEnv.maxSocketJsonChars) {
+      socket.emit("error", { message: "요청 본문이 허용 크기를 초과했습니다." });
       return;
     }
 
@@ -550,6 +732,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("document:comment:delete", (payload: DocumentCommentDeletePayload) => {
+    if (!enforceRateLimit(socket, "document:comment:delete", serverEnv.socketWriteEventsPerWindow)) {
+      return;
+    }
+
     const documentId = documentBySocket.get(socket.id);
     if (!documentId || payload.documentId !== documentId) {
       socket.emit("error", { message: "Join the document first" });
@@ -580,6 +766,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("cursor:move", (payload: CursorPayload) => {
+    if (!enforceRateLimit(socket, "cursor:move", serverEnv.socketCursorEventsPerWindow)) {
+      return;
+    }
+
     const documentId = documentBySocket.get(socket.id);
     if (!documentId || payload.documentId !== documentId) {
       return;
@@ -600,6 +790,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("document:save", ({ documentId }: { documentId: string }) => {
+    if (!enforceRateLimit(socket, "document:save", serverEnv.socketWriteEventsPerWindow)) {
+      return;
+    }
+
     const joinedDocumentId = documentBySocket.get(socket.id);
     if (!joinedDocumentId || joinedDocumentId !== documentId) {
       return;
@@ -625,6 +819,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("board:join", (payload: BoardJoinPayload) => {
+    if (!enforceRateLimit(socket, "board:join", serverEnv.socketWriteEventsPerWindow)) {
+      return;
+    }
+
     if (!payload?.boardId) {
       socket.emit("error", { message: "boardId is required" });
       return;
@@ -638,13 +836,20 @@ io.on("connection", (socket) => {
 
     leaveBoard(socket.id);
 
-    const sessionId = payload.sessionId?.trim() || randomUUID();
-    const role = sanitizeRole(payload.role);
+    const session = resolveSessionFromSocketPayload(payload.sessionId, payload.sessionToken);
+    const requestedRole = sanitizeRole(payload.role);
+    const role = resolveLockedRole(
+      "board",
+      board.id,
+      session.sessionId,
+      requestedRole,
+      payload.editorAccessKey
+    );
     const participant: Participant = {
       socketId: socket.id,
-      sessionId,
+      sessionId: session.sessionId,
       displayName: sanitizeDisplayName(payload.displayName),
-      color: colorFromSession(sessionId),
+      color: colorFromSession(session.sessionId),
       role,
       cursorX: 0,
       cursorY: 0,
@@ -663,16 +868,32 @@ io.on("connection", (socket) => {
 
     socket.emit("board:state", {
       board,
-      role
+      role,
+      sessionId: session.sessionId,
+      sessionToken: session.sessionToken,
+      sessionTrusted: session.trusted
     });
+
+    if (requestedRole === "editor" && role !== "editor") {
+      emitPermissionDenied(socket, "board", role);
+    }
 
     broadcastBoardParticipants(board.id);
   });
 
   socket.on("board:title:update", (payload: BoardTitlePayload) => {
+    if (!enforceRateLimit(socket, "board:title:update", serverEnv.socketWriteEventsPerWindow)) {
+      return;
+    }
+
     const boardId = boardBySocket.get(socket.id);
     if (!boardId || payload.boardId !== boardId) {
       socket.emit("error", { message: "Join the board first" });
+      return;
+    }
+
+    if (safeJsonLength(payload) > serverEnv.maxSocketJsonChars) {
+      socket.emit("error", { message: "요청 본문이 허용 크기를 초과했습니다." });
       return;
     }
 
@@ -709,9 +930,18 @@ io.on("connection", (socket) => {
   });
 
   socket.on("board:shape:add", (payload: BoardAddShapePayload) => {
+    if (!enforceRateLimit(socket, "board:shape:add", serverEnv.socketWriteEventsPerWindow)) {
+      return;
+    }
+
     const boardId = boardBySocket.get(socket.id);
     if (!boardId || payload.boardId !== boardId) {
       socket.emit("error", { message: "Join the board first" });
+      return;
+    }
+
+    if (safeJsonLength(payload.shape) > serverEnv.maxSocketJsonChars) {
+      socket.emit("error", { message: "도형 데이터가 허용 크기를 초과했습니다." });
       return;
     }
 
@@ -748,9 +978,18 @@ io.on("connection", (socket) => {
   });
 
   socket.on("board:shape:update", (payload: BoardPatchShapePayload) => {
+    if (!enforceRateLimit(socket, "board:shape:update", serverEnv.socketWriteEventsPerWindow)) {
+      return;
+    }
+
     const boardId = boardBySocket.get(socket.id);
     if (!boardId || payload.boardId !== boardId) {
       socket.emit("error", { message: "Join the board first" });
+      return;
+    }
+
+    if (safeJsonLength(payload.patch) > serverEnv.maxSocketJsonChars) {
+      socket.emit("error", { message: "도형 수정 데이터가 허용 크기를 초과했습니다." });
       return;
     }
 
@@ -788,6 +1027,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("board:shape:remove", (payload: BoardRemoveShapePayload) => {
+    if (!enforceRateLimit(socket, "board:shape:remove", serverEnv.socketWriteEventsPerWindow)) {
+      return;
+    }
+
     const boardId = boardBySocket.get(socket.id);
     if (!boardId || payload.boardId !== boardId) {
       socket.emit("error", { message: "Join the board first" });
@@ -827,6 +1070,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("board:cursor", (payload: BoardCursorPayload) => {
+    if (!enforceRateLimit(socket, "board:cursor", serverEnv.socketCursorEventsPerWindow)) {
+      return;
+    }
+
     const boardId = boardBySocket.get(socket.id);
     if (!boardId || payload.boardId !== boardId) {
       return;
@@ -848,6 +1095,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("board:undo", ({ boardId }: { boardId: string }) => {
+    if (!enforceRateLimit(socket, "board:undo", serverEnv.socketWriteEventsPerWindow)) {
+      return;
+    }
+
     const joinedBoardId = boardBySocket.get(socket.id);
     if (!joinedBoardId || joinedBoardId !== boardId) {
       return;
@@ -872,6 +1123,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("board:redo", ({ boardId }: { boardId: string }) => {
+    if (!enforceRateLimit(socket, "board:redo", serverEnv.socketWriteEventsPerWindow)) {
+      return;
+    }
+
     const joinedBoardId = boardBySocket.get(socket.id);
     if (!joinedBoardId || joinedBoardId !== boardId) {
       return;
@@ -898,6 +1153,7 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     leaveDocument(socket.id);
     leaveBoard(socket.id);
+    socketLimiter.resetByPrefix(`${socket.id}:`);
   });
 });
 
