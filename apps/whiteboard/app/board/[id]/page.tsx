@@ -228,6 +228,8 @@ export default function WhiteboardRoomPage() {
     shapeId: string;
     handle: ConnectorHandle;
   } | null>(null);
+  const pendingShapePatchRef = useRef<{ shapeId: string; patch: Partial<WhiteboardShape> } | null>(null);
+  const patchRafRef = useRef<number | null>(null);
 
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
   const [isCreateTextDialogOpen, setIsCreateTextDialogOpen] = useState(false);
@@ -238,6 +240,7 @@ export default function WhiteboardRoomPage() {
 
   const nodeShapes = useMemo(() => shapes.filter((shape) => shape.type !== "connector"), [shapes]);
   const connectorShapes = useMemo(() => shapes.filter((shape) => shape.type === "connector"), [shapes]);
+  const shapeById = useMemo(() => new Map(shapes.map((shape) => [shape.id, shape] as const)), [shapes]);
   const nodeShapeById = useMemo(
     () => new Map(nodeShapes.map((shape) => [shape.id, shape] as const)),
     [nodeShapes]
@@ -245,6 +248,10 @@ export default function WhiteboardRoomPage() {
   const selectedShape = useMemo(
     () => shapes.find((shape) => shape.id === selectedShapeId) ?? null,
     [selectedShapeId, shapes]
+  );
+  const otherParticipants = useMemo(
+    () => participants.filter((participant) => participant.sessionId !== sessionId),
+    [participants, sessionId]
   );
 
   const toBoardPoint = (clientX: number, clientY: number) => {
@@ -259,11 +266,67 @@ export default function WhiteboardRoomPage() {
     };
   };
 
-  const clearPointerActions = () => {
+  const flushPendingShapePatch = useCallback(() => {
+    const pending = pendingShapePatchRef.current;
+    patchRafRef.current = null;
+    if (!pending) {
+      return;
+    }
+
+    pendingShapePatchRef.current = null;
+    patchShape(pending.shapeId, pending.patch);
+  }, [patchShape]);
+
+  const scheduleShapePatch = useCallback(
+    (shapeId: string, patch: Partial<WhiteboardShape>) => {
+      const pending = pendingShapePatchRef.current;
+      if (pending && pending.shapeId === shapeId) {
+        pendingShapePatchRef.current = {
+          shapeId,
+          patch: { ...pending.patch, ...patch }
+        };
+      } else {
+        if (pending) {
+          patchShape(pending.shapeId, pending.patch);
+        }
+
+        pendingShapePatchRef.current = { shapeId, patch };
+      }
+
+      if (patchRafRef.current !== null) {
+        return;
+      }
+
+      patchRafRef.current = globalThis.requestAnimationFrame(() => {
+        flushPendingShapePatch();
+      });
+    },
+    [flushPendingShapePatch, patchShape]
+  );
+
+  const clearPointerActions = useCallback(() => {
     dragRef.current = null;
     resizeRef.current = null;
     connectorResizeRef.current = null;
-  };
+    flushPendingShapePatch();
+  }, [flushPendingShapePatch]);
+
+  useEffect(() => {
+    return () => {
+      if (patchRafRef.current !== null) {
+        globalThis.cancelAnimationFrame(patchRafRef.current);
+        patchRafRef.current = null;
+      }
+
+      const pending = pendingShapePatchRef.current;
+      if (!pending) {
+        return;
+      }
+
+      pendingShapePatchRef.current = null;
+      patchShape(pending.shapeId, pending.patch);
+    };
+  }, [patchShape]);
 
   const removeShapeWithLinks = useCallback(
     (shapeId: string) => {
@@ -622,7 +685,7 @@ export default function WhiteboardRoomPage() {
 
             const connectorResizing = connectorResizeRef.current;
             if (connectorResizing) {
-              const connector = shapes.find((shape) => shape.id === connectorResizing.shapeId);
+              const connector = shapeById.get(connectorResizing.shapeId);
               if (!connector || connector.type !== "connector") {
                 connectorResizeRef.current = null;
                 return;
@@ -645,7 +708,7 @@ export default function WhiteboardRoomPage() {
                   ? snappedPoint
                   : { x: currentEndpoints.endX, y: currentEndpoints.endY };
 
-              patchShape(connector.id, {
+              scheduleShapePatch(connector.id, {
                 fromShapeId:
                   connectorResizing.handle === "start" ? snappedNode?.shapeId : connector.fromShapeId,
                 toShapeId: connectorResizing.handle === "end" ? snappedNode?.shapeId : connector.toShapeId,
@@ -703,7 +766,7 @@ export default function WhiteboardRoomPage() {
                 nextH = minHeight;
               }
 
-              patchShape(resizing.shapeId, {
+              scheduleShapePatch(resizing.shapeId, {
                 x: Math.round(nextX),
                 y: Math.round(nextY),
                 w: Math.round(nextW),
@@ -717,7 +780,7 @@ export default function WhiteboardRoomPage() {
               return;
             }
 
-            patchShape(dragging.shapeId, {
+            scheduleShapePatch(dragging.shapeId, {
               x: Math.round(point.x - dragging.offsetX),
               y: Math.round(point.y - dragging.offsetY)
             });
@@ -963,9 +1026,7 @@ export default function WhiteboardRoomPage() {
             );
           })}
 
-          {participants
-            .filter((participant) => participant.sessionId !== sessionId)
-            .map((participant) => (
+          {otherParticipants.map((participant) => (
               <div
                 key={`${participant.socketId}-${participant.sessionId}`}
                 className="pointer-events-none absolute z-30"
