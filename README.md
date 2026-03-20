@@ -158,14 +158,20 @@ pnpm build
 - `CI`: `.github/workflows/ci.yml`
   - `main` push / PR 기준으로 `lint`, `typecheck`, `build`를 실행
   - 모노레포 전체 품질 게이트 역할
+  - 수동 실행(`workflow_dispatch`) 지원
 
 - `CD`: `.github/workflows/cd-vercel.yml`
-  - `main` push 시 Vercel 배포를 자동 실행
-  - `apps/docs`, `apps/whiteboard`를 각각 독립 프로젝트로 배포
+  - `main` push 시 변경 파일 기반으로 필요한 프론트 앱만 배포
+  - 변경 감지 기준:
+    - Docs 관련 변경 또는 공용 프론트 패키지 변경 -> Docs 배포
+    - Whiteboard 관련 변경 또는 공용 프론트 패키지 변경 -> Whiteboard 배포
+  - 수동 실행(`workflow_dispatch`) 시 Docs/Whiteboard 모두 배포
 
 - `CD(Server)`: `.github/workflows/cd-server-render.yml`
   - `main` push(서버 관련 변경) 시 Render Deploy Hook 기반 서버 배포
-  - 선택적으로 서버 헬스체크 URL 검증까지 수행
+  - `RENDER_DEPLOY_HOOK_URL` 미설정 시 명시적 스킵 로그 출력
+  - `SERVER_HEALTHCHECK_URL` 설정 시 배포 후 헬스체크까지 검증
+  - 수동 실행(`workflow_dispatch`) 지원
 
 - `apps/server`는 Socket.IO 기반 장기 연결이 핵심이라, 프론트와 분리된 서버 런타임에서 운영
 

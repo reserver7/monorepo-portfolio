@@ -11,16 +11,35 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: server-production-deploy
+  group: cd-server-render-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   deploy-server:
-    if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
+    name: Trigger Render Deploy Hook
     runs-on: ubuntu-latest
+    timeout-minutes: 12
 
     steps:
+      - name: Validate deploy hook secret
+        id: hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RENDER_DEPLOY_HOOK_URL}" ]; then
+            echo "has_hook=false" >> "${GITHUB_OUTPUT}"
+            echo "RENDER_DEPLOY_HOOK_URL is missing. Skipping deploy trigger."
+            exit 0
+          fi
+
+          echo "has_hook=true" >> "${GITHUB_OUTPUT}"
+
       - name: Trigger Render deploy hook
+        if: ${{ steps.hook.outputs.has_hook == 'true' }}
         env:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
@@ -28,30 +47,40 @@ jobs:
           curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}" >/dev/null
           echo "Render deploy hook triggered."
 
-      - name: Verify server health (optional)
-        if: ${{ secrets.SERVER_HEALTHCHECK_URL != '' }}
+      - name: Validate health check URL
+        id: health
+        if: ${{ steps.hook.outputs.has_hook == 'true' }}
         env:
           SERVER_HEALTHCHECK_URL: ${{ secrets.SERVER_HEALTHCHECK_URL }}
         run: |
           set -euo pipefail
-          for attempt in $(seq 1 20); do
+          if [ -z "${SERVER_HEALTHCHECK_URL}" ]; then
+            echo "has_health=false" >> "${GITHUB_OUTPUT}"
+            echo "SERVER_HEALTHCHECK_URL is missing. Skipping health verification."
+            exit 0
+          fi
+
+          echo "has_health=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Verify server health (optional)
+        if: ${{ steps.hook.outputs.has_hook == 'true' && steps.health.outputs.has_health == 'true' }}
+        env:
+          SERVER_HEALTHCHECK_URL: ${{ secrets.SERVER_HEALTHCHECK_URL }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 24); do
             if curl -fsS "${SERVER_HEALTHCHECK_URL}" >/dev/null; then
               echo "Server health check passed."
               exit 0
             fi
 
-            echo "Waiting for health check... (${attempt}/20)"
-            sleep 15
+            echo "Waiting for health check... (${attempt}/24)"
+            sleep 10
           done
 
           echo "Server health check failed."
           exit 1
 
-  missing-hook-secret:
-    if: ${{ secrets.RENDER_DEPLOY_HOOK_URL == '' }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Notice missing deploy hook secret
-        run: |
-          echo "RENDER_DEPLOY_HOOK_URL secret is not configured. Server deploy is skipped."
+      - name: Skip notice (missing deploy hook)
+        if: ${{ steps.hook.outputs.has_hook != 'true' }}
+        run: echo "Deployment skipped because RENDER_DEPLOY_HOOK_URL is not configured."
