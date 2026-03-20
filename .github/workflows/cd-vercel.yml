@@ -3,15 +3,63 @@ name: CD - Vercel
 on:
   push:
     branches: ["main"]
+    paths:
+      - "apps/docs/**"
+      - "apps/whiteboard/**"
+      - "packages/shared-client/**"
+      - "packages/shared-types/**"
+      - "packages/ui/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "turbo.json"
+      - ".github/workflows/cd-vercel.yml"
   workflow_dispatch:
 
 concurrency:
-  group: vercel-production-deploy
+  group: cd-vercel-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  deploy-docs:
+  detect-changes:
+    name: Detect Changed Apps
     runs-on: ubuntu-latest
+    outputs:
+      docs: ${{ steps.filter.outputs.docs }}
+      whiteboard: ${{ steps.filter.outputs.whiteboard }}
+      shared: ${{ steps.filter.outputs.shared }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            shared:
+              - "packages/shared-client/**"
+              - "packages/shared-types/**"
+              - "packages/ui/**"
+              - "pnpm-lock.yaml"
+              - "pnpm-workspace.yaml"
+              - "turbo.json"
+            docs:
+              - "apps/docs/**"
+              - ".github/workflows/cd-vercel.yml"
+            whiteboard:
+              - "apps/whiteboard/**"
+              - ".github/workflows/cd-vercel.yml"
+
+  deploy-docs:
+    name: Deploy Docs (Vercel)
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.docs == 'true' || needs.detect-changes.outputs.shared == 'true' }}
+    timeout-minutes: 25
 
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -21,6 +69,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate Vercel secrets
+        run: |
+          set -euo pipefail
+          [ -n "${VERCEL_TOKEN}" ] || { echo "Missing secret: VERCEL_TOKEN"; exit 1; }
+          [ -n "${VERCEL_ORG_ID}" ] || { echo "Missing secret: VERCEL_ORG_ID"; exit 1; }
+          [ -n "${VERCEL_PROJECT_ID}" ] || { echo "Missing secret: VERCEL_PROJECT_ID_DOCS"; exit 1; }
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -46,7 +101,11 @@ jobs:
         run: pnpm dlx vercel@latest deploy --prebuilt --prod --token="${VERCEL_TOKEN}"
 
   deploy-whiteboard:
+    name: Deploy Whiteboard (Vercel)
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.whiteboard == 'true' || needs.detect-changes.outputs.shared == 'true' }}
+    timeout-minutes: 25
 
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -56,6 +115,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate Vercel secrets
+        run: |
+          set -euo pipefail
+          [ -n "${VERCEL_TOKEN}" ] || { echo "Missing secret: VERCEL_TOKEN"; exit 1; }
+          [ -n "${VERCEL_ORG_ID}" ] || { echo "Missing secret: VERCEL_ORG_ID"; exit 1; }
+          [ -n "${VERCEL_PROJECT_ID}" ] || { echo "Missing secret: VERCEL_PROJECT_ID_WHITEBOARD"; exit 1; }
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
