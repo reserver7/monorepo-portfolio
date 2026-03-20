@@ -50,6 +50,9 @@ importers:
 
   apps/docs:
     dependencies:
+      '@repo/shared-client':
+        specifier: workspace:*
+        version: link:../../packages/shared-client
       '@repo/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -148,6 +151,9 @@ importers:
 
   apps/whiteboard:
     dependencies:
+      '@repo/shared-client':
+        specifier: workspace:*
+        version: link:../../packages/shared-client
       '@repo/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -238,6 +244,16 @@ importers:
       prettier-plugin-tailwindcss:
         specifier: ^0.6.8
         version: 0.6.14(prettier@3.8.1)
+
+  packages/shared-client:
+    dependencies:
+      '@repo/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+    devDependencies:
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
 
   packages/shared-types:
     devDependencies:

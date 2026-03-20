@@ -1,27 +1,11 @@
 import { docsClientEnv } from "@/lib/env";
 import { DocumentComment, DocumentRecord, DocumentSummary, HistoryEntry } from "@/lib/types";
+import { requestJson } from "@repo/shared-client";
 
 export const API_BASE_URL = docsClientEnv.apiBaseUrl;
 
-const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {})
-    }
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(body || `Request failed (${response.status})`);
-  }
-
-  return (await response.json()) as T;
-};
-
 export const listDocuments = async (): Promise<DocumentSummary[]> => {
-  const payload = await request<{ documents: DocumentSummary[] }>("/api/documents", {
+  const payload = await requestJson<{ documents: DocumentSummary[] }>(API_BASE_URL, "/api/documents", {
     method: "GET"
   });
 
@@ -32,14 +16,14 @@ export const createDocument = async (input: {
   title: string;
   actor: string;
 }): Promise<{ document: DocumentRecord }> => {
-  return request<{ document: DocumentRecord }>("/api/documents", {
+  return requestJson<{ document: DocumentRecord }>(API_BASE_URL, "/api/documents", {
     method: "POST",
     body: JSON.stringify(input)
   });
 };
 
 export const getDocument = async (documentId: string): Promise<{ document: DocumentRecord }> => {
-  return request<{ document: DocumentRecord }>(`/api/documents/${documentId}`, {
+  return requestJson<{ document: DocumentRecord }>(API_BASE_URL, `/api/documents/${documentId}`, {
     method: "GET"
   });
 };
@@ -50,9 +34,13 @@ export const getDocumentHistory = async (
   documentId: string;
   history: HistoryEntry[];
 }> => {
-  return request<{ documentId: string; history: HistoryEntry[] }>(`/api/documents/${documentId}/history`, {
-    method: "GET"
-  });
+  return requestJson<{ documentId: string; history: HistoryEntry[] }>(
+    API_BASE_URL,
+    `/api/documents/${documentId}/history`,
+    {
+      method: "GET"
+    }
+  );
 };
 
 export const getDocumentComments = async (
@@ -61,7 +49,8 @@ export const getDocumentComments = async (
   documentId: string;
   comments: DocumentComment[];
 }> => {
-  return request<{ documentId: string; comments: DocumentComment[] }>(
+  return requestJson<{ documentId: string; comments: DocumentComment[] }>(
+    API_BASE_URL,
     `/api/documents/${documentId}/comments`,
     {
       method: "GET"
@@ -76,7 +65,8 @@ export const createDocumentComment = async (input: {
   body: string;
   mentions?: string[];
 }): Promise<{ documentId: string; comment: DocumentComment }> => {
-  return request<{ documentId: string; comment: DocumentComment }>(
+  return requestJson<{ documentId: string; comment: DocumentComment }>(
+    API_BASE_URL,
     `/api/documents/${input.documentId}/comments`,
     {
       method: "POST",
