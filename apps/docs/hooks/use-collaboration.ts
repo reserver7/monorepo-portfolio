@@ -71,6 +71,8 @@ interface PermissionDeniedPayload {
   currentRole: AccessRole;
 }
 
+const SNAPSHOT_PERSIST_DEBOUNCE_MS = 600;
+
 const normalizeTitle = (rawTitle: string): string => {
   const trimmed = rawTitle.trim();
   return trimmed || "Untitled document";
@@ -156,8 +158,7 @@ export const useCollaboration = ({
   const resetForDocument = useCollabStore((state) => state.resetForDocument);
   const hydrateFromServer = useCollabStore((state) => state.hydrateFromServer);
   const setRole = useCollabStore((state) => state.setRole);
-  const setTitle = useCollabStore((state) => state.setTitle);
-  const setContent = useCollabStore((state) => state.setContent);
+  const setDocumentSnapshot = useCollabStore((state) => state.setDocumentSnapshot);
   const setParticipants = useCollabStore((state) => state.setParticipants);
   const upsertParticipant = useCollabStore((state) => state.upsertParticipant);
   const addCommentToStore = useCollabStore((state) => state.addComment);
@@ -174,6 +175,7 @@ export const useCollaboration = ({
   const roleRef = useRef<AccessRole>(role);
   const ydocRef = useRef<Y.Doc | null>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const snapshotPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cursorSentAtRef = useRef<number>(0);
   const dirtyRef = useRef<boolean>(false);
 
@@ -223,12 +225,26 @@ export const useCollaboration = ({
       }
     }
 
+    const flushSnapshotToLocalCache = () => {
+      setStoredYjsSnapshot(documentId, encodeBinary(Y.encodeStateAsUpdate(ydoc)));
+      snapshotPersistTimerRef.current = null;
+    };
+
+    const scheduleSnapshotPersist = () => {
+      if (snapshotPersistTimerRef.current) {
+        return;
+      }
+
+      snapshotPersistTimerRef.current = setTimeout(() => {
+        flushSnapshotToLocalCache();
+      }, SNAPSHOT_PERSIST_DEBOUNCE_MS);
+    };
+
     const syncStoreFromYDoc = () => {
       const currentTitle = normalizeTitle(ydoc.getMap<string>("meta").get("title") ?? "Untitled document");
       const currentContent = ydoc.getText("content").toString();
-      setTitle(currentTitle);
-      setContent(currentContent);
-      setStoredYjsSnapshot(documentId, encodeBinary(Y.encodeStateAsUpdate(ydoc)));
+      setDocumentSnapshot(currentTitle, currentContent);
+      scheduleSnapshotPersist();
     };
 
     syncStoreFromYDoc();
@@ -262,11 +278,16 @@ export const useCollaboration = ({
     ydoc.on("update", handleYDocUpdate);
 
     return () => {
+      if (snapshotPersistTimerRef.current) {
+        clearTimeout(snapshotPersistTimerRef.current);
+        flushSnapshotToLocalCache();
+      }
+
       ydoc.off("update", handleYDocUpdate);
       ydoc.destroy();
       ydocRef.current = null;
     };
-  }, [documentId, initialDocument, resetForDocument, setContent, setSaveState, setTitle]);
+  }, [documentId, initialDocument, resetForDocument, setDocumentSnapshot, setSaveState]);
 
   useEffect(() => {
     if (!documentId || !displayName) {

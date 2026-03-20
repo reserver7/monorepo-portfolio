@@ -26,6 +26,7 @@ interface CollabStore {
   setRole: (role: AccessRole) => void;
   setTitle: (title: string) => void;
   setContent: (content: string) => void;
+  setDocumentSnapshot: (title: string, content: string) => void;
   setParticipants: (participants: Participant[]) => void;
   upsertParticipant: (participant: Participant) => void;
   setComments: (comments: DocumentComment[]) => void;
@@ -99,10 +100,22 @@ export const useCollabStore = create<CollabStore>((set, get) => ({
     set({ role });
   },
   setTitle: (title) => {
-    set({ title });
+    set((state) => (state.title === title ? state : { title }));
   },
   setContent: (content) => {
-    set({ content });
+    set((state) => (state.content === content ? state : { content }));
+  },
+  setDocumentSnapshot: (title, content) => {
+    set((state) => {
+      if (state.title === title && state.content === content) {
+        return state;
+      }
+
+      return {
+        title,
+        content
+      };
+    });
   },
   setParticipants: (participants) => {
     set({ participants: sortParticipants(participants) });
