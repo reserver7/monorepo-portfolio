@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createDocument, listDocuments } from "@/lib/api";
@@ -46,6 +46,7 @@ export default function HomePage() {
   const documentsQuery = useQuery({
     queryKey: ["documents"],
     queryFn: listDocuments,
+    staleTime: 5000,
     refetchInterval: 5000
   });
 
@@ -57,7 +58,7 @@ export default function HomePage() {
     }
   });
 
-  const sortedDocs = useMemo(() => documentsQuery.data ?? [], [documentsQuery.data]);
+  const documents = documentsQuery.data ?? [];
 
   const handleNameChange = (nextValue: string) => {
     setDisplayName(nextValue);
@@ -160,11 +161,11 @@ export default function HomePage() {
           <Card className="p-6 text-sm text-rose-600">
             문서 목록 조회에 실패했습니다. 서버 상태를 확인해 주세요.
           </Card>
-        ) : sortedDocs.length === 0 ? (
+        ) : documents.length === 0 ? (
           <Card className="p-6 text-sm text-slate-600">아직 문서가 없습니다. 첫 문서를 생성해보세요.</Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
-            {sortedDocs.map((document) => (
+            {documents.map((document) => (
               <Card key={document.id} className="p-5">
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <h3 className="font-heading text-lg font-semibold text-slate-900">{document.title}</h3>

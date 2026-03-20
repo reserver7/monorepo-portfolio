@@ -101,11 +101,50 @@ export const useWhiteboardStore = create<WhiteboardStore>((set, get) => ({
     });
   },
   patchShapeLocal: (shapeId, patch) => {
-    set((state) => ({
-      shapes: state.shapes.map((shape) =>
-        shape.id === shapeId ? { ...shape, ...patch, updatedAt: new Date().toISOString() } : shape
-      )
-    }));
+    set((state) => {
+      const index = state.shapes.findIndex((shape) => shape.id === shapeId);
+      if (index === -1) {
+        return state;
+      }
+
+      const currentShape = state.shapes[index];
+      if (!currentShape) {
+        return state;
+      }
+
+      let hasChanged = false;
+
+      for (const key in patch) {
+        const typedKey = key as keyof WhiteboardShape;
+        const nextValue = patch[typedKey];
+        if (nextValue !== undefined && currentShape[typedKey] !== nextValue) {
+          hasChanged = true;
+          break;
+        }
+      }
+
+      if (!hasChanged) {
+        return state;
+      }
+
+      const nextShapes = [...state.shapes];
+      const nextShape: WhiteboardShape = {
+        ...currentShape,
+        updatedAt: new Date().toISOString()
+      };
+
+      for (const key in patch) {
+        const typedKey = key as keyof WhiteboardShape;
+        const nextValue = patch[typedKey];
+        if (nextValue !== undefined) {
+          (nextShape[typedKey] as WhiteboardShape[keyof WhiteboardShape]) = nextValue;
+        }
+      }
+
+      nextShapes[index] = nextShape;
+
+      return { shapes: nextShapes };
+    });
   },
   removeShapeLocal: (shapeId) => {
     set((state) => ({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -51,6 +51,7 @@ export default function WhiteboardHomePage() {
   const boardsQuery = useQuery({
     queryKey: ["boards"],
     queryFn: listBoards,
+    staleTime: 5000,
     refetchInterval: 5000
   });
 
@@ -62,7 +63,7 @@ export default function WhiteboardHomePage() {
     }
   });
 
-  const boards = useMemo(() => boardsQuery.data ?? [], [boardsQuery.data]);
+  const boards = boardsQuery.data ?? [];
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-10 md:px-8">
