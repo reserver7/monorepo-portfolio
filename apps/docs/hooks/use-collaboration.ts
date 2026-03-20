@@ -6,8 +6,11 @@ import * as Y from "yjs";
 import { API_BASE_URL } from "@/lib/api";
 import {
   createGuestName,
+  getStoredEditorAccessKey,
   getOrCreateSessionId,
+  getStoredSessionToken,
   getStoredYjsSnapshot,
+  setStoredSessionIdentity,
   setStoredYjsSnapshot
 } from "@/lib/session";
 import {
@@ -24,6 +27,7 @@ interface UseCollaborationOptions {
   documentId: string;
   displayName: string;
   role: AccessRole;
+  editorAccessKey?: string | null;
   initialDocument?: DocumentRecord | null;
 }
 
@@ -31,6 +35,9 @@ interface DocumentStatePayload {
   document: DocumentRecord;
   role: AccessRole;
   comments: DocumentComment[];
+  sessionId?: string;
+  sessionToken?: string;
+  sessionTrusted?: boolean;
 }
 
 interface ParticipantsPayload {
@@ -140,6 +147,7 @@ export const useCollaboration = ({
   documentId,
   displayName,
   role,
+  editorAccessKey,
   initialDocument
 }: UseCollaborationOptions): {
   sessionId: string;
@@ -172,6 +180,7 @@ export const useCollaboration = ({
 
   const socketRef = useRef<Socket | null>(null);
   const sessionIdRef = useRef<string>("");
+  const sessionTokenRef = useRef<string>("");
   const roleRef = useRef<AccessRole>(role);
   const ydocRef = useRef<Y.Doc | null>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -181,6 +190,7 @@ export const useCollaboration = ({
 
   if (!sessionIdRef.current && typeof window !== "undefined") {
     sessionIdRef.current = getOrCreateSessionId();
+    sessionTokenRef.current = getStoredSessionToken() ?? "";
   }
 
   useEffect(() => {
@@ -313,8 +323,10 @@ export const useCollaboration = ({
       socket.emit("document:join", {
         documentId,
         sessionId: sessionIdRef.current,
+        sessionToken: sessionTokenRef.current || undefined,
         displayName: displayName.trim() || createGuestName(),
         role: roleRef.current,
+        editorAccessKey: editorAccessKey ?? getStoredEditorAccessKey() ?? undefined,
         clientYjsState
       });
     });
@@ -331,7 +343,13 @@ export const useCollaboration = ({
       pushEvent("서버 연결 실패. 자동 재시도 중입니다.");
     });
 
-    socket.on("document:state", ({ document, role: nextRole, comments }: DocumentStatePayload) => {
+    socket.on("document:state", ({ document, role: nextRole, comments, sessionId, sessionToken }: DocumentStatePayload) => {
+      if (typeof sessionId === "string" && typeof sessionToken === "string") {
+        sessionIdRef.current = sessionId;
+        sessionTokenRef.current = sessionToken;
+        setStoredSessionIdentity(sessionId, sessionToken);
+      }
+
       const ydoc = ydocRef.current;
       if (ydoc) {
         try {
@@ -479,7 +497,8 @@ export const useCollaboration = ({
     setRole,
     setSaveState,
     updateCommentInStore,
-    upsertParticipant
+    upsertParticipant,
+    editorAccessKey
   ]);
 
   const updateTitle = useCallback(

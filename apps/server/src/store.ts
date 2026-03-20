@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import * as Y from "yjs";
 import type {
@@ -967,7 +967,18 @@ export class RealtimeStore {
       boards: [...this.boards.values()]
     };
 
-    await writeFile(this.dataFilePath, JSON.stringify(payload, null, 2), "utf8");
+    const tempPath = `${this.dataFilePath}.tmp-${process.pid}-${Date.now()}`;
+    const serialized = JSON.stringify(payload, null, 2);
+
+    await writeFile(tempPath, serialized, "utf8");
+    try {
+      await rename(tempPath, this.dataFilePath);
+    } catch (error) {
+      await unlink(tempPath).catch(() => {
+        // Ignore temp cleanup errors.
+      });
+      throw error;
+    }
   }
 
   private appendHistory(document: DocumentRecord, entry: HistoryEntry): void {

@@ -107,6 +107,14 @@ cp apps/whiteboard/.env.local.example apps/whiteboard/.env.local
   - `NEXT_PUBLIC_API_URL=https://monorepo-portfolio-server.onrender.com`
   - `NEXT_PUBLIC_DOCS_APP_URL=https://monorepo-portfolio-docs.vercel.app`
 
+서버(`apps/server`) 운영 권장 값:
+
+- `COLLAB_SESSION_SECRET`: production 필수 (세션 서명용)
+- `CORS_ORIGINS`: production 필수 (명시적 허용 origin)
+- `EDITOR_ACCESS_KEY`: 선택 (설정 시 editor 권한 승격 시 키 검증)
+- `SOCKET_RATE_LIMIT_WINDOW_MS`, `SOCKET_WRITE_EVENTS_PER_WINDOW`, `SOCKET_CURSOR_EVENTS_PER_WINDOW`
+- `MAX_YJS_UPDATE_BASE64_CHARS`, `MAX_SOCKET_JSON_CHARS`
+
 ## 로컬 실행
 
 ```bash

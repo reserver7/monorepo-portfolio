@@ -11,14 +11,30 @@ import {
 } from "@repo/shared-client";
 
 const SESSION_KEY = "reserver7.sessionId";
+const SESSION_TOKEN_KEY = "reserver7.sessionToken";
 const DISPLAY_NAME_KEY = "reserver7.displayName";
 const DOCUMENT_ROLE_KEY = "reserver7.document.role";
+const DOCUMENT_EDITOR_ACCESS_KEY = "reserver7.document.editorAccessKey";
 const DOCUMENT_YJS_SNAPSHOT_PREFIX = "reserver7.document.yjs.";
+
+const normalizeOptionalString = (value: string | null): string | null => {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : null;
+};
 
 export const createGuestName = (): string => createSharedGuestName();
 
 export const getOrCreateSessionId = (): string => {
   return getOrCreateSharedSessionId(SESSION_KEY);
+};
+
+export const getStoredSessionToken = (): string | null => {
+  return normalizeOptionalString(getStoredString(SESSION_TOKEN_KEY));
+};
+
+export const setStoredSessionIdentity = (sessionId: string, sessionToken: string): void => {
+  setStoredString(SESSION_KEY, sessionId);
+  setStoredString(SESSION_TOKEN_KEY, sessionToken);
 };
 
 export const getStoredDisplayName = (): string | null => {
@@ -35,6 +51,14 @@ export const getStoredRole = (): AccessRole | null => {
 
 export const setStoredRole = (role: AccessRole): void => {
   setSharedStoredRole(DOCUMENT_ROLE_KEY, role);
+};
+
+export const getStoredEditorAccessKey = (): string | null => {
+  return normalizeOptionalString(getStoredString(DOCUMENT_EDITOR_ACCESS_KEY));
+};
+
+export const setStoredEditorAccessKey = (value: string): void => {
+  setStoredString(DOCUMENT_EDITOR_ACCESS_KEY, value);
 };
 
 export const getStoredYjsSnapshot = (documentId: string): string | null => {

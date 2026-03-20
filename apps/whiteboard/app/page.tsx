@@ -22,8 +22,10 @@ import { createBoard, listBoards } from "@/lib/api";
 import { whiteboardClientEnv } from "@/lib/env";
 import {
   createGuestName,
+  getStoredEditorAccessKey,
   getStoredDisplayName,
   getStoredRole,
+  setStoredEditorAccessKey,
   setStoredDisplayName,
   setStoredRole
 } from "@/lib/session";
@@ -37,15 +39,18 @@ export default function WhiteboardHomePage() {
   const [displayName, setDisplayName] = useState("");
   const [boardTitle, setBoardTitle] = useState("팀 아이디어 보드");
   const [role, setRole] = useState<"viewer" | "editor">(whiteboardClientEnv.defaultRole);
+  const [editorAccessKey, setEditorAccessKey] = useState<string>("");
 
   useEffect(() => {
     const stored = getStoredDisplayName();
     const storedRole = getStoredRole();
+    const storedEditorAccessKey = getStoredEditorAccessKey();
     const fallback = createGuestName();
     const nextName = stored?.trim() ? stored : fallback;
     setDisplayName(nextName);
     setStoredDisplayName(nextName);
     setRole(storedRole ?? whiteboardClientEnv.defaultRole);
+    setEditorAccessKey(storedEditorAccessKey ?? whiteboardClientEnv.editorAccessKey ?? "");
   }, []);
 
   const boardsQuery = useQuery({
@@ -90,7 +95,7 @@ export default function WhiteboardHomePage() {
           도형 추가, 텍스트 입력, 드래그 이동, 참여자 커서 공유, undo/redo를 실시간 동기화로 제공합니다.
         </p>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-[1fr_1fr_220px_auto]">
+        <div className="mt-8 grid gap-4 md:grid-cols-[1fr_1fr_220px_220px_auto]">
           <Input
             value={displayName}
             onChange={(event) => {
@@ -121,6 +126,16 @@ export default function WhiteboardHomePage() {
               <SelectItem value="viewer">viewer (보기 전용)</SelectItem>
             </SelectContent>
           </Select>
+          <Input
+            type="password"
+            value={editorAccessKey}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+              setEditorAccessKey(nextValue);
+              setStoredEditorAccessKey(nextValue);
+            }}
+            placeholder="편집 키 (선택)"
+          />
           <Button
             onClick={() =>
               createBoardMutation.mutate({
@@ -158,6 +173,7 @@ export default function WhiteboardHomePage() {
                   onClick={() => {
                     setStoredDisplayName(displayName.trim() || createGuestName());
                     setStoredRole(role);
+                    setStoredEditorAccessKey(editorAccessKey);
                     router.push(`/board/${board.id}`);
                   }}
                 >
