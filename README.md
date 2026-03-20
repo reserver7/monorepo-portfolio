@@ -15,6 +15,12 @@ Turborepo + pnpm 기반으로 문서 협업(Next.js)과 화이트보드 협업(N
 - `packages/tailwind-config`: 공용 Tailwind config 팩토리
 - `packages/postcss-config`: 공용 PostCSS config
 
+## 실서비스 URL
+
+- Docs: [https://monorepo-portfolio-docs.vercel.app](https://monorepo-portfolio-docs.vercel.app)
+- Whiteboard: [https://monorepo-portfolio-whiteboard.vercel.app](https://monorepo-portfolio-whiteboard.vercel.app)
+- Server: [https://monorepo-portfolio-server.onrender.com](https://monorepo-portfolio-server.onrender.com)
+
 ## 핵심 기능
 
 ### 문서 협업
@@ -91,6 +97,15 @@ cp apps/server/.env.example apps/server/.env
 cp apps/docs/.env.local.example apps/docs/.env.local
 cp apps/whiteboard/.env.local.example apps/whiteboard/.env.local
 ```
+
+배포(Vercel) 환경 변수 권장 값:
+
+- Docs 프로젝트
+  - `NEXT_PUBLIC_API_URL=https://monorepo-portfolio-server.onrender.com`
+  - `NEXT_PUBLIC_WHITEBOARD_APP_URL=https://monorepo-portfolio-whiteboard.vercel.app`
+- Whiteboard 프로젝트
+  - `NEXT_PUBLIC_API_URL=https://monorepo-portfolio-server.onrender.com`
+  - `NEXT_PUBLIC_DOCS_APP_URL=https://monorepo-portfolio-docs.vercel.app`
 
 ## 로컬 실행
 
