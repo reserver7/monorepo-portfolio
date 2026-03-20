@@ -148,7 +148,11 @@ pnpm build
   - `main` push 시 Vercel 배포를 자동 실행
   - `apps/docs`, `apps/whiteboard`를 각각 독립 프로젝트로 배포
 
-- `apps/server`는 Socket.IO 기반 장기 연결이 핵심이라, 프론트와 분리된 서버 런타임에서 운영하는 것을 전제로 구성
+- `CD(Server)`: `.github/workflows/cd-server-render.yml`
+  - `main` push(서버 관련 변경) 시 Render Deploy Hook 기반 서버 배포
+  - 선택적으로 서버 헬스체크 URL 검증까지 수행
+
+- `apps/server`는 Socket.IO 기반 장기 연결이 핵심이라, 프론트와 분리된 서버 런타임에서 운영
 
 필요 시크릿(Workflow 사용):
 
@@ -156,3 +160,5 @@ pnpm build
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID_DOCS`
 - `VERCEL_PROJECT_ID_WHITEBOARD`
+- `RENDER_DEPLOY_HOOK_URL` (서버 CD)
+- `SERVER_HEALTHCHECK_URL` (선택, 서버 CD 헬스체크)

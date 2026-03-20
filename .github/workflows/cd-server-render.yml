@@ -1,0 +1,57 @@
+name: CD - Server (Render)
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "apps/server/**"
+      - "packages/shared-types/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/cd-server-render.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: server-production-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy-server:
+    if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}" >/dev/null
+          echo "Render deploy hook triggered."
+
+      - name: Verify server health (optional)
+        if: ${{ secrets.SERVER_HEALTHCHECK_URL != '' }}
+        env:
+          SERVER_HEALTHCHECK_URL: ${{ secrets.SERVER_HEALTHCHECK_URL }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 20); do
+            if curl -fsS "${SERVER_HEALTHCHECK_URL}" >/dev/null; then
+              echo "Server health check passed."
+              exit 0
+            fi
+
+            echo "Waiting for health check... (${attempt}/20)"
+            sleep 15
+          done
+
+          echo "Server health check failed."
+          exit 1
+
+  missing-hook-secret:
+    if: ${{ secrets.RENDER_DEPLOY_HOOK_URL == '' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notice missing deploy hook secret
+        run: |
+          echo "RENDER_DEPLOY_HOOK_URL secret is not configured. Server deploy is skipped."
