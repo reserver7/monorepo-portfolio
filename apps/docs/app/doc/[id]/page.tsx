@@ -1,13 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ActivityLogPanel } from "@/components/activity-log-panel";
-import { CommentsPanel } from "@/components/comments-panel";
-import { HistoryPanel } from "@/components/history-panel";
-import { PresencePanel } from "@/components/presence-panel";
 import { Button, Card, Input, Textarea } from "@repo/ui";
 import { useCollaboration } from "@/hooks/use-collaboration";
 import { getDocument, getDocumentHistory } from "@/lib/api";
@@ -27,6 +24,22 @@ const saveLabel = {
   saved: "저장됨",
   offline: "오프라인 보류"
 } as const;
+
+const PresencePanel = dynamic(() => import("@/components/presence-panel").then((mod) => mod.PresencePanel), {
+  ssr: false
+});
+const CommentsPanel = dynamic(() => import("@/components/comments-panel").then((mod) => mod.CommentsPanel), {
+  ssr: false
+});
+const HistoryPanel = dynamic(() => import("@/components/history-panel").then((mod) => mod.HistoryPanel), {
+  ssr: false
+});
+const ActivityLogPanel = dynamic(
+  () => import("@/components/activity-log-panel").then((mod) => mod.ActivityLogPanel),
+  {
+    ssr: false
+  }
+);
 
 export default function DocumentRoomPage() {
   const params = useParams<{ id: string }>();
@@ -54,6 +67,7 @@ export default function DocumentRoomPage() {
     queryKey: ["history", documentId],
     queryFn: () => getDocumentHistory(documentId),
     enabled: Boolean(documentId),
+    staleTime: 6000,
     refetchInterval: 6000
   });
 
@@ -86,7 +100,7 @@ export default function DocumentRoomPage() {
   const conflictMessage = useCollabStore((state) => state.conflictMessage);
   const eventLog = useCollabStore((state) => state.eventLog);
 
-  const historyEntries = useMemo(() => historyQuery.data?.history ?? [], [historyQuery.data?.history]);
+  const historyEntries = historyQuery.data?.history ?? [];
 
   if (!documentId) {
     return null;
