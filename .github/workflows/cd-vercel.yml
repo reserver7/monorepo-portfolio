@@ -1,0 +1,87 @@
+name: CD - Vercel
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-production-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy-docs:
+    runs-on: ubuntu-latest
+
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_DOCS }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Pull Vercel Environment Information (Docs)
+        run: pnpm dlx vercel@latest pull --yes --environment=production --token="${VERCEL_TOKEN}"
+        working-directory: apps/docs
+
+      - name: Build Docs
+        run: pnpm dlx vercel@latest build --prod --token="${VERCEL_TOKEN}"
+        working-directory: apps/docs
+
+      - name: Deploy Docs
+        run: pnpm dlx vercel@latest deploy --prebuilt --prod --token="${VERCEL_TOKEN}"
+        working-directory: apps/docs
+
+  deploy-whiteboard:
+    runs-on: ubuntu-latest
+
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_WHITEBOARD }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Pull Vercel Environment Information (Whiteboard)
+        run: pnpm dlx vercel@latest pull --yes --environment=production --token="${VERCEL_TOKEN}"
+        working-directory: apps/whiteboard
+
+      - name: Build Whiteboard
+        run: pnpm dlx vercel@latest build --prod --token="${VERCEL_TOKEN}"
+        working-directory: apps/whiteboard
+
+      - name: Deploy Whiteboard
+        run: pnpm dlx vercel@latest deploy --prebuilt --prod --token="${VERCEL_TOKEN}"
+        working-directory: apps/whiteboard

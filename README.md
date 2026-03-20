@@ -9,6 +9,7 @@ Turborepo + pnpm 기반으로 문서 협업(Next.js)과 화이트보드 협업(N
 - `apps/server`: 실시간 API/Socket 서버 (`http://localhost:4000`)
 - `packages/ui`: shadcn/ui 기반 공용 UI 컴포넌트
 - `packages/shared-types`: 문서/화이트보드 공용 타입
+- `packages/shared-client`: 문서/화이트보드 공용 클라이언트 유틸(env/time/storage/http/navigation)
 - `packages/eslint-config`: 공용 ESLint flat config
 - `packages/prettier-config`: 공용 Prettier config
 - `packages/tailwind-config`: 공용 Tailwind config 팩토리
@@ -54,7 +55,8 @@ Turborepo + pnpm 기반으로 문서 협업(Next.js)과 화이트보드 협업(N
 │   ├── prettier-config
 │   ├── tailwind-config
 │   ├── ui
-│   └── shared-types
+│   ├── shared-types
+│   └── shared-client
 ├── .env.example
 ├── eslint.config.mjs
 ├── .prettierrc.cjs
@@ -135,3 +137,22 @@ pnpm build
 - `board:cursor`
 - `board:undo`
 - `board:redo`
+
+## CI/CD 구성 (Vercel + GitHub Actions)
+
+- `CI`: `.github/workflows/ci.yml`
+  - `main` push / PR 기준으로 `lint`, `typecheck`, `build`를 실행
+  - 모노레포 전체 품질 게이트 역할
+
+- `CD`: `.github/workflows/cd-vercel.yml`
+  - `main` push 시 Vercel 배포를 자동 실행
+  - `apps/docs`, `apps/whiteboard`를 각각 독립 프로젝트로 배포
+
+- `apps/server`는 Socket.IO 기반 장기 연결이 핵심이라, 프론트와 분리된 서버 런타임에서 운영하는 것을 전제로 구성
+
+필요 시크릿(Workflow 사용):
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID_DOCS`
+- `VERCEL_PROJECT_ID_WHITEBOARD`
