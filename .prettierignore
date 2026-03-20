@@ -1,0 +1,8 @@
+node_modules
+.next
+.turbo
+.pnpm-store
+dist
+coverage
+apps/server/data/state.json
+pnpm-lock.yaml

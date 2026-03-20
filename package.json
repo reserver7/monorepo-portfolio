@@ -1,0 +1,31 @@
+{
+  "name": "collab-suite-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "packageManager": "pnpm@10.12.3",
+  "scripts": {
+    "dev": "pnpm turbo run dev --parallel",
+    "build": "pnpm turbo run build",
+    "typecheck": "pnpm turbo run typecheck",
+    "lint": "pnpm turbo run lint",
+    "lint:fix": "pnpm turbo run lint -- --fix",
+    "format": "prettier --cache --write .",
+    "format:check": "prettier --check .",
+    "clean": "pnpm turbo run clean"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/prettier-config": "workspace:*",
+    "@eslint/js": "^9.35.0",
+    "@next/eslint-plugin-next": "^15.3.1",
+    "eslint": "^9.35.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
+    "prettier-plugin-tailwindcss": "^0.6.8",
+    "turbo": "^2.4.4",
+    "typescript-eslint": "^8.43.0",
+    "typescript": "^5.8.2"
+  }
+}
