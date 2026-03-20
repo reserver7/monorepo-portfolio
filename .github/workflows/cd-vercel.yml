@@ -38,15 +38,12 @@ jobs:
 
       - name: Pull Vercel Environment Information (Docs)
         run: pnpm dlx vercel@latest pull --yes --environment=production --token="${VERCEL_TOKEN}"
-        working-directory: apps/docs
 
       - name: Build Docs
         run: pnpm dlx vercel@latest build --prod --token="${VERCEL_TOKEN}"
-        working-directory: apps/docs
 
       - name: Deploy Docs
         run: pnpm dlx vercel@latest deploy --prebuilt --prod --token="${VERCEL_TOKEN}"
-        working-directory: apps/docs
 
   deploy-whiteboard:
     runs-on: ubuntu-latest
@@ -76,12 +73,9 @@ jobs:
 
       - name: Pull Vercel Environment Information (Whiteboard)
         run: pnpm dlx vercel@latest pull --yes --environment=production --token="${VERCEL_TOKEN}"
-        working-directory: apps/whiteboard
 
       - name: Build Whiteboard
         run: pnpm dlx vercel@latest build --prod --token="${VERCEL_TOKEN}"
-        working-directory: apps/whiteboard
 
       - name: Deploy Whiteboard
         run: pnpm dlx vercel@latest deploy --prebuilt --prod --token="${VERCEL_TOKEN}"
-        working-directory: apps/whiteboard
