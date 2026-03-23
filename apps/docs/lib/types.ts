@@ -4,7 +4,6 @@ import type {
   DocumentComment,
   DocumentRecord,
   DocumentSummary,
-  EditorSnapshot,
   HistoryEntry,
   Participant as SharedParticipant,
   SaveState
@@ -16,29 +15,10 @@ export type {
   DocumentComment,
   DocumentRecord,
   DocumentSummary,
-  EditorSnapshot,
   HistoryEntry,
   SaveState
 };
 
-export interface Participant extends SharedParticipant {
+export interface Participant extends Omit<SharedParticipant, "cursorIndex"> {
   cursorIndex: number;
-}
-
-export interface RealtimeYjsUpdate {
-  documentId: string;
-  encodedUpdate: string;
-  version: number;
-  updatedAt: string;
-  title: string;
-  editor: EditorSnapshot | null;
-}
-
-export interface RealtimeDocumentUpdate {
-  documentId: string;
-  title: string;
-  content: string;
-  version: number;
-  updatedAt: string;
-  editor: EditorSnapshot | null;
 }

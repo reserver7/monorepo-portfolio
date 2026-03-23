@@ -1,4 +1,5 @@
 import type { AccessRole } from "@repo/shared-types";
+import { coerceAccessRole } from "./role";
 
 const normalizeUrl = (rawValue: string | undefined, fallback: string): string => {
   const value = rawValue?.trim();
@@ -10,11 +11,7 @@ const normalizeUrl = (rawValue: string | undefined, fallback: string): string =>
 };
 
 const normalizeRole = (rawRole: string | undefined): AccessRole => {
-  if (rawRole === "viewer") {
-    return "viewer";
-  }
-
-  return "editor";
+  return coerceAccessRole(rawRole, "editor");
 };
 
 export const createClientEnv = (apiUrl: string | undefined, role: string | undefined) => {

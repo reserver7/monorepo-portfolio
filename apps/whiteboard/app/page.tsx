@@ -36,7 +36,7 @@ import {
 } from "@/lib/session";
 import { navigateToDocsApp } from "@/lib/cross-app";
 import { formatExactTime, formatRelativeTime } from "@/lib/time";
-import { collabFieldCopy } from "@repo/shared-client";
+import { coerceAccessRole, collabFieldCopy } from "@repo/shared-client";
 
 const EMPTY_TITLE = "(제목 없음)";
 
@@ -218,7 +218,7 @@ export default function WhiteboardHomePage() {
             <Select
               value={role}
               onValueChange={(value) => {
-                const nextRole = value === "viewer" ? "viewer" : "editor";
+                const nextRole = coerceAccessRole(value, whiteboardClientEnv.defaultRole);
                 setRole(nextRole);
                 setStoredRole(nextRole);
               }}

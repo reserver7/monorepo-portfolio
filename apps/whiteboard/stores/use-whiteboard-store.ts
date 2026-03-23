@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { appendEventLog } from "@repo/shared-client";
 import { AccessRole, ConnectionState, Participant, WhiteboardRecord, WhiteboardShape } from "@/lib/types";
 
 interface WhiteboardStore {
@@ -28,15 +29,11 @@ interface WhiteboardStore {
 
 const MAX_LOG = 36;
 
-const toLogLine = (message: string): string => {
-  const timestamp = new Intl.DateTimeFormat("ko-KR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  }).format(new Date());
-
-  return `${timestamp} · ${message}`;
-};
+const normalizeParticipant = (participant: Participant): Participant => ({
+  ...participant,
+  cursorX: participant.cursorX ?? 0,
+  cursorY: participant.cursorY ?? 0
+});
 
 export const useWhiteboardStore = create<WhiteboardStore>((set, get) => ({
   activeBoardId: null,
@@ -152,20 +149,11 @@ export const useWhiteboardStore = create<WhiteboardStore>((set, get) => ({
     }));
   },
   setParticipants: (participants) => {
-    const normalized = participants.map((item) => ({
-      ...item,
-      cursorX: item.cursorX ?? 0,
-      cursorY: item.cursorY ?? 0
-    }));
-    set({ participants: normalized });
+    set({ participants: participants.map(normalizeParticipant) });
   },
   upsertParticipant: (participant) => {
     set((state) => {
-      const normalized = {
-        ...participant,
-        cursorX: participant.cursorX ?? 0,
-        cursorY: participant.cursorY ?? 0
-      };
+      const normalized = normalizeParticipant(participant);
       const index = state.participants.findIndex((item) => item.sessionId === normalized.sessionId);
       if (index === -1) {
         return { participants: [...state.participants, normalized] };
@@ -183,7 +171,6 @@ export const useWhiteboardStore = create<WhiteboardStore>((set, get) => ({
     set({ conflictMessage: message });
   },
   pushEvent: (message) => {
-    const existing = get().eventLog;
-    set({ eventLog: [toLogLine(message), ...existing].slice(0, MAX_LOG) });
+    set({ eventLog: appendEventLog(get().eventLog, message, MAX_LOG) });
   }
 }));

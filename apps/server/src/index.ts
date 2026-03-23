@@ -13,8 +13,10 @@ import {
   BoardCursorPayload,
   BoardJoinPayload,
   BoardPatchShapePayload,
+  BoardRedoPayload,
   BoardRemoveShapePayload,
   BoardTitlePayload,
+  BoardUndoPayload,
   colorFromSession,
   CursorPayload,
   DocumentCommentDeletePayload,
@@ -22,6 +24,7 @@ import {
   DocumentCommentUpdatePayload,
   DocumentJoinPayload,
   DocumentLegacyUpdatePayload,
+  DocumentSavePayload,
   DocumentYjsUpdatePayload,
   editorFromParticipant,
   extractMentions,
@@ -862,7 +865,7 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on(socketEventName.documentSave, (payload: { documentId: string }) => {
+  socket.on(socketEventName.documentSave, (payload: DocumentSavePayload) => {
     socketMetrics.record(socketEventName.documentSave, "received");
 
     if (!enforceRateLimit(socket, socketEventName.documentSave, serverEnv.socketWriteEventsPerWindow)) {
@@ -1237,7 +1240,7 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on(socketEventName.boardUndo, (payload: { boardId: string }) => {
+  socket.on(socketEventName.boardUndo, (payload: BoardUndoPayload) => {
     socketMetrics.record(socketEventName.boardUndo, "received");
 
     if (!enforceRateLimit(socket, socketEventName.boardUndo, serverEnv.socketWriteEventsPerWindow)) {
@@ -1272,7 +1275,7 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on(socketEventName.boardRedo, (payload: { boardId: string }) => {
+  socket.on(socketEventName.boardRedo, (payload: BoardRedoPayload) => {
     socketMetrics.record(socketEventName.boardRedo, "received");
 
     if (!enforceRateLimit(socket, socketEventName.boardRedo, serverEnv.socketWriteEventsPerWindow)) {

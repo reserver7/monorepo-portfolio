@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { appendEventLog } from "@repo/shared-client";
 import {
   AccessRole,
   ConnectionState,
@@ -42,18 +43,15 @@ interface CollabStore {
 
 const MAX_LOG = 24;
 
-const toLogLine = (message: string): string => {
-  const timestamp = new Intl.DateTimeFormat("ko-KR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  }).format(new Date());
-
-  return `${timestamp} · ${message}`;
-};
+const normalizeParticipant = (participant: Participant): Participant => ({
+  ...participant,
+  cursorIndex: participant.cursorIndex ?? 0
+});
 
 const sortParticipants = (participants: Participant[]): Participant[] => {
-  return [...participants].sort((left, right) => left.displayName.localeCompare(right.displayName, "ko"));
+  return [...participants]
+    .map(normalizeParticipant)
+    .sort((left, right) => left.displayName.localeCompare(right.displayName, "ko"));
 };
 
 export const useCollabStore = create<CollabStore>((set, get) => ({
@@ -122,10 +120,7 @@ export const useCollabStore = create<CollabStore>((set, get) => ({
   },
   upsertParticipant: (participant) => {
     set((state) => {
-      const normalized = {
-        ...participant,
-        cursorIndex: participant.cursorIndex ?? 0
-      };
+      const normalized = normalizeParticipant(participant);
       const existingIndex = state.participants.findIndex((item) => item.sessionId === normalized.sessionId);
 
       if (existingIndex === -1) {
@@ -179,7 +174,6 @@ export const useCollabStore = create<CollabStore>((set, get) => ({
     set({ conflictMessage: message });
   },
   pushEvent: (message) => {
-    const existing = get().eventLog;
-    set({ eventLog: [toLogLine(message), ...existing].slice(0, MAX_LOG) });
+    set({ eventLog: appendEventLog(get().eventLog, message, MAX_LOG) });
   }
 }));

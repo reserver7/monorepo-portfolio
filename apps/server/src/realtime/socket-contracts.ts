@@ -1,110 +1,25 @@
-import type { AccessRole, EditorSnapshot, Participant, WhiteboardShape } from "@repo/shared-types";
+import type { AccessRole, EditorSnapshot, Participant } from "@repo/shared-types";
 
-export const socketEventName = {
-  documentJoin: "document:join",
-  documentYjsUpdate: "document:yjs:update",
-  documentUpdate: "document:update",
-  documentCommentAdd: "document:comment:add",
-  documentCommentUpdate: "document:comment:update",
-  documentCommentDelete: "document:comment:delete",
-  documentCursorMove: "cursor:move",
-  documentSave: "document:save",
-  boardJoin: "board:join",
-  boardTitleUpdate: "board:title:update",
-  boardShapeAdd: "board:shape:add",
-  boardShapeUpdate: "board:shape:update",
-  boardShapeRemove: "board:shape:remove",
-  boardCursor: "board:cursor",
-  boardUndo: "board:undo",
-  boardRedo: "board:redo"
-} as const;
-
-export type SocketEventName = (typeof socketEventName)[keyof typeof socketEventName];
-
-export interface DocumentJoinPayload {
-  documentId: string;
-  sessionId?: string;
-  sessionToken?: string;
-  displayName?: string;
-  role?: AccessRole;
-  editorAccessKey?: string;
-  clientYjsState?: string;
-}
-
-export interface DocumentLegacyUpdatePayload {
-  documentId: string;
-  title?: string;
-  content?: string;
-  baseVersion?: number;
-}
-
-export interface DocumentYjsUpdatePayload {
-  documentId: string;
-  encodedUpdate: string;
-}
-
-export interface DocumentCommentPayload {
-  documentId: string;
-  body: string;
-  mentions?: string[];
-}
-
-export interface DocumentCommentUpdatePayload {
-  documentId: string;
-  commentId: string;
-  body: string;
-  mentions?: string[];
-}
-
-export interface DocumentCommentDeletePayload {
-  documentId: string;
-  commentId: string;
-}
-
-export interface CursorPayload {
-  documentId: string;
-  cursorIndex: number;
-}
-
-export interface BoardJoinPayload {
-  boardId: string;
-  sessionId?: string;
-  sessionToken?: string;
-  displayName?: string;
-  role?: AccessRole;
-  editorAccessKey?: string;
-}
-
-export interface BoardTitlePayload {
-  boardId: string;
-  title: string;
-  baseVersion?: number;
-}
-
-export interface BoardAddShapePayload {
-  boardId: string;
-  shape: WhiteboardShape;
-  baseVersion?: number;
-}
-
-export interface BoardPatchShapePayload {
-  boardId: string;
-  shapeId: string;
-  patch: Partial<WhiteboardShape>;
-  baseVersion?: number;
-}
-
-export interface BoardRemoveShapePayload {
-  boardId: string;
-  shapeId: string;
-  baseVersion?: number;
-}
-
-export interface BoardCursorPayload {
-  boardId: string;
-  x: number;
-  y: number;
-}
+export { socketEventName } from "@repo/shared-types";
+export type {
+  BoardAddShapePayload,
+  BoardCursorPayload,
+  BoardJoinPayload,
+  BoardPatchShapePayload,
+  BoardRedoPayload,
+  BoardRemoveShapePayload,
+  BoardTitlePayload,
+  BoardUndoPayload,
+  CursorPayload,
+  DocumentCommentDeletePayload,
+  DocumentCommentPayload,
+  DocumentCommentUpdatePayload,
+  DocumentJoinPayload,
+  DocumentLegacyUpdatePayload,
+  DocumentSavePayload,
+  DocumentYjsUpdatePayload,
+  SocketEventName
+} from "@repo/shared-types";
 
 const COLORS = ["#0284c7", "#0f766e", "#16a34a", "#ca8a04", "#ea580c", "#dc2626", "#9333ea", "#4f46e5"];
 const mentionPattern = /@([0-9A-Za-z가-힣._-]{2,24})/g;

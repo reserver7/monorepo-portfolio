@@ -9,7 +9,7 @@ import type {
 
 export type { AccessRole, ConnectionState, WhiteboardRecord, WhiteboardShape, WhiteboardSummary };
 
-export interface Participant extends SharedParticipant {
+export interface Participant extends Omit<SharedParticipant, "cursorX" | "cursorY"> {
   cursorX: number;
   cursorY: number;
 }

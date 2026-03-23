@@ -3,6 +3,28 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import * as Y from "yjs";
+import type {
+  CursorPayload as DocumentCursorMovePayload,
+  DocumentCommentDeleteEventPayload,
+  DocumentCommentDeletePayload,
+  DocumentCommentEventPayload,
+  DocumentCommentPayload as DocumentCommentAddPayload,
+  DocumentCommentUpdatePayload,
+  DocumentConflictPayload,
+  DocumentCursorUpdatePayload,
+  DocumentJoinPayload,
+  DocumentParticipantsPayload,
+  DocumentSavePayload,
+  DocumentSavedPayload,
+  DocumentStatePayload,
+  DocumentYjsUpdatePayload,
+  Participant as SharedParticipant,
+  PermissionDeniedPayload,
+  RealtimeDocumentUpdate,
+  RealtimeYjsUpdate,
+  SocketErrorPayload
+} from "@repo/shared-types";
+import { socketEventName } from "@repo/shared-types";
 import { API_BASE_URL } from "@/lib/api";
 import {
   createGuestName,
@@ -15,11 +37,8 @@ import {
 } from "@/lib/session";
 import {
   AccessRole,
-  DocumentComment,
   DocumentRecord,
-  Participant,
-  RealtimeDocumentUpdate,
-  RealtimeYjsUpdate
+  Participant
 } from "@/lib/types";
 import { useCollabStore } from "@/stores/use-collab-store";
 
@@ -30,53 +49,6 @@ interface UseCollaborationOptions {
   editorAccessKey?: string | null;
   initialDocument?: DocumentRecord | null;
   onEditorRequestDenied?: (resolvedRole: AccessRole) => void;
-}
-
-interface DocumentStatePayload {
-  document: DocumentRecord;
-  role: AccessRole;
-  comments: DocumentComment[];
-  sessionId?: string;
-  sessionToken?: string;
-  sessionTrusted?: boolean;
-}
-
-interface ParticipantsPayload {
-  documentId: string;
-  participants: Participant[];
-}
-
-interface CursorPayload {
-  documentId: string;
-  participant: Participant;
-}
-
-interface SavedPayload {
-  documentId: string;
-  updatedAt: string;
-  version: number;
-}
-
-interface CommentPayload {
-  documentId: string;
-  comment: DocumentComment;
-}
-
-interface CommentDeletePayload {
-  documentId: string;
-  commentId: string;
-}
-
-interface ConflictPayload {
-  documentId: string;
-  serverVersion: number;
-  resolvedWith: "last-write-wins";
-}
-
-interface PermissionDeniedPayload {
-  scope: "document" | "board";
-  requiredRole: AccessRole;
-  currentRole: AccessRole;
 }
 
 const SNAPSHOT_PERSIST_DEBOUNCE_MS = 600;
@@ -142,6 +114,11 @@ const replaceYText = (ytext: Y.Text, nextValue: string): void => {
     ytext.insert(prefixLength, insertChunk);
   }
 };
+
+const normalizeParticipant = (participant: SharedParticipant): Participant => ({
+  ...participant,
+  cursorIndex: participant.cursorIndex ?? 0
+});
 
 export const useCollaboration = ({
   documentId,
@@ -229,7 +206,7 @@ export const useCollaboration = ({
       const ydoc = ydocRef.current;
       const clientYjsState = ydoc ? encodeBinary(Y.encodeStateAsUpdate(ydoc)) : undefined;
 
-      socket.emit("document:join", {
+      const payload: DocumentJoinPayload = {
         documentId,
         sessionId: sessionIdRef.current,
         sessionToken: sessionTokenRef.current || undefined,
@@ -237,7 +214,8 @@ export const useCollaboration = ({
         role: requestedRoleRef.current,
         editorAccessKey: editorAccessKeyRef.current ?? getStoredEditorAccessKey() ?? undefined,
         clientYjsState
-      });
+      };
+      socket.emit(socketEventName.documentJoin, payload);
     },
     [documentId]
   );
@@ -324,10 +302,11 @@ export const useCollaboration = ({
         return;
       }
 
-      socket.emit("document:yjs:update", {
+      const payload: DocumentYjsUpdatePayload = {
         documentId,
         encodedUpdate: encodeBinary(update)
-      });
+      };
+      socket.emit(socketEventName.documentYjsUpdate, payload);
     };
 
     ydoc.on("update", handleYDocUpdate);
@@ -377,7 +356,7 @@ export const useCollaboration = ({
     });
 
     socket.on(
-      "document:state",
+      socketEventName.documentState,
       ({ document, role: nextRole, comments, sessionId, sessionToken }: DocumentStatePayload) => {
         if (typeof sessionId === "string" && typeof sessionToken === "string") {
           sessionIdRef.current = sessionId;
@@ -405,7 +384,7 @@ export const useCollaboration = ({
       }
     );
 
-    socket.on("document:yjs:update", (payload: RealtimeYjsUpdate) => {
+    socket.on(socketEventName.documentYjsUpdate, (payload: RealtimeYjsUpdate) => {
       const ydoc = ydocRef.current;
       if (!ydoc || payload.documentId !== documentId) {
         return;
@@ -426,7 +405,7 @@ export const useCollaboration = ({
       dirtyRef.current = false;
     });
 
-    socket.on("document:update", (payload: RealtimeDocumentUpdate) => {
+    socket.on(socketEventName.documentUpdate, (payload: RealtimeDocumentUpdate) => {
       if (payload.documentId !== documentId) {
         return;
       }
@@ -443,15 +422,23 @@ export const useCollaboration = ({
       dirtyRef.current = false;
     });
 
-    socket.on("participants:update", ({ participants }: ParticipantsPayload) => {
-      setParticipants(participants);
+    socket.on(socketEventName.participantsUpdate, ({ documentId: incomingDocumentId, participants }: DocumentParticipantsPayload) => {
+      if (incomingDocumentId !== documentId) {
+        return;
+      }
+
+      setParticipants(participants.map(normalizeParticipant));
     });
 
-    socket.on("cursor:update", ({ participant }: CursorPayload) => {
-      upsertParticipant(participant);
+    socket.on(socketEventName.cursorUpdate, ({ documentId: incomingDocumentId, participant }: DocumentCursorUpdatePayload) => {
+      if (incomingDocumentId !== documentId) {
+        return;
+      }
+
+      upsertParticipant(normalizeParticipant(participant));
     });
 
-    socket.on("document:comment:add", ({ comment }: CommentPayload) => {
+    socket.on(socketEventName.documentCommentAdd, ({ comment }: DocumentCommentEventPayload) => {
       addCommentToStore(comment);
       const mentionHit = comment.mentions.some(
         (mention) => mention === displayNameRef.current || mention === sessionIdRef.current
@@ -467,24 +454,28 @@ export const useCollaboration = ({
       }
     });
 
-    socket.on("document:comment:update", ({ comment }: CommentPayload) => {
+    socket.on(socketEventName.documentCommentUpdate, ({ comment }: DocumentCommentEventPayload) => {
       updateCommentInStore(comment);
       if (comment.authorSessionId !== sessionIdRef.current) {
         pushEvent(`${comment.authorName} 님이 댓글을 수정했습니다.`);
       }
     });
 
-    socket.on("document:comment:delete", ({ commentId }: CommentDeletePayload) => {
+    socket.on(socketEventName.documentCommentDelete, ({ commentId }: DocumentCommentDeleteEventPayload) => {
       removeCommentFromStore(commentId);
       pushEvent("댓글이 삭제되었습니다.");
     });
 
-    socket.on("document:saved", ({ updatedAt, version: savedVersion }: SavedPayload) => {
+    socket.on(socketEventName.documentSaved, ({ documentId: incomingDocumentId, updatedAt, version: savedVersion }: DocumentSavedPayload) => {
+      if (incomingDocumentId !== documentId) {
+        return;
+      }
+
       markSavedCheckpoint(updatedAt, savedVersion);
       dirtyRef.current = false;
     });
 
-    socket.on("permission:denied", ({ scope, currentRole }: PermissionDeniedPayload) => {
+    socket.on(socketEventName.permissionDenied, ({ scope, currentRole }: PermissionDeniedPayload) => {
       if (scope !== "document") {
         return;
       }
@@ -502,14 +493,18 @@ export const useCollaboration = ({
       }
     });
 
-    socket.on("document:conflict", ({ serverVersion }: ConflictPayload) => {
+    socket.on(socketEventName.documentConflict, ({ documentId: incomingDocumentId, serverVersion }: DocumentConflictPayload) => {
+      if (incomingDocumentId !== documentId) {
+        return;
+      }
+
       setConflictMessage(
         `동시 수정 충돌이 감지되어 서버 기준(last-write-wins)으로 정리되었습니다. (서버 버전 ${serverVersion})`
       );
       pushEvent("충돌이 감지되어 서버 기준으로 병합되었습니다.");
     });
 
-    socket.on("error", ({ message }: { message?: string }) => {
+    socket.on(socketEventName.socketError, ({ message }: SocketErrorPayload) => {
       if (message) {
         pushEvent(message);
       }
@@ -604,10 +599,11 @@ export const useCollaboration = ({
 
       cursorSentAtRef.current = now;
 
-      socket.emit("cursor:move", {
+      const payload: DocumentCursorMovePayload = {
         documentId,
         cursorIndex
-      });
+      };
+      socket.emit(socketEventName.documentCursorMove, payload);
     },
     [documentId]
   );
@@ -622,9 +618,10 @@ export const useCollaboration = ({
       return;
     }
 
-    socket.emit("document:save", {
+    const payload: DocumentSavePayload = {
       documentId
-    });
+    };
+    socket.emit(socketEventName.documentSave, payload);
   }, [documentId]);
 
   const addComment = useCallback(
@@ -635,11 +632,12 @@ export const useCollaboration = ({
         return;
       }
 
-      socket.emit("document:comment:add", {
+      const payload: DocumentCommentAddPayload = {
         documentId,
         body: commentBody,
         mentions
-      });
+      };
+      socket.emit(socketEventName.documentCommentAdd, payload);
     },
     [documentId, pushEvent]
   );
@@ -652,12 +650,13 @@ export const useCollaboration = ({
         return;
       }
 
-      socket.emit("document:comment:update", {
+      const payload: DocumentCommentUpdatePayload = {
         documentId,
         commentId,
         body: commentBody,
         mentions
-      });
+      };
+      socket.emit(socketEventName.documentCommentUpdate, payload);
     },
     [documentId, pushEvent]
   );
@@ -670,10 +669,11 @@ export const useCollaboration = ({
         return;
       }
 
-      socket.emit("document:comment:delete", {
+      const payload: DocumentCommentDeletePayload = {
         documentId,
         commentId
-      });
+      };
+      socket.emit(socketEventName.documentCommentDelete, payload);
     },
     [documentId, pushEvent]
   );

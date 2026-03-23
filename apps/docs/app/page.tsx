@@ -15,7 +15,7 @@ import {
   setStoredRole
 } from "@/lib/session";
 import { formatExactTime, formatRelativeTime } from "@/lib/time";
-import { collabFieldCopy } from "@repo/shared-client";
+import { coerceAccessRole, collabFieldCopy } from "@repo/shared-client";
 import {
   Badge,
   Button,
@@ -216,7 +216,7 @@ export default function HomePage() {
             <Select
               value={role}
               onValueChange={(value) => {
-                const nextRole = value === "viewer" ? "viewer" : "editor";
+                const nextRole = coerceAccessRole(value, docsClientEnv.defaultRole);
                 setRole(nextRole);
                 setStoredRole(nextRole);
               }}
