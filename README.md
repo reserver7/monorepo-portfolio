@@ -132,6 +132,8 @@ pnpm dev
 pnpm dev
 pnpm lint
 pnpm lint:fix
+pnpm test
+pnpm test:e2e
 pnpm format
 pnpm format:check
 pnpm typecheck
@@ -164,7 +166,7 @@ pnpm build
 ## CI/CD 구성 (Vercel + GitHub Actions)
 
 - `CI`: `.github/workflows/ci.yml`
-  - `main` push / PR 기준으로 `lint`, `typecheck`, `build`를 실행
+  - `main` push / PR 기준으로 `lint`, `typecheck`, `test`, `build`를 실행
   - 모노레포 전체 품질 게이트 역할
   - 수동 실행(`workflow_dispatch`) 지원
 

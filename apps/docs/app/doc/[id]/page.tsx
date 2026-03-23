@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Card, Input, Textarea } from "@repo/ui";
+import { Button, Card, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@repo/ui";
 import { useCollaboration } from "@/hooks/use-collaboration";
 import { getDocument, getDocumentHistory } from "@/lib/api";
 import { docsClientEnv } from "@/lib/env";
@@ -15,10 +15,12 @@ import {
   getStoredEditorAccessKey,
   getStoredRole,
   setStoredDisplayName,
-  setStoredEditorAccessKey
+  setStoredEditorAccessKey,
+  setStoredRole
 } from "@/lib/session";
 import { formatExactTime, formatRelativeTime } from "@/lib/time";
 import { useCollabStore } from "@/stores/use-collab-store";
+import { collabFieldCopy } from "@repo/shared-client";
 
 const connectionLabel = {
   connecting: "연결 중",
@@ -56,6 +58,13 @@ export default function DocumentRoomPage() {
   const [displayName, setDisplayName] = useState<string>("게스트");
   const [requestedRole, setRequestedRole] = useState<"viewer" | "editor">("editor");
   const [editorAccessKey, setEditorAccessKey] = useState<string>("");
+
+  const handleEditorRequestDenied = useCallback((resolvedRole: "viewer" | "editor") => {
+    setRequestedRole(resolvedRole);
+    setStoredRole(resolvedRole);
+    setEditorAccessKey("");
+    setStoredEditorAccessKey("");
+  }, []);
 
   useEffect(() => {
     const stored = getStoredDisplayName();
@@ -98,7 +107,8 @@ export default function DocumentRoomPage() {
     displayName,
     role: requestedRole,
     editorAccessKey,
-    initialDocument: documentQuery.data?.document
+    initialDocument: documentQuery.data?.document,
+    onEditorRequestDenied: handleEditorRequestDenied
   });
 
   const title = useCollabStore((state) => state.title);
@@ -150,15 +160,34 @@ export default function DocumentRoomPage() {
             권한: {currentRole}
           </span>
           <Input
+            title={collabFieldCopy.displayNameLabel}
             value={displayName}
             onChange={(event) => {
               const nextValue = event.target.value;
               setDisplayName(nextValue);
               setStoredDisplayName(nextValue.trim() || createGuestName());
             }}
+            placeholder={collabFieldCopy.displayNamePlaceholder}
             className="w-36"
           />
+          <Select
+            value={requestedRole}
+            onValueChange={(value) => {
+              const nextRole = value === "viewer" ? "viewer" : "editor";
+              setRequestedRole(nextRole);
+              setStoredRole(nextRole);
+            }}
+          >
+            <SelectTrigger className="w-44" title={collabFieldCopy.requestRolePlaceholder}>
+              <SelectValue placeholder={collabFieldCopy.requestRolePlaceholder} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="editor">{collabFieldCopy.requestOptionEditor}</SelectItem>
+              <SelectItem value="viewer">{collabFieldCopy.requestOptionViewer}</SelectItem>
+            </SelectContent>
+          </Select>
           <Input
+            title={collabFieldCopy.editorAccessKeyLabel}
             type="password"
             value={editorAccessKey}
             onChange={(event) => {
@@ -166,7 +195,7 @@ export default function DocumentRoomPage() {
               setEditorAccessKey(nextValue);
               setStoredEditorAccessKey(nextValue);
             }}
-            placeholder="편집 키(선택)"
+            placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
             className="w-40"
           />
           <Button variant="outline" size="sm" onClick={forceSave} disabled={isReadOnly}>
@@ -198,7 +227,8 @@ export default function DocumentRoomPage() {
 
           {isReadOnly ? (
             <div className="mb-4 rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-700">
-              보기 전용(`viewer`) 세션입니다. 문서 편집은 비활성화되어 있으며 댓글 작성은 가능합니다.
+              보기 전용(`viewer`) 세션입니다. 상단에서 `editor 요청`으로 바꾸고 편집 키를 입력하면
+              재요청됩니다. 문서 편집은 비활성화되어 있으며 댓글 작성은 가능합니다.
             </div>
           ) : null}
 

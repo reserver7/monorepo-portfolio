@@ -29,6 +29,7 @@ interface UseCollaborationOptions {
   role: AccessRole;
   editorAccessKey?: string | null;
   initialDocument?: DocumentRecord | null;
+  onEditorRequestDenied?: (resolvedRole: AccessRole) => void;
 }
 
 interface DocumentStatePayload {
@@ -80,9 +81,8 @@ interface PermissionDeniedPayload {
 
 const SNAPSHOT_PERSIST_DEBOUNCE_MS = 600;
 
-const normalizeTitle = (rawTitle: string): string => {
-  const trimmed = rawTitle.trim();
-  return trimmed || "Untitled document";
+const toClientTitle = (rawTitle: string): string => {
+  return rawTitle.slice(0, 120);
 };
 
 const encodeBinary = (value: Uint8Array): string => {
@@ -148,7 +148,8 @@ export const useCollaboration = ({
   displayName,
   role,
   editorAccessKey,
-  initialDocument
+  initialDocument,
+  onEditorRequestDenied
 }: UseCollaborationOptions): {
   sessionId: string;
   currentRole: AccessRole;
@@ -181,6 +182,14 @@ export const useCollaboration = ({
   const socketRef = useRef<Socket | null>(null);
   const sessionIdRef = useRef<string>("");
   const sessionTokenRef = useRef<string>("");
+  const onEditorRequestDeniedRef = useRef<((resolvedRole: AccessRole) => void) | undefined>(
+    onEditorRequestDenied
+  );
+  const displayNameRef = useRef<string>(displayName);
+  const editorAccessKeyRef = useRef<string | undefined>(
+    editorAccessKey?.trim() ? editorAccessKey.trim() : undefined
+  );
+  const requestedRoleRef = useRef<AccessRole>(role);
   const roleRef = useRef<AccessRole>(role);
   const ydocRef = useRef<Y.Doc | null>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -194,9 +203,44 @@ export const useCollaboration = ({
   }
 
   useEffect(() => {
-    roleRef.current = role;
-    setRole(role);
-  }, [role, setRole]);
+    displayNameRef.current = displayName;
+  }, [displayName]);
+
+  useEffect(() => {
+    requestedRoleRef.current = role;
+  }, [role]);
+
+  useEffect(() => {
+    const normalized = editorAccessKey?.trim();
+    editorAccessKeyRef.current = normalized && normalized.length > 0 ? normalized : undefined;
+  }, [editorAccessKey]);
+
+  useEffect(() => {
+    onEditorRequestDeniedRef.current = onEditorRequestDenied;
+  }, [onEditorRequestDenied]);
+
+  const emitDocumentJoin = useCallback(
+    (targetSocket?: Socket | null) => {
+      const socket = targetSocket ?? socketRef.current;
+      if (!socket || !socket.connected || !documentId) {
+        return;
+      }
+
+      const ydoc = ydocRef.current;
+      const clientYjsState = ydoc ? encodeBinary(Y.encodeStateAsUpdate(ydoc)) : undefined;
+
+      socket.emit("document:join", {
+        documentId,
+        sessionId: sessionIdRef.current,
+        sessionToken: sessionTokenRef.current || undefined,
+        displayName: displayNameRef.current.trim() || createGuestName(),
+        role: requestedRoleRef.current,
+        editorAccessKey: editorAccessKeyRef.current ?? getStoredEditorAccessKey() ?? undefined,
+        clientYjsState
+      });
+    },
+    [documentId]
+  );
 
   useEffect(() => {
     if (!documentId) {
@@ -218,7 +262,7 @@ export const useCollaboration = ({
 
     if (ydoc.getText("content").toString().length === 0 && initialDocument) {
       ydoc.transact(() => {
-        ydoc.getMap<string>("meta").set("title", normalizeTitle(initialDocument.title));
+        ydoc.getMap<string>("meta").set("title", toClientTitle(initialDocument.title));
         const ytext = ydoc.getText("content");
         if (initialDocument.content.length > 0) {
           ytext.insert(0, initialDocument.content);
@@ -251,7 +295,8 @@ export const useCollaboration = ({
     };
 
     const syncStoreFromYDoc = () => {
-      const currentTitle = normalizeTitle(ydoc.getMap<string>("meta").get("title") ?? "Untitled document");
+      const rawTitle = ydoc.getMap<string>("meta").get("title");
+      const currentTitle = typeof rawTitle === "string" ? toClientTitle(rawTitle) : "";
       const currentContent = ydoc.getText("content").toString();
       setDocumentSnapshot(currentTitle, currentContent);
       scheduleSnapshotPersist();
@@ -300,7 +345,7 @@ export const useCollaboration = ({
   }, [documentId, initialDocument, resetForDocument, setDocumentSnapshot, setSaveState]);
 
   useEffect(() => {
-    if (!documentId || !displayName) {
+    if (!documentId) {
       return;
     }
 
@@ -316,19 +361,7 @@ export const useCollaboration = ({
       setConnection("online");
       setConflictMessage(null);
       pushEvent("실시간 연결이 활성화되었습니다.");
-
-      const ydoc = ydocRef.current;
-      const clientYjsState = ydoc ? encodeBinary(Y.encodeStateAsUpdate(ydoc)) : undefined;
-
-      socket.emit("document:join", {
-        documentId,
-        sessionId: sessionIdRef.current,
-        sessionToken: sessionTokenRef.current || undefined,
-        displayName: displayName.trim() || createGuestName(),
-        role: roleRef.current,
-        editorAccessKey: editorAccessKey ?? getStoredEditorAccessKey() ?? undefined,
-        clientYjsState
-      });
+      emitDocumentJoin(socket);
     });
 
     socket.on("disconnect", () => {
@@ -343,31 +376,34 @@ export const useCollaboration = ({
       pushEvent("서버 연결 실패. 자동 재시도 중입니다.");
     });
 
-    socket.on("document:state", ({ document, role: nextRole, comments, sessionId, sessionToken }: DocumentStatePayload) => {
-      if (typeof sessionId === "string" && typeof sessionToken === "string") {
-        sessionIdRef.current = sessionId;
-        sessionTokenRef.current = sessionToken;
-        setStoredSessionIdentity(sessionId, sessionToken);
-      }
-
-      const ydoc = ydocRef.current;
-      if (ydoc) {
-        try {
-          Y.applyUpdate(ydoc, decodeBinary(document.yjsState), "remote");
-        } catch {
-          // Keep local state if server payload is malformed.
+    socket.on(
+      "document:state",
+      ({ document, role: nextRole, comments, sessionId, sessionToken }: DocumentStatePayload) => {
+        if (typeof sessionId === "string" && typeof sessionToken === "string") {
+          sessionIdRef.current = sessionId;
+          sessionTokenRef.current = sessionToken;
+          setStoredSessionIdentity(sessionId, sessionToken);
         }
+
+        const ydoc = ydocRef.current;
+        if (ydoc) {
+          try {
+            Y.applyUpdate(ydoc, decodeBinary(document.yjsState), "remote");
+          } catch {
+            // Keep local state if server payload is malformed.
+          }
+        }
+
+        roleRef.current = nextRole;
+        hydrateFromServer(document, nextRole, comments);
+        markSavedCheckpoint(document.updatedAt, document.version);
+        setConflictMessage(null);
+
+        dirtyRef.current = false;
+
+        pushEvent(`문서 최신 상태를 수신했습니다. (권한: ${nextRole})`);
       }
-
-      roleRef.current = nextRole;
-      hydrateFromServer(document, nextRole, comments);
-      markSavedCheckpoint(document.updatedAt, document.version);
-      setConflictMessage(null);
-
-      dirtyRef.current = false;
-
-      pushEvent(`문서 최신 상태를 수신했습니다. (권한: ${nextRole})`);
-    });
+    );
 
     socket.on("document:yjs:update", (payload: RealtimeYjsUpdate) => {
       const ydoc = ydocRef.current;
@@ -398,7 +434,7 @@ export const useCollaboration = ({
       const ydoc = ydocRef.current;
       if (ydoc) {
         ydoc.transact(() => {
-          ydoc.getMap<string>("meta").set("title", normalizeTitle(payload.title));
+          ydoc.getMap<string>("meta").set("title", toClientTitle(payload.title));
           replaceYText(ydoc.getText("content"), payload.content);
         }, "remote");
       }
@@ -418,7 +454,7 @@ export const useCollaboration = ({
     socket.on("document:comment:add", ({ comment }: CommentPayload) => {
       addCommentToStore(comment);
       const mentionHit = comment.mentions.some(
-        (mention) => mention === displayName || mention === sessionIdRef.current
+        (mention) => mention === displayNameRef.current || mention === sessionIdRef.current
       );
 
       if (mentionHit && comment.authorSessionId !== sessionIdRef.current) {
@@ -453,10 +489,17 @@ export const useCollaboration = ({
         return;
       }
 
+      const wasRequestingEditor = requestedRoleRef.current === "editor";
       roleRef.current = currentRole;
       setRole(currentRole);
       setSaveState("idle");
       pushEvent("읽기 전용 권한으로 전환되어 편집이 제한됩니다.");
+
+      if (wasRequestingEditor && currentRole !== "editor") {
+        requestedRoleRef.current = currentRole;
+        editorAccessKeyRef.current = undefined;
+        onEditorRequestDeniedRef.current?.(currentRole);
+      }
     });
 
     socket.on("document:conflict", ({ serverVersion }: ConflictPayload) => {
@@ -485,8 +528,8 @@ export const useCollaboration = ({
     };
   }, [
     addCommentToStore,
-    displayName,
     documentId,
+    emitDocumentJoin,
     hydrateFromServer,
     markSavedCheckpoint,
     pushEvent,
@@ -497,9 +540,22 @@ export const useCollaboration = ({
     setRole,
     setSaveState,
     updateCommentInStore,
-    upsertParticipant,
-    editorAccessKey
+    upsertParticipant
   ]);
+
+  useEffect(() => {
+    if (!documentId) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      emitDocumentJoin();
+    }, 180);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [documentId, displayName, role, editorAccessKey, emitDocumentJoin]);
 
   const updateTitle = useCallback(
     (nextTitle: string) => {
@@ -513,7 +569,7 @@ export const useCollaboration = ({
       }
 
       ydoc.transact(() => {
-        ydoc.getMap<string>("meta").set("title", normalizeTitle(nextTitle));
+        ydoc.getMap<string>("meta").set("title", toClientTitle(nextTitle));
       }, "local");
     },
     [ydocRef]

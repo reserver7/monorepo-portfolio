@@ -12,8 +12,8 @@ export const ActivityLogPanel = ({ logs }: ActivityLogPanelProps) => {
         {logs.length === 0 ? (
           <p className="text-xs text-slate-500">이벤트가 발생하면 여기에 표시됩니다.</p>
         ) : (
-          logs.map((log) => (
-            <p key={log} className="text-[11px] text-slate-600">
+          logs.map((log, index) => (
+            <p key={`${index}-${log}`} className="text-[11px] text-slate-600">
               {log}
             </p>
           ))

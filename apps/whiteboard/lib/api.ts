@@ -14,10 +14,23 @@ export const listBoards = async (): Promise<WhiteboardSummary[]> => {
 export const createBoard = async (input: {
   title: string;
   actor: string;
+  editorAccessKey?: string;
 }): Promise<{ board: WhiteboardRecord }> => {
   return requestJson<{ board: WhiteboardRecord }>(API_BASE_URL, "/api/boards", {
     method: "POST",
     body: JSON.stringify(input)
+  });
+};
+
+export const deleteBoardById = async (input: {
+  boardId: string;
+  editorAccessKey?: string;
+}): Promise<{ ok: true; boardId: string }> => {
+  return requestJson<{ ok: true; boardId: string }>(API_BASE_URL, `/api/boards/${input.boardId}`, {
+    method: "DELETE",
+    body: JSON.stringify({
+      editorAccessKey: input.editorAccessKey
+    })
   });
 };
 

@@ -1,8 +1,11 @@
 node_modules
 .next
 dist
+coverage
 .turbo
 .pnpm-store
+playwright-report
+test-results
 *.tsbuildinfo
 .env
 .env.*

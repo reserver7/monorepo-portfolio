@@ -23,6 +23,7 @@ export interface DocumentComment {
 export interface DocumentSummary {
   id: string;
   title: string;
+  isProtected: boolean;
   snippet: string;
   commentCount: number;
   createdAt: string;
@@ -76,6 +77,7 @@ export interface WhiteboardRecord {
 export interface WhiteboardSummary {
   id: string;
   title: string;
+  isProtected: boolean;
   shapeCount: number;
   createdAt: string;
   updatedAt: string;
