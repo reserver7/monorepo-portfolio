@@ -370,7 +370,9 @@ export default function WhiteboardRoomPage() {
           </Link>
           <Badge variant="outline">화이트보드</Badge>
           <Badge variant="outline">연결: {connection}</Badge>
-          <Badge variant="outline">권한: {currentRole}</Badge>
+          <Badge variant="outline" data-testid="board-current-role">
+            권한: {currentRole}
+          </Badge>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

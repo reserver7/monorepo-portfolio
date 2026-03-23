@@ -275,7 +275,7 @@ export default function HomePage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {documents.map((document) => (
-              <Card key={document.id} className="p-5">
+              <Card key={document.id} className="p-5" data-testid={`document-card-${document.id}`}>
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <h3 className="font-heading text-lg font-semibold text-slate-900">
                     {document.title.trim() || EMPTY_TITLE}
@@ -303,6 +303,7 @@ export default function HomePage() {
                 <div className="mt-4 flex justify-end gap-2">
                   <Button
                     variant="destructive"
+                    data-testid={`document-delete-${document.id}`}
                     onClick={() => {
                       setDeleteTargetId(document.id);
                       setDeleteAccessKeyDraft("");
