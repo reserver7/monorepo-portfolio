@@ -1,4 +1,3 @@
-import { Buffer } from "node:buffer";
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -8,11 +7,26 @@ import type {
   DocumentRecord,
   DocumentSummary,
   HistoryEntry,
-  ShapeType,
   WhiteboardRecord,
   WhiteboardShape,
   WhiteboardSummary
 } from "@repo/shared-types";
+import {
+  createStoredEditorAccessKey,
+  normalizeStoredEditorAccessKey,
+  verifyEditorAccessKey
+} from "./security/access-key";
+import {
+  clone,
+  EMPTY_TITLE,
+  nowIso,
+  sanitizeCommentBody,
+  sanitizeDocumentTitle,
+  sanitizeMention,
+  summarize
+} from "./store-document-utils";
+import { sanitizeShape } from "./store-shape-utils";
+import { createYDoc, decodeBinary, encodeBinary, readYDocState, replaceYText } from "./store-yjs-utils";
 
 interface PersistedState {
   documents: DocumentRecord[];
@@ -99,168 +113,6 @@ interface DeleteBoardInput {
 const MAX_HISTORY = 160;
 const MAX_BOARD_STACK = 120;
 const MAX_COMMENT_COUNT = 240;
-const EMPTY_TITLE = "(제목 없음)";
-
-const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
-
-const summarize = (text: string): string => {
-  const compact = text.replace(/\s+/g, " ").trim();
-  return compact.length <= 120 ? compact : `${compact.slice(0, 117)}...`;
-};
-
-const nowIso = (): string => new Date().toISOString();
-
-const sanitizeDocumentTitle = (rawTitle: string): string => {
-  const normalized = rawTitle.trim();
-  return normalized || EMPTY_TITLE;
-};
-
-const sanitizeEditorAccessKey = (rawValue: string | undefined): string | undefined => {
-  const normalized = rawValue?.trim();
-  if (!normalized) {
-    return undefined;
-  }
-
-  return normalized.slice(0, 120);
-};
-
-const sanitizeCommentBody = (rawBody: string): string => {
-  const normalized = rawBody.replace(/\s+/g, " ").trim();
-  return normalized.slice(0, 500);
-};
-
-const sanitizeMention = (rawMention: string): string => {
-  return rawMention.trim().replace(/^@+/, "").slice(0, 24);
-};
-
-const encodeBinary = (value: Uint8Array): string => Buffer.from(value).toString("base64");
-
-const decodeBinary = (encoded: string): Uint8Array => {
-  return new Uint8Array(Buffer.from(encoded, "base64"));
-};
-
-const replaceYText = (ytext: Y.Text, nextValue: string): void => {
-  const currentValue = ytext.toString();
-  if (currentValue === nextValue) {
-    return;
-  }
-
-  ytext.delete(0, currentValue.length);
-  if (nextValue.length > 0) {
-    ytext.insert(0, nextValue);
-  }
-};
-
-const normalizeShapeType = (rawType: WhiteboardShape["type"]): ShapeType => {
-  if (rawType === "text" || rawType === "ellipse" || rawType === "diamond" || rawType === "connector") {
-    return rawType;
-  }
-
-  return "rect";
-};
-
-const sanitizeShapeLink = (rawValue: string | undefined): string | undefined => {
-  const value = rawValue?.trim();
-  if (!value) {
-    return undefined;
-  }
-
-  return value.slice(0, 100);
-};
-
-const sanitizeCoordinate = (rawValue: number | undefined): number | undefined => {
-  if (typeof rawValue !== "number" || Number.isNaN(rawValue) || !Number.isFinite(rawValue)) {
-    return undefined;
-  }
-
-  return Math.round(rawValue);
-};
-
-const sanitizeShape = (shape: WhiteboardShape): WhiteboardShape => {
-  const normalizedType = normalizeShapeType(shape.type);
-  const now = shape.updatedAt || nowIso();
-
-  if (normalizedType === "connector") {
-    const startX = sanitizeCoordinate(shape.startX) ?? Math.round(shape.x);
-    const startY = sanitizeCoordinate(shape.startY) ?? Math.round(shape.y);
-    const endX = sanitizeCoordinate(shape.endX) ?? Math.round(shape.x + shape.w);
-    const endY = sanitizeCoordinate(shape.endY) ?? Math.round(shape.y + shape.h);
-
-    return {
-      ...shape,
-      type: normalizedType,
-      x: Math.min(startX, endX),
-      y: Math.min(startY, endY),
-      w: Math.abs(endX - startX),
-      h: Math.abs(endY - startY),
-      fromShapeId: sanitizeShapeLink(shape.fromShapeId),
-      toShapeId: sanitizeShapeLink(shape.toShapeId),
-      startX,
-      startY,
-      endX,
-      endY,
-      fill: "transparent",
-      stroke: shape.stroke || "#475569",
-      updatedAt: now
-    };
-  }
-
-  const fallbackStyles: Record<Exclude<ShapeType, "connector">, { fill: string; stroke: string }> = {
-    rect: { fill: "#bfdbfe", stroke: "#2563eb" },
-    ellipse: { fill: "#dcfce7", stroke: "#16a34a" },
-    diamond: { fill: "#fef3c7", stroke: "#d97706" },
-    text: { fill: "#fef3c7", stroke: "#f59e0b" }
-  };
-
-  const fallback = fallbackStyles[normalizedType];
-
-  return {
-    ...shape,
-    type: normalizedType,
-    x: Math.round(shape.x),
-    y: Math.round(shape.y),
-    w: Math.max(28, Math.round(shape.w)),
-    h: Math.max(22, Math.round(shape.h)),
-    text: shape.text,
-    fromShapeId: undefined,
-    toShapeId: undefined,
-    startX: undefined,
-    startY: undefined,
-    endX: undefined,
-    endY: undefined,
-    fill: shape.fill || fallback.fill,
-    stroke: shape.stroke || fallback.stroke,
-    updatedAt: now
-  };
-};
-
-const createYDoc = (title: string, content: string): Y.Doc => {
-  const ydoc = new Y.Doc();
-  ydoc.transact(() => {
-    ydoc.getMap<string>("meta").set("title", sanitizeDocumentTitle(title));
-
-    const ytext = ydoc.getText("content");
-    if (content.trim().length > 0) {
-      ytext.insert(0, content);
-    }
-  }, "seed");
-
-  return ydoc;
-};
-
-const readYDocState = (ydoc: Y.Doc): { title: string; content: string; yjsState: string } => {
-  const titleMap = ydoc.getMap<string>("meta");
-  const rawTitle = titleMap.get("title");
-  const title = typeof rawTitle === "string" ? rawTitle.slice(0, 120) : "";
-  const content = ydoc.getText("content").toString();
-  const yjsState = encodeBinary(Y.encodeStateAsUpdate(ydoc));
-
-  return {
-    title,
-    content,
-    yjsState
-  };
-};
 
 export class RealtimeStore {
   private readonly documents = new Map<string, DocumentRecord>();
@@ -303,7 +155,7 @@ export class RealtimeStore {
 
         this.documents.set(normalized.id, normalized);
 
-        const legacyAccessKey = sanitizeEditorAccessKey(
+        const legacyAccessKey = normalizeStoredEditorAccessKey(
           (persistedDocument as DocumentRecord & { editorAccessKey?: string }).editorAccessKey
         );
         if (legacyAccessKey) {
@@ -319,7 +171,7 @@ export class RealtimeStore {
         };
         this.boards.set(normalizedBoard.id, normalizedBoard);
 
-        const legacyAccessKey = sanitizeEditorAccessKey(
+        const legacyAccessKey = normalizeStoredEditorAccessKey(
           (board as WhiteboardRecord & { editorAccessKey?: string }).editorAccessKey
         );
         if (legacyAccessKey) {
@@ -329,7 +181,7 @@ export class RealtimeStore {
 
       if (parsed.documentAccessKeys) {
         for (const [documentId, accessKey] of Object.entries(parsed.documentAccessKeys)) {
-          const normalized = sanitizeEditorAccessKey(accessKey);
+          const normalized = normalizeStoredEditorAccessKey(accessKey);
           if (normalized) {
             this.documentAccessKeys.set(documentId, normalized);
           }
@@ -338,7 +190,7 @@ export class RealtimeStore {
 
       if (parsed.boardAccessKeys) {
         for (const [boardId, accessKey] of Object.entries(parsed.boardAccessKeys)) {
-          const normalized = sanitizeEditorAccessKey(accessKey);
+          const normalized = normalizeStoredEditorAccessKey(accessKey);
           if (normalized) {
             this.boardAccessKeys.set(boardId, normalized);
           }
@@ -490,7 +342,7 @@ export class RealtimeStore {
 
     this.documents.set(created.id, created);
     this.documentYDocs.set(created.id, ydoc);
-    const normalizedEditorAccessKey = sanitizeEditorAccessKey(editorAccessKey);
+    const normalizedEditorAccessKey = createStoredEditorAccessKey(editorAccessKey);
     if (normalizedEditorAccessKey) {
       this.documentAccessKeys.set(created.id, normalizedEditorAccessKey);
     }
@@ -792,8 +644,7 @@ export class RealtimeStore {
 
     const requiredAccessKey = this.documentAccessKeys.get(input.documentId);
     if (requiredAccessKey) {
-      const providedAccessKey = sanitizeEditorAccessKey(input.editorAccessKey);
-      if (providedAccessKey !== requiredAccessKey) {
+      if (!verifyEditorAccessKey(requiredAccessKey, input.editorAccessKey)) {
         return "forbidden";
       }
     }
@@ -844,7 +695,7 @@ export class RealtimeStore {
 
     this.boards.set(board.id, board);
     this.ensureBoardStack(board.id);
-    const normalizedEditorAccessKey = sanitizeEditorAccessKey(editorAccessKey);
+    const normalizedEditorAccessKey = createStoredEditorAccessKey(editorAccessKey);
     if (normalizedEditorAccessKey) {
       this.boardAccessKeys.set(board.id, normalizedEditorAccessKey);
     }
@@ -1061,8 +912,7 @@ export class RealtimeStore {
 
     const requiredAccessKey = this.boardAccessKeys.get(input.boardId);
     if (requiredAccessKey) {
-      const providedAccessKey = sanitizeEditorAccessKey(input.editorAccessKey);
-      if (providedAccessKey !== requiredAccessKey) {
+      if (!verifyEditorAccessKey(requiredAccessKey, input.editorAccessKey)) {
         return "forbidden";
       }
     }

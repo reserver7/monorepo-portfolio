@@ -30,10 +30,18 @@ describe("서버 환경 변수 파싱", () => {
 
     expect(env.isProduction).toBe(true);
     expect(env.allowAllCors).toBe(false);
-    expect(env.corsOrigins).toEqual([
-      "https://docs.example.com",
-      "https://whiteboard.example.com"
-    ]);
+    expect(env.corsOrigins).toEqual(["https://docs.example.com", "https://whiteboard.example.com"]);
+  });
+
+  it("CORS_ORIGINS는 중복/슬래시를 정규화해 단일 origin 목록으로 만든다", () => {
+    const env = createServerEnv({
+      NODE_ENV: "production",
+      CORS_ORIGINS:
+        "https://docs.example.com/, https://docs.example.com, http://localhost:3000/,http://localhost:3000",
+      COLLAB_SESSION_SECRET: "test-secret"
+    });
+
+    expect(env.corsOrigins).toEqual(["https://docs.example.com", "http://localhost:3000"]);
   });
 
   it("운영 환경에서 ALLOW_ALL_CORS를 명시하면 허용한다", () => {
@@ -45,6 +53,44 @@ describe("서버 환경 변수 파싱", () => {
 
     expect(env.isProduction).toBe(true);
     expect(env.allowAllCors).toBe(true);
+  });
+
+  it("운영 환경에서 와일드카드 CORS_ORIGINS는 즉시 실패한다", () => {
+    expect(() =>
+      createServerEnv({
+        NODE_ENV: "production",
+        CORS_ORIGINS: "*",
+        COLLAB_SESSION_SECRET: "test-secret"
+      })
+    ).toThrow('CORS_ORIGINS cannot contain "*" in production');
+  });
+
+  it("CORS_ORIGINS에 경로/쿼리/해시가 포함되면 즉시 실패한다", () => {
+    expect(() =>
+      createServerEnv({
+        NODE_ENV: "production",
+        CORS_ORIGINS: "https://docs.example.com/app",
+        COLLAB_SESSION_SECRET: "test-secret"
+      })
+    ).toThrow("CORS origin must not include path/query/hash");
+
+    expect(() =>
+      createServerEnv({
+        NODE_ENV: "production",
+        CORS_ORIGINS: "https://docs.example.com?preview=1",
+        COLLAB_SESSION_SECRET: "test-secret"
+      })
+    ).toThrow("CORS origin must not include path/query/hash");
+  });
+
+  it("CORS_ORIGINS는 http/https 스킴만 허용한다", () => {
+    expect(() =>
+      createServerEnv({
+        NODE_ENV: "production",
+        CORS_ORIGINS: "ws://localhost:3000",
+        COLLAB_SESSION_SECRET: "test-secret"
+      })
+    ).toThrow("CORS origin must use http/https");
   });
 
   it("운영 환경에서는 COLLAB_SESSION_SECRET이 필수다", () => {

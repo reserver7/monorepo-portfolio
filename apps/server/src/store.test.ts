@@ -334,6 +334,30 @@ describe("실시간 스토어", () => {
     expect(store.getBoard(unprotectedBoard.id)).toBeNull();
   });
 
+  it("상태 파일에는 편집 키를 평문으로 저장하지 않는다", async () => {
+    const protectedDocument = store.createDocument("해시 검증 문서", "tester", "doc-secret");
+    const protectedBoard = store.createBoard("해시 검증 보드", "tester", "board-secret");
+
+    await store.persistNow();
+
+    const raw = await readFile(stateFilePath, "utf8");
+    const parsed = JSON.parse(raw) as {
+      documentAccessKeys?: Record<string, string>;
+      boardAccessKeys?: Record<string, string>;
+    };
+
+    const storedDocumentKey = parsed.documentAccessKeys?.[protectedDocument.id];
+    const storedBoardKey = parsed.boardAccessKeys?.[protectedBoard.id];
+
+    expect(storedDocumentKey).toBeDefined();
+    expect(storedDocumentKey).not.toBe("doc-secret");
+    expect(storedDocumentKey?.startsWith("ek1$")).toBe(true);
+
+    expect(storedBoardKey).toBeDefined();
+    expect(storedBoardKey).not.toBe("board-secret");
+    expect(storedBoardKey?.startsWith("ek1$")).toBe(true);
+  });
+
   it("보드 undo 스택은 최대 120단계까지만 되돌릴 수 있다", () => {
     const created = store.createBoard("undo-stack-test", "tester");
     const rect: WhiteboardShape = {

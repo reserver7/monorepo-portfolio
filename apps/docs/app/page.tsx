@@ -15,7 +15,7 @@ import {
   setStoredRole
 } from "@/lib/session";
 import { formatExactTime, formatRelativeTime } from "@/lib/time";
-import { collabFieldCopy } from "@repo/shared-client";
+import { coerceAccessRole, collabFieldCopy } from "@repo/shared-client";
 import {
   Badge,
   Button,
@@ -52,7 +52,7 @@ export default function HomePage() {
 
   const clearMainEditorAccessKey = () => {
     shouldPreserveAccessKeyForRoomRef.current = false;
-    setEditorAccessKey(docsClientEnv.editorAccessKey ?? "");
+    setEditorAccessKey("");
     setStoredEditorAccessKey("");
   };
 
@@ -72,7 +72,7 @@ export default function HomePage() {
     setStoredDisplayName(nextName);
     setRole(storedRole ?? docsClientEnv.defaultRole);
     shouldPreserveAccessKeyForRoomRef.current = false;
-    setEditorAccessKey(docsClientEnv.editorAccessKey ?? "");
+    setEditorAccessKey("");
     setStoredEditorAccessKey("");
   }, []);
 
@@ -107,7 +107,7 @@ export default function HomePage() {
     onSuccess: async ({ document }) => {
       setDraftTitle("협업 문서");
       setRole(docsClientEnv.defaultRole);
-      setEditorAccessKey(docsClientEnv.editorAccessKey ?? "");
+      setEditorAccessKey("");
       await queryClient.invalidateQueries({ queryKey: ["documents"] });
       router.push(`/doc/${document.id}`);
     },
@@ -216,7 +216,7 @@ export default function HomePage() {
             <Select
               value={role}
               onValueChange={(value) => {
-                const nextRole = value === "viewer" ? "viewer" : "editor";
+                const nextRole = coerceAccessRole(value, docsClientEnv.defaultRole);
                 setRole(nextRole);
                 setStoredRole(nextRole);
               }}
@@ -316,7 +316,7 @@ export default function HomePage() {
                     onClick={() => {
                       keepAccessKeyForRoomEntry();
                       setStoredDisplayName(displayName.trim() || createGuestName());
-                      setEditorAccessKey(docsClientEnv.editorAccessKey ?? "");
+                      setEditorAccessKey("");
                       router.push(`/doc/${document.id}`);
                     }}
                   >

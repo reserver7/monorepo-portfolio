@@ -2,6 +2,25 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
+import type {
+  BoardAddShapePayload,
+  BoardConflictPayload,
+  BoardCursorPayload,
+  BoardCursorUpdatePayload,
+  BoardJoinPayload,
+  BoardParticipantsPayload,
+  BoardPatchShapePayload,
+  BoardRedoPayload,
+  BoardRemoveShapePayload,
+  BoardStatePayload,
+  BoardTitlePayload,
+  BoardUndoPayload,
+  BoardUpdatePayload,
+  Participant as SharedParticipant,
+  PermissionDeniedPayload,
+  SocketErrorPayload
+} from "@repo/shared-types";
+import { socketEventName } from "@repo/shared-types";
 import { API_BASE_URL } from "@/lib/api";
 import {
   createGuestName,
@@ -22,43 +41,11 @@ interface UseWhiteboardRealtimeOptions {
   onEditorRequestDenied?: (resolvedRole: AccessRole) => void;
 }
 
-interface BoardStatePayload {
-  board: WhiteboardRecord;
-  role: AccessRole;
-  sessionId?: string;
-  sessionToken?: string;
-  sessionTrusted?: boolean;
-}
-
-interface BoardUpdatePayload {
-  board: WhiteboardRecord;
-  editor?: {
-    sessionId: string;
-    displayName: string;
-    color: string;
-  } | null;
-}
-
-interface ParticipantsPayload {
-  boardId: string;
-  participants: Participant[];
-}
-
-interface CursorPayload {
-  boardId: string;
-  participant: Participant;
-}
-
-interface ConflictPayload {
-  boardId: string;
-  serverVersion: number;
-}
-
-interface PermissionDeniedPayload {
-  scope: "document" | "board";
-  requiredRole: AccessRole;
-  currentRole: AccessRole;
-}
+const normalizeParticipant = (participant: SharedParticipant): Participant => ({
+  ...participant,
+  cursorX: participant.cursorX ?? 0,
+  cursorY: participant.cursorY ?? 0
+});
 
 export const useWhiteboardRealtime = ({
   boardId,
@@ -142,14 +129,15 @@ export const useWhiteboardRealtime = ({
         return;
       }
 
-      socket.emit("board:join", {
+      const payload: BoardJoinPayload = {
         boardId,
         sessionId: sessionIdRef.current,
         sessionToken: sessionTokenRef.current || undefined,
         displayName: displayNameRef.current.trim() || createGuestName(),
         role: requestedRoleRef.current,
         editorAccessKey: editorAccessKeyRef.current ?? getStoredEditorAccessKey() ?? undefined
-      });
+      };
+      socket.emit(socketEventName.boardJoin, payload);
     },
     [boardId]
   );
@@ -207,7 +195,7 @@ export const useWhiteboardRealtime = ({
       pushEvent("서버 연결 실패. 자동 재시도 중입니다.");
     });
 
-    socket.on("board:state", ({ board, role: nextRole, sessionId, sessionToken }: BoardStatePayload) => {
+    socket.on(socketEventName.boardState, ({ board, role: nextRole, sessionId, sessionToken }: BoardStatePayload) => {
       if (typeof sessionId === "string" && typeof sessionToken === "string") {
         sessionIdRef.current = sessionId;
         sessionTokenRef.current = sessionToken;
@@ -222,7 +210,7 @@ export const useWhiteboardRealtime = ({
       pushEvent(`보드 최신 상태를 수신했습니다. (권한: ${nextRole})`);
     });
 
-    socket.on("board:update", ({ board, editor }: BoardUpdatePayload) => {
+    socket.on(socketEventName.boardUpdate, ({ board, editor }: BoardUpdatePayload) => {
       hydrateBoard(board);
       versionRef.current = board.version;
       titleRef.current = board.title;
@@ -231,30 +219,34 @@ export const useWhiteboardRealtime = ({
       }
     });
 
-    socket.on("participants:update", ({ boardId: incomingBoardId, participants }: ParticipantsPayload) => {
+    socket.on(socketEventName.participantsUpdate, ({ boardId: incomingBoardId, participants }: BoardParticipantsPayload) => {
       if (incomingBoardId !== boardId) {
         return;
       }
 
-      setParticipants(participants);
+      setParticipants(participants.map(normalizeParticipant));
     });
 
-    socket.on("board:cursor:update", ({ boardId: incomingBoardId, participant }: CursorPayload) => {
+    socket.on(socketEventName.boardCursorUpdate, ({ boardId: incomingBoardId, participant }: BoardCursorUpdatePayload) => {
       if (incomingBoardId !== boardId) {
         return;
       }
 
-      upsertParticipant(participant);
+      upsertParticipant(normalizeParticipant(participant));
     });
 
-    socket.on("board:conflict", ({ serverVersion }: ConflictPayload) => {
+    socket.on(socketEventName.boardConflict, ({ boardId: incomingBoardId, serverVersion }: BoardConflictPayload) => {
+      if (incomingBoardId !== boardId) {
+        return;
+      }
+
       setConflictMessage(
         `동시 수정 충돌이 발생해 서버 기준(last-write-wins)으로 정리되었습니다. (서버 버전 ${serverVersion})`
       );
       pushEvent("충돌이 감지되어 서버 기준으로 반영되었습니다.");
     });
 
-    socket.on("permission:denied", ({ scope, currentRole: deniedRole }: PermissionDeniedPayload) => {
+    socket.on(socketEventName.permissionDenied, ({ scope, currentRole: deniedRole }: PermissionDeniedPayload) => {
       if (scope !== "board") {
         return;
       }
@@ -271,7 +263,7 @@ export const useWhiteboardRealtime = ({
       }
     });
 
-    socket.on("error", ({ message }: { message?: string }) => {
+    socket.on(socketEventName.socketError, ({ message }: SocketErrorPayload) => {
       if (message) {
         pushEvent(message);
       }
@@ -334,11 +326,12 @@ export const useWhiteboardRealtime = ({
         return;
       }
 
-      socket.emit("board:title:update", {
+      const payload: BoardTitlePayload = {
         boardId,
         title: normalized,
         baseVersion: versionRef.current
-      });
+      };
+      socket.emit(socketEventName.boardTitleUpdate, payload);
     },
     [boardId, setTitleLocal]
   );
@@ -356,11 +349,12 @@ export const useWhiteboardRealtime = ({
         return;
       }
 
-      socket.emit("board:shape:add", {
+      const payload: BoardAddShapePayload = {
         boardId,
         shape,
         baseVersion: versionRef.current
-      });
+      };
+      socket.emit(socketEventName.boardShapeAdd, payload);
     },
     [boardId, upsertShapeLocal]
   );
@@ -384,12 +378,13 @@ export const useWhiteboardRealtime = ({
       }
 
       const timer = setTimeout(() => {
-        socket.emit("board:shape:update", {
+        const payload: BoardPatchShapePayload = {
           boardId,
           shapeId,
           patch,
           baseVersion: versionRef.current
-        });
+        };
+        socket.emit(socketEventName.boardShapeUpdate, payload);
 
         shapeEmitTimersRef.current.delete(shapeId);
       }, 48);
@@ -412,11 +407,12 @@ export const useWhiteboardRealtime = ({
         return;
       }
 
-      socket.emit("board:shape:remove", {
+      const payload: BoardRemoveShapePayload = {
         boardId,
         shapeId,
         baseVersion: versionRef.current
-      });
+      };
+      socket.emit(socketEventName.boardShapeRemove, payload);
     },
     [boardId, removeShapeLocal]
   );
@@ -434,7 +430,8 @@ export const useWhiteboardRealtime = ({
       }
 
       cursorSentAtRef.current = now;
-      socket.emit("board:cursor", { boardId, x, y });
+      const payload: BoardCursorPayload = { boardId, x, y };
+      socket.emit(socketEventName.boardCursor, payload);
     },
     [boardId]
   );
@@ -449,10 +446,11 @@ export const useWhiteboardRealtime = ({
       return;
     }
 
-    socket.emit("board:undo", {
+    const payload: BoardUndoPayload = {
       boardId,
       baseVersion: versionRef.current
-    });
+    };
+    socket.emit(socketEventName.boardUndo, payload);
   }, [boardId]);
 
   const redo = useCallback(() => {
@@ -465,10 +463,11 @@ export const useWhiteboardRealtime = ({
       return;
     }
 
-    socket.emit("board:redo", {
+    const payload: BoardRedoPayload = {
       boardId,
       baseVersion: versionRef.current
-    });
+    };
+    socket.emit(socketEventName.boardRedo, payload);
   }, [boardId]);
 
   return {

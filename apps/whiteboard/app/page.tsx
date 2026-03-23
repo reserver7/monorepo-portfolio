@@ -36,7 +36,7 @@ import {
 } from "@/lib/session";
 import { navigateToDocsApp } from "@/lib/cross-app";
 import { formatExactTime, formatRelativeTime } from "@/lib/time";
-import { collabFieldCopy } from "@repo/shared-client";
+import { coerceAccessRole, collabFieldCopy } from "@repo/shared-client";
 
 const EMPTY_TITLE = "(제목 없음)";
 
@@ -56,7 +56,7 @@ export default function WhiteboardHomePage() {
 
   const clearMainEditorAccessKey = () => {
     shouldPreserveAccessKeyForRoomRef.current = false;
-    setEditorAccessKey(whiteboardClientEnv.editorAccessKey ?? "");
+    setEditorAccessKey("");
     setStoredEditorAccessKey("");
   };
 
@@ -77,7 +77,7 @@ export default function WhiteboardHomePage() {
     setStoredDisplayName(nextName);
     setRole(storedRole ?? whiteboardClientEnv.defaultRole);
     shouldPreserveAccessKeyForRoomRef.current = false;
-    setEditorAccessKey(whiteboardClientEnv.editorAccessKey ?? "");
+    setEditorAccessKey("");
     setStoredEditorAccessKey("");
   }, []);
 
@@ -112,7 +112,7 @@ export default function WhiteboardHomePage() {
     onSuccess: async ({ board }) => {
       setBoardTitle("팀 아이디어 보드");
       setRole(whiteboardClientEnv.defaultRole);
-      setEditorAccessKey(whiteboardClientEnv.editorAccessKey ?? "");
+      setEditorAccessKey("");
       await queryClient.invalidateQueries({ queryKey: ["boards"] });
       router.push(`/board/${board.id}`);
     },
@@ -218,7 +218,7 @@ export default function WhiteboardHomePage() {
             <Select
               value={role}
               onValueChange={(value) => {
-                const nextRole = value === "viewer" ? "viewer" : "editor";
+                const nextRole = coerceAccessRole(value, whiteboardClientEnv.defaultRole);
                 setRole(nextRole);
                 setStoredRole(nextRole);
               }}
@@ -290,7 +290,7 @@ export default function WhiteboardHomePage() {
                     onClick={() => {
                       keepAccessKeyForRoomEntry();
                       setStoredDisplayName(displayName.trim() || createGuestName());
-                      setEditorAccessKey(whiteboardClientEnv.editorAccessKey ?? "");
+                      setEditorAccessKey("");
                       router.push(`/board/${board.id}`);
                     }}
                   >

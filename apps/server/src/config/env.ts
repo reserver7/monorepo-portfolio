@@ -53,6 +53,38 @@ const parseCsv = (rawValue: string | undefined): string[] => {
     .filter((item) => item.length > 0);
 };
 
+const normalizeCorsOrigin = (rawOrigin: string): string => {
+  const value = rawOrigin.trim();
+  if (value === "*") {
+    return value;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(`Invalid CORS origin: "${value}"`);
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error(`CORS origin must use http/https: "${value}"`);
+  }
+
+  if (parsed.username || parsed.password) {
+    throw new Error(`CORS origin must not include credentials: "${value}"`);
+  }
+
+  if (parsed.pathname !== "/" || parsed.search || parsed.hash) {
+    throw new Error(`CORS origin must not include path/query/hash: "${value}"`);
+  }
+
+  return parsed.origin;
+};
+
+const parseCorsOrigins = (rawValue: string | undefined): string[] => {
+  return Array.from(new Set(parseCsv(rawValue).map(normalizeCorsOrigin)));
+};
+
 export interface ServerEnv {
   nodeEnv: string;
   isProduction: boolean;
@@ -73,9 +105,15 @@ export const createServerEnv = (rawEnv: NodeJS.ProcessEnv = process.env): Server
   const nodeEnv = (rawEnv.NODE_ENV?.trim() || "development").toLowerCase();
   const isProduction = nodeEnv === "production";
 
-  const corsOrigins = parseCsv(rawEnv.CORS_ORIGINS);
+  const corsOrigins = parseCorsOrigins(rawEnv.CORS_ORIGINS);
   const allowAllCorsExplicit = toBool(rawEnv.ALLOW_ALL_CORS, false);
   const allowAllCors = allowAllCorsExplicit || (!isProduction && corsOrigins.length === 0);
+
+  if (isProduction && corsOrigins.includes("*")) {
+    throw new Error(
+      'CORS_ORIGINS cannot contain "*" in production. Use explicit origins or ALLOW_ALL_CORS=true.'
+    );
+  }
 
   if (isProduction && !allowAllCors && corsOrigins.length === 0) {
     throw new Error(
