@@ -15,10 +15,23 @@ export const listDocuments = async (): Promise<DocumentSummary[]> => {
 export const createDocument = async (input: {
   title: string;
   actor: string;
+  editorAccessKey?: string;
 }): Promise<{ document: DocumentRecord }> => {
   return requestJson<{ document: DocumentRecord }>(API_BASE_URL, "/api/documents", {
     method: "POST",
     body: JSON.stringify(input)
+  });
+};
+
+export const deleteDocumentById = async (input: {
+  documentId: string;
+  editorAccessKey?: string;
+}): Promise<{ ok: true; documentId: string }> => {
+  return requestJson<{ ok: true; documentId: string }>(API_BASE_URL, `/api/documents/${input.documentId}`, {
+    method: "DELETE",
+    body: JSON.stringify({
+      editorAccessKey: input.editorAccessKey
+    })
   });
 };
 
@@ -74,20 +87,16 @@ export const createDocumentComment = async (input: {
     documentId: string;
     comment: DocumentComment;
     session?: { id: string; token: string; trusted: boolean };
-  }>(
-    API_BASE_URL,
-    `/api/documents/${input.documentId}/comments`,
-    {
-      method: "POST",
-      headers: {
-        ...(input.sessionId ? { "x-collab-session-id": input.sessionId } : {}),
-        ...(input.sessionToken ? { "x-collab-session-token": input.sessionToken } : {})
-      },
-      body: JSON.stringify({
-        authorName: input.authorName,
-        body: input.body,
-        mentions: input.mentions
-      })
-    }
-  );
+  }>(API_BASE_URL, `/api/documents/${input.documentId}/comments`, {
+    method: "POST",
+    headers: {
+      ...(input.sessionId ? { "x-collab-session-id": input.sessionId } : {}),
+      ...(input.sessionToken ? { "x-collab-session-token": input.sessionToken } : {})
+    },
+    body: JSON.stringify({
+      authorName: input.authorName,
+      body: input.body,
+      mentions: input.mentions
+    })
+  });
 };

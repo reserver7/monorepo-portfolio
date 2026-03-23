@@ -128,6 +128,7 @@ const boardRoom = (boardId: string): string => `board:${boardId}`;
 
 const COLORS = ["#0284c7", "#0f766e", "#16a34a", "#ca8a04", "#ea580c", "#dc2626", "#9333ea", "#4f46e5"];
 const mentionPattern = /@([0-9A-Za-z가-힣._-]{2,24})/g;
+const EMPTY_TITLE = "(제목 없음)";
 
 const colorFromSession = (sessionId: string): string => {
   let hash = 0;
@@ -167,11 +168,7 @@ const enforceRateLimit = (
   maxEventsPerWindow: number,
   windowMs = serverEnv.socketRateLimitWindowMs
 ): boolean => {
-  const allowed = socketLimiter.allow(
-    `${socket.id}:${eventName}`,
-    maxEventsPerWindow,
-    windowMs
-  );
+  const allowed = socketLimiter.allow(`${socket.id}:${eventName}`, maxEventsPerWindow, windowMs);
   if (allowed) {
     return true;
   }
@@ -216,7 +213,9 @@ const resolveSessionFromSocketPayload = (
   };
 };
 
-const resolveSessionFromRequest = (req: Request): { sessionId: string; sessionToken: string; trusted: boolean } => {
+const resolveSessionFromRequest = (
+  req: Request
+): { sessionId: string; sessionToken: string; trusted: boolean } => {
   const sessionIdHeader = req.header("x-collab-session-id");
   const sessionTokenHeader = req.header("x-collab-session-token");
 
@@ -228,7 +227,8 @@ const resolveLockedRole = (
   entityId: string,
   sessionId: string,
   requestedRole: AccessRole,
-  editorAccessKey?: string
+  editorAccessKey?: string,
+  requiredEditorAccessKey?: string
 ): AccessRole => {
   const roleLocks = scope === "document" ? documentRolesBySession : boardRolesBySession;
 
@@ -242,16 +242,29 @@ const resolveLockedRole = (
   }
 
   const lockedRole = sessionRoles.get(sessionId);
+  const effectiveEditorAccessKey = trimOptional(requiredEditorAccessKey) ?? serverEnv.editorAccessKey;
+
   if (lockedRole) {
+    if (lockedRole === "viewer" && requestedRole === "editor") {
+      const requiresEditorAccessKey = Boolean(effectiveEditorAccessKey);
+      const hasValidEditorAccessKey =
+        !requiresEditorAccessKey || trimOptional(editorAccessKey) === effectiveEditorAccessKey;
+
+      if (hasValidEditorAccessKey) {
+        sessionRoles.set(sessionId, "editor");
+        return "editor";
+      }
+    }
+
     return lockedRole;
   }
 
   let nextRole = requestedRole;
-  const requiresEditorAccessKey = Boolean(serverEnv.editorAccessKey);
+  const requiresEditorAccessKey = Boolean(effectiveEditorAccessKey);
   if (
     nextRole === "editor" &&
     requiresEditorAccessKey &&
-    trimOptional(editorAccessKey) !== serverEnv.editorAccessKey
+    trimOptional(editorAccessKey) !== effectiveEditorAccessKey
   ) {
     nextRole = "viewer";
   }
@@ -362,6 +375,42 @@ const leaveBoard = (socketId: string): void => {
   broadcastBoardParticipants(joinedBoardId);
 };
 
+const teardownDocumentAfterDelete = (documentId: string): void => {
+  const members = documentParticipants.get(documentId);
+  if (members) {
+    for (const participant of members.values()) {
+      documentBySocket.delete(participant.socketId);
+      const targetSocket = io.sockets.sockets.get(participant.socketId);
+      targetSocket?.leave(documentRoom(documentId));
+      targetSocket?.emit("error", {
+        message: "문서가 삭제되어 세션이 종료되었습니다."
+      });
+    }
+  }
+
+  documentParticipants.delete(documentId);
+  documentRolesBySession.delete(documentId);
+  broadcastDocumentParticipants(documentId);
+};
+
+const teardownBoardAfterDelete = (boardId: string): void => {
+  const members = boardParticipants.get(boardId);
+  if (members) {
+    for (const participant of members.values()) {
+      boardBySocket.delete(participant.socketId);
+      const targetSocket = io.sockets.sockets.get(participant.socketId);
+      targetSocket?.leave(boardRoom(boardId));
+      targetSocket?.emit("error", {
+        message: "화이트보드가 삭제되어 세션이 종료되었습니다."
+      });
+    }
+  }
+
+  boardParticipants.delete(boardId);
+  boardRolesBySession.delete(boardId);
+  broadcastBoardParticipants(boardId);
+};
+
 app.get("/health", (_req, res) => {
   res.json({ ok: true, now: new Date().toISOString() });
 });
@@ -372,9 +421,33 @@ app.get("/api/documents", (_req, res) => {
 
 app.post("/api/documents", (req, res) => {
   const actor = sanitizeDisplayName(req.body?.actor as string | undefined);
-  const title = typeof req.body?.title === "string" ? req.body.title : "Untitled document";
-  const created = store.createDocument(title, actor);
+  const title = typeof req.body?.title === "string" ? req.body.title : EMPTY_TITLE;
+  const editorAccessKey =
+    typeof req.body?.editorAccessKey === "string" ? req.body.editorAccessKey : undefined;
+  const created = store.createDocument(title, actor, editorAccessKey);
   res.status(201).json({ document: created });
+});
+
+app.delete("/api/documents/:id", (req, res) => {
+  const editorAccessKey =
+    typeof req.body?.editorAccessKey === "string" ? req.body.editorAccessKey : undefined;
+  const deleted = store.deleteDocument({
+    documentId: req.params.id,
+    editorAccessKey
+  });
+
+  if (deleted === "not-found") {
+    res.status(404).json({ message: "Document not found" });
+    return;
+  }
+
+  if (deleted === "forbidden") {
+    res.status(403).json({ message: "문서 삭제 비밀번호가 올바르지 않습니다." });
+    return;
+  }
+
+  teardownDocumentAfterDelete(deleted.documentId);
+  res.json({ ok: true, documentId: deleted.documentId });
 });
 
 app.get("/api/documents/:id", (req, res) => {
@@ -448,9 +521,33 @@ app.get("/api/boards", (_req, res) => {
 
 app.post("/api/boards", (req, res) => {
   const actor = sanitizeDisplayName(req.body?.actor as string | undefined);
-  const title = typeof req.body?.title === "string" ? req.body.title : "Untitled board";
-  const board = store.createBoard(title, actor);
+  const title = typeof req.body?.title === "string" ? req.body.title : EMPTY_TITLE;
+  const editorAccessKey =
+    typeof req.body?.editorAccessKey === "string" ? req.body.editorAccessKey : undefined;
+  const board = store.createBoard(title, actor, editorAccessKey);
   res.status(201).json({ board });
+});
+
+app.delete("/api/boards/:id", (req, res) => {
+  const editorAccessKey =
+    typeof req.body?.editorAccessKey === "string" ? req.body.editorAccessKey : undefined;
+  const deleted = store.deleteBoard({
+    boardId: req.params.id,
+    editorAccessKey
+  });
+
+  if (deleted === "not-found") {
+    res.status(404).json({ message: "Board not found" });
+    return;
+  }
+
+  if (deleted === "forbidden") {
+    res.status(403).json({ message: "화이트보드 삭제 비밀번호가 올바르지 않습니다." });
+    return;
+  }
+
+  teardownBoardAfterDelete(deleted.boardId);
+  res.json({ ok: true, boardId: deleted.boardId });
 });
 
 app.get("/api/boards/:id", (req, res) => {
@@ -484,12 +581,14 @@ io.on("connection", (socket) => {
 
     const session = resolveSessionFromSocketPayload(payload.sessionId, payload.sessionToken);
     const requestedRole = sanitizeRole(payload.role);
+    const requiredEditorAccessKey = store.getDocumentEditorAccessKey(document.id) ?? serverEnv.editorAccessKey;
     const role = resolveLockedRole(
       "document",
       document.id,
       session.sessionId,
       requestedRole,
-      payload.editorAccessKey
+      payload.editorAccessKey,
+      requiredEditorAccessKey
     );
     const participant: Participant = {
       socketId: socket.id,
@@ -838,12 +937,14 @@ io.on("connection", (socket) => {
 
     const session = resolveSessionFromSocketPayload(payload.sessionId, payload.sessionToken);
     const requestedRole = sanitizeRole(payload.role);
+    const requiredEditorAccessKey = store.getBoardEditorAccessKey(board.id) ?? serverEnv.editorAccessKey;
     const role = resolveLockedRole(
       "board",
       board.id,
       session.sessionId,
       requestedRole,
-      payload.editorAccessKey
+      payload.editorAccessKey,
+      requiredEditorAccessKey
     );
     const participant: Participant = {
       socketId: socket.id,

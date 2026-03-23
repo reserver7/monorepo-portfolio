@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "pnpm turbo run dev --parallel",
     "build": "pnpm turbo run build",
+    "test": "pnpm turbo run test",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
     "typecheck": "pnpm turbo run typecheck",
     "lint": "pnpm turbo run lint",
     "lint:fix": "pnpm turbo run lint -- --fix",
@@ -14,10 +17,11 @@
     "clean": "pnpm turbo run clean"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
-    "@repo/prettier-config": "workspace:*",
     "@eslint/js": "^9.35.0",
     "@next/eslint-plugin-next": "^15.3.1",
+    "@playwright/test": "^1.58.2",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/prettier-config": "workspace:*",
     "eslint": "^9.35.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^5.2.0",
@@ -25,7 +29,7 @@
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.6.8",
     "turbo": "^2.4.4",
-    "typescript-eslint": "^8.43.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.43.0"
   }
 }

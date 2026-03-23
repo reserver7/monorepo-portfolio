@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { API_BASE_URL } from "@/lib/api";
 import {
+  createGuestName,
   getOrCreateSessionId,
   getStoredEditorAccessKey,
   getStoredSessionToken,
@@ -18,6 +19,7 @@ interface UseWhiteboardRealtimeOptions {
   role: AccessRole;
   editorAccessKey?: string | null;
   initialBoard?: WhiteboardRecord | null;
+  onEditorRequestDenied?: (resolvedRole: AccessRole) => void;
 }
 
 interface BoardStatePayload {
@@ -63,7 +65,8 @@ export const useWhiteboardRealtime = ({
   displayName,
   role,
   editorAccessKey,
-  initialBoard
+  initialBoard,
+  onEditorRequestDenied
 }: UseWhiteboardRealtimeOptions): {
   sessionId: string;
   currentRole: AccessRole;
@@ -96,6 +99,14 @@ export const useWhiteboardRealtime = ({
   const socketRef = useRef<Socket | null>(null);
   const sessionIdRef = useRef<string>("");
   const sessionTokenRef = useRef<string>("");
+  const onEditorRequestDeniedRef = useRef<((resolvedRole: AccessRole) => void) | undefined>(
+    onEditorRequestDenied
+  );
+  const displayNameRef = useRef<string>(displayName);
+  const editorAccessKeyRef = useRef<string | undefined>(
+    editorAccessKey?.trim() ? editorAccessKey.trim() : undefined
+  );
+  const requestedRoleRef = useRef<AccessRole>(role);
   const roleRef = useRef<AccessRole>(role);
   const versionRef = useRef<number>(initialBoard?.version ?? 0);
   const titleRef = useRef<string>(initialBoard?.title ?? "화이트보드");
@@ -108,9 +119,40 @@ export const useWhiteboardRealtime = ({
   }
 
   useEffect(() => {
-    roleRef.current = role;
-    setRole(role);
-  }, [role, setRole]);
+    requestedRoleRef.current = role;
+  }, [role]);
+
+  useEffect(() => {
+    displayNameRef.current = displayName;
+  }, [displayName]);
+
+  useEffect(() => {
+    const normalized = editorAccessKey?.trim();
+    editorAccessKeyRef.current = normalized && normalized.length > 0 ? normalized : undefined;
+  }, [editorAccessKey]);
+
+  useEffect(() => {
+    onEditorRequestDeniedRef.current = onEditorRequestDenied;
+  }, [onEditorRequestDenied]);
+
+  const emitBoardJoin = useCallback(
+    (targetSocket?: Socket | null) => {
+      const socket = targetSocket ?? socketRef.current;
+      if (!socket || !socket.connected || !boardId) {
+        return;
+      }
+
+      socket.emit("board:join", {
+        boardId,
+        sessionId: sessionIdRef.current,
+        sessionToken: sessionTokenRef.current || undefined,
+        displayName: displayNameRef.current.trim() || createGuestName(),
+        role: requestedRoleRef.current,
+        editorAccessKey: editorAccessKeyRef.current ?? getStoredEditorAccessKey() ?? undefined
+      });
+    },
+    [boardId]
+  );
 
   useEffect(() => {
     if (!boardId) {
@@ -135,7 +177,7 @@ export const useWhiteboardRealtime = ({
   }, [version]);
 
   useEffect(() => {
-    if (!boardId || !displayName) {
+    if (!boardId) {
       return;
     }
 
@@ -152,15 +194,7 @@ export const useWhiteboardRealtime = ({
       setConnection("online");
       setConflictMessage(null);
       pushEvent("화이트보드 실시간 연결이 활성화되었습니다.");
-
-      socket.emit("board:join", {
-        boardId,
-        sessionId: sessionIdRef.current,
-        sessionToken: sessionTokenRef.current || undefined,
-        displayName,
-        role: roleRef.current,
-        editorAccessKey: editorAccessKey ?? getStoredEditorAccessKey() ?? undefined
-      });
+      emitBoardJoin(socket);
     });
 
     socket.on("disconnect", () => {
@@ -225,9 +259,16 @@ export const useWhiteboardRealtime = ({
         return;
       }
 
+      const wasRequestingEditor = requestedRoleRef.current === "editor";
       roleRef.current = deniedRole;
       setRole(deniedRole);
       pushEvent("읽기 전용 권한으로 전환되어 편집이 제한됩니다.");
+
+      if (wasRequestingEditor && deniedRole !== "editor") {
+        requestedRoleRef.current = deniedRole;
+        editorAccessKeyRef.current = undefined;
+        onEditorRequestDeniedRef.current?.(deniedRole);
+      }
     });
 
     socket.on("error", ({ message }: { message?: string }) => {
@@ -249,26 +290,44 @@ export const useWhiteboardRealtime = ({
     };
   }, [
     boardId,
-    displayName,
+    emitBoardJoin,
     hydrateBoard,
     pushEvent,
     setConflictMessage,
     setConnection,
     setParticipants,
     setRole,
-    upsertParticipant,
-    editorAccessKey
+    upsertParticipant
   ]);
+
+  useEffect(() => {
+    if (!boardId) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      emitBoardJoin();
+    }, 180);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [boardId, displayName, role, editorAccessKey, emitBoardJoin]);
 
   const updateTitle = useCallback(
     (nextTitle: string) => {
-      const normalized = nextTitle.trim() || "Untitled board";
+      const normalized = nextTitle.slice(0, 120);
       if (roleRef.current !== "editor") {
         return;
       }
 
       setTitleLocal(normalized);
       titleRef.current = normalized;
+
+      // 입력 중 임시 빈 값으로 서버 제목을 덮어쓰지 않도록 방지합니다.
+      if (normalized.trim().length === 0) {
+        return;
+      }
 
       const socket = socketRef.current;
       if (!socket || !socket.connected) {

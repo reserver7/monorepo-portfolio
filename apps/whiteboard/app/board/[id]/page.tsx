@@ -31,9 +31,11 @@ import {
   getStoredDisplayName,
   getStoredEditorAccessKey,
   getStoredRole,
-  setStoredEditorAccessKey
+  setStoredEditorAccessKey,
+  setStoredRole
 } from "@/lib/session";
 import { formatExactTime, formatRelativeTime } from "@/lib/time";
+import { collabFieldCopy } from "@repo/shared-client";
 
 type WhiteboardTool = "select" | "rect" | "ellipse" | "diamond" | "text" | "connector";
 type ResizeHandle = "nw" | "ne" | "sw" | "se";
@@ -179,6 +181,13 @@ export default function WhiteboardRoomPage() {
   const [activeTool, setActiveTool] = useState<WhiteboardTool>("select");
   const [connectorFromShapeId, setConnectorFromShapeId] = useState<string | null>(null);
 
+  const handleEditorRequestDenied = useCallback((resolvedRole: "viewer" | "editor") => {
+    setRequestedRole(resolvedRole);
+    setStoredRole(resolvedRole);
+    setEditorAccessKey("");
+    setStoredEditorAccessKey("");
+  }, []);
+
   useEffect(() => {
     const stored = getStoredDisplayName();
     const storedRole = getStoredRole();
@@ -210,7 +219,8 @@ export default function WhiteboardRoomPage() {
     displayName,
     role: requestedRole,
     editorAccessKey,
-    initialBoard: boardQuery.data?.board
+    initialBoard: boardQuery.data?.board,
+    onEditorRequestDenied: handleEditorRequestDenied
   });
 
   const title = useWhiteboardStore((state) => state.title);
@@ -535,14 +545,33 @@ export default function WhiteboardRoomPage() {
         </div>
       </header>
 
-      <div className="mb-4 grid gap-3 md:grid-cols-[1fr_220px_auto_auto] md:items-center">
+      <div className="mb-4 grid gap-3 md:grid-cols-[1fr_180px_220px_auto_auto] md:items-center">
         <Input
+          title="보드 제목"
           value={title}
           onChange={(event) => updateTitle(event.target.value)}
           readOnly={isReadOnly}
           className="h-11 text-base font-semibold"
+          placeholder="보드 제목"
         />
+        <Select
+          value={requestedRole}
+          onValueChange={(value) => {
+            const nextRole = value === "viewer" ? "viewer" : "editor";
+            setRequestedRole(nextRole);
+            setStoredRole(nextRole);
+          }}
+        >
+          <SelectTrigger className="h-11" title={collabFieldCopy.requestRolePlaceholder}>
+            <SelectValue placeholder={collabFieldCopy.requestRolePlaceholder} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="editor">{collabFieldCopy.requestOptionEditor}</SelectItem>
+            <SelectItem value="viewer">{collabFieldCopy.requestOptionViewer}</SelectItem>
+          </SelectContent>
+        </Select>
         <Input
+          title={collabFieldCopy.editorAccessKeyLabel}
           type="password"
           value={editorAccessKey}
           onChange={(event) => {
@@ -550,7 +579,7 @@ export default function WhiteboardRoomPage() {
             setEditorAccessKey(nextValue);
             setStoredEditorAccessKey(nextValue);
           }}
-          placeholder="편집 키 (선택)"
+          placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
           className="h-11"
         />
         <Card className="px-3 py-2 text-xs text-slate-600">버전 {version}</Card>
@@ -681,7 +710,8 @@ export default function WhiteboardRoomPage() {
       ) : null}
       {isReadOnly ? (
         <Card className="mb-4 border-slate-300 bg-slate-100 p-3 text-sm text-slate-700">
-          보기 전용(`viewer`) 세션입니다. 보드 편집은 제한되며 참여자 커서 확인만 가능합니다.
+          보기 전용(`viewer`) 세션입니다. 상단에서 `editor 요청`으로 바꾸고 편집 키를 입력하면
+          재요청됩니다. 보드 편집은 제한되며 참여자 커서 확인만 가능합니다.
         </Card>
       ) : null}
 
@@ -1049,17 +1079,17 @@ export default function WhiteboardRoomPage() {
           })}
 
           {otherParticipants.map((participant) => (
-              <div
-                key={`${participant.socketId}-${participant.sessionId}`}
-                className="pointer-events-none absolute z-30"
-                style={{ left: participant.cursorX, top: participant.cursorY }}
-              >
-                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: participant.color }} />
-                <div className="mt-1 rounded bg-slate-900 px-1.5 py-0.5 text-[10px] text-white">
-                  {participant.displayName}
-                </div>
+            <div
+              key={`${participant.socketId}-${participant.sessionId}`}
+              className="pointer-events-none absolute z-30"
+              style={{ left: participant.cursorX, top: participant.cursorY }}
+            >
+              <div className="h-3 w-3 rounded-full" style={{ backgroundColor: participant.color }} />
+              <div className="mt-1 rounded bg-slate-900 px-1.5 py-0.5 text-[10px] text-white">
+                {participant.displayName}
               </div>
-            ))}
+            </div>
+          ))}
         </div>
 
         <div className="space-y-3">
@@ -1113,8 +1143,8 @@ export default function WhiteboardRoomPage() {
           <Card className="p-4">
             <h3 className="mb-2 text-sm font-semibold">실시간 이벤트</h3>
             <div className="max-h-80 space-y-1 overflow-auto">
-              {eventLog.map((log) => (
-                <p key={log} className="text-[11px] text-slate-600">
+              {eventLog.map((log, index) => (
+                <p key={`${index}-${log}`} className="text-[11px] text-slate-600">
                   {log}
                 </p>
               ))}

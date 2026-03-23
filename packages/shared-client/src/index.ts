@@ -13,3 +13,4 @@ export {
   setStoredString
 } from "./storage";
 export { formatExactTime, formatRelativeTime } from "./time";
+export { collabFieldCopy } from "./collab-copy";

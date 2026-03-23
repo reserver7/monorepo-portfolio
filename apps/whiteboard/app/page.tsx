@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -11,6 +11,12 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   Input,
   Select,
   SelectContent,
@@ -18,11 +24,10 @@ import {
   SelectTrigger,
   SelectValue
 } from "@repo/ui";
-import { createBoard, listBoards } from "@/lib/api";
+import { createBoard, deleteBoardById, listBoards } from "@/lib/api";
 import { whiteboardClientEnv } from "@/lib/env";
 import {
   createGuestName,
-  getStoredEditorAccessKey,
   getStoredDisplayName,
   getStoredRole,
   setStoredEditorAccessKey,
@@ -31,6 +36,9 @@ import {
 } from "@/lib/session";
 import { navigateToDocsApp } from "@/lib/cross-app";
 import { formatExactTime, formatRelativeTime } from "@/lib/time";
+import { collabFieldCopy } from "@repo/shared-client";
+
+const EMPTY_TITLE = "(제목 없음)";
 
 export default function WhiteboardHomePage() {
   const router = useRouter();
@@ -40,17 +48,56 @@ export default function WhiteboardHomePage() {
   const [boardTitle, setBoardTitle] = useState("팀 아이디어 보드");
   const [role, setRole] = useState<"viewer" | "editor">(whiteboardClientEnv.defaultRole);
   const [editorAccessKey, setEditorAccessKey] = useState<string>("");
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deleteAccessKeyDraft, setDeleteAccessKeyDraft] = useState<string>("");
+  const [deleteErrorMessage, setDeleteErrorMessage] = useState<string | null>(null);
+  const deleteAccessKeyInputRef = useRef<HTMLInputElement | null>(null);
+  const shouldPreserveAccessKeyForRoomRef = useRef(false);
+
+  const clearMainEditorAccessKey = () => {
+    shouldPreserveAccessKeyForRoomRef.current = false;
+    setEditorAccessKey(whiteboardClientEnv.editorAccessKey ?? "");
+    setStoredEditorAccessKey("");
+  };
+
+  const keepAccessKeyForRoomEntry = (): string => {
+    const normalizedAccessKey = editorAccessKey.trim();
+    shouldPreserveAccessKeyForRoomRef.current = true;
+    setStoredRole(role);
+    setStoredEditorAccessKey(normalizedAccessKey);
+    return normalizedAccessKey;
+  };
 
   useEffect(() => {
     const stored = getStoredDisplayName();
     const storedRole = getStoredRole();
-    const storedEditorAccessKey = getStoredEditorAccessKey();
     const fallback = createGuestName();
     const nextName = stored?.trim() ? stored : fallback;
     setDisplayName(nextName);
     setStoredDisplayName(nextName);
     setRole(storedRole ?? whiteboardClientEnv.defaultRole);
-    setEditorAccessKey(storedEditorAccessKey ?? whiteboardClientEnv.editorAccessKey ?? "");
+    shouldPreserveAccessKeyForRoomRef.current = false;
+    setEditorAccessKey(whiteboardClientEnv.editorAccessKey ?? "");
+    setStoredEditorAccessKey("");
+  }, []);
+
+  useEffect(() => {
+    const handlePageHide = () => {
+      if (shouldPreserveAccessKeyForRoomRef.current) {
+        return;
+      }
+
+      setStoredEditorAccessKey("");
+    };
+
+    window.addEventListener("pagehide", handlePageHide);
+
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide);
+      if (!shouldPreserveAccessKeyForRoomRef.current) {
+        setStoredEditorAccessKey("");
+      }
+    };
   }, []);
 
   const boardsQuery = useQuery({
@@ -61,14 +108,61 @@ export default function WhiteboardHomePage() {
   });
 
   const createBoardMutation = useMutation({
-    mutationFn: (input: { title: string; actor: string }) => createBoard(input),
+    mutationFn: (input: { title: string; actor: string; editorAccessKey?: string }) => createBoard(input),
     onSuccess: async ({ board }) => {
+      setBoardTitle("팀 아이디어 보드");
+      setRole(whiteboardClientEnv.defaultRole);
+      setEditorAccessKey(whiteboardClientEnv.editorAccessKey ?? "");
       await queryClient.invalidateQueries({ queryKey: ["boards"] });
       router.push(`/board/${board.id}`);
+    },
+    onError: () => {
+      shouldPreserveAccessKeyForRoomRef.current = false;
+    }
+  });
+
+  const deleteBoardMutation = useMutation({
+    mutationFn: (input: { boardId: string; editorAccessKey?: string }) => deleteBoardById(input),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["boards"] });
+      setDeleteTargetId(null);
+      setDeleteAccessKeyDraft("");
+      setDeleteErrorMessage(null);
+    },
+    onError: (error) => {
+      setDeleteErrorMessage(error instanceof Error ? error.message : "화이트보드 삭제에 실패했습니다.");
+      setDeleteAccessKeyDraft("");
+      setTimeout(() => {
+        deleteAccessKeyInputRef.current?.focus();
+      }, 0);
     }
   });
 
   const boards = boardsQuery.data ?? [];
+  const deleteTarget = boards.find((board) => board.id === deleteTargetId) ?? null;
+
+  useEffect(() => {
+    if (!deleteTargetId || !deleteTarget?.isProtected) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      deleteAccessKeyInputRef.current?.focus();
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [deleteTargetId, deleteTarget?.isProtected]);
+
+  const handleCreateBoard = () => {
+    const normalizedAccessKey = keepAccessKeyForRoomEntry();
+    createBoardMutation.mutate({
+      title: boardTitle.trim() || EMPTY_TITLE,
+      actor: displayName.trim() || createGuestName(),
+      editorAccessKey: normalizedAccessKey || undefined
+    });
+  };
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-10 md:px-8">
@@ -84,6 +178,7 @@ export default function WhiteboardHomePage() {
             variant="outline"
             size="sm"
             onClick={() => {
+              clearMainEditorAccessKey();
               navigateToDocsApp("/");
             }}
           >
@@ -96,57 +191,67 @@ export default function WhiteboardHomePage() {
         </p>
 
         <div className="mt-8 grid gap-4 md:grid-cols-[1fr_1fr_220px_220px_auto]">
-          <Input
-            value={displayName}
-            onChange={(event) => {
-              const next = event.target.value;
-              setDisplayName(next);
-              setStoredDisplayName(next.trim() || createGuestName());
-            }}
-            placeholder="표시 이름"
-          />
-          <Input
-            value={boardTitle}
-            onChange={(event) => setBoardTitle(event.target.value)}
-            placeholder="보드 제목"
-          />
-          <Select
-            value={role}
-            onValueChange={(value) => {
-              const nextRole = value === "viewer" ? "viewer" : "editor";
-              setRole(nextRole);
-              setStoredRole(nextRole);
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="권한 선택" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="editor">editor (편집 가능)</SelectItem>
-              <SelectItem value="viewer">viewer (보기 전용)</SelectItem>
-            </SelectContent>
-          </Select>
-          <Input
-            type="password"
-            value={editorAccessKey}
-            onChange={(event) => {
-              const nextValue = event.target.value;
-              setEditorAccessKey(nextValue);
-              setStoredEditorAccessKey(nextValue);
-            }}
-            placeholder="편집 키 (선택)"
-          />
-          <Button
-            onClick={() =>
-              createBoardMutation.mutate({
-                title: boardTitle.trim() || "Untitled board",
-                actor: displayName.trim() || createGuestName()
-              })
-            }
-            disabled={createBoardMutation.isPending}
-          >
-            {createBoardMutation.isPending ? "생성 중..." : "새 보드 만들기"}
-          </Button>
+          <div>
+            <p className="mb-2 text-xs font-medium text-slate-600">{collabFieldCopy.displayNameLabel}</p>
+            <Input
+              title={collabFieldCopy.displayNameLabel}
+              value={displayName}
+              onChange={(event) => {
+                const next = event.target.value;
+                setDisplayName(next);
+                setStoredDisplayName(next.trim() || createGuestName());
+              }}
+              placeholder={collabFieldCopy.displayNamePlaceholder}
+            />
+          </div>
+          <div>
+            <p className="mb-2 text-xs font-medium text-slate-600">새 보드 제목</p>
+            <Input
+              title="새 보드 제목"
+              value={boardTitle}
+              onChange={(event) => setBoardTitle(event.target.value)}
+              placeholder="보드 제목"
+            />
+          </div>
+          <div>
+            <p className="mb-2 text-xs font-medium text-slate-600">{collabFieldCopy.entryRoleLabel}</p>
+            <Select
+              value={role}
+              onValueChange={(value) => {
+                const nextRole = value === "viewer" ? "viewer" : "editor";
+                setRole(nextRole);
+                setStoredRole(nextRole);
+              }}
+            >
+              <SelectTrigger title={collabFieldCopy.entryRoleLabel}>
+                <SelectValue placeholder={collabFieldCopy.entryRolePlaceholder} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="editor">{collabFieldCopy.roleOptionEditor}</SelectItem>
+                <SelectItem value="viewer">{collabFieldCopy.roleOptionViewer}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <p className="mb-2 text-xs font-medium text-slate-600">
+              {collabFieldCopy.editorAccessKeyLabel} (보드별 설정/입장 기본값)
+            </p>
+            <Input
+              title={collabFieldCopy.editorAccessKeyLabel}
+              type="password"
+              value={editorAccessKey}
+              onChange={(event) => {
+                const nextValue = event.target.value;
+                setEditorAccessKey(nextValue);
+              }}
+              placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
+            />
+          </div>
+          <div className="flex items-end">
+            <Button onClick={handleCreateBoard} disabled={createBoardMutation.isPending}>
+              {createBoardMutation.isPending ? "생성 중..." : "새 보드 만들기"}
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -159,31 +264,116 @@ export default function WhiteboardHomePage() {
           {boards.map((board) => (
             <Card key={board.id}>
               <CardHeader>
-                <CardTitle>{board.title}</CardTitle>
+                <CardTitle>{board.title.trim() || EMPTY_TITLE}</CardTitle>
                 <CardDescription>
                   도형 {board.shapeCount}개 · 버전 {board.version}
+                  {board.isProtected ? " · 키 보호" : ""}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="mb-4 text-xs text-slate-500">
                   최근 수정: {formatRelativeTime(board.updatedAt)} ({formatExactTime(board.updatedAt)})
                 </p>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setStoredDisplayName(displayName.trim() || createGuestName());
-                    setStoredRole(role);
-                    setStoredEditorAccessKey(editorAccessKey);
-                    router.push(`/board/${board.id}`);
-                  }}
-                >
-                  보드 입장
-                </Button>
+                <div className="flex items-center justify-end gap-2">
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      setDeleteTargetId(board.id);
+                      setDeleteAccessKeyDraft("");
+                      setDeleteErrorMessage(null);
+                    }}
+                  >
+                    삭제
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      keepAccessKeyForRoomEntry();
+                      setStoredDisplayName(displayName.trim() || createGuestName());
+                      setEditorAccessKey(whiteboardClientEnv.editorAccessKey ?? "");
+                      router.push(`/board/${board.id}`);
+                    }}
+                  >
+                    보드 입장
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       </section>
+
+      <Dialog
+        open={Boolean(deleteTargetId)}
+        onOpenChange={(open) => {
+          if (open) {
+            return;
+          }
+
+          setDeleteTargetId(null);
+          setDeleteAccessKeyDraft("");
+          setDeleteErrorMessage(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>화이트보드를 삭제할까요?</DialogTitle>
+            <DialogDescription>
+              {deleteTarget?.isProtected
+                ? "이 화이트보드는 편집 키로 보호되어 있습니다. 삭제 비밀번호를 입력해 주세요."
+                : "삭제된 화이트보드는 복구할 수 없습니다."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteTarget?.isProtected ? (
+            <Input
+              ref={deleteAccessKeyInputRef}
+              type="password"
+              value={deleteAccessKeyDraft}
+              onChange={(event) => {
+                setDeleteAccessKeyDraft(event.target.value);
+                setDeleteErrorMessage(null);
+              }}
+              placeholder="삭제 비밀번호"
+            />
+          ) : null}
+
+          {deleteErrorMessage ? <p className="text-sm text-rose-600">{deleteErrorMessage}</p> : null}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteTargetId(null);
+                setDeleteAccessKeyDraft("");
+                setDeleteErrorMessage(null);
+              }}
+            >
+              취소
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={
+                deleteBoardMutation.isPending ||
+                !deleteTarget ||
+                (deleteTarget.isProtected && deleteAccessKeyDraft.trim().length === 0)
+              }
+              onClick={() => {
+                if (!deleteTarget) {
+                  return;
+                }
+
+                deleteBoardMutation.mutate({
+                  boardId: deleteTarget.id,
+                  editorAccessKey: deleteTarget.isProtected ? deleteAccessKeyDraft.trim() : undefined
+                });
+              }}
+            >
+              {deleteBoardMutation.isPending ? "삭제 중..." : "화이트보드 삭제"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

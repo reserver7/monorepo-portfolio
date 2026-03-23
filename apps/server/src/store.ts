@@ -17,6 +17,8 @@ import type {
 interface PersistedState {
   documents: DocumentRecord[];
   boards: WhiteboardRecord[];
+  documentAccessKeys?: Record<string, string>;
+  boardAccessKeys?: Record<string, string>;
 }
 
 interface UpdateDocumentInput {
@@ -84,9 +86,20 @@ interface RemoveBoardShapeInput {
   actor: string;
 }
 
+interface DeleteDocumentInput {
+  documentId: string;
+  editorAccessKey?: string;
+}
+
+interface DeleteBoardInput {
+  boardId: string;
+  editorAccessKey?: string;
+}
+
 const MAX_HISTORY = 160;
 const MAX_BOARD_STACK = 120;
 const MAX_COMMENT_COUNT = 240;
+const EMPTY_TITLE = "(제목 없음)";
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
@@ -99,7 +112,16 @@ const nowIso = (): string => new Date().toISOString();
 
 const sanitizeDocumentTitle = (rawTitle: string): string => {
   const normalized = rawTitle.trim();
-  return normalized || "Untitled document";
+  return normalized || EMPTY_TITLE;
+};
+
+const sanitizeEditorAccessKey = (rawValue: string | undefined): string | undefined => {
+  const normalized = rawValue?.trim();
+  if (!normalized) {
+    return undefined;
+  }
+
+  return normalized.slice(0, 120);
 };
 
 const sanitizeCommentBody = (rawBody: string): string => {
@@ -228,7 +250,8 @@ const createYDoc = (title: string, content: string): Y.Doc => {
 
 const readYDocState = (ydoc: Y.Doc): { title: string; content: string; yjsState: string } => {
   const titleMap = ydoc.getMap<string>("meta");
-  const title = sanitizeDocumentTitle(titleMap.get("title") ?? "Untitled document");
+  const rawTitle = titleMap.get("title");
+  const title = typeof rawTitle === "string" ? rawTitle.slice(0, 120) : "";
   const content = ydoc.getText("content").toString();
   const yjsState = encodeBinary(Y.encodeStateAsUpdate(ydoc));
 
@@ -242,7 +265,9 @@ const readYDocState = (ydoc: Y.Doc): { title: string; content: string; yjsState:
 export class RealtimeStore {
   private readonly documents = new Map<string, DocumentRecord>();
   private readonly documentYDocs = new Map<string, Y.Doc>();
+  private readonly documentAccessKeys = new Map<string, string>();
   private readonly boards = new Map<string, WhiteboardRecord>();
+  private readonly boardAccessKeys = new Map<string, string>();
   private readonly boardPast = new Map<string, WhiteboardShape[][]>();
   private readonly boardFuture = new Map<string, WhiteboardShape[][]>();
   private persistTimer: NodeJS.Timeout | null = null;
@@ -262,7 +287,7 @@ export class RealtimeStore {
       for (const persistedDocument of parsed.documents ?? []) {
         const normalized: DocumentRecord = {
           ...persistedDocument,
-          title: sanitizeDocumentTitle(persistedDocument.title ?? "Untitled document"),
+          title: sanitizeDocumentTitle(persistedDocument.title ?? EMPTY_TITLE),
           content: persistedDocument.content ?? "",
           comments: Array.isArray(persistedDocument.comments)
             ? persistedDocument.comments.map((comment) => ({
@@ -277,15 +302,47 @@ export class RealtimeStore {
         };
 
         this.documents.set(normalized.id, normalized);
+
+        const legacyAccessKey = sanitizeEditorAccessKey(
+          (persistedDocument as DocumentRecord & { editorAccessKey?: string }).editorAccessKey
+        );
+        if (legacyAccessKey) {
+          this.documentAccessKeys.set(normalized.id, legacyAccessKey);
+        }
       }
 
       for (const board of parsed.boards ?? []) {
         const normalizedBoard: WhiteboardRecord = {
           ...board,
-          title: board.title?.trim() || "Untitled board",
+          title: board.title?.trim() || EMPTY_TITLE,
           shapes: Array.isArray(board.shapes) ? board.shapes.map(sanitizeShape) : []
         };
         this.boards.set(normalizedBoard.id, normalizedBoard);
+
+        const legacyAccessKey = sanitizeEditorAccessKey(
+          (board as WhiteboardRecord & { editorAccessKey?: string }).editorAccessKey
+        );
+        if (legacyAccessKey) {
+          this.boardAccessKeys.set(normalizedBoard.id, legacyAccessKey);
+        }
+      }
+
+      if (parsed.documentAccessKeys) {
+        for (const [documentId, accessKey] of Object.entries(parsed.documentAccessKeys)) {
+          const normalized = sanitizeEditorAccessKey(accessKey);
+          if (normalized) {
+            this.documentAccessKeys.set(documentId, normalized);
+          }
+        }
+      }
+
+      if (parsed.boardAccessKeys) {
+        for (const [boardId, accessKey] of Object.entries(parsed.boardAccessKeys)) {
+          const normalized = sanitizeEditorAccessKey(accessKey);
+          if (normalized) {
+            this.boardAccessKeys.set(boardId, normalized);
+          }
+        }
       }
     } catch {
       // Seed fallback is handled below.
@@ -378,7 +435,8 @@ export class RealtimeStore {
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .map((document) => ({
         id: document.id,
-        title: document.title,
+        title: document.title.trim() || EMPTY_TITLE,
+        isProtected: this.documentAccessKeys.has(document.id),
         snippet: summarize(document.content),
         commentCount: document.comments.length,
         createdAt: document.createdAt,
@@ -392,6 +450,10 @@ export class RealtimeStore {
     return target ? clone(target) : null;
   }
 
+  getDocumentEditorAccessKey(documentId: string): string | undefined {
+    return this.documentAccessKeys.get(documentId);
+  }
+
   getHistory(documentId: string): HistoryEntry[] {
     return clone(this.documents.get(documentId)?.history ?? []);
   }
@@ -401,7 +463,7 @@ export class RealtimeStore {
     return clone(comments);
   }
 
-  createDocument(rawTitle: string, actor: string): DocumentRecord {
+  createDocument(rawTitle: string, actor: string, editorAccessKey?: string): DocumentRecord {
     const now = nowIso();
     const title = sanitizeDocumentTitle(rawTitle);
 
@@ -428,6 +490,10 @@ export class RealtimeStore {
 
     this.documents.set(created.id, created);
     this.documentYDocs.set(created.id, ydoc);
+    const normalizedEditorAccessKey = sanitizeEditorAccessKey(editorAccessKey);
+    if (normalizedEditorAccessKey) {
+      this.documentAccessKeys.set(created.id, normalizedEditorAccessKey);
+    }
     this.schedulePersist();
     return clone(created);
   }
@@ -718,12 +784,35 @@ export class RealtimeStore {
     return clone(current);
   }
 
+  deleteDocument(input: DeleteDocumentInput): "not-found" | "forbidden" | { documentId: string } {
+    const current = this.documents.get(input.documentId);
+    if (!current) {
+      return "not-found";
+    }
+
+    const requiredAccessKey = this.documentAccessKeys.get(input.documentId);
+    if (requiredAccessKey) {
+      const providedAccessKey = sanitizeEditorAccessKey(input.editorAccessKey);
+      if (providedAccessKey !== requiredAccessKey) {
+        return "forbidden";
+      }
+    }
+
+    this.documents.delete(input.documentId);
+    this.documentYDocs.delete(input.documentId);
+    this.documentAccessKeys.delete(input.documentId);
+    this.schedulePersist();
+
+    return { documentId: input.documentId };
+  }
+
   listBoards(): WhiteboardSummary[] {
     return [...this.boards.values()]
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .map((board) => ({
         id: board.id,
-        title: board.title,
+        title: board.title.trim() || EMPTY_TITLE,
+        isProtected: this.boardAccessKeys.has(board.id),
         shapeCount: board.shapes.length,
         createdAt: board.createdAt,
         updatedAt: board.updatedAt,
@@ -736,9 +825,13 @@ export class RealtimeStore {
     return target ? clone(target) : null;
   }
 
-  createBoard(rawTitle: string, actor: string): WhiteboardRecord {
+  getBoardEditorAccessKey(boardId: string): string | undefined {
+    return this.boardAccessKeys.get(boardId);
+  }
+
+  createBoard(rawTitle: string, actor: string, editorAccessKey?: string): WhiteboardRecord {
     const now = nowIso();
-    const title = rawTitle.trim() || "Untitled board";
+    const title = rawTitle.trim() || EMPTY_TITLE;
 
     const board: WhiteboardRecord = {
       id: randomUUID(),
@@ -751,6 +844,10 @@ export class RealtimeStore {
 
     this.boards.set(board.id, board);
     this.ensureBoardStack(board.id);
+    const normalizedEditorAccessKey = sanitizeEditorAccessKey(editorAccessKey);
+    if (normalizedEditorAccessKey) {
+      this.boardAccessKeys.set(board.id, normalizedEditorAccessKey);
+    }
 
     if (actor) {
       // Keep actor available for future audit extension.
@@ -768,7 +865,7 @@ export class RealtimeStore {
       return null;
     }
 
-    const nextTitle = input.title.trim() || "Untitled board";
+    const nextTitle = input.title.trim() || EMPTY_TITLE;
     const changed = nextTitle !== board.title;
     const conflict =
       typeof input.baseVersion === "number"
@@ -956,6 +1053,29 @@ export class RealtimeStore {
     return clone(board);
   }
 
+  deleteBoard(input: DeleteBoardInput): "not-found" | "forbidden" | { boardId: string } {
+    const board = this.boards.get(input.boardId);
+    if (!board) {
+      return "not-found";
+    }
+
+    const requiredAccessKey = this.boardAccessKeys.get(input.boardId);
+    if (requiredAccessKey) {
+      const providedAccessKey = sanitizeEditorAccessKey(input.editorAccessKey);
+      if (providedAccessKey !== requiredAccessKey) {
+        return "forbidden";
+      }
+    }
+
+    this.boards.delete(input.boardId);
+    this.boardPast.delete(input.boardId);
+    this.boardFuture.delete(input.boardId);
+    this.boardAccessKeys.delete(input.boardId);
+    this.schedulePersist();
+
+    return { boardId: input.boardId };
+  }
+
   async persistNow(): Promise<void> {
     if (this.persistTimer) {
       clearTimeout(this.persistTimer);
@@ -964,7 +1084,9 @@ export class RealtimeStore {
 
     const payload: PersistedState = {
       documents: [...this.documents.values()],
-      boards: [...this.boards.values()]
+      boards: [...this.boards.values()],
+      documentAccessKeys: Object.fromEntries(this.documentAccessKeys.entries()),
+      boardAccessKeys: Object.fromEntries(this.boardAccessKeys.entries())
     };
 
     const tempPath = `${this.dataFilePath}.tmp-${process.pid}-${Date.now()}`;
@@ -994,7 +1116,7 @@ export class RealtimeStore {
 
     const record = this.documents.get(documentId);
     if (!record) {
-      const fallback = createYDoc("Untitled document", "");
+      const fallback = createYDoc(EMPTY_TITLE, "");
       return fallback;
     }
 

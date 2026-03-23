@@ -73,7 +73,7 @@ export const useCollabStore = create<CollabStore>((set, get) => ({
     set({
       activeDocumentId: documentId,
       role: "editor",
-      title: seed?.title ?? "Untitled document",
+      title: seed?.title ?? "(제목 없음)",
       content: seed?.content ?? "",
       version: seed?.version ?? 0,
       updatedAt: seed?.updatedAt ?? null,
