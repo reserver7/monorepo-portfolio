@@ -1,11 +1,5 @@
 import { createClientEnv } from "@repo/shared-client";
 
-const normalizeOptional = (value: string | undefined): string | null => {
-  const trimmed = value?.trim();
-  return trimmed && trimmed.length > 0 ? trimmed : null;
-};
-
 export const whiteboardClientEnv = {
-  ...createClientEnv(process.env.NEXT_PUBLIC_API_URL, process.env.NEXT_PUBLIC_DEFAULT_BOARD_ROLE),
-  editorAccessKey: normalizeOptional(process.env.NEXT_PUBLIC_EDITOR_ACCESS_KEY)
+  ...createClientEnv(process.env.NEXT_PUBLIC_API_URL, process.env.NEXT_PUBLIC_DEFAULT_BOARD_ROLE)
 };

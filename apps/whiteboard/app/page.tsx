@@ -56,7 +56,7 @@ export default function WhiteboardHomePage() {
 
   const clearMainEditorAccessKey = () => {
     shouldPreserveAccessKeyForRoomRef.current = false;
-    setEditorAccessKey(whiteboardClientEnv.editorAccessKey ?? "");
+    setEditorAccessKey("");
     setStoredEditorAccessKey("");
   };
 
@@ -77,7 +77,7 @@ export default function WhiteboardHomePage() {
     setStoredDisplayName(nextName);
     setRole(storedRole ?? whiteboardClientEnv.defaultRole);
     shouldPreserveAccessKeyForRoomRef.current = false;
-    setEditorAccessKey(whiteboardClientEnv.editorAccessKey ?? "");
+    setEditorAccessKey("");
     setStoredEditorAccessKey("");
   }, []);
 
@@ -112,7 +112,7 @@ export default function WhiteboardHomePage() {
     onSuccess: async ({ board }) => {
       setBoardTitle("팀 아이디어 보드");
       setRole(whiteboardClientEnv.defaultRole);
-      setEditorAccessKey(whiteboardClientEnv.editorAccessKey ?? "");
+      setEditorAccessKey("");
       await queryClient.invalidateQueries({ queryKey: ["boards"] });
       router.push(`/board/${board.id}`);
     },
@@ -290,7 +290,7 @@ export default function WhiteboardHomePage() {
                     onClick={() => {
                       keepAccessKeyForRoomEntry();
                       setStoredDisplayName(displayName.trim() || createGuestName());
-                      setEditorAccessKey(whiteboardClientEnv.editorAccessKey ?? "");
+                      setEditorAccessKey("");
                       router.push(`/board/${board.id}`);
                     }}
                   >

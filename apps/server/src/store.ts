@@ -13,6 +13,11 @@ import type {
   WhiteboardShape,
   WhiteboardSummary
 } from "@repo/shared-types";
+import {
+  createStoredEditorAccessKey,
+  normalizeStoredEditorAccessKey,
+  verifyEditorAccessKey
+} from "./security/access-key";
 
 interface PersistedState {
   documents: DocumentRecord[];
@@ -113,15 +118,6 @@ const nowIso = (): string => new Date().toISOString();
 const sanitizeDocumentTitle = (rawTitle: string): string => {
   const normalized = rawTitle.trim();
   return normalized || EMPTY_TITLE;
-};
-
-const sanitizeEditorAccessKey = (rawValue: string | undefined): string | undefined => {
-  const normalized = rawValue?.trim();
-  if (!normalized) {
-    return undefined;
-  }
-
-  return normalized.slice(0, 120);
 };
 
 const sanitizeCommentBody = (rawBody: string): string => {
@@ -303,7 +299,7 @@ export class RealtimeStore {
 
         this.documents.set(normalized.id, normalized);
 
-        const legacyAccessKey = sanitizeEditorAccessKey(
+        const legacyAccessKey = normalizeStoredEditorAccessKey(
           (persistedDocument as DocumentRecord & { editorAccessKey?: string }).editorAccessKey
         );
         if (legacyAccessKey) {
@@ -319,7 +315,7 @@ export class RealtimeStore {
         };
         this.boards.set(normalizedBoard.id, normalizedBoard);
 
-        const legacyAccessKey = sanitizeEditorAccessKey(
+        const legacyAccessKey = normalizeStoredEditorAccessKey(
           (board as WhiteboardRecord & { editorAccessKey?: string }).editorAccessKey
         );
         if (legacyAccessKey) {
@@ -329,7 +325,7 @@ export class RealtimeStore {
 
       if (parsed.documentAccessKeys) {
         for (const [documentId, accessKey] of Object.entries(parsed.documentAccessKeys)) {
-          const normalized = sanitizeEditorAccessKey(accessKey);
+          const normalized = normalizeStoredEditorAccessKey(accessKey);
           if (normalized) {
             this.documentAccessKeys.set(documentId, normalized);
           }
@@ -338,7 +334,7 @@ export class RealtimeStore {
 
       if (parsed.boardAccessKeys) {
         for (const [boardId, accessKey] of Object.entries(parsed.boardAccessKeys)) {
-          const normalized = sanitizeEditorAccessKey(accessKey);
+          const normalized = normalizeStoredEditorAccessKey(accessKey);
           if (normalized) {
             this.boardAccessKeys.set(boardId, normalized);
           }
@@ -490,7 +486,7 @@ export class RealtimeStore {
 
     this.documents.set(created.id, created);
     this.documentYDocs.set(created.id, ydoc);
-    const normalizedEditorAccessKey = sanitizeEditorAccessKey(editorAccessKey);
+    const normalizedEditorAccessKey = createStoredEditorAccessKey(editorAccessKey);
     if (normalizedEditorAccessKey) {
       this.documentAccessKeys.set(created.id, normalizedEditorAccessKey);
     }
@@ -792,8 +788,7 @@ export class RealtimeStore {
 
     const requiredAccessKey = this.documentAccessKeys.get(input.documentId);
     if (requiredAccessKey) {
-      const providedAccessKey = sanitizeEditorAccessKey(input.editorAccessKey);
-      if (providedAccessKey !== requiredAccessKey) {
+      if (!verifyEditorAccessKey(requiredAccessKey, input.editorAccessKey)) {
         return "forbidden";
       }
     }
@@ -844,7 +839,7 @@ export class RealtimeStore {
 
     this.boards.set(board.id, board);
     this.ensureBoardStack(board.id);
-    const normalizedEditorAccessKey = sanitizeEditorAccessKey(editorAccessKey);
+    const normalizedEditorAccessKey = createStoredEditorAccessKey(editorAccessKey);
     if (normalizedEditorAccessKey) {
       this.boardAccessKeys.set(board.id, normalizedEditorAccessKey);
     }
@@ -1061,8 +1056,7 @@ export class RealtimeStore {
 
     const requiredAccessKey = this.boardAccessKeys.get(input.boardId);
     if (requiredAccessKey) {
-      const providedAccessKey = sanitizeEditorAccessKey(input.editorAccessKey);
-      if (providedAccessKey !== requiredAccessKey) {
+      if (!verifyEditorAccessKey(requiredAccessKey, input.editorAccessKey)) {
         return "forbidden";
       }
     }

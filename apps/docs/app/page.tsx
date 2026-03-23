@@ -52,7 +52,7 @@ export default function HomePage() {
 
   const clearMainEditorAccessKey = () => {
     shouldPreserveAccessKeyForRoomRef.current = false;
-    setEditorAccessKey(docsClientEnv.editorAccessKey ?? "");
+    setEditorAccessKey("");
     setStoredEditorAccessKey("");
   };
 
@@ -72,7 +72,7 @@ export default function HomePage() {
     setStoredDisplayName(nextName);
     setRole(storedRole ?? docsClientEnv.defaultRole);
     shouldPreserveAccessKeyForRoomRef.current = false;
-    setEditorAccessKey(docsClientEnv.editorAccessKey ?? "");
+    setEditorAccessKey("");
     setStoredEditorAccessKey("");
   }, []);
 
@@ -107,7 +107,7 @@ export default function HomePage() {
     onSuccess: async ({ document }) => {
       setDraftTitle("협업 문서");
       setRole(docsClientEnv.defaultRole);
-      setEditorAccessKey(docsClientEnv.editorAccessKey ?? "");
+      setEditorAccessKey("");
       await queryClient.invalidateQueries({ queryKey: ["documents"] });
       router.push(`/doc/${document.id}`);
     },
@@ -316,7 +316,7 @@ export default function HomePage() {
                     onClick={() => {
                       keepAccessKeyForRoomEntry();
                       setStoredDisplayName(displayName.trim() || createGuestName());
-                      setEditorAccessKey(docsClientEnv.editorAccessKey ?? "");
+                      setEditorAccessKey("");
                       router.push(`/doc/${document.id}`);
                     }}
                   >

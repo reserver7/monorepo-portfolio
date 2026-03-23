@@ -22,7 +22,6 @@ import {
   SelectValue
 } from "@repo/ui";
 import { getBoard } from "@/lib/api";
-import { whiteboardClientEnv } from "@/lib/env";
 import { useWhiteboardRealtime } from "@/hooks/use-whiteboard-realtime";
 import { useWhiteboardStore } from "@/stores/use-whiteboard-store";
 import { WhiteboardShape } from "@/lib/types";
@@ -194,7 +193,7 @@ export default function WhiteboardRoomPage() {
     const storedEditorAccessKey = getStoredEditorAccessKey();
     setDisplayName(stored?.trim() ? stored : createGuestName());
     setRequestedRole(storedRole ?? "editor");
-    setEditorAccessKey(storedEditorAccessKey ?? whiteboardClientEnv.editorAccessKey ?? "");
+    setEditorAccessKey(storedEditorAccessKey ?? "");
   }, []);
 
   const boardQuery = useQuery({
@@ -710,8 +709,8 @@ export default function WhiteboardRoomPage() {
       ) : null}
       {isReadOnly ? (
         <Card className="mb-4 border-slate-300 bg-slate-100 p-3 text-sm text-slate-700">
-          보기 전용(`viewer`) 세션입니다. 상단에서 `editor 요청`으로 바꾸고 편집 키를 입력하면
-          재요청됩니다. 보드 편집은 제한되며 참여자 커서 확인만 가능합니다.
+          보기 전용(`viewer`) 세션입니다. 상단에서 `editor 요청`으로 바꾸고 편집 키를 입력하면 재요청됩니다.
+          보드 편집은 제한되며 참여자 커서 확인만 가능합니다.
         </Card>
       ) : null}
 

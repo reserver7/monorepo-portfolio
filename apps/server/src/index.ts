@@ -6,6 +6,7 @@ import { Server, Socket } from "socket.io";
 import type { AccessRole, EditorSnapshot, Participant, WhiteboardShape } from "@repo/shared-types";
 import { serverEnv } from "./config/env";
 import { EventRateLimiter } from "./security/rate-limit";
+import { sanitizeEditorAccessKey, verifyEditorAccessKey } from "./security/access-key";
 import { issueSessionToken, verifySessionToken } from "./security/session";
 import { RealtimeStore } from "./store";
 
@@ -242,13 +243,14 @@ const resolveLockedRole = (
   }
 
   const lockedRole = sessionRoles.get(sessionId);
-  const effectiveEditorAccessKey = trimOptional(requiredEditorAccessKey) ?? serverEnv.editorAccessKey;
+  const effectiveEditorAccessKey =
+    sanitizeEditorAccessKey(requiredEditorAccessKey) ?? sanitizeEditorAccessKey(serverEnv.editorAccessKey);
 
   if (lockedRole) {
     if (lockedRole === "viewer" && requestedRole === "editor") {
       const requiresEditorAccessKey = Boolean(effectiveEditorAccessKey);
       const hasValidEditorAccessKey =
-        !requiresEditorAccessKey || trimOptional(editorAccessKey) === effectiveEditorAccessKey;
+        !requiresEditorAccessKey || verifyEditorAccessKey(effectiveEditorAccessKey, editorAccessKey);
 
       if (hasValidEditorAccessKey) {
         sessionRoles.set(sessionId, "editor");
@@ -264,7 +266,7 @@ const resolveLockedRole = (
   if (
     nextRole === "editor" &&
     requiresEditorAccessKey &&
-    trimOptional(editorAccessKey) !== effectiveEditorAccessKey
+    !verifyEditorAccessKey(effectiveEditorAccessKey, editorAccessKey)
   ) {
     nextRole = "viewer";
   }
@@ -581,7 +583,8 @@ io.on("connection", (socket) => {
 
     const session = resolveSessionFromSocketPayload(payload.sessionId, payload.sessionToken);
     const requestedRole = sanitizeRole(payload.role);
-    const requiredEditorAccessKey = store.getDocumentEditorAccessKey(document.id) ?? serverEnv.editorAccessKey;
+    const requiredEditorAccessKey =
+      store.getDocumentEditorAccessKey(document.id) ?? serverEnv.editorAccessKey;
     const role = resolveLockedRole(
       "document",
       document.id,

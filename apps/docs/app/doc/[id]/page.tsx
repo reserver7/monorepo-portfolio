@@ -5,10 +5,19 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Card, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@repo/ui";
+import {
+  Button,
+  Card,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Textarea
+} from "@repo/ui";
 import { useCollaboration } from "@/hooks/use-collaboration";
 import { getDocument, getDocumentHistory } from "@/lib/api";
-import { docsClientEnv } from "@/lib/env";
 import {
   createGuestName,
   getStoredDisplayName,
@@ -74,7 +83,7 @@ export default function DocumentRoomPage() {
     setDisplayName(nextValue);
     setStoredDisplayName(nextValue);
     setRequestedRole(storedRole ?? "editor");
-    setEditorAccessKey(storedEditorAccessKey ?? docsClientEnv.editorAccessKey ?? "");
+    setEditorAccessKey(storedEditorAccessKey ?? "");
   }, []);
 
   const documentQuery = useQuery({
