@@ -188,6 +188,23 @@ const safeJsonLength = (value: unknown): number => {
   }
 };
 
+const rejectOversizedPayload = (socket: Socket, payload: unknown, errorMessage: string): boolean => {
+  if (safeJsonLength(payload) <= serverEnv.maxSocketJsonChars) {
+    return false;
+  }
+
+  socket.emit("error", { message: errorMessage });
+  return true;
+};
+
+const sanitizeNonNegativeInteger = (value: unknown): number | null => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+
+  return Math.max(0, Math.floor(value));
+};
+
 const resolveSessionFromSocketPayload = (
   requestedSessionId: string | undefined,
   requestedSessionToken: string | undefined
@@ -705,8 +722,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (safeJsonLength(payload) > serverEnv.maxSocketJsonChars) {
-      socket.emit("error", { message: "요청 본문이 허용 크기를 초과했습니다." });
+    if (rejectOversizedPayload(socket, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
       return;
     }
 
@@ -758,8 +774,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (safeJsonLength(payload) > serverEnv.maxSocketJsonChars) {
-      socket.emit("error", { message: "요청 본문이 허용 크기를 초과했습니다." });
+    if (rejectOversizedPayload(socket, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
       return;
     }
 
@@ -798,8 +813,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (safeJsonLength(payload) > serverEnv.maxSocketJsonChars) {
-      socket.emit("error", { message: "요청 본문이 허용 크기를 초과했습니다." });
+    if (rejectOversizedPayload(socket, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
       return;
     }
 
@@ -844,6 +858,10 @@ io.on("connection", (socket) => {
       return;
     }
 
+    if (rejectOversizedPayload(socket, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+      return;
+    }
+
     const participant = documentParticipants.get(documentId)?.get(socket.id);
     const deletedCommentId = store.deleteDocumentComment({
       documentId,
@@ -872,6 +890,10 @@ io.on("connection", (socket) => {
       return;
     }
 
+    if (rejectOversizedPayload(socket, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+      return;
+    }
+
     const documentId = documentBySocket.get(socket.id);
     if (!documentId || payload.documentId !== documentId) {
       return;
@@ -882,7 +904,12 @@ io.on("connection", (socket) => {
       return;
     }
 
-    participant.cursorIndex = Math.max(0, Math.floor(payload.cursorIndex ?? 0));
+    const sanitizedCursorIndex = sanitizeNonNegativeInteger(payload.cursorIndex);
+    if (sanitizedCursorIndex === null) {
+      return;
+    }
+
+    participant.cursorIndex = sanitizedCursorIndex;
     participant.lastSeenAt = new Date().toISOString();
 
     socket.to(documentRoom(documentId)).emit("cursor:update", {
@@ -891,11 +918,16 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("document:save", ({ documentId }: { documentId: string }) => {
+  socket.on("document:save", (payload: { documentId: string }) => {
     if (!enforceRateLimit(socket, "document:save", serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
+    if (rejectOversizedPayload(socket, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+      return;
+    }
+
+    const documentId = payload?.documentId;
     const joinedDocumentId = documentBySocket.get(socket.id);
     if (!joinedDocumentId || joinedDocumentId !== documentId) {
       return;
@@ -996,8 +1028,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (safeJsonLength(payload) > serverEnv.maxSocketJsonChars) {
-      socket.emit("error", { message: "요청 본문이 허용 크기를 초과했습니다." });
+    if (rejectOversizedPayload(socket, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
       return;
     }
 
@@ -1035,6 +1066,10 @@ io.on("connection", (socket) => {
 
   socket.on("board:shape:add", (payload: BoardAddShapePayload) => {
     if (!enforceRateLimit(socket, "board:shape:add", serverEnv.socketWriteEventsPerWindow)) {
+      return;
+    }
+
+    if (rejectOversizedPayload(socket, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
       return;
     }
 
@@ -1083,6 +1118,10 @@ io.on("connection", (socket) => {
 
   socket.on("board:shape:update", (payload: BoardPatchShapePayload) => {
     if (!enforceRateLimit(socket, "board:shape:update", serverEnv.socketWriteEventsPerWindow)) {
+      return;
+    }
+
+    if (rejectOversizedPayload(socket, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
       return;
     }
 
@@ -1135,6 +1174,10 @@ io.on("connection", (socket) => {
       return;
     }
 
+    if (rejectOversizedPayload(socket, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+      return;
+    }
+
     const boardId = boardBySocket.get(socket.id);
     if (!boardId || payload.boardId !== boardId) {
       socket.emit("error", { message: "Join the board first" });
@@ -1178,6 +1221,10 @@ io.on("connection", (socket) => {
       return;
     }
 
+    if (rejectOversizedPayload(socket, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+      return;
+    }
+
     const boardId = boardBySocket.get(socket.id);
     if (!boardId || payload.boardId !== boardId) {
       return;
@@ -1188,8 +1235,14 @@ io.on("connection", (socket) => {
       return;
     }
 
-    participant.cursorX = Math.max(0, Math.round(payload.x ?? 0));
-    participant.cursorY = Math.max(0, Math.round(payload.y ?? 0));
+    const sanitizedCursorX = sanitizeNonNegativeInteger(payload.x);
+    const sanitizedCursorY = sanitizeNonNegativeInteger(payload.y);
+    if (sanitizedCursorX === null || sanitizedCursorY === null) {
+      return;
+    }
+
+    participant.cursorX = sanitizedCursorX;
+    participant.cursorY = sanitizedCursorY;
     participant.lastSeenAt = new Date().toISOString();
 
     socket.to(boardRoom(boardId)).emit("board:cursor:update", {
@@ -1198,11 +1251,16 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("board:undo", ({ boardId }: { boardId: string }) => {
+  socket.on("board:undo", (payload: { boardId: string }) => {
     if (!enforceRateLimit(socket, "board:undo", serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
+    if (rejectOversizedPayload(socket, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+      return;
+    }
+
+    const boardId = payload?.boardId;
     const joinedBoardId = boardBySocket.get(socket.id);
     if (!joinedBoardId || joinedBoardId !== boardId) {
       return;
@@ -1226,11 +1284,16 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("board:redo", ({ boardId }: { boardId: string }) => {
+  socket.on("board:redo", (payload: { boardId: string }) => {
     if (!enforceRateLimit(socket, "board:redo", serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
+    if (rejectOversizedPayload(socket, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+      return;
+    }
+
+    const boardId = payload?.boardId;
     const joinedBoardId = boardBySocket.get(socket.id);
     if (!joinedBoardId || joinedBoardId !== boardId) {
       return;
