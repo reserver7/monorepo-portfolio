@@ -4,9 +4,14 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "배포 확인용 릴리스 태그 (예: v1.2.3)"
+        required: true
+        type: string
 
 concurrency:
-  group: cd-server-render-${{ github.ref }}
+  group: cd-server-render-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -17,6 +22,9 @@ jobs:
     name: Verify Release Tag Commit
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      release_sha: ${{ steps.resolve-release.outputs.release_sha }}
+      release_tag: ${{ steps.resolve-release.outputs.release_tag }}
 
     steps:
       - name: Checkout
@@ -24,18 +32,38 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Ensure tag commit belongs to main
-        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+      - name: Resolve release tag and ensure commit belongs to main
+        id: resolve-release
+        env:
+          MANUAL_RELEASE_TAG: ${{ github.event.inputs.release_tag }}
         run: |
           set -euo pipefail
-          git fetch --no-tags origin main --depth=1
-          if git merge-base --is-ancestor "${GITHUB_SHA}" "origin/main"; then
-            echo "Tag commit is on main."
-            exit 0
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            release_tag="${GITHUB_REF#refs/tags/}"
+            release_sha="${GITHUB_SHA}"
+          else
+            release_tag="$(printf '%s' "${MANUAL_RELEASE_TAG}" | xargs)"
+            if [ -z "${release_tag}" ]; then
+              echo "release_tag 입력값이 비어 있습니다."
+              exit 1
+            fi
+            git fetch --force --tags origin
+            if ! git rev-parse -q --verify "refs/tags/${release_tag}" >/dev/null; then
+              echo "태그를 찾을 수 없습니다: ${release_tag}"
+              exit 1
+            fi
+            release_sha="$(git rev-list -n 1 "refs/tags/${release_tag}")"
           fi
 
-          echo "Release tag must point to a commit on main."
-          exit 1
+          git fetch --no-tags origin main --depth=1
+          if ! git merge-base --is-ancestor "${release_sha}" "origin/main"; then
+            echo "릴리스 태그는 main 이력 위 커밋만 허용됩니다: ${release_tag} (${release_sha})"
+            exit 1
+          fi
+
+          echo "release_tag=${release_tag}" >> "${GITHUB_OUTPUT}"
+          echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
+          echo "검증 완료: ${release_tag} -> ${release_sha}"
 
   deploy-server:
     name: Trigger Render Deploy Hook

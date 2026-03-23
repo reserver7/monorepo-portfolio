@@ -125,6 +125,7 @@ cp apps/whiteboard/.env.local.example apps/whiteboard/.env.local
 
 - `COLLAB_SESSION_SECRET`: production 필수 (세션 서명용)
 - `CORS_ORIGINS`: production 필수 (명시적 허용 origin)
+- `STATE_FILE_PATH`: production 필수 (재시작 후에도 데이터 유지되는 영속 디스크 경로)
 - `EDITOR_ACCESS_KEY`: 선택 (설정 시 editor 권한 승격 시 키 검증)
 - `SOCKET_RATE_LIMIT_WINDOW_MS`, `SOCKET_WRITE_EVENTS_PER_WINDOW`, `SOCKET_CURSOR_EVENTS_PER_WINDOW`
 - `MAX_YJS_UPDATE_BASE64_CHARS`, `MAX_SOCKET_JSON_CHARS`
@@ -180,8 +181,8 @@ pnpm build
 ## CI/CD 구성 (Vercel + GitHub Actions)
 
 - `CI`: `.github/workflows/ci.yml`
-  - `PR(main/develop)`에서는 비용 최적화를 위해 `lint`, `typecheck`, `test`만 실행
-  - `main` push에서는 `lint`, `typecheck`, `test`, `build`, `Playwright E2E`를 실행
+  - `PR -> develop`에서는 비용 최적화를 위해 `lint`, `typecheck`, `test`만 실행
+  - `PR -> main`/`main` push/수동 실행에서는 `lint`, `typecheck`, `test`, `build`, `Playwright E2E`를 실행
   - E2E 실패 시 `playwright-report`, `test-results` 아티팩트를 업로드
   - 포트폴리오 환경(별도 개발 서버 없음) 기준으로 PR 검증과 운영 검증을 분리
   - 수동 실행(`workflow_dispatch`) 지원
@@ -189,14 +190,14 @@ pnpm build
 - `CD`: `.github/workflows/cd-vercel.yml`
   - `v*` 태그 push 시 Docs/Whiteboard를 운영 배포
   - 릴리즈 태그 커밋이 `main` 이력에 포함되는지 검증 후 배포
-  - 수동 실행(`workflow_dispatch`) 지원
+  - 수동 실행(`workflow_dispatch`) 시에도 `release_tag` 입력값을 검증하고 동일하게 배포
 
 - `CD(Server)`: `.github/workflows/cd-server-render.yml`
   - `v*` 태그 push 시 Render Deploy Hook 기반 서버 배포
   - 릴리즈 태그 커밋이 `main` 이력에 포함되는지 검증 후 배포
+  - 수동 실행(`workflow_dispatch`) 시에도 `release_tag` 입력값을 검증
   - `RENDER_DEPLOY_HOOK_URL` 미설정 시 명시적 스킵 로그 출력
   - `SERVER_HEALTHCHECK_URL` 설정 시 배포 후 헬스체크까지 검증
-  - 수동 실행(`workflow_dispatch`) 지원
 
 - `apps/server`는 Socket.IO 기반 장기 연결이 핵심이라, 프론트와 분리된 서버 런타임에서 운영
 
