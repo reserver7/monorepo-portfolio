@@ -180,21 +180,20 @@ pnpm build
 ## CI/CD 구성 (Vercel + GitHub Actions)
 
 - `CI`: `.github/workflows/ci.yml`
-  - `main` push / PR 기준으로 `lint`, `typecheck`, `test`, `build`를 실행
-  - 정적 품질 게이트 통과 후 Playwright E2E(`pnpm test:e2e`)를 추가 실행
-  - 실패 시 `playwright-report`, `test-results` 아티팩트 업로드
-  - 모노레포 전체 품질 게이트 역할
+  - `PR(main/develop)`에서는 비용 최적화를 위해 `lint`, `typecheck`, `test`만 실행
+  - `main` push에서는 `lint`, `typecheck`, `test`, `build`, `Playwright E2E`를 실행
+  - E2E 실패 시 `playwright-report`, `test-results` 아티팩트를 업로드
+  - 포트폴리오 환경(별도 개발 서버 없음) 기준으로 PR 검증과 운영 검증을 분리
   - 수동 실행(`workflow_dispatch`) 지원
 
 - `CD`: `.github/workflows/cd-vercel.yml`
-  - `main` push 시 변경 파일 기반으로 필요한 프론트 앱만 배포
-  - 변경 감지 기준:
-    - Docs 관련 변경 또는 공용 프론트 패키지 변경 -> Docs 배포
-    - Whiteboard 관련 변경 또는 공용 프론트 패키지 변경 -> Whiteboard 배포
-  - 수동 실행(`workflow_dispatch`) 시 Docs/Whiteboard 모두 배포
+  - `v*` 태그 push 시 Docs/Whiteboard를 운영 배포
+  - 릴리즈 태그 커밋이 `main` 이력에 포함되는지 검증 후 배포
+  - 수동 실행(`workflow_dispatch`) 지원
 
 - `CD(Server)`: `.github/workflows/cd-server-render.yml`
-  - `main` push(서버 관련 변경) 시 Render Deploy Hook 기반 서버 배포
+  - `v*` 태그 push 시 Render Deploy Hook 기반 서버 배포
+  - 릴리즈 태그 커밋이 `main` 이력에 포함되는지 검증 후 배포
   - `RENDER_DEPLOY_HOOK_URL` 미설정 시 명시적 스킵 로그 출력
   - `SERVER_HEALTHCHECK_URL` 설정 시 배포 후 헬스체크까지 검증
   - 수동 실행(`workflow_dispatch`) 지원

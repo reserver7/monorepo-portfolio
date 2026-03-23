@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ["main", "develop"]
   push:
     branches: ["main"]
   workflow_dispatch:
@@ -15,10 +15,44 @@ permissions:
   contents: read
 
 jobs:
-  checks:
-    name: Lint / Typecheck / Test / Build
+  quick-checks:
+    name: Quick Checks (PR)
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm turbo run lint
+
+      - name: Typecheck
+        run: pnpm turbo run typecheck
+
+      - name: Test
+        run: pnpm turbo run test
+
+  full-checks:
+    name: Full Checks (Main)
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -49,3 +83,25 @@ jobs:
 
       - name: Build
         run: pnpm turbo run build
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: E2E (Playwright)
+        run: pnpm test:e2e
+
+      - name: Upload Playwright Report
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          if-no-files-found: ignore
+
+      - name: Upload E2E Test Results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results
+          if-no-files-found: ignore
