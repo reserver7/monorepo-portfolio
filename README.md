@@ -9,7 +9,7 @@ Turborepo + pnpm 기반으로 문서 협업(Next.js)과 화이트보드 협업(N
 - `apps/server`: 실시간 API/Socket 서버 (`http://localhost:4000`)
 - `packages/ui`: shadcn/ui 기반 공용 UI 컴포넌트
 - `packages/shared-types`: 문서/화이트보드 공용 타입
-- `packages/shared-client`: 문서/화이트보드 공용 클라이언트 유틸(env/time/storage/http/navigation)
+- `packages/shared-client`: 문서/화이트보드 공용 클라이언트 유틸(env/time/storage/http/navigation/session-factory/event-log/role)
 - `packages/eslint-config`: 공용 ESLint flat config
 - `packages/prettier-config`: 공용 Prettier config
 - `packages/tailwind-config`: 공용 Tailwind config 팩토리
@@ -46,6 +46,20 @@ Turborepo + pnpm 기반으로 문서 협업(Next.js)과 화이트보드 협업(N
 - 참여자 커서 공유
 - 보기/편집 권한 분리 (`viewer` / `editor`)
 - 충돌 처리 전략: `last-write-wins` (화이트보드), Yjs CRDT(문서)
+
+## TypeScript
+
+- 서버-클라이언트 실시간 이벤트 계약을 `@repo/shared-types`로 통합
+  - 이벤트명 상수(`socketEventName`) + payload 타입을 단일 소스로 관리
+  - 문서/화이트보드 훅과 서버가 동일 타입 계약을 재사용
+- REST 요청 본문 파싱을 서버 공통 헬퍼로 분리
+  - `unknown` 입력을 안전하게 정규화해 ad-hoc 타입 단언 최소화
+- 세션 로컬스토리지 접근을 `createSessionStorage` 팩토리로 공통화
+  - docs/whiteboard는 키만 주입해 동일 인터페이스 재사용
+- 클라이언트 이벤트 로그 포맷/누적 로직을 공용 유틸로 통합
+  - `appendEventLog` 기반으로 스토어 중복 로직 제거
+- 역할 문자열 파싱을 `coerceAccessRole`로 일원화
+  - 셀렉트 입력값 처리 시 fallback 정책을 코드 전역에서 일관 유지
 
 ## 모노레포 구조
 
@@ -167,6 +181,8 @@ pnpm build
 
 - `CI`: `.github/workflows/ci.yml`
   - `main` push / PR 기준으로 `lint`, `typecheck`, `test`, `build`를 실행
+  - 정적 품질 게이트 통과 후 Playwright E2E(`pnpm test:e2e`)를 추가 실행
+  - 실패 시 `playwright-report`, `test-results` 아티팩트 업로드
   - 모노레포 전체 품질 게이트 역할
   - 수동 실행(`workflow_dispatch`) 지원
 
