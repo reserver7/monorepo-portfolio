@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -35,140 +35,19 @@ import {
 } from "@/lib/session";
 import { formatExactTime, formatRelativeTime } from "@/lib/time";
 import { collabFieldCopy } from "@repo/shared-client";
-
-type WhiteboardTool = "select" | "rect" | "ellipse" | "diamond" | "text" | "connector";
-type ResizeHandle = "nw" | "ne" | "sw" | "se";
-type ConnectorHandle = "start" | "end";
-type NodeShapeType = Exclude<WhiteboardShape["type"], "connector">;
-const CONNECTOR_SNAP_RADIUS = 36;
-
-const shapePreset: Record<NodeShapeType, { fill: string; stroke: string; w: number; h: number }> = {
-  rect: { fill: "#bfdbfe", stroke: "#2563eb", w: 140, h: 100 },
-  ellipse: { fill: "#dcfce7", stroke: "#16a34a", w: 150, h: 104 },
-  diamond: { fill: "#fef3c7", stroke: "#d97706", w: 148, h: 106 },
-  text: { fill: "#fef3c7", stroke: "#f59e0b", w: 180, h: 56 }
-};
-
-const resizeHandleStyle: Record<ResizeHandle, CSSProperties> = {
-  nw: { left: -6, top: -6, cursor: "nwse-resize" },
-  ne: { right: -6, top: -6, cursor: "nesw-resize" },
-  sw: { left: -6, bottom: -6, cursor: "nesw-resize" },
-  se: { right: -6, bottom: -6, cursor: "nwse-resize" }
-};
-
-const centerPointOfShape = (shape: WhiteboardShape) => ({
-  x: Math.round(shape.x + shape.w / 2),
-  y: Math.round(shape.y + shape.h / 2)
-});
-
-const makeShape = (
-  type: NodeShapeType,
-  createdBy: string,
-  x = 80,
-  y = 80,
-  text?: string
-): WhiteboardShape => {
-  const preset = shapePreset[type];
-
-  return {
-    id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    type,
-    x,
-    y,
-    w: preset.w,
-    h: preset.h,
-    text,
-    fill: preset.fill,
-    stroke: preset.stroke,
-    createdBy,
-    updatedAt: new Date().toISOString()
-  };
-};
-
-const makeConnector = (from: WhiteboardShape, to: WhiteboardShape, createdBy: string): WhiteboardShape => {
-  const start = centerPointOfShape(from);
-  const end = centerPointOfShape(to);
-
-  return {
-    id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    type: "connector",
-    x: Math.min(start.x, end.x),
-    y: Math.min(start.y, end.y),
-    w: Math.abs(end.x - start.x),
-    h: Math.abs(end.y - start.y),
-    fromShapeId: from.id,
-    toShapeId: to.id,
-    startX: start.x,
-    startY: start.y,
-    endX: end.x,
-    endY: end.y,
-    fill: "transparent",
-    stroke: "#475569",
-    createdBy,
-    updatedAt: new Date().toISOString()
-  };
-};
-
-const resolveConnectorEndpoints = (
-  connector: WhiteboardShape,
-  byId: Map<string, WhiteboardShape>
-): { startX: number; startY: number; endX: number; endY: number } | null => {
-  const fromShape = connector.fromShapeId ? byId.get(connector.fromShapeId) : undefined;
-  const toShape = connector.toShapeId ? byId.get(connector.toShapeId) : undefined;
-
-  const start = fromShape ? centerPointOfShape(fromShape) : null;
-  const end = toShape ? centerPointOfShape(toShape) : null;
-
-  const startX = start?.x ?? connector.startX ?? connector.x;
-  const startY = start?.y ?? connector.startY ?? connector.y;
-  const endX = end?.x ?? connector.endX ?? connector.x + connector.w;
-  const endY = end?.y ?? connector.endY ?? connector.y + connector.h;
-
-  if ([startX, startY, endX, endY].some((value) => Number.isNaN(value))) {
-    return null;
-  }
-
-  return {
-    startX: Math.round(startX),
-    startY: Math.round(startY),
-    endX: Math.round(endX),
-    endY: Math.round(endY)
-  };
-};
-
-const findNearestNodeCenter = (
-  point: { x: number; y: number },
-  nodeShapes: WhiteboardShape[],
-  radius = CONNECTOR_SNAP_RADIUS
-): { shapeId: string; x: number; y: number } | null => {
-  const maxDistanceSquared = radius * radius;
-  let bestMatch: { shapeId: string; x: number; y: number } | null = null;
-  let bestDistanceSquared = Number.POSITIVE_INFINITY;
-
-  for (const shape of nodeShapes) {
-    if (shape.type === "connector") {
-      continue;
-    }
-
-    const center = centerPointOfShape(shape);
-    const dx = point.x - center.x;
-    const dy = point.y - center.y;
-    const distanceSquared = dx * dx + dy * dy;
-
-    if (distanceSquared > maxDistanceSquared || distanceSquared >= bestDistanceSquared) {
-      continue;
-    }
-
-    bestDistanceSquared = distanceSquared;
-    bestMatch = {
-      shapeId: shape.id,
-      x: center.x,
-      y: center.y
-    };
-  }
-
-  return bestMatch;
-};
+import { BoardSidePanel } from "./board-side-panel";
+import {
+  ConnectorHandle,
+  findNearestNodeCenter,
+  makeConnector,
+  makeShape,
+  NodeShapeType,
+  resizeHandleStyle,
+  resolveConnectorEndpoints,
+  ResizeHandle,
+  shapePreset,
+  WhiteboardTool
+} from "./shape-utils";
 
 export default function WhiteboardRoomPage() {
   const params = useParams<{ id: string }>();
@@ -1091,65 +970,14 @@ export default function WhiteboardRoomPage() {
           ))}
         </div>
 
-        <div className="space-y-3">
-          <Card className="p-4">
-            <h3 className="mb-2 text-sm font-semibold">참여자</h3>
-            <div className="space-y-2">
-              {participants.map((participant) => (
-                <div
-                  key={`${participant.socketId}-${participant.sessionId}`}
-                  className="flex items-center justify-between rounded border border-slate-200 bg-white p-2"
-                >
-                  <div className="flex items-center gap-2 text-xs">
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: participant.color }}
-                    />
-                    <span>
-                      {participant.displayName}
-                      {participant.sessionId === sessionId ? " (나)" : ""}
-                    </span>
-                    <span
-                      className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-                        participant.role === "editor"
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {participant.role}
-                    </span>
-                  </div>
-                  <span className="text-[11px] text-slate-500">
-                    {Math.round(participant.cursorX)}, {Math.round(participant.cursorY)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <h3 className="mb-2 text-sm font-semibold">선택 정보</h3>
-            <div className="space-y-1 text-xs text-slate-600">
-              <p>선택 도구: {activeTool}</p>
-              <p>
-                선택 요소:{" "}
-                {selectedShape ? `${selectedShape.type} (${selectedShape.id.slice(0, 6)})` : "없음"}
-              </p>
-              <p>연결 시작점: {connectorFromShapeId ? connectorFromShapeId.slice(0, 6) : "없음"}</p>
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <h3 className="mb-2 text-sm font-semibold">실시간 이벤트</h3>
-            <div className="max-h-80 space-y-1 overflow-auto">
-              {eventLog.map((log, index) => (
-                <p key={`${index}-${log}`} className="text-[11px] text-slate-600">
-                  {log}
-                </p>
-              ))}
-            </div>
-          </Card>
-        </div>
+        <BoardSidePanel
+          participants={participants}
+          sessionId={sessionId}
+          activeTool={activeTool}
+          selectedShape={selectedShape}
+          connectorFromShapeId={connectorFromShapeId}
+          eventLog={eventLog}
+        />
       </div>
     </main>
   );
