@@ -30,9 +30,12 @@ import {
   sanitizeDisplayName,
   sanitizeNonNegativeInteger,
   sanitizeRole,
+  SocketEventName,
+  socketEventName,
   trimOptional
 } from "./realtime/socket-contracts";
 import { boardRoom, createRealtimeSessionState, documentRoom } from "./realtime/session-state";
+import { readOptionalString, readStringArray, toJsonObject } from "./http/request-body";
 import { EventRateLimiter } from "./security/rate-limit";
 import { sanitizeEditorAccessKey, verifyEditorAccessKey } from "./security/access-key";
 import { issueSessionToken, verifySessionToken } from "./security/session";
@@ -80,7 +83,7 @@ const EMPTY_TITLE = "(제목 없음)";
 
 const enforceRateLimit = (
   socket: Socket,
-  eventName: string,
+  eventName: SocketEventName,
   maxEventsPerWindow: number,
   windowMs = serverEnv.socketRateLimitWindowMs
 ): boolean => {
@@ -104,7 +107,7 @@ const enforceRateLimit = (
 
 const rejectOversizedPayload = (
   socket: Socket,
-  eventName: string,
+  eventName: SocketEventName,
   payload: unknown,
   errorMessage: string
 ): boolean => {
@@ -325,17 +328,17 @@ app.get("/api/documents", (_req, res) => {
 });
 
 app.post("/api/documents", (req, res) => {
-  const actor = sanitizeDisplayName(req.body?.actor as string | undefined);
-  const title = typeof req.body?.title === "string" ? req.body.title : EMPTY_TITLE;
-  const editorAccessKey =
-    typeof req.body?.editorAccessKey === "string" ? req.body.editorAccessKey : undefined;
+  const body = toJsonObject(req.body);
+  const actor = sanitizeDisplayName(readOptionalString(body, "actor"));
+  const title = readOptionalString(body, "title") ?? EMPTY_TITLE;
+  const editorAccessKey = readOptionalString(body, "editorAccessKey");
   const created = store.createDocument(title, actor, editorAccessKey);
   res.status(201).json({ document: created });
 });
 
 app.delete("/api/documents/:id", (req, res) => {
-  const editorAccessKey =
-    typeof req.body?.editorAccessKey === "string" ? req.body.editorAccessKey : undefined;
+  const body = toJsonObject(req.body);
+  const editorAccessKey = readOptionalString(body, "editorAccessKey");
   const deleted = store.deleteDocument({
     documentId: req.params.id,
     editorAccessKey
@@ -392,16 +395,16 @@ app.post("/api/documents/:id/comments", (req, res) => {
     return;
   }
 
+  const bodyPayload = toJsonObject(req.body);
   const session = resolveSessionFromRequest(req);
-  const body = typeof req.body?.body === "string" ? req.body.body : "";
+  const body = readOptionalString(bodyPayload, "body") ?? "";
+  const mentions = readStringArray(bodyPayload, "mentions");
   const comment = store.addDocumentComment({
     documentId: document.id,
     authorSessionId: session.sessionId,
-    authorName: sanitizeDisplayName(req.body?.authorName as string | undefined),
+    authorName: sanitizeDisplayName(readOptionalString(bodyPayload, "authorName")),
     body,
-    mentions: Array.isArray(req.body?.mentions)
-      ? req.body.mentions.filter((mention: unknown): mention is string => typeof mention === "string")
-      : extractMentions(body)
+    mentions: mentions.length > 0 ? mentions : extractMentions(body)
   });
 
   if (!comment) {
@@ -425,17 +428,17 @@ app.get("/api/boards", (_req, res) => {
 });
 
 app.post("/api/boards", (req, res) => {
-  const actor = sanitizeDisplayName(req.body?.actor as string | undefined);
-  const title = typeof req.body?.title === "string" ? req.body.title : EMPTY_TITLE;
-  const editorAccessKey =
-    typeof req.body?.editorAccessKey === "string" ? req.body.editorAccessKey : undefined;
+  const body = toJsonObject(req.body);
+  const actor = sanitizeDisplayName(readOptionalString(body, "actor"));
+  const title = readOptionalString(body, "title") ?? EMPTY_TITLE;
+  const editorAccessKey = readOptionalString(body, "editorAccessKey");
   const board = store.createBoard(title, actor, editorAccessKey);
   res.status(201).json({ board });
 });
 
 app.delete("/api/boards/:id", (req, res) => {
-  const editorAccessKey =
-    typeof req.body?.editorAccessKey === "string" ? req.body.editorAccessKey : undefined;
+  const body = toJsonObject(req.body);
+  const editorAccessKey = readOptionalString(body, "editorAccessKey");
   const deleted = store.deleteBoard({
     boardId: req.params.id,
     editorAccessKey
@@ -486,10 +489,10 @@ io.on("connection", (socket) => {
     socketId: socket.id
   });
 
-  socket.on("document:join", (payload: DocumentJoinPayload) => {
-    socketMetrics.record("document:join", "received");
+  socket.on(socketEventName.documentJoin, (payload: DocumentJoinPayload) => {
+    socketMetrics.record(socketEventName.documentJoin, "received");
 
-    if (!enforceRateLimit(socket, "document:join", serverEnv.socketWriteEventsPerWindow)) {
+    if (!enforceRateLimit(socket, socketEventName.documentJoin, serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
@@ -572,10 +575,10 @@ io.on("connection", (socket) => {
     broadcastDocumentParticipants(document.id);
   });
 
-  socket.on("document:yjs:update", (payload: DocumentYjsUpdatePayload) => {
-    socketMetrics.record("document:yjs:update", "received");
+  socket.on(socketEventName.documentYjsUpdate, (payload: DocumentYjsUpdatePayload) => {
+    socketMetrics.record(socketEventName.documentYjsUpdate, "received");
 
-    if (!enforceRateLimit(socket, "document:yjs:update", serverEnv.socketWriteEventsPerWindow)) {
+    if (!enforceRateLimit(socket, socketEventName.documentYjsUpdate, serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
@@ -621,10 +624,10 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("document:update", (payload: DocumentLegacyUpdatePayload) => {
-    socketMetrics.record("document:update", "received");
+  socket.on(socketEventName.documentUpdate, (payload: DocumentLegacyUpdatePayload) => {
+    socketMetrics.record(socketEventName.documentUpdate, "received");
 
-    if (!enforceRateLimit(socket, "document:update", serverEnv.socketWriteEventsPerWindow)) {
+    if (!enforceRateLimit(socket, socketEventName.documentUpdate, serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
@@ -634,7 +637,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (rejectOversizedPayload(socket, "document:update", payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+    if (rejectOversizedPayload(socket, socketEventName.documentUpdate, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
       return;
     }
 
@@ -675,10 +678,10 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("document:comment:add", (payload: DocumentCommentPayload) => {
-    socketMetrics.record("document:comment:add", "received");
+  socket.on(socketEventName.documentCommentAdd, (payload: DocumentCommentPayload) => {
+    socketMetrics.record(socketEventName.documentCommentAdd, "received");
 
-    if (!enforceRateLimit(socket, "document:comment:add", serverEnv.socketWriteEventsPerWindow)) {
+    if (!enforceRateLimit(socket, socketEventName.documentCommentAdd, serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
@@ -691,7 +694,7 @@ io.on("connection", (socket) => {
     if (
       rejectOversizedPayload(
         socket,
-        "document:comment:add",
+        socketEventName.documentCommentAdd,
         payload,
         "요청 본문이 허용 크기를 초과했습니다."
       )
@@ -717,16 +720,16 @@ io.on("connection", (socket) => {
       return;
     }
 
-    io.to(documentRoom(documentId)).emit("document:comment:add", {
+    io.to(documentRoom(documentId)).emit(socketEventName.documentCommentAdd, {
       documentId,
       comment
     });
   });
 
-  socket.on("document:comment:update", (payload: DocumentCommentUpdatePayload) => {
-    socketMetrics.record("document:comment:update", "received");
+  socket.on(socketEventName.documentCommentUpdate, (payload: DocumentCommentUpdatePayload) => {
+    socketMetrics.record(socketEventName.documentCommentUpdate, "received");
 
-    if (!enforceRateLimit(socket, "document:comment:update", serverEnv.socketWriteEventsPerWindow)) {
+    if (!enforceRateLimit(socket, socketEventName.documentCommentUpdate, serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
@@ -739,7 +742,7 @@ io.on("connection", (socket) => {
     if (
       rejectOversizedPayload(
         socket,
-        "document:comment:update",
+        socketEventName.documentCommentUpdate,
         payload,
         "요청 본문이 허용 크기를 초과했습니다."
       )
@@ -771,16 +774,16 @@ io.on("connection", (socket) => {
       return;
     }
 
-    io.to(documentRoom(documentId)).emit("document:comment:update", {
+    io.to(documentRoom(documentId)).emit(socketEventName.documentCommentUpdate, {
       documentId,
       comment: updatedComment
     });
   });
 
-  socket.on("document:comment:delete", (payload: DocumentCommentDeletePayload) => {
-    socketMetrics.record("document:comment:delete", "received");
+  socket.on(socketEventName.documentCommentDelete, (payload: DocumentCommentDeletePayload) => {
+    socketMetrics.record(socketEventName.documentCommentDelete, "received");
 
-    if (!enforceRateLimit(socket, "document:comment:delete", serverEnv.socketWriteEventsPerWindow)) {
+    if (!enforceRateLimit(socket, socketEventName.documentCommentDelete, serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
@@ -793,7 +796,7 @@ io.on("connection", (socket) => {
     if (
       rejectOversizedPayload(
         socket,
-        "document:comment:delete",
+        socketEventName.documentCommentDelete,
         payload,
         "요청 본문이 허용 크기를 초과했습니다."
       )
@@ -818,20 +821,20 @@ io.on("connection", (socket) => {
       return;
     }
 
-    io.to(documentRoom(documentId)).emit("document:comment:delete", {
+    io.to(documentRoom(documentId)).emit(socketEventName.documentCommentDelete, {
       documentId,
       commentId: deletedCommentId
     });
   });
 
-  socket.on("cursor:move", (payload: CursorPayload) => {
-    socketMetrics.record("cursor:move", "received");
+  socket.on(socketEventName.documentCursorMove, (payload: CursorPayload) => {
+    socketMetrics.record(socketEventName.documentCursorMove, "received");
 
-    if (!enforceRateLimit(socket, "cursor:move", serverEnv.socketCursorEventsPerWindow)) {
+    if (!enforceRateLimit(socket, socketEventName.documentCursorMove, serverEnv.socketCursorEventsPerWindow)) {
       return;
     }
 
-    if (rejectOversizedPayload(socket, "cursor:move", payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+    if (rejectOversizedPayload(socket, socketEventName.documentCursorMove, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
       return;
     }
 
@@ -859,14 +862,14 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("document:save", (payload: { documentId: string }) => {
-    socketMetrics.record("document:save", "received");
+  socket.on(socketEventName.documentSave, (payload: { documentId: string }) => {
+    socketMetrics.record(socketEventName.documentSave, "received");
 
-    if (!enforceRateLimit(socket, "document:save", serverEnv.socketWriteEventsPerWindow)) {
+    if (!enforceRateLimit(socket, socketEventName.documentSave, serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
-    if (rejectOversizedPayload(socket, "document:save", payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+    if (rejectOversizedPayload(socket, socketEventName.documentSave, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
       return;
     }
 
@@ -895,10 +898,10 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("board:join", (payload: BoardJoinPayload) => {
-    socketMetrics.record("board:join", "received");
+  socket.on(socketEventName.boardJoin, (payload: BoardJoinPayload) => {
+    socketMetrics.record(socketEventName.boardJoin, "received");
 
-    if (!enforceRateLimit(socket, "board:join", serverEnv.socketWriteEventsPerWindow)) {
+    if (!enforceRateLimit(socket, socketEventName.boardJoin, serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
@@ -962,10 +965,10 @@ io.on("connection", (socket) => {
     broadcastBoardParticipants(board.id);
   });
 
-  socket.on("board:title:update", (payload: BoardTitlePayload) => {
-    socketMetrics.record("board:title:update", "received");
+  socket.on(socketEventName.boardTitleUpdate, (payload: BoardTitlePayload) => {
+    socketMetrics.record(socketEventName.boardTitleUpdate, "received");
 
-    if (!enforceRateLimit(socket, "board:title:update", serverEnv.socketWriteEventsPerWindow)) {
+    if (!enforceRateLimit(socket, socketEventName.boardTitleUpdate, serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
@@ -978,7 +981,7 @@ io.on("connection", (socket) => {
     if (
       rejectOversizedPayload(
         socket,
-        "board:title:update",
+        socketEventName.boardTitleUpdate,
         payload,
         "요청 본문이 허용 크기를 초과했습니다."
       )
@@ -1018,17 +1021,17 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("board:shape:add", (payload: BoardAddShapePayload) => {
-    socketMetrics.record("board:shape:add", "received");
+  socket.on(socketEventName.boardShapeAdd, (payload: BoardAddShapePayload) => {
+    socketMetrics.record(socketEventName.boardShapeAdd, "received");
 
-    if (!enforceRateLimit(socket, "board:shape:add", serverEnv.socketWriteEventsPerWindow)) {
+    if (!enforceRateLimit(socket, socketEventName.boardShapeAdd, serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
     if (
       rejectOversizedPayload(
         socket,
-        "board:shape:add",
+        socketEventName.boardShapeAdd,
         payload,
         "요청 본문이 허용 크기를 초과했습니다."
       )
@@ -1079,17 +1082,17 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("board:shape:update", (payload: BoardPatchShapePayload) => {
-    socketMetrics.record("board:shape:update", "received");
+  socket.on(socketEventName.boardShapeUpdate, (payload: BoardPatchShapePayload) => {
+    socketMetrics.record(socketEventName.boardShapeUpdate, "received");
 
-    if (!enforceRateLimit(socket, "board:shape:update", serverEnv.socketWriteEventsPerWindow)) {
+    if (!enforceRateLimit(socket, socketEventName.boardShapeUpdate, serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
     if (
       rejectOversizedPayload(
         socket,
-        "board:shape:update",
+        socketEventName.boardShapeUpdate,
         payload,
         "요청 본문이 허용 크기를 초과했습니다."
       )
@@ -1141,17 +1144,17 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("board:shape:remove", (payload: BoardRemoveShapePayload) => {
-    socketMetrics.record("board:shape:remove", "received");
+  socket.on(socketEventName.boardShapeRemove, (payload: BoardRemoveShapePayload) => {
+    socketMetrics.record(socketEventName.boardShapeRemove, "received");
 
-    if (!enforceRateLimit(socket, "board:shape:remove", serverEnv.socketWriteEventsPerWindow)) {
+    if (!enforceRateLimit(socket, socketEventName.boardShapeRemove, serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
     if (
       rejectOversizedPayload(
         socket,
-        "board:shape:remove",
+        socketEventName.boardShapeRemove,
         payload,
         "요청 본문이 허용 크기를 초과했습니다."
       )
@@ -1197,14 +1200,14 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("board:cursor", (payload: BoardCursorPayload) => {
-    socketMetrics.record("board:cursor", "received");
+  socket.on(socketEventName.boardCursor, (payload: BoardCursorPayload) => {
+    socketMetrics.record(socketEventName.boardCursor, "received");
 
-    if (!enforceRateLimit(socket, "board:cursor", serverEnv.socketCursorEventsPerWindow)) {
+    if (!enforceRateLimit(socket, socketEventName.boardCursor, serverEnv.socketCursorEventsPerWindow)) {
       return;
     }
 
-    if (rejectOversizedPayload(socket, "board:cursor", payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+    if (rejectOversizedPayload(socket, socketEventName.boardCursor, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
       return;
     }
 
@@ -1234,14 +1237,14 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("board:undo", (payload: { boardId: string }) => {
-    socketMetrics.record("board:undo", "received");
+  socket.on(socketEventName.boardUndo, (payload: { boardId: string }) => {
+    socketMetrics.record(socketEventName.boardUndo, "received");
 
-    if (!enforceRateLimit(socket, "board:undo", serverEnv.socketWriteEventsPerWindow)) {
+    if (!enforceRateLimit(socket, socketEventName.boardUndo, serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
-    if (rejectOversizedPayload(socket, "board:undo", payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+    if (rejectOversizedPayload(socket, socketEventName.boardUndo, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
       return;
     }
 
@@ -1269,14 +1272,14 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("board:redo", (payload: { boardId: string }) => {
-    socketMetrics.record("board:redo", "received");
+  socket.on(socketEventName.boardRedo, (payload: { boardId: string }) => {
+    socketMetrics.record(socketEventName.boardRedo, "received");
 
-    if (!enforceRateLimit(socket, "board:redo", serverEnv.socketWriteEventsPerWindow)) {
+    if (!enforceRateLimit(socket, socketEventName.boardRedo, serverEnv.socketWriteEventsPerWindow)) {
       return;
     }
 
-    if (rejectOversizedPayload(socket, "board:redo", payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+    if (rejectOversizedPayload(socket, socketEventName.boardRedo, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
       return;
     }
 

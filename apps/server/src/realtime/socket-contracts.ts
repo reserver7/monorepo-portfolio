@@ -1,5 +1,26 @@
 import type { AccessRole, EditorSnapshot, Participant, WhiteboardShape } from "@repo/shared-types";
 
+export const socketEventName = {
+  documentJoin: "document:join",
+  documentYjsUpdate: "document:yjs:update",
+  documentUpdate: "document:update",
+  documentCommentAdd: "document:comment:add",
+  documentCommentUpdate: "document:comment:update",
+  documentCommentDelete: "document:comment:delete",
+  documentCursorMove: "cursor:move",
+  documentSave: "document:save",
+  boardJoin: "board:join",
+  boardTitleUpdate: "board:title:update",
+  boardShapeAdd: "board:shape:add",
+  boardShapeUpdate: "board:shape:update",
+  boardShapeRemove: "board:shape:remove",
+  boardCursor: "board:cursor",
+  boardUndo: "board:undo",
+  boardRedo: "board:redo"
+} as const;
+
+export type SocketEventName = (typeof socketEventName)[keyof typeof socketEventName];
+
 export interface DocumentJoinPayload {
   documentId: string;
   sessionId?: string;
