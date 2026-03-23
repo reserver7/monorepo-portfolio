@@ -17,7 +17,7 @@ permissions:
 jobs:
   quick-checks:
     name: Quick Checks (PR)
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' && github.base_ref != 'main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -49,8 +49,8 @@ jobs:
         run: pnpm turbo run test
 
   full-checks:
-    name: Full Checks (Main)
-    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    name: Full Checks (Main + PR to Main)
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
 

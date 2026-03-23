@@ -126,13 +126,20 @@ export const createServerEnv = (rawEnv: NodeJS.ProcessEnv = process.env): Server
     throw new Error("COLLAB_SESSION_SECRET must be configured in production.");
   }
 
+  const stateFilePath = rawEnv.STATE_FILE_PATH?.trim() || undefined;
+  if (isProduction && !stateFilePath) {
+    throw new Error(
+      "STATE_FILE_PATH must be configured in production so persisted state survives service restarts."
+    );
+  }
+
   return {
     nodeEnv,
     isProduction,
     port: toPort(rawEnv.PORT, 4000),
     corsOrigins,
     allowAllCors,
-    stateFilePath: rawEnv.STATE_FILE_PATH?.trim() || undefined,
+    stateFilePath,
     collabSessionSecret,
     editorAccessKey: rawEnv.EDITOR_ACCESS_KEY?.trim() || undefined,
     socketRateLimitWindowMs: toPositiveInt(rawEnv.SOCKET_RATE_LIMIT_WINDOW_MS, 10_000),

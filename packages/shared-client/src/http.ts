@@ -17,12 +17,18 @@ const resolveErrorMessage = (status: number, rawBody: string): string => {
 };
 
 export const requestJson = async <T>(apiBaseUrl: string, path: string, init?: RequestInit): Promise<T> => {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const headers = new Headers(init?.headers ?? {});
+  const hasBody = init?.body !== undefined && init?.body !== null;
+  const shouldAttachJsonContentType = hasBody && method !== "GET" && method !== "HEAD";
+
+  if (shouldAttachJsonContentType && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {})
-    },
+    headers,
     cache: "no-store"
   });
 

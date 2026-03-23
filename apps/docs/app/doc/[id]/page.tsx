@@ -160,6 +160,7 @@ export default function DocumentRoomPage() {
             저장: {saveLabel[saveState]}
           </span>
           <span
+            data-testid="document-current-role"
             className={`rounded-full border px-3 py-1 text-xs ${
               currentRole === "editor"
                 ? "border-emerald-300 bg-emerald-50 text-emerald-700"

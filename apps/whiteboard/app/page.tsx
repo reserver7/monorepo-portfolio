@@ -262,7 +262,7 @@ export default function WhiteboardHomePage() {
 
         <div className="grid gap-4 md:grid-cols-2">
           {boards.map((board) => (
-            <Card key={board.id}>
+            <Card key={board.id} data-testid={`board-card-${board.id}`}>
               <CardHeader>
                 <CardTitle>{board.title.trim() || EMPTY_TITLE}</CardTitle>
                 <CardDescription>
@@ -277,6 +277,7 @@ export default function WhiteboardHomePage() {
                 <div className="flex items-center justify-end gap-2">
                   <Button
                     variant="destructive"
+                    data-testid={`board-delete-${board.id}`}
                     onClick={() => {
                       setDeleteTargetId(board.id);
                       setDeleteAccessKeyDraft("");

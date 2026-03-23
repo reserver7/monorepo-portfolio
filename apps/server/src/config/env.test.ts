@@ -1,5 +1,7 @@
 import { createServerEnv } from "./env";
 
+const PROD_STATE_FILE_PATH = "/tmp/monorepo-portfolio-prod-state.json";
+
 describe("서버 환경 변수 파싱", () => {
   it("개발 환경에서는 안전한 기본값을 사용한다", () => {
     const env = createServerEnv({});
@@ -25,7 +27,8 @@ describe("서버 환경 변수 파싱", () => {
     const env = createServerEnv({
       NODE_ENV: "production",
       CORS_ORIGINS: " https://docs.example.com,https://whiteboard.example.com ",
-      COLLAB_SESSION_SECRET: "test-secret"
+      COLLAB_SESSION_SECRET: "test-secret",
+      STATE_FILE_PATH: PROD_STATE_FILE_PATH
     });
 
     expect(env.isProduction).toBe(true);
@@ -38,7 +41,8 @@ describe("서버 환경 변수 파싱", () => {
       NODE_ENV: "production",
       CORS_ORIGINS:
         "https://docs.example.com/, https://docs.example.com, http://localhost:3000/,http://localhost:3000",
-      COLLAB_SESSION_SECRET: "test-secret"
+      COLLAB_SESSION_SECRET: "test-secret",
+      STATE_FILE_PATH: PROD_STATE_FILE_PATH
     });
 
     expect(env.corsOrigins).toEqual(["https://docs.example.com", "http://localhost:3000"]);
@@ -48,7 +52,8 @@ describe("서버 환경 변수 파싱", () => {
     const env = createServerEnv({
       NODE_ENV: "production",
       ALLOW_ALL_CORS: "true",
-      COLLAB_SESSION_SECRET: "test-secret"
+      COLLAB_SESSION_SECRET: "test-secret",
+      STATE_FILE_PATH: PROD_STATE_FILE_PATH
     });
 
     expect(env.isProduction).toBe(true);
@@ -97,9 +102,20 @@ describe("서버 환경 변수 파싱", () => {
     expect(() =>
       createServerEnv({
         NODE_ENV: "production",
-        CORS_ORIGINS: "https://docs.example.com"
+        CORS_ORIGINS: "https://docs.example.com",
+        STATE_FILE_PATH: PROD_STATE_FILE_PATH
       })
     ).toThrow("COLLAB_SESSION_SECRET must be configured in production");
+  });
+
+  it("운영 환경에서는 STATE_FILE_PATH가 필수다", () => {
+    expect(() =>
+      createServerEnv({
+        NODE_ENV: "production",
+        CORS_ORIGINS: "https://docs.example.com",
+        COLLAB_SESSION_SECRET: "test-secret"
+      })
+    ).toThrow("STATE_FILE_PATH must be configured in production");
   });
 
   it("숫자 제한 값이 비정상이면 기본값으로 대체한다", () => {
@@ -124,7 +140,8 @@ describe("서버 환경 변수 파싱", () => {
     const allow = createServerEnv({
       NODE_ENV: "production",
       ALLOW_ALL_CORS: "1",
-      COLLAB_SESSION_SECRET: "test-secret"
+      COLLAB_SESSION_SECRET: "test-secret",
+      STATE_FILE_PATH: PROD_STATE_FILE_PATH
     });
     expect(allow.allowAllCors).toBe(true);
 
@@ -132,7 +149,8 @@ describe("서버 환경 변수 파싱", () => {
       NODE_ENV: "production",
       CORS_ORIGINS: "https://docs.example.com",
       ALLOW_ALL_CORS: "0",
-      COLLAB_SESSION_SECRET: "test-secret"
+      COLLAB_SESSION_SECRET: "test-secret",
+      STATE_FILE_PATH: PROD_STATE_FILE_PATH
     });
     expect(deny.allowAllCors).toBe(false);
   });
