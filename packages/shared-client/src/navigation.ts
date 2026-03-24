@@ -25,6 +25,36 @@ const urlFromPort = (port: number, pathname: string): string => {
   return `${window.location.protocol}//${window.location.hostname}:${port}${pathname}`;
 };
 
+const readCurrentTheme = (): "light" | "dark" | null => {
+  const fromLocalStorage = window.localStorage.getItem("collab-theme")?.trim();
+  if (fromLocalStorage === "light" || fromLocalStorage === "dark") {
+    return fromLocalStorage;
+  }
+
+  const cookieMatch = window.document.cookie.match(/(?:^|; )collab_theme=([^;]+)/);
+  const fromCookie = cookieMatch ? decodeURIComponent(cookieMatch[1] ?? "") : "";
+  if (fromCookie === "light" || fromCookie === "dark") {
+    return fromCookie;
+  }
+
+  return null;
+};
+
+const withThemeQuery = (rawUrl: string): string => {
+  const theme = readCurrentTheme();
+  if (!theme) {
+    return rawUrl;
+  }
+
+  try {
+    const parsed = new URL(rawUrl);
+    parsed.searchParams.set("theme", theme);
+    return parsed.toString();
+  } catch {
+    return rawUrl;
+  }
+};
+
 export const navigateToApp = ({ pathname = "/", targetOrigin, localPort }: NavigateToAppOptions): void => {
   if (typeof window === "undefined") {
     return;
@@ -35,17 +65,17 @@ export const navigateToApp = ({ pathname = "/", targetOrigin, localPort }: Navig
   const onLocalHost = isLocalHost(window.location.hostname);
 
   if (onLocalHost && localPort) {
-    window.location.assign(urlFromPort(localPort, normalizedPathname));
+    window.location.assign(withThemeQuery(urlFromPort(localPort, normalizedPathname)));
     return;
   }
 
   if (normalizedTargetOrigin) {
-    window.location.assign(`${normalizedTargetOrigin}${normalizedPathname}`);
+    window.location.assign(withThemeQuery(`${normalizedTargetOrigin}${normalizedPathname}`));
     return;
   }
 
   if (localPort) {
-    window.location.assign(urlFromPort(localPort, normalizedPathname));
+    window.location.assign(withThemeQuery(urlFromPort(localPort, normalizedPathname)));
   }
 };
 
