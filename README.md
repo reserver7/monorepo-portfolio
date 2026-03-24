@@ -117,9 +117,17 @@ cp apps/whiteboard/.env.local.example apps/whiteboard/.env.local
 - Docs 프로젝트
   - `NEXT_PUBLIC_API_URL=https://monorepo-portfolio-server.onrender.com`
   - `NEXT_PUBLIC_WHITEBOARD_APP_URL=https://monorepo-portfolio-whiteboard.vercel.app`
+  - `NEXT_PUBLIC_THEME_COOKIE_DOMAIN=.example.com` (선택, Docs/Whiteboard가 동일 최상위 도메인일 때만)
 - Whiteboard 프로젝트
   - `NEXT_PUBLIC_API_URL=https://monorepo-portfolio-server.onrender.com`
   - `NEXT_PUBLIC_DOCS_APP_URL=https://monorepo-portfolio-docs.vercel.app`
+  - `NEXT_PUBLIC_THEME_COOKIE_DOMAIN=.example.com` (선택, Docs/Whiteboard가 동일 최상위 도메인일 때만)
+
+테마 동기화 기준:
+
+- 쿼리스트링(`?theme=`) 전달 없이 `next-themes + localStorage`를 기본으로 사용합니다.
+- 두 앱이 동일 최상위 도메인(예: `docs.example.com`, `whiteboard.example.com`)이면 `NEXT_PUBLIC_THEME_COOKIE_DOMAIN=.example.com`으로 앱 간 테마를 동기화할 수 있습니다.
+- 서로 다른 최상위 도메인이면(예: 각기 다른 호스트) 브라우저 보안 정책상 쿠키/스토리지를 직접 공유할 수 없습니다.
 
 서버(`apps/server`) 운영 권장 값:
 
