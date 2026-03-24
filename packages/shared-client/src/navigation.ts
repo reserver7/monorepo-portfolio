@@ -4,6 +4,9 @@ export interface NavigateToAppOptions {
   localPort?: number;
 }
 
+const THEME_STORAGE_KEY = "collab-theme";
+const WINDOW_NAME_THEME_PREFIX = "__collab_theme__:";
+
 const normalizePathname = (pathname: string): string => {
   return pathname.startsWith("/") ? pathname : `/${pathname}`;
 };
@@ -25,10 +28,30 @@ const urlFromPort = (port: number, pathname: string): string => {
   return `${window.location.protocol}//${window.location.hostname}:${port}${pathname}`;
 };
 
+const readCurrentTheme = (): "light" | "dark" | "system" | null => {
+  const value = window.localStorage.getItem(THEME_STORAGE_KEY)?.trim();
+  return value === "light" || value === "dark" || value === "system" ? value : null;
+};
+
+const writeThemeBridge = (): void => {
+  const currentTheme = readCurrentTheme();
+  if (!currentTheme) {
+    return;
+  }
+
+  if (window.name.length > 0 && !window.name.startsWith(WINDOW_NAME_THEME_PREFIX)) {
+    return;
+  }
+
+  window.name = `${WINDOW_NAME_THEME_PREFIX}${currentTheme}`;
+};
+
 export const navigateToApp = ({ pathname = "/", targetOrigin, localPort }: NavigateToAppOptions): void => {
   if (typeof window === "undefined") {
     return;
   }
+
+  writeThemeBridge();
 
   const normalizedPathname = normalizePathname(pathname);
   const normalizedTargetOrigin = normalizeOrigin(targetOrigin);

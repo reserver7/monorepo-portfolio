@@ -7,15 +7,25 @@ const themeBootstrapScript = `
   try {
     const storageKey = "collab-theme";
     const cookieKey = "collab_theme";
+    const windowNameThemePrefix = "__collab_theme__:";
 
     const normalizeTheme = (value) => {
       return value === "light" || value === "dark" || value === "system" ? value : null;
     };
 
+    const readThemeFromWindowName = () => {
+      if (!window.name || !window.name.startsWith(windowNameThemePrefix)) {
+        return null;
+      }
+      const rawTheme = window.name.slice(windowNameThemePrefix.length);
+      return normalizeTheme(rawTheme);
+    };
+
     const cookieMatch = document.cookie.match(new RegExp("(?:^|; )" + cookieKey + "=([^;]+)"));
     const cookieTheme = normalizeTheme(cookieMatch ? decodeURIComponent(cookieMatch[1]) : null);
+    const windowNameTheme = readThemeFromWindowName();
     const storedTheme = normalizeTheme(localStorage.getItem(storageKey));
-    const effectiveTheme = cookieTheme || storedTheme || "system";
+    const effectiveTheme = windowNameTheme || cookieTheme || storedTheme || "system";
 
     localStorage.setItem(storageKey, effectiveTheme);
 

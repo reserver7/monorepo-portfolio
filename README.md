@@ -126,6 +126,7 @@ cp apps/whiteboard/.env.local.example apps/whiteboard/.env.local
 테마 동기화 기준:
 
 - 쿼리스트링(`?theme=`) 전달 없이 `next-themes + localStorage`를 기본으로 사용합니다.
+- 앱 이동 버튼을 통해 같은 탭에서 Docs/Whiteboard를 오갈 때는 `window.name` 브리지를 사용해 서로 다른 도메인에서도 테마를 이어받습니다.
 - 두 앱이 동일 최상위 도메인(예: `docs.example.com`, `whiteboard.example.com`)이면 `NEXT_PUBLIC_THEME_COOKIE_DOMAIN=.example.com`으로 앱 간 테마를 동기화할 수 있습니다.
 - 서로 다른 최상위 도메인이면(예: 각기 다른 호스트) 브라우저 보안 정책상 쿠키/스토리지를 직접 공유할 수 없습니다.
 
