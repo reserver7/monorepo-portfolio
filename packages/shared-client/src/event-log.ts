@@ -1,13 +1,15 @@
 const DEFAULT_LOCALE = "ko-KR";
 
 export const formatEventLogLine = (message: string, locale = DEFAULT_LOCALE): string => {
+  const now = new Date();
   const timestamp = new Intl.DateTimeFormat(locale, {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit"
-  }).format(new Date());
+  }).format(now);
+  const milliseconds = now.getMilliseconds().toString().padStart(3, "0");
 
-  return `${timestamp} · ${message}`;
+  return `${timestamp}.${milliseconds} · ${message}`;
 };
 
 export const appendEventLog = (
