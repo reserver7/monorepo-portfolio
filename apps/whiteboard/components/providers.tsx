@@ -19,7 +19,7 @@ export const Providers = ({ children }: { children: ReactNode }) => {
   );
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="collab-theme">
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="collab-theme">
       <QueryClientProvider client={queryClient}>
         {children}
         <ThemeToggle />
