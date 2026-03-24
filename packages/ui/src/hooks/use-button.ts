@@ -1,8 +1,10 @@
-import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "../../lib/utils";
+"use client";
 
-const buttonVariants = cva(
+import { cva, type VariantProps } from "class-variance-authority";
+import { useMemo } from "react";
+import { cn } from "../lib/utils";
+
+export const buttonVariants = cva(
   "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:ring-offset-slate-950",
   {
     variants: {
@@ -30,15 +32,16 @@ const buttonVariants = cva(
   }
 );
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {}
+export type ButtonVariantProps = VariantProps<typeof buttonVariants>;
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => {
-    return <button className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
-  }
-);
-
-Button.displayName = "Button";
-
-export { Button, buttonVariants };
+export const useButtonClassName = ({
+  variant,
+  size,
+  className
+}: {
+  variant?: ButtonVariantProps["variant"];
+  size?: ButtonVariantProps["size"];
+  className?: string;
+}): string => {
+  return useMemo(() => cn(buttonVariants({ variant, size, className })), [className, size, variant]);
+};

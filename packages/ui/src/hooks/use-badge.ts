@@ -1,8 +1,10 @@
-import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "../../lib/utils";
+"use client";
 
-const badgeVariants = cva(
+import { cva, type VariantProps } from "class-variance-authority";
+import { useMemo } from "react";
+import { cn } from "../lib/utils";
+
+export const badgeVariants = cva(
   "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors",
   {
     variants: {
@@ -18,11 +20,14 @@ const badgeVariants = cva(
   }
 );
 
-export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
+export type BadgeVariantProps = VariantProps<typeof badgeVariants>;
 
-function Badge({ className, variant, ...props }: BadgeProps) {
-  return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
-}
-
-export { Badge, badgeVariants };
+export const useBadgeClassName = ({
+  variant,
+  className
+}: {
+  variant?: BadgeVariantProps["variant"];
+  className?: string;
+}): string => {
+  return useMemo(() => cn(badgeVariants({ variant, className })), [className, variant]);
+};
