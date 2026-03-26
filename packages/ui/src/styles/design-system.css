@@ -1,0 +1,161 @@
+:root {
+  color-scheme: light;
+
+  --font-heading: "Avenir Next", "Avenir", "Trebuchet MS", sans-serif;
+  --font-body: "Pretendard", "SUIT", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  --ds-background: 248 250 252;
+  --ds-surface: 255 255 255;
+  --ds-surface-elevated: 241 245 249;
+  --ds-foreground: 15 23 42;
+  --ds-muted: 71 85 105;
+  --ds-muted-foreground: 100 116 139;
+  --ds-border: 226 232 240;
+
+  --ds-primary: 79 70 229;
+  --ds-primary-foreground: 255 255 255;
+  --ds-success: 22 163 74;
+  --ds-warning: 202 138 4;
+  --ds-danger: 220 38 38;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --ds-background: 2 6 23;
+  --ds-surface: 15 23 42;
+  --ds-surface-elevated: 30 41 59;
+  --ds-foreground: 241 245 249;
+  --ds-muted: 203 213 225;
+  --ds-muted-foreground: 148 163 184;
+  --ds-border: 51 65 85;
+
+  --ds-primary: 96 165 250;
+  --ds-primary-foreground: 2 6 23;
+  --ds-success: 34 197 94;
+  --ds-warning: 234 179 8;
+  --ds-danger: 239 68 68;
+}
+
+body {
+  color: rgb(var(--ds-foreground));
+  font-family: var(--font-body);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+}
+
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.text-display-2xl {
+  font-size: clamp(2rem, 1.6rem + 1.8vw, 3rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.text-display-xl {
+  font-size: clamp(1.625rem, 1.35rem + 1.2vw, 2.25rem);
+  line-height: 1.15;
+  letter-spacing: -0.016em;
+}
+
+.text-heading-xl {
+  font-size: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
+  line-height: 1.25;
+  letter-spacing: -0.012em;
+}
+
+.text-heading-lg {
+  font-size: 1.25rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.text-body-lg {
+  font-size: 1.0625rem;
+  line-height: 1.65;
+}
+
+.text-body {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.text-body-sm {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.text-caption {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.bg-surface {
+  background-color: rgb(var(--ds-surface));
+}
+
+.bg-surface-elevated {
+  background-color: rgb(var(--ds-surface-elevated));
+}
+
+.text-foreground {
+  color: rgb(var(--ds-foreground));
+}
+
+.text-muted {
+  color: rgb(var(--ds-muted));
+}
+
+.text-muted-foreground {
+  color: rgb(var(--ds-muted-foreground));
+}
+
+.border-default {
+  border-color: rgb(var(--ds-border));
+}
+
+.text-primary {
+  color: rgb(var(--ds-primary));
+}
+
+.bg-primary {
+  background-color: rgb(var(--ds-primary));
+  color: rgb(var(--ds-primary-foreground));
+}
+
+.text-success {
+  color: rgb(var(--ds-success));
+}
+
+.text-warning {
+  color: rgb(var(--ds-warning));
+}
+
+.text-danger {
+  color: rgb(var(--ds-danger));
+}
