@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { WhiteboardShape } from "@repo/shared-types";
+import type { WhiteboardShape } from "@repo/collab-types";
 import { RealtimeStore } from "./store";
 
 const now = "2026-03-20T00:00:00.000Z";

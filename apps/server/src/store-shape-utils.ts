@@ -1,4 +1,4 @@
-import type { ShapeType, WhiteboardShape } from "@repo/shared-types";
+import type { ShapeType, WhiteboardShape } from "@repo/collab-types";
 import { nowIso } from "./store-document-utils";
 
 const normalizeShapeType = (rawType: WhiteboardShape["type"]): ShapeType => {

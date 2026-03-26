@@ -1,4 +1,4 @@
-import type { AccessRole, Participant } from "@repo/shared-types";
+import type { AccessRole, Participant } from "@repo/collab-types";
 
 export interface RealtimeSessionState {
   documentParticipants: Map<string, Map<string, Participant>>;
