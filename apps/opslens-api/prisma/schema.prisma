@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+enum IssueSeverity {
+  critical
+  high
+  medium
+  low
+}
+
+enum IssueStatus {
+  new
+  analyzing
+  in_progress
+  resolved
+}
+
+enum OpsEnvironment {
+  dev
+  stage
+  prod
+}
+
+enum LogSource {
+  server
+  client
+  api
+  console
+  sentry
+}
+
+model Deployment {
+  id          String         @id @default(cuid())
+  version     String
+  environment OpsEnvironment
+  changelog   String
+  deployedAt  DateTime       @default(now())
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  issues      Issue[]
+
+  @@unique([version, environment])
+}
+
+model Issue {
+  id                    String         @id @default(cuid())
+  title                 String
+  signature             String         @unique
+  severity              IssueSeverity
+  status                IssueStatus    @default(new)
+  summary               String
+  probableCauses        Json
+  suggestedActions      Json
+  reproductionGuide     String
+  assignee              String?
+  serviceName           String
+  environment           OpsEnvironment
+  occurrenceCount       Int            @default(1)
+  firstOccurredAt       DateTime
+  lastOccurredAt        DateTime
+  affectedArea          String?
+  deploymentCorrelation String?
+  deploymentId          String?
+  deployment            Deployment?    @relation(fields: [deploymentId], references: [id])
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  logs                  LogEvent[]
+  comments              IssueComment[]
+
+  @@index([environment, serviceName])
+  @@index([severity, status])
+}
+
+model LogEvent {
+  id                String    @id @default(cuid())
+  issueId           String
+  issue             Issue     @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  rawMessage        String
+  normalizedMessage String
+  source            LogSource
+  level             String
+  occurredAt        DateTime
+  endpoint          String?
+  page              String?
+  userId            String?
+  createdAt         DateTime  @default(now())
+
+  @@index([occurredAt])
+}
+
+model IssueComment {
+  id        String   @id @default(cuid())
+  issueId   String
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  author    String
+  body      String
+  createdAt DateTime @default(now())
+}
+
+model QaScenario {
+  id                String   @id @default(cuid())
+  featureName       String
+  changedScreens    String
+  relatedApis       String
+  releaseNote       String
+  generatedCases    Json
+  riskPoints        Json
+  regressionTargets Json
+  audience          String
+  createdAt         DateTime @default(now())
+}
