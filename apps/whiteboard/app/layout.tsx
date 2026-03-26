@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Providers } from "@/components/providers";
+import { Providers } from "@/components/layout";
 import "./globals.css";
 
 const themeBootstrapScript = `
@@ -52,7 +52,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
       </head>
-      <body className="font-body min-h-screen text-slate-900 antialiased transition-colors dark:text-slate-100">
+      <body className="font-body min-h-screen text-foreground antialiased transition-colors dark:text-foreground">
         <Providers>{children}</Providers>
       </body>
     </html>

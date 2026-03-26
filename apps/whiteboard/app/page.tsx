@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import {
   Badge,
   Button,
@@ -22,10 +22,11 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
+  Typography
 } from "@repo/ui";
-import { createBoard, deleteBoardById, listBoards } from "@/lib/api";
-import { whiteboardClientEnv } from "@/lib/env";
+import { createBoard, deleteBoardById, listBoards } from "@/lib/http";
+import { whiteboardClientEnv } from "@/lib/config";
 import {
   createGuestName,
   getStoredDisplayName,
@@ -33,10 +34,10 @@ import {
   setStoredEditorAccessKey,
   setStoredDisplayName,
   setStoredRole
-} from "@/lib/session";
-import { navigateToDocsApp } from "@/lib/cross-app";
-import { formatExactTime, formatRelativeTime } from "@/lib/time";
-import { coerceAccessRole, collabFieldCopy } from "@repo/shared-client";
+} from "@/lib/collab";
+import { navigateToDocsApp } from "@/lib/navigation";
+import { formatExactTime, formatRelativeTime } from "@/lib/collab";
+import { coerceAccessRole, collabFieldCopy } from "@repo/collab-client";
 
 const EMPTY_TITLE = "(제목 없음)";
 
@@ -166,11 +167,11 @@ export default function WhiteboardHomePage() {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-10 md:px-8">
-      <section className="mb-8 rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white/95 to-emerald-50/45 p-6 shadow-[0_16px_36px_rgba(15,23,42,0.08)] backdrop-blur-sm md:p-10 dark:border-slate-800 dark:from-slate-900/95 dark:to-slate-900/75 dark:shadow-[0_20px_45px_rgba(2,6,23,0.42)]">
+      <section className="mb-8 rounded-2xl border border-default/80 bg-gradient-to-b from-surface/95 to-surface-elevated/80 p-6 shadow-[0_16px_36px_rgba(15,23,42,0.08)] backdrop-blur-sm md:p-10 dark:border-default dark:from-surface/95 dark:to-surface-elevated/80 dark:shadow-[0_20px_45px_rgba(2,6,23,0.42)]">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <Badge
             variant="outline"
-            className="border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700 dark:border-emerald-400/55 dark:bg-emerald-500/20 dark:text-emerald-200"
+            className="border-success/30 bg-success/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-success"
           >
             Realtime Whiteboard
           </Badge>
@@ -185,14 +186,16 @@ export default function WhiteboardHomePage() {
             문서로 이동
           </Button>
         </div>
-        <h1 className="font-heading text-3xl font-bold text-slate-900 md:text-5xl">실시간 화이트보드 협업</h1>
-        <p className="mt-3 max-w-2xl text-sm text-slate-600 md:text-base">
+        <Typography as="h1" variant="display">
+          실시간 화이트보드 협업
+        </Typography>
+        <Typography as="p" variant="lead" className="mt-3 max-w-2xl">
           도형 추가, 텍스트 입력, 드래그 이동, 참여자 커서 공유, undo/redo를 실시간 동기화로 제공합니다.
-        </p>
+        </Typography>
 
         <div className="mt-8 grid gap-4 md:grid-cols-[1fr_1fr_220px_220px_auto]">
           <div>
-            <p className="mb-2 text-xs font-medium text-slate-600">{collabFieldCopy.displayNameLabel}</p>
+            <p className="mb-2 text-xs font-medium text-muted">{collabFieldCopy.displayNameLabel}</p>
             <Input
               title={collabFieldCopy.displayNameLabel}
               value={displayName}
@@ -205,7 +208,7 @@ export default function WhiteboardHomePage() {
             />
           </div>
           <div>
-            <p className="mb-2 text-xs font-medium text-slate-600">새 보드 제목</p>
+            <p className="mb-2 text-xs font-medium text-muted">새 보드 제목</p>
             <Input
               title="새 보드 제목"
               value={boardTitle}
@@ -214,7 +217,7 @@ export default function WhiteboardHomePage() {
             />
           </div>
           <div>
-            <p className="mb-2 text-xs font-medium text-slate-600">{collabFieldCopy.entryRoleLabel}</p>
+            <p className="mb-2 text-xs font-medium text-muted">{collabFieldCopy.entryRoleLabel}</p>
             <Select
               value={role}
               onValueChange={(value) => {
@@ -233,7 +236,7 @@ export default function WhiteboardHomePage() {
             </Select>
           </div>
           <div>
-            <p className="mb-2 text-xs font-medium text-slate-600">
+            <p className="mb-2 text-xs font-medium text-muted">
               {collabFieldCopy.editorAccessKeyLabel} (보드별 설정/입장 기본값)
             </p>
             <Input
@@ -256,9 +259,11 @@ export default function WhiteboardHomePage() {
       </section>
 
       <section>
-        <h2 className="font-heading mb-4 text-2xl font-semibold text-slate-900">보드 목록</h2>
+        <Typography as="h2" variant="h2" className="mb-4 text-heading-xl">
+          보드 목록
+        </Typography>
         {boardsQuery.isLoading ? <Card className="p-4 text-sm">불러오는 중...</Card> : null}
-        {boardsQuery.isError ? <Card className="p-4 text-sm text-rose-600">보드 목록 조회 실패</Card> : null}
+        {boardsQuery.isError ? <Card className="p-4 text-sm text-danger">보드 목록 조회 실패</Card> : null}
 
         <div className="grid gap-4 md:grid-cols-2">
           {boards.map((board) => (
@@ -271,7 +276,7 @@ export default function WhiteboardHomePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="mb-4 text-xs text-slate-500">
+                <p className="mb-4 text-xs text-muted-foreground">
                   최근 수정: {formatRelativeTime(board.updatedAt)} ({formatExactTime(board.updatedAt)})
                 </p>
                 <div className="flex items-center justify-end gap-2">
@@ -339,7 +344,7 @@ export default function WhiteboardHomePage() {
             />
           ) : null}
 
-          {deleteErrorMessage ? <p className="text-sm text-rose-600">{deleteErrorMessage}</p> : null}
+          {deleteErrorMessage ? <p className="text-sm text-danger">{deleteErrorMessage}</p> : null}
 
           <DialogFooter>
             <Button

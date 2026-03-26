@@ -1,6 +1,6 @@
-import type { AccessRole, EditorSnapshot, Participant } from "@repo/shared-types";
+import type { AccessRole, EditorSnapshot, Participant } from "@repo/collab-types";
 
-export { socketEventName } from "@repo/shared-types";
+export { socketEventName } from "@repo/collab-types";
 export type {
   BoardAddShapePayload,
   BoardCursorPayload,
@@ -19,7 +19,7 @@ export type {
   DocumentSavePayload,
   DocumentYjsUpdatePayload,
   SocketEventName
-} from "@repo/shared-types";
+} from "@repo/collab-types";
 
 const COLORS = ["#0284c7", "#0f766e", "#16a34a", "#ca8a04", "#ea580c", "#dc2626", "#9333ea", "#4f46e5"];
 const mentionPattern = /@([0-9A-Za-z가-힣._-]{2,24})/g;

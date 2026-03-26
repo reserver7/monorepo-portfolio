@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@repo/react-query";
 import {
   Badge,
   Button,
@@ -19,12 +19,13 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
+  PALETTE
 } from "@repo/ui";
-import { getBoard } from "@/lib/api";
-import { useWhiteboardRealtime } from "@/hooks/use-whiteboard-realtime";
-import { useWhiteboardStore } from "@/stores/use-whiteboard-store";
-import { WhiteboardShape } from "@/lib/types";
+import { getBoard } from "@/lib/http";
+import { useWhiteboardRealtime } from "@/hooks/realtime";
+import { useWhiteboardStore } from "@/stores/whiteboard";
+import { WhiteboardShape } from "@/lib/collab";
 import {
   createGuestName,
   getStoredDisplayName,
@@ -32,9 +33,9 @@ import {
   getStoredRole,
   setStoredEditorAccessKey,
   setStoredRole
-} from "@/lib/session";
-import { formatExactTime, formatRelativeTime } from "@/lib/time";
-import { collabFieldCopy } from "@repo/shared-client";
+} from "@/lib/collab";
+import { formatExactTime, formatRelativeTime } from "@/lib/collab";
+import { collabFieldCopy } from "@repo/collab-client";
 import { BoardSidePanel } from "./board-side-panel";
 import {
   ConnectorHandle,
@@ -364,7 +365,7 @@ export default function WhiteboardRoomPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/"
-            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs hover:bg-slate-100"
+            className="rounded-md border border-default bg-surface px-3 py-1.5 text-xs hover:bg-surface-elevated"
           >
             보드 목록
           </Link>
@@ -462,8 +463,8 @@ export default function WhiteboardRoomPage() {
           placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
           className="h-11"
         />
-        <Card className="px-3 py-2 text-xs text-slate-600">버전 {version}</Card>
-        <Card className="px-3 py-2 text-xs text-slate-600">
+        <Card className="px-3 py-2 text-xs text-muted">버전 {version}</Card>
+        <Card className="px-3 py-2 text-xs text-muted">
           {updatedAt
             ? `최근 수정: ${formatRelativeTime(updatedAt)} (${formatExactTime(updatedAt)})`
             : "최근 수정 -"}
@@ -471,7 +472,7 @@ export default function WhiteboardRoomPage() {
       </div>
 
       {activeTool === "connector" && !isReadOnly ? (
-        <Card className="mb-4 border-cyan-200 bg-cyan-50 p-3 text-sm text-cyan-800 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-200">
+        <Card className="mb-4 border-primary/30 bg-primary/10 p-3 text-sm text-primary">
           {connectorFromShapeId
             ? "시작 도형이 선택되었습니다. 연결할 대상 도형을 클릭하세요."
             : "연결선 모드입니다. 시작 도형을 클릭한 뒤, 대상 도형을 클릭하면 선이 생성됩니다."}
@@ -584,12 +585,12 @@ export default function WhiteboardRoomPage() {
       </Dialog>
 
       {conflictMessage ? (
-        <Card className="mb-4 border-amber-300 bg-amber-50 p-3 text-sm text-amber-700">
+        <Card className="mb-4 border-warning/30 bg-warning/10 p-3 text-sm text-warning">
           {conflictMessage}
         </Card>
       ) : null}
       {isReadOnly ? (
-        <Card className="mb-4 border-slate-300 bg-slate-100 p-3 text-sm text-slate-700">
+        <Card className="mb-4 border-default bg-surface-elevated p-3 text-sm text-muted">
           보기 전용(`viewer`) 세션입니다. 상단에서 `editor 요청`으로 바꾸고 편집 키를 입력하면 재요청됩니다.
           보드 편집은 제한되며 참여자 커서 확인만 가능합니다.
         </Card>
@@ -598,7 +599,7 @@ export default function WhiteboardRoomPage() {
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <div
           ref={boardRef}
-          className="board-grid relative h-[70vh] rounded-2xl border border-slate-300 bg-white/90"
+          className="board-grid relative h-[70vh] rounded-2xl border border-default bg-surface/90"
           onMouseDown={(event) => {
             if (event.target === boardRef.current) {
               if (!isReadOnly && activeTool !== "select" && activeTool !== "connector") {
@@ -728,7 +729,7 @@ export default function WhiteboardRoomPage() {
               }
 
               const isSelected = selectedShapeId === connector.id;
-              const strokeColor = connector.stroke || "#475569";
+              const strokeColor = connector.stroke || PALETTE.NATURAL_700;
               const dx = endpoints.endX - endpoints.startX;
               const dy = endpoints.endY - endpoints.startY;
               const length = Math.hypot(dx, dy) || 1;
@@ -834,9 +835,9 @@ export default function WhiteboardRoomPage() {
             const isConnectorAnchor = connectorFromShapeId === shape.id;
             const canDragWithPointer = !isReadOnly && activeTool !== "connector";
             const ringClass = isSelected
-              ? "ring-2 ring-cyan-400"
+              ? "ring-2 ring-primary"
               : isConnectorAnchor
-                ? "ring-2 ring-emerald-500"
+                ? "ring-2 ring-success"
                 : "";
 
             return (
@@ -850,7 +851,7 @@ export default function WhiteboardRoomPage() {
                   height: `${shape.h}px`,
                   background: shape.fill,
                   borderColor: shape.stroke,
-                  color: shape.type === "text" ? "#1f2937" : "#475569",
+                  color: shape.type === "text" ? PALETTE.NATURAL_900 : PALETTE.NATURAL_700,
                   clipPath:
                     shape.type === "diamond" ? "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" : undefined
                 }}
@@ -910,7 +911,7 @@ export default function WhiteboardRoomPage() {
                       event.stopPropagation();
                       removeShapeWithLinks(shape.id);
                     }}
-                    className="absolute -right-2 -top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 bg-white text-[10px] text-slate-700 hover:bg-slate-100"
+                    className="absolute -right-2 -top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border border-default bg-surface text-[10px] text-muted hover:bg-surface-elevated"
                   >
                     ×
                   </button>
@@ -937,7 +938,7 @@ export default function WhiteboardRoomPage() {
                             h: shape.h
                           };
                         }}
-                        className="absolute z-20 h-3 w-3 rounded-full border border-cyan-500 bg-white shadow"
+                        className="absolute z-20 h-3 w-3 rounded-full border border-primary bg-surface shadow"
                         style={resizeHandleStyle[handle]}
                         aria-label={`resize-${handle}`}
                       />
@@ -946,11 +947,11 @@ export default function WhiteboardRoomPage() {
                 ) : null}
 
                 {shape.type === "text" ? (
-                  <div className="flex h-full items-center justify-center px-2 text-center text-xs font-medium text-slate-800">
+                  <div className="flex h-full items-center justify-center px-2 text-center text-xs font-medium text-foreground">
                     {shape.text || "텍스트"}
                   </div>
                 ) : (
-                  <div className="pointer-events-none flex h-full items-center justify-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                  <div className="pointer-events-none flex h-full items-center justify-center text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                     {shape.type}
                   </div>
                 )}
@@ -965,7 +966,7 @@ export default function WhiteboardRoomPage() {
               style={{ left: participant.cursorX, top: participant.cursorY }}
             >
               <div className="h-3 w-3 rounded-full" style={{ backgroundColor: participant.color }} />
-              <div className="mt-1 rounded bg-slate-900 px-1.5 py-0.5 text-[10px] text-white">
+              <div className="mt-1 rounded bg-foreground px-1.5 py-0.5 text-[10px] text-white">
                 {participant.displayName}
               </div>
             </div>

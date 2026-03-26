@@ -3,11 +3,9 @@ import http from "node:http";
 import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import { Server, Socket } from "socket.io";
-import type { AccessRole, Participant } from "@repo/shared-types";
-import { serverEnv } from "./config/env";
-import { createLogger } from "./observability/logger";
-import { getRequestId, requestObservabilityMiddleware } from "./observability/request-id";
-import { SocketEventMetrics } from "./observability/socket-metrics";
+import type { AccessRole, Participant } from "@repo/collab-types";
+import { serverEnv } from "./config";
+import { createLogger, getRequestId, requestObservabilityMiddleware, SocketEventMetrics } from "./observability";
 import {
   BoardAddShapePayload,
   BoardCursorPayload,
@@ -17,13 +15,16 @@ import {
   BoardRemoveShapePayload,
   BoardTitlePayload,
   BoardUndoPayload,
+  boardRoom,
   colorFromSession,
+  createRealtimeSessionState,
   CursorPayload,
   DocumentCommentDeletePayload,
   DocumentCommentPayload,
   DocumentCommentUpdatePayload,
   DocumentJoinPayload,
   DocumentLegacyUpdatePayload,
+  documentRoom,
   DocumentSavePayload,
   DocumentYjsUpdatePayload,
   editorFromParticipant,
@@ -36,12 +37,9 @@ import {
   SocketEventName,
   socketEventName,
   trimOptional
-} from "./realtime/socket-contracts";
-import { boardRoom, createRealtimeSessionState, documentRoom } from "./realtime/session-state";
-import { readOptionalString, readStringArray, toJsonObject } from "./http/request-body";
-import { EventRateLimiter } from "./security/rate-limit";
-import { sanitizeEditorAccessKey, verifyEditorAccessKey } from "./security/access-key";
-import { issueSessionToken, verifySessionToken } from "./security/session";
+} from "./realtime";
+import { readOptionalString, readStringArray, toJsonObject } from "./http";
+import { EventRateLimiter, issueSessionToken, sanitizeEditorAccessKey, verifyEditorAccessKey, verifySessionToken } from "./security";
 import { RealtimeStore } from "./store";
 
 const app = express();

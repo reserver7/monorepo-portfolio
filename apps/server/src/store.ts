@@ -10,7 +10,7 @@ import type {
   WhiteboardRecord,
   WhiteboardShape,
   WhiteboardSummary
-} from "@repo/shared-types";
+} from "@repo/collab-types";
 import {
   createStoredEditorAccessKey,
   normalizeStoredEditorAccessKey,
