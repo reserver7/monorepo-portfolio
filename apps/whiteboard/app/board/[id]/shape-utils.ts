@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
-import type { WhiteboardShape } from "@/lib/types";
+import { PALETTE } from "@repo/ui";
+import type { WhiteboardShape } from "@/lib/collab";
 
 export type WhiteboardTool = "select" | "rect" | "ellipse" | "diamond" | "text" | "connector";
 export type ResizeHandle = "nw" | "ne" | "sw" | "se";
@@ -8,10 +9,10 @@ export type NodeShapeType = Exclude<WhiteboardShape["type"], "connector">;
 export const CONNECTOR_SNAP_RADIUS = 36;
 
 export const shapePreset: Record<NodeShapeType, { fill: string; stroke: string; w: number; h: number }> = {
-  rect: { fill: "#bfdbfe", stroke: "#2563eb", w: 140, h: 100 },
-  ellipse: { fill: "#dcfce7", stroke: "#16a34a", w: 150, h: 104 },
-  diamond: { fill: "#fef3c7", stroke: "#d97706", w: 148, h: 106 },
-  text: { fill: "#fef3c7", stroke: "#f59e0b", w: 180, h: 56 }
+  rect: { fill: PALETTE.BLUE_300, stroke: PALETTE.BLUE_700, w: 140, h: 100 },
+  ellipse: { fill: PALETTE.GREEN_200, stroke: PALETTE.GREEN_600, w: 150, h: 104 },
+  diamond: { fill: PALETTE.YELLOW_200, stroke: PALETTE.ORANGE_600, w: 148, h: 106 },
+  text: { fill: PALETTE.YELLOW_200, stroke: PALETTE.YELLOW_600, w: 180, h: 56 }
 };
 
 export const resizeHandleStyle: Record<ResizeHandle, CSSProperties> = {
@@ -72,7 +73,7 @@ export const makeConnector = (
     endX: end.x,
     endY: end.y,
     fill: "transparent",
-    stroke: "#475569",
+    stroke: PALETTE.NATURAL_700,
     createdBy,
     updatedAt: new Date().toISOString()
   };

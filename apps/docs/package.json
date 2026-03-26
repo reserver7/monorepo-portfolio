@@ -11,10 +11,12 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
-    "@repo/shared-client": "workspace:*",
-    "@repo/shared-types": "workspace:*",
+    "@repo/http": "workspace:*",
+    "@repo/icons": "workspace:*",
+    "@repo/react-query": "workspace:*",
+    "@repo/collab-client": "workspace:*",
+    "@repo/collab-types": "workspace:*",
     "@repo/ui": "workspace:*",
-    "@tanstack/react-query": "^5.76.1",
     "next": "^15.3.1",
     "next-themes": "^0.4.6",
     "react": "^19.0.0",

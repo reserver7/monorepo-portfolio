@@ -1,33 +1,19 @@
+@import "@repo/ui/src/styles/design-system.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: light;
-  --font-heading: "Avenir Next", "Avenir", "Trebuchet MS", sans-serif;
-  --font-body: "Pretendard", "SUIT", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
-}
-
-.dark {
-  color-scheme: dark;
-}
-
 body {
   margin: 0;
+  color: rgb(var(--ds-foreground));
   background:
-    radial-gradient(circle at 0% 0%, rgba(56, 189, 248, 0.12), transparent 35%),
-    radial-gradient(circle at 100% 0%, rgba(59, 130, 246, 0.1), transparent 30%),
-    linear-gradient(180deg, #f5f8ff 0%, #eef3fb 100%);
+    radial-gradient(circle at 0% 0%, rgb(var(--ds-primary) / 0.14), transparent 35%),
+    radial-gradient(circle at 100% 0%, rgb(var(--ds-success) / 0.1), transparent 30%),
+    linear-gradient(180deg, rgb(var(--ds-background)) 0%, rgb(var(--ds-surface-elevated)) 100%);
   transition:
     background-color 180ms ease,
     color 180ms ease;
-}
-
-.dark body {
-  background:
-    radial-gradient(circle at 0% 0%, rgba(14, 116, 144, 0.28), transparent 38%),
-    radial-gradient(circle at 100% 4%, rgba(30, 64, 175, 0.24), transparent 34%),
-    linear-gradient(180deg, #020617 0%, #0b1220 100%);
 }
 
 * {
@@ -44,65 +30,4 @@ body {
 
 .dark .texture-grid {
   background-image: none;
-}
-
-@layer utilities {
-  .dark .text-slate-900 {
-    --tw-text-opacity: 1;
-    color: rgb(241 245 249 / var(--tw-text-opacity, 1));
-  }
-
-  .dark .text-slate-800 {
-    --tw-text-opacity: 1;
-    color: rgb(226 232 240 / var(--tw-text-opacity, 1));
-  }
-
-  .dark .text-slate-700 {
-    --tw-text-opacity: 1;
-    color: rgb(203 213 225 / var(--tw-text-opacity, 1));
-  }
-
-  .dark .text-slate-600 {
-    --tw-text-opacity: 1;
-    color: rgb(203 213 225 / var(--tw-text-opacity, 1));
-  }
-
-  .dark .text-slate-500 {
-    --tw-text-opacity: 1;
-    color: rgb(148 163 184 / var(--tw-text-opacity, 1));
-  }
-
-  .dark .text-slate-400 {
-    --tw-text-opacity: 1;
-    color: rgb(148 163 184 / var(--tw-text-opacity, 1));
-  }
-
-  .dark .bg-white {
-    --tw-bg-opacity: 1;
-    background-color: rgb(15 23 42 / var(--tw-bg-opacity, 1));
-  }
-
-  .dark .bg-white\/90 {
-    background-color: rgb(15 23 42 / 0.82);
-  }
-
-  .dark .bg-white\/85 {
-    background-color: rgb(15 23 42 / 0.78);
-  }
-
-  .dark .bg-white\/80 {
-    background-color: rgb(15 23 42 / 0.72);
-  }
-
-  .dark .bg-white\/70 {
-    background-color: rgb(15 23 42 / 0.62);
-  }
-
-  .dark .bg-slate-50 {
-    background-color: rgb(30 41 59 / 0.82);
-  }
-
-  .dark .bg-slate-100 {
-    background-color: rgb(51 65 85 / 0.72);
-  }
 }

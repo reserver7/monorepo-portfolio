@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const nextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: path.join(__dirname, "../.."),
-  transpilePackages: ["@repo/ui", "@repo/shared-types"]
+  transpilePackages: ["@repo/ui", "@repo/collab-types"]
 };
 
 export default nextConfig;
