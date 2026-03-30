@@ -1,10 +1,15 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../../packages/configs/src/typescript/node-service.json",
   "compilerOptions": {
     "module": "CommonJS",
     "moduleResolution": "Node",
+    "baseUrl": ".",
+    "paths": {
+      "@repo/utils": ["../../packages/utils/index.ts"],
+      "@repo/utils/*": ["../../packages/utils/src/*"]
+    },
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "../..",
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],

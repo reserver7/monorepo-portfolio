@@ -1,0 +1,275 @@
+:root {
+  /* typography tokens */
+  --ds-font-size-heading-xl: 1.875rem;
+  --ds-font-size-heading-lg: 1.5rem;
+  --ds-font-size-heading-md: 1.25rem;
+  --ds-font-size-body-md: 0.9375rem;
+  --ds-font-size-body-sm: 0.875rem;
+  --ds-font-size-caption: 0.8125rem;
+  --ds-line-height-tight: 1.25;
+  --ds-line-height-normal: 1.5;
+  --ds-line-height-relaxed: 1.65;
+  --ds-font-weight-regular: 400;
+  --ds-font-weight-medium: 500;
+  --ds-font-weight-semibold: 600;
+  --ds-font-weight-bold: 700;
+
+  /* semantic tokens (light) */
+  --ds-background: 248 250 252;
+  --ds-foreground: 30 41 59;
+  --ds-surface: 255 255 255;
+  --ds-surface-elevated: 241 245 249;
+  --ds-border: 226 232 240;
+  --ds-muted: 148 163 184;
+  --ds-muted-foreground: 100 116 139;
+
+  --ds-primary: 59 130 246;
+  --ds-primary-hover: 37 99 235;
+  --ds-primary-active: 29 78 216;
+  --ds-primary-foreground: 255 255 255;
+
+  --ds-success: 34 197 94;
+  --ds-success-hover: 22 163 74;
+  --ds-success-active: 21 128 61;
+  --ds-success-foreground: 255 255 255;
+
+  --ds-danger: 239 68 68;
+  --ds-danger-hover: 220 38 38;
+  --ds-danger-active: 185 28 28;
+  --ds-danger-foreground: 255 255 255;
+
+  --ds-warning: 234 179 8;
+  --ds-warning-hover: 202 138 4;
+  --ds-warning-active: 161 98 7;
+  --ds-warning-foreground: 15 23 42;
+
+  --ds-info: 14 165 233;
+  --ds-info-hover: 2 132 199;
+  --ds-info-active: 3 105 161;
+  --ds-info-foreground: 255 255 255;
+
+  /* palette tokens */
+  --BLUE-1000: #1e3a8a;
+  --BLUE-900: #1d4ed8;
+  --BLUE-800: #2563eb;
+  --BLUE-700: #3b82f6;
+  --BLUE-600: #60a5fa;
+  --BLUE-500: #93c5fd;
+  --BLUE-400: #bfdbfe;
+  --BLUE-300: #dbeafe;
+  --BLUE-200: #eff6ff;
+  --BLUE-100: #f5faff;
+
+  --INDIGO-1000: #1e1b4b;
+  --INDIGO-900: #312e81;
+  --INDIGO-800: #3730a3;
+  --INDIGO-700: #4338ca;
+  --INDIGO-600: #4f46e5;
+  --INDIGO-500: #6366f1;
+  --INDIGO-400: #818cf8;
+  --INDIGO-300: #a5b4fc;
+  --INDIGO-200: #c7d2fe;
+  --INDIGO-100: #eef2ff;
+
+  --NATURAL-1000: #0f172a;
+  --NATURAL-900: #1e293b;
+  --NATURAL-800: #334155;
+  --NATURAL-700: #475569;
+  --NATURAL-600: #64748b;
+  --NATURAL-500: #94a3b8;
+  --NATURAL-400: #cbd5e1;
+  --NATURAL-300: #e2e8f0;
+  --NATURAL-200: #f1f5f9;
+  --NATURAL-100: #f8fafc;
+
+  --GREEN-1000: #052e16;
+  --GREEN-900: #14532d;
+  --GREEN-800: #166534;
+  --GREEN-700: #15803d;
+  --GREEN-600: #16a34a;
+  --GREEN-500: #22c55e;
+  --GREEN-400: #4ade80;
+  --GREEN-300: #86efac;
+  --GREEN-200: #bbf7d0;
+  --GREEN-100: #dcfce7;
+
+  --RED-1000: #450a0a;
+  --RED-900: #7f1d1d;
+  --RED-800: #991b1b;
+  --RED-700: #b91c1c;
+  --RED-600: #dc2626;
+  --RED-500: #ef4444;
+  --RED-400: #f87171;
+  --RED-300: #fca5a5;
+  --RED-200: #fecaca;
+  --RED-100: #fee2e2;
+
+  --YELLOW-1000: #422006;
+  --YELLOW-900: #713f12;
+  --YELLOW-800: #854d0e;
+  --YELLOW-700: #a16207;
+  --YELLOW-600: #ca8a04;
+  --YELLOW-500: #eab308;
+  --YELLOW-400: #facc15;
+  --YELLOW-300: #fde047;
+  --YELLOW-200: #fef08a;
+  --YELLOW-100: #fef9c3;
+
+  --SKY-1000: #082f49;
+  --SKY-900: #0c4a6e;
+  --SKY-800: #075985;
+  --SKY-700: #0369a1;
+  --SKY-600: #0284c7;
+  --SKY-500: #0ea5e9;
+  --SKY-400: #38bdf8;
+  --SKY-300: #7dd3fc;
+  --SKY-200: #bae6fd;
+  --SKY-100: #e0f2fe;
+
+  --ORANGE-1000: #431407;
+  --ORANGE-900: #7c2d12;
+  --ORANGE-800: #9a3412;
+  --ORANGE-700: #c2410c;
+  --ORANGE-600: #ea580c;
+  --ORANGE-500: #f97316;
+  --ORANGE-400: #fb923c;
+  --ORANGE-300: #fdba74;
+  --ORANGE-200: #fed7aa;
+  --ORANGE-100: #ffedd5;
+
+  --PURPLE-1000: #2e1065;
+  --PURPLE-900: #4c1d95;
+  --PURPLE-800: #5b21b6;
+  --PURPLE-700: #6d28d9;
+  --PURPLE-600: #7c3aed;
+  --PURPLE-500: #8b5cf6;
+  --PURPLE-400: #a78bfa;
+  --PURPLE-300: #c4b5fd;
+  --PURPLE-200: #ddd6fe;
+  --PURPLE-100: #f3e8ff;
+}
+
+.dark {
+  --ds-background: 15 23 42;
+  --ds-foreground: 248 250 252;
+  --ds-surface: 30 41 59;
+  --ds-surface-elevated: 51 65 85;
+  --ds-border: 51 65 85;
+  --ds-muted: 148 163 184;
+  --ds-muted-foreground: 100 116 139;
+
+  --ds-primary: 59 130 246;
+  --ds-primary-hover: 37 99 235;
+  --ds-primary-active: 29 78 216;
+  --ds-primary-foreground: 255 255 255;
+
+  --ds-success: 34 197 94;
+  --ds-success-hover: 22 163 74;
+  --ds-success-active: 21 128 61;
+  --ds-success-foreground: 255 255 255;
+
+  --ds-danger: 239 68 68;
+  --ds-danger-hover: 220 38 38;
+  --ds-danger-active: 185 28 28;
+  --ds-danger-foreground: 255 255 255;
+
+  --ds-warning: 234 179 8;
+  --ds-warning-hover: 202 138 4;
+  --ds-warning-active: 161 98 7;
+  --ds-warning-foreground: 15 23 42;
+
+  --ds-info: 14 165 233;
+  --ds-info-hover: 2 132 199;
+  --ds-info-active: 3 105 161;
+  --ds-info-foreground: 255 255 255;
+}
+
+:root,
+.dark {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+/* compatibility utility classes used across apps/components */
+.bg-surface {
+  background-color: rgb(var(--ds-surface));
+}
+
+.bg-surface-elevated {
+  background-color: rgb(var(--ds-surface-elevated));
+}
+
+.text-foreground {
+  color: rgb(var(--ds-foreground));
+}
+
+.text-muted {
+  color: rgb(var(--ds-muted));
+}
+
+.text-muted-foreground {
+  color: rgb(var(--ds-muted-foreground));
+}
+
+.border-default {
+  border-color: rgb(var(--ds-border));
+}
+
+.bg-primary {
+  background-color: rgb(var(--ds-primary));
+}
+
+.text-primary {
+  color: rgb(var(--ds-primary));
+}
+
+.text-primary-foreground {
+  color: rgb(var(--ds-primary-foreground));
+}
+
+.bg-danger {
+  background-color: rgb(var(--ds-danger));
+}
+
+.text-danger {
+  color: rgb(var(--ds-danger));
+}
+
+.text-danger-foreground {
+  color: rgb(var(--ds-danger-foreground));
+}
+
+.bg-warning {
+  background-color: rgb(var(--ds-warning));
+}
+
+.text-warning {
+  color: rgb(var(--ds-warning));
+}
+
+.text-warning-foreground {
+  color: rgb(var(--ds-warning-foreground));
+}
+
+.bg-info {
+  background-color: rgb(var(--ds-info));
+}
+
+.text-info {
+  color: rgb(var(--ds-info));
+}
+
+.bg-success {
+  background-color: rgb(var(--ds-success));
+}
+
+.text-success {
+  color: rgb(var(--ds-success));
+}
+
+.text-success-foreground {
+  color: rgb(var(--ds-success-foreground));
+}

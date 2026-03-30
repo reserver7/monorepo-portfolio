@@ -1,1 +1,1 @@
-export { formatExactTime, formatRelativeTime } from "@repo/collab-client";
+export { formatExactTime, formatRelativeTime } from "@repo/utils/collab";

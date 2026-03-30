@@ -37,11 +37,9 @@
 - `packages/icons`
   - 아이콘 공급 레이어 (기본 아이콘셋 직접 import 금지, `@repo/icons` 경유)
 - `packages/react-query`
-  - QueryClient 기본 정책/React Query 공개 엔트리
-- `packages/http`
-  - axios 기반 HTTP/GraphQL 공용 클라이언트
-- `packages/collab-client`
-  - `config|navigation|collab|storage|time`
+  - QueryClient 기본 정책 + axios 기반 HTTP/GraphQL 공용 클라이언트
+- `packages/utils`
+  - `collab` 하위에 `types|config|navigation|collab|storage|time`
 
 ## 네이밍 규칙
 1. 폴더/파일: `kebab-case`
@@ -58,15 +56,14 @@
 2. 패키지 사용은 공개 엔트리 우선:
    - `@repo/ui`
    - `@repo/icons`
-   - `@repo/http`
    - `@repo/react-query`
-   - `@repo/collab-client`
-   - `@repo/collab-types`
+   - `@repo/utils`
+   - `@repo/utils/collab`
 3. 금지:
    - 앱 간 직접 import (`apps/a`에서 `apps/b` 파일 직접 import)
-   - 패키지 내부 깊은 경로 import (`@repo/ui/src/...`)
+   - 패키지 내부 깊은 경로 import (`@repo/ui/components/...`)
 4. 같은 카테고리에서 재사용되는 항목은 상위 카테고리 barrel로 재노출한다.
-5. 네트워크 호출은 `@repo/http`, 서버 상태는 `@repo/react-query`로 분리해 사용한다.
+5. 네트워크 호출/서버 상태는 `@repo/react-query`를 우선 사용하고, 협업 공통 유틸/타입은 `@repo/utils/collab`로 통합한다.
 
 ## UI 컴포넌트 추가 규칙
 1. 기본 컴포넌트(입력/선택/테이블/레이아웃)는 `packages/ui`에 추가
@@ -82,9 +79,8 @@
 3. 아래 명령으로 검증
    - `pnpm --filter @repo/ui typecheck && pnpm --filter @repo/ui lint`
    - `pnpm --filter @repo/icons typecheck && pnpm --filter @repo/icons lint`
-   - `pnpm --filter @repo/http typecheck && pnpm --filter @repo/http lint`
    - `pnpm --filter @repo/react-query typecheck && pnpm --filter @repo/react-query lint`
-   - `pnpm --filter @repo/collab-client typecheck && pnpm --filter @repo/collab-client lint`
+   - `pnpm --filter @repo/utils typecheck && pnpm --filter @repo/utils lint`
    - `pnpm --filter @repo/docs typecheck && pnpm --filter @repo/docs lint`
    - `pnpm --filter @repo/whiteboard typecheck && pnpm --filter @repo/whiteboard lint`
    - `pnpm --filter @repo/opslens-dashboard typecheck && pnpm --filter @repo/opslens-dashboard lint`

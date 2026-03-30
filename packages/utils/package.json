@@ -1,0 +1,30 @@
+{
+  "name": "@repo/utils",
+  "private": true,
+  "version": "0.0.0",
+  "license": "MIT",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./class": "./src/class/index.ts",
+    "./collab": "./src/collab/index.ts",
+    "./collab/server": "./src/collab/server.ts",
+    "./file": "./src/file/index.ts",
+    "./string": "./src/string/index.ts",
+    "./style": "./src/style/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "clsx": "^2.1.0",
+    "tailwind-merge": "^2.2.2"
+  },
+  "devDependencies": {
+    "@repo/configs": "workspace:*",
+    "@repo/eslint-config": "workspace:*",
+    "typescript": "^5.4.5"
+  }
+}

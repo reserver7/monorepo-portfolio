@@ -1,4 +1,4 @@
-import { createSessionStorage } from "@repo/collab-client";
+import { createSessionStorage } from "@repo/utils/collab";
 
 const sessionStorage = createSessionStorage({
   sessionKey: "reserver7.sessionId",
