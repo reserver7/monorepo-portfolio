@@ -1,0 +1,22 @@
+{
+  "name": "@repo/configs",
+  "private": true,
+  "version": "0.0.0",
+  "exports": {
+    "./global.css": "./src/tailwind/global.css",
+    "./next/create-config": "./src/next/create-next-config.mjs",
+    "./postcss.config": "./src/tailwind/postcss.config.js",
+    "./prettier.config": "./src/prettier/prettier.config.cjs",
+    "./tailwind.config": "./src/tailwind/tailwind.config.ts",
+    "./tailwind/create-app-config": "./src/tailwind/create-app-tailwind-config.ts",
+    "./typescript/base.json": "./src/typescript/base.json",
+    "./typescript/nest-service.json": "./src/typescript/nest-service.json",
+    "./typescript/next-app.json": "./src/typescript/next-app.json",
+    "./typescript/nextjs.json": "./src/typescript/nextjs.json",
+    "./typescript/node-service.json": "./src/typescript/node-service.json",
+    "./typescript/react-library.json": "./src/typescript/react-library.json"
+  },
+  "dependencies": {
+    "tailwindcss": "^3.4.3"
+  }
+}
