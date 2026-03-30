@@ -524,6 +524,7 @@ export default function HomePage() {
               deleteForm.setValue("deleteAccessKeyDraft", "");
               setDeleteErrorMessage(null);
             }}
+            confirmText="문서 삭제"
             onConfirm={() => {
               if (!deleteTarget) {
                 return;

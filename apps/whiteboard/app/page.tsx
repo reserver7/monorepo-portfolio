@@ -513,6 +513,7 @@ export default function WhiteboardHomePage() {
               deleteForm.setValue("deleteAccessKeyDraft", "");
               setDeleteErrorMessage(null);
             }}
+            confirmText="화이트보드 삭제"
             onConfirm={() => {
               if (!deleteTarget) {
                 return;
