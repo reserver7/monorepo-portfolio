@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { RhfField, useAppForm } from "@repo/forms";
 import {
   DataTable,
   DataTableColumnHeader,
@@ -14,18 +13,11 @@ import {
   SelectTrigger,
   SelectValue
 } from "@repo/ui";
-import { keepPreviousData, useQuery } from "@repo/react-query";
-import { listIssues, type Issue, type IssueStatus, type Severity } from "@/features/ops/api";
-import { OpsSectionCard, SeverityBadge, StatusBadge } from "@/features/ops";
-import { useOpsFilters } from "@/features/ops/stores";
+import { useQuery } from "@repo/react-query";
+import { listIssues, type Issue, type IssueStatus, type Severity } from "@/lib/api";
+import { OpsSectionCard, SeverityBadge, StatusBadge } from "@/components/opslens";
+import { useOpsFilterStore } from "@/lib/store";
 import { formatDateTime, formatNumber } from "@/lib/utils";
-import {
-  opslensQueryKeys,
-  toOptionalSearch,
-  toOptionalServiceName,
-  toOptionalSeverity,
-  toOptionalStatus
-} from "@/features/ops/api";
 
 const statusOptions: Array<{ label: string; value: "all" | IssueStatus }> = [
   { label: "전체", value: "all" },
@@ -44,30 +36,24 @@ const severityOptions: Array<{ label: string; value: "all" | Severity }> = [
 ];
 
 export default function IssuesPage() {
-  const { environment, serviceName, search } = useOpsFilters();
+  const environment = useOpsFilterStore((state) => state.environment);
+  const serviceName = useOpsFilterStore((state) => state.serviceName);
+  const search = useOpsFilterStore((state) => state.search);
 
-  const filterForm = useAppForm<{ status: "all" | IssueStatus; severity: "all" | Severity }>({
-    defaultValues: {
-      status: "all",
-      severity: "all"
-    }
-  });
-  const status = filterForm.watch("status");
-  const severity = filterForm.watch("severity");
+  const [status, setStatus] = useState<"all" | IssueStatus>("all");
+  const [severity, setSeverity] = useState<"all" | Severity>("all");
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
   const issuesQuery = useQuery({
-    queryKey: opslensQueryKeys.issues({ environment, serviceName, search, status, severity, page }),
-    placeholderData: keepPreviousData,
-    staleTime: 10 * 1000,
+    queryKey: ["opslens", "issues", environment, serviceName, search, status, severity, page],
     queryFn: () =>
       listIssues({
         environment,
-        serviceName: toOptionalServiceName(serviceName),
-        query: toOptionalSearch(search),
-        status: toOptionalStatus(status),
-        severity: toOptionalSeverity(severity),
+        serviceName,
+        query: search || undefined,
+        status: status === "all" ? undefined : status,
+        severity: severity === "all" ? undefined : severity,
         page,
         pageSize
       })
@@ -85,10 +71,7 @@ export default function IssuesPage() {
         header: ({ column }) => <DataTableColumnHeader column={column} title="이슈" />,
         cell: ({ row }) => (
           <div className="align-top">
-            <Link
-              href={`/issues/${row.original.id}`}
-              className="font-semibold text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-            >
+            <Link href={`/issues/${row.original.id}`} className="font-semibold text-foreground hover:text-primary">
               {row.original.title}
             </Link>
             <p className="mt-1 max-w-[420px] truncate text-xs text-muted">{row.original.summary}</p>
@@ -129,64 +112,52 @@ export default function IssuesPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <OpsSectionCard title="이슈 리스트" description="상태/심각도/검색 조건으로 이슈를 빠르게 필터링하세요.">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-3">
             <div className="grid gap-1">
-              <Label size="sm">상태</Label>
-              <RhfField
-                control={filterForm.control}
-                name="status"
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      setPage(1);
-                    }}
-                  >
-                    <SelectTrigger size="md" className="min-w-[140px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+              <Label className="text-xs">상태</Label>
+              <Select
+                value={status}
+                onValueChange={(value) => {
+                  setStatus(value as "all" | IssueStatus);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-9 min-w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid gap-1">
-              <Label size="sm">심각도</Label>
-              <RhfField
-                control={filterForm.control}
-                name="severity"
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      setPage(1);
-                    }}
-                  >
-                    <SelectTrigger size="md" className="min-w-[140px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {severityOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+              <Label className="text-xs">심각도</Label>
+              <Select
+                value={severity}
+                onValueChange={(value) => {
+                  setSeverity(value as "all" | Severity);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-9 min-w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {severityOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>

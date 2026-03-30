@@ -6,33 +6,6 @@ APPS_DIR="${ROOT_DIR}/apps"
 TEMPLATE_DIR="${ROOT_DIR}/templates/next-app"
 ROOT_PACKAGE_JSON="${ROOT_DIR}/package.json"
 
-print_section() {
-  echo
-  echo "----------------------------------------------"
-  echo "$1"
-  echo "----------------------------------------------"
-}
-
-print_done() {
-  echo "[완료] $1"
-}
-
-print_info() {
-  echo "[안내] $1"
-}
-
-print_warn() {
-  echo "[경고] $1"
-}
-
-print_yes_no() {
-  if [[ "$1" == "yes" ]]; then
-    echo "예"
-  else
-    echo "아니오"
-  fi
-}
-
 print_error() {
   echo "[오류] $1" >&2
 }
@@ -98,16 +71,16 @@ const [, , packagePath, appName, devAlias] = process.argv;
 const raw = fs.readFileSync(packagePath, "utf8");
 const pkg = JSON.parse(raw);
 const scripts = pkg.scripts ?? {};
-const appDevScript = `dev:${appName}`;
-const expected = `pnpm --filter @repo/${appName} dev`;
+const devScriptName = `dev:${appName}`;
+const devCommand = `pnpm --filter @repo/${appName} dev`;
 
-if (scripts[appDevScript] && scripts[appDevScript] !== expected) {
-  console.error(`root package.json의 '${appDevScript}' 스크립트가 이미 다른 명령으로 존재합니다.`);
+if (scripts[devScriptName] && scripts[devScriptName] !== devCommand) {
+  console.error(`root package.json의 '${devScriptName}' 스크립트가 이미 다른 명령으로 존재합니다.`);
   process.exit(1);
 }
 
-if (devAlias && scripts[devAlias]) {
-  console.error(`root package.json의 '${devAlias}' 스크립트가 이미 존재합니다.`);
+if (devAlias && scripts[devAlias] && scripts[devAlias] !== devCommand) {
+  console.error(`root package.json의 '${devAlias}' 스크립트가 이미 다른 명령으로 존재합니다.`);
   process.exit(1);
 }
 NODE
@@ -118,7 +91,6 @@ echo "=============================================="
 echo "모노레포 신규 앱 생성기"
 echo "=============================================="
 echo
-print_section "입력 가이드"
 echo "입력 예시"
 echo "- 앱 이름: ai-ops-dashboard"
 echo "- 앱 표시 이름: AI 운영 대시보드"
@@ -188,7 +160,7 @@ fi
 
 assert_script_name_available "$APP_NAME" "$DEV_ALIAS"
 
-print_section "생성 정보 확인"
+echo
 echo "생성 정보"
 echo "- 앱 이름: $APP_NAME"
 echo "- 앱 표시 이름: $APP_TITLE"
@@ -253,10 +225,17 @@ const pkg = JSON.parse(raw);
 const scripts = pkg.scripts ?? {};
 
 const devCommand = `pnpm --filter @repo/${appName} dev`;
-const appDevScript = `dev:${appName}`;
+const additions = {
+  [`dev:${appName}`]: devCommand,
+  [`build:${appName}`]: `pnpm --filter @repo/${appName} build`,
+  [`lint:${appName}`]: `pnpm --filter @repo/${appName} lint`,
+  [`typecheck:${appName}`]: `pnpm --filter @repo/${appName} typecheck`
+};
 
-if (!scripts[appDevScript]) {
-  scripts[appDevScript] = devCommand;
+for (const [key, value] of Object.entries(additions)) {
+  if (!scripts[key]) {
+    scripts[key] = value;
+  }
 }
 
 if (devAlias && !scripts[devAlias]) {
@@ -271,56 +250,23 @@ pkg.scripts = sortedScripts;
 fs.writeFileSync(packagePath, `${JSON.stringify(pkg, null, 2)}\n`, "utf8");
 NODE
 
-print_section "앱 생성 결과"
-print_done "앱 생성 완료: apps/${APP_NAME}"
-print_done "루트 스크립트 추가: dev:${APP_NAME}"
+echo "앱 생성이 완료되었습니다: apps/${APP_NAME}"
+echo "루트 스크립트가 추가되었습니다: dev:${APP_NAME}, build:${APP_NAME}, lint:${APP_NAME}, typecheck:${APP_NAME}"
 if [[ -n "$DEV_ALIAS" ]]; then
-  print_done "축약 스크립트 추가: $DEV_ALIAS"
+  echo "축약 스크립트가 추가되었습니다: $DEV_ALIAS"
 fi
 
 read -r -p "지금 pnpm install을 실행할까요? [Y/n]: " INSTALL_NOW
-INSTALL_RAN="no"
 if [[ -z "${INSTALL_NOW}" || "${INSTALL_NOW}" =~ ^[Yy]$ ]]; then
-  print_section "의존성 설치"
-  print_info "pnpm install 실행"
+  echo
+  echo "pnpm install 실행 중..."
   pnpm install
-  INSTALL_RAN="yes"
-  print_done "pnpm install 완료"
-else
-  print_warn "pnpm install 건너뜀"
 fi
 
-read -r -p "생성한 앱의 typecheck/lint를 지금 실행할까요? [Y/n]: " VERIFY_NOW
-VERIFY_RAN="no"
-if [[ -z "${VERIFY_NOW}" || "${VERIFY_NOW}" =~ ^[Yy]$ ]]; then
-  print_section "생성 앱 검증"
-  print_info "pnpm --filter @repo/${APP_NAME} typecheck"
-  pnpm --filter "@repo/${APP_NAME}" typecheck
-  print_info "pnpm --filter @repo/${APP_NAME} lint"
-  pnpm --filter "@repo/${APP_NAME}" lint
-  VERIFY_RAN="yes"
-  print_done "생성 앱 검증 완료"
-else
-  print_warn "생성 앱 검증 건너뜀"
-fi
-
-print_section "다음 실행 명령"
+echo
+echo "다음 실행 명령"
 echo "- pnpm dev:${APP_NAME}"
-echo "- pnpm --filter @repo/${APP_NAME} dev"
 if [[ -n "$DEV_ALIAS" ]]; then
   echo "- pnpm run ${DEV_ALIAS}"
 fi
-
-print_section "최종 요약"
-echo "항목                        | 값"
-echo "---------------------------|---------------------------------------------"
-echo "앱 경로                     | apps/${APP_NAME}"
-echo "루트 dev 스크립트           | dev:${APP_NAME}"
-if [[ -n "$DEV_ALIAS" ]]; then
-  echo "축약 스크립트               | ${DEV_ALIAS}"
-else
-  echo "축약 스크립트               | (없음)"
-fi
-echo "pnpm install 실행           | $(print_yes_no "$INSTALL_RAN")"
-echo "typecheck/lint 실행         | $(print_yes_no "$VERIFY_RAN")"
 echo

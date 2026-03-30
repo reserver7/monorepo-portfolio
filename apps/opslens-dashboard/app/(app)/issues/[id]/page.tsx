@@ -1,9 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { RhfField, useAppForm } from "@repo/forms";
 import {
   Button,
   Input,
@@ -13,8 +12,6 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Spinner,
-  StateView,
   Textarea,
   Typography
 } from "@repo/ui";
@@ -25,10 +22,9 @@ import {
   getIssueDetail,
   type IssueStatus,
   updateIssueStatus
-} from "@/features/ops/api";
-import { OpsInfoItem, OpsIssueDetailSkeleton, OpsSectionCard } from "@/features/ops";
+} from "@/lib/api";
+import { OpsInfoItem, OpsSectionCard } from "@/components/opslens";
 import { formatDateTime, formatNumber } from "@/lib/utils";
-import { opslensQueryKeys } from "@/features/ops/api";
 
 const statusOptions: Array<{ label: string; value: IssueStatus }> = [
   { label: "신규", value: "new" },
@@ -42,24 +38,12 @@ export default function IssueDetailPage() {
   const issueId = params.id;
   const queryClient = useQueryClient();
 
-  const assigneeForm = useAppForm<{ assignee: string }>({
-    defaultValues: {
-      assignee: ""
-    }
-  });
-  const commentForm = useAppForm<{ author: string; body: string }>({
-    defaultValues: {
-      author: "운영담당자",
-      body: ""
-    }
-  });
-
-  const assignee = assigneeForm.watch("assignee");
-  const commentBody = commentForm.watch("body");
+  const [assignee, setAssignee] = useState("");
+  const [commentAuthor, setCommentAuthor] = useState("운영담당자");
+  const [commentBody, setCommentBody] = useState("");
 
   const issueQuery = useQuery({
-    queryKey: opslensQueryKeys.issueDetail(issueId),
-    staleTime: 10 * 1000,
+    queryKey: ["opslens", "issue-detail", issueId],
     queryFn: () => getIssueDetail(issueId),
     enabled: Boolean(issueId)
   });
@@ -70,29 +54,28 @@ export default function IssueDetailPage() {
     mutationFn: (status: IssueStatus) => updateIssueStatus(issueId, status),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: opslensQueryKeys.issueDetail(issueId) }),
-        queryClient.invalidateQueries({ queryKey: opslensQueryKeys.all })
+        queryClient.invalidateQueries({ queryKey: ["opslens", "issue-detail", issueId] }),
+        queryClient.invalidateQueries({ queryKey: ["opslens", "issues"] })
       ]);
     }
   });
 
   const assigneeMutation = useMutation({
-    mutationFn: (values: { assignee: string }) => assignIssue(issueId, values.assignee.trim()),
+    mutationFn: () => assignIssue(issueId, assignee.trim()),
     onSuccess: async () => {
-      assigneeForm.reset({ assignee: "" });
+      setAssignee("");
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: opslensQueryKeys.issueDetail(issueId) }),
-        queryClient.invalidateQueries({ queryKey: opslensQueryKeys.all })
+        queryClient.invalidateQueries({ queryKey: ["opslens", "issue-detail", issueId] }),
+        queryClient.invalidateQueries({ queryKey: ["opslens", "issues"] })
       ]);
     }
   });
 
   const commentMutation = useMutation({
-    mutationFn: (values: { author: string; body: string }) =>
-      addIssueComment(issueId, values.author.trim() || "익명", values.body.trim()),
+    mutationFn: () => addIssueComment(issueId, commentAuthor.trim() || "익명", commentBody.trim()),
     onSuccess: async () => {
-      commentForm.setValue("body", "");
-      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.issueDetail(issueId) });
+      setCommentBody("");
+      await queryClient.invalidateQueries({ queryKey: ["opslens", "issue-detail", issueId] });
     }
   });
 
@@ -105,15 +88,15 @@ export default function IssueDetailPage() {
   }, [issue]);
 
   if (issueQuery.isLoading) {
-    return <OpsIssueDetailSkeleton />;
+    return <div className="rounded-xl border border-default bg-surface p-5">이슈 상세를 불러오는 중...</div>;
   }
 
   if (issueQuery.isError || !issue) {
-    return <StateView variant="error" size="lg" title="이슈 상세 조회에 실패했습니다." />;
+    return <div className="rounded-xl border border-danger/30 bg-danger/10 p-5 text-danger">이슈 상세 조회에 실패했습니다.</div>;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <OpsSectionCard title="Issue Detail">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -124,7 +107,7 @@ export default function IssueDetailPage() {
               {issue.summary}
             </Typography>
           </div>
-          <Link href="/issues" className="text-sm font-semibold text-primary hover:underline">
+          <Link href="/issues" className="text-sm font-semibold text-primary hover:text-primary">
             목록으로 이동
           </Link>
         </div>
@@ -141,7 +124,7 @@ export default function IssueDetailPage() {
         </div>
       </OpsSectionCard>
 
-      <section className="grid gap-6 xl:grid-cols-2">
+      <section className="grid gap-5 xl:grid-cols-2">
         <OpsSectionCard title="상태/담당자 관리">
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <div className="grid gap-1">
@@ -151,7 +134,7 @@ export default function IssueDetailPage() {
                 onValueChange={(value) => statusMutation.mutate(value as IssueStatus)}
                 disabled={statusMutation.isPending}
               >
-                <SelectTrigger id="issue-status" size="md">
+                <SelectTrigger id="issue-status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -166,29 +149,23 @@ export default function IssueDetailPage() {
 
             <div className="grid gap-1 text-sm">
               <Label htmlFor="issue-assignee">담당자 지정</Label>
-              <form className="flex gap-2" onSubmit={assigneeForm.handleSubmit((values) => assigneeMutation.mutate(values))}>
-                <RhfField
-                  control={assigneeForm.control}
-                  name="assignee"
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      id="issue-assignee"
-                      placeholder="예: reserver7"
-                      className="flex-1"
-                      size="md"
-                    />
-                  )}
+              <div className="flex gap-2">
+                <Input
+                  id="issue-assignee"
+                  value={assignee}
+                  onChange={(event) => setAssignee(event.target.value)}
+                  placeholder="예: reserver7"
+                  className="flex-1"
                 />
                 <Button
-                  type="submit"
+                  type="button"
+                  onClick={() => assigneeMutation.mutate()}
                   disabled={assigneeMutation.isPending || assignee.trim().length === 0}
-                  variant="default"
-                  loading={assigneeMutation.isPending ? true : undefined}
+                  className="bg-primary hover:opacity-90"
                 >
                   저장
                 </Button>
-              </form>
+              </div>
             </div>
           </div>
         </OpsSectionCard>
@@ -219,10 +196,10 @@ export default function IssueDetailPage() {
         </OpsSectionCard>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-2">
+      <section className="grid gap-5 xl:grid-cols-2">
         <OpsSectionCard title="관련 로그 (최근 30개)">
           {issue.logs.length === 0 ? (
-            <StateView variant="empty" size="sm" title="로그 데이터가 없습니다." className="mt-3" />
+            <p className="mt-3 text-sm text-muted">로그 데이터가 없습니다.</p>
           ) : (
             <div className="mt-3 max-h-[360px] space-y-2 overflow-auto pr-1">
               {issue.logs.map((log) => (
@@ -236,49 +213,33 @@ export default function IssueDetailPage() {
         </OpsSectionCard>
 
         <OpsSectionCard title="메모 / 댓글">
-          <form
-            className="mt-3 grid gap-2"
-            onSubmit={commentForm.handleSubmit((values) => commentMutation.mutate(values))}
-          >
-            <RhfField
-              control={commentForm.control}
-              name="author"
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  id="comment-author"
-                  placeholder="작성자"
-                  size="md"
-                />
-              )}
+          <div className="mt-3 grid gap-2">
+            <Input
+              id="comment-author"
+              value={commentAuthor}
+              onChange={(event) => setCommentAuthor(event.target.value)}
+              placeholder="작성자"
             />
-            <RhfField
-              control={commentForm.control}
-              name="body"
-              render={({ field }) => (
-                <Textarea
-                  id="comment-body"
-                  value={field.value}
-                  onChange={field.onChange}
-                  rows={4}
-                  placeholder="운영 메모/분석 결과를 입력하세요"
-                />
-              )}
+            <Textarea
+              id="comment-body"
+              value={commentBody}
+              onChange={(event) => setCommentBody(event.target.value)}
+              rows={4}
+              placeholder="운영 메모/분석 결과를 입력하세요"
             />
             <Button
-              type="submit"
+              type="button"
+              onClick={() => commentMutation.mutate()}
               disabled={commentMutation.isPending || commentBody.trim().length === 0}
-              variant="secondary"
-              className="w-fit"
-              loading={commentMutation.isPending ? true : undefined}
+              className="w-fit bg-foreground hover:opacity-90"
             >
               댓글 등록
             </Button>
-          </form>
+          </div>
 
           <div className="mt-4 space-y-2">
             {issue.comments.length === 0 ? (
-              <StateView variant="empty" size="sm" title="등록된 댓글이 없습니다." />
+              <p className="text-sm text-muted">등록된 댓글이 없습니다.</p>
             ) : (
               issue.comments.map((comment) => (
                 <div key={comment.id} className="rounded-lg border border-default p-3 text-sm">
@@ -291,13 +252,6 @@ export default function IssueDetailPage() {
           </div>
         </OpsSectionCard>
       </section>
-
-      <Spinner
-        open={statusMutation.isPending || assigneeMutation.isPending || commentMutation.isPending}
-        fullscreen
-        size="lg"
-        tone="primary"
-      />
     </div>
   );
 }

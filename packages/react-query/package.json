@@ -1,37 +1,30 @@
 {
   "name": "@repo/react-query",
   "version": "0.0.0",
-  "license": "MIT",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
-    ".": "./index.ts",
-    "./boundaries": "./boundaries.tsx",
-    "./http": "./http/index.ts",
-    "./providers": "./providers.tsx"
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts"
   },
+  "sideEffects": false,
   "scripts": {
-    "lint": "eslint . --max-warnings=0",
-    "typecheck": "tsc --noEmit"
+    "build": "tsc -p tsconfig.json --emitDeclarationOnly",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . --max-warnings=0"
   },
   "peerDependencies": {
-    "react": ">=18.0.0",
-    "react-dom": ">=18.0.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.29.2",
-    "@tanstack/react-query-next-experimental": "^5.29.2",
-    "axios": "^1.6.8",
-    "react-error-boundary": "^4.0.13"
+    "@tanstack/react-query": "^5.76.1"
   },
   "devDependencies": {
-    "@repo/configs": "workspace:*",
-    "@repo/eslint-config": "workspace:*",
-    "@tanstack/eslint-plugin-query": "^5.27.7",
-    "@types/node": "^20.12.7",
     "@types/react": "^19.0.10",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "typescript": "^5.4.5"
+    "@types/react-dom": "^19.0.4",
+    "typescript": "^5.8.2"
   }
 }

@@ -1,7 +1,0 @@
-@import "@repo/ui/styles/design-system.css";
-@import "@repo/ui/styles/app-base.css";
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-

@@ -7,7 +7,7 @@ import type {
   HistoryEntry,
   Participant as SharedParticipant,
   SaveState
-} from "@repo/utils/collab";
+} from "@repo/collab-types";
 
 export type {
   AccessRole,

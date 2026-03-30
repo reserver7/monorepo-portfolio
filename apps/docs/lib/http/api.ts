@@ -1,34 +1,15 @@
 import { docsClientEnv } from "@/lib/config";
 import { DocumentComment, DocumentRecord, DocumentSummary, HistoryEntry } from "@/lib/collab";
-import { createResourceClient, requestJson } from "@repo/react-query";
+import { requestJson } from "@repo/http";
 
 export const API_BASE_URL = docsClientEnv.apiBaseUrl;
-export const docsQueryKeys = {
-  all: ["docs"] as const,
-  documents: () => [...docsQueryKeys.all, "documents"] as const,
-  document: (documentId: string) => [...docsQueryKeys.all, "document", documentId] as const,
-  history: (documentId: string) => [...docsQueryKeys.all, "history", documentId] as const,
-  comments: (documentId: string) => [...docsQueryKeys.all, "comments", documentId] as const
-};
-
-const documentsResource = createResourceClient<
-  DocumentSummary,
-  DocumentRecord,
-  "documents",
-  "document",
-  "documentId"
->(
-  API_BASE_URL,
-  "/api/documents",
-  {
-    list: "documents",
-    item: "document",
-    deleteId: "documentId"
-  }
-);
 
 export const listDocuments = async (): Promise<DocumentSummary[]> => {
-  return documentsResource.list();
+  const payload = await requestJson<{ documents: DocumentSummary[] }>(API_BASE_URL, "/api/documents", {
+    method: "GET"
+  });
+
+  return payload.documents;
 };
 
 export const createDocument = async (input: {
@@ -38,8 +19,7 @@ export const createDocument = async (input: {
 }): Promise<{ document: DocumentRecord }> => {
   return requestJson<{ document: DocumentRecord }>(API_BASE_URL, "/api/documents", {
     method: "POST",
-    body: JSON.stringify(input),
-    successMessage: "문서가 생성되었습니다."
+    body: JSON.stringify(input)
   });
 };
 
@@ -51,13 +31,14 @@ export const deleteDocumentById = async (input: {
     method: "DELETE",
     body: JSON.stringify({
       editorAccessKey: input.editorAccessKey
-    }),
-    successMessage: "문서가 삭제되었습니다."
+    })
   });
 };
 
 export const getDocument = async (documentId: string): Promise<{ document: DocumentRecord }> => {
-  return documentsResource.getById(documentId);
+  return requestJson<{ document: DocumentRecord }>(API_BASE_URL, `/api/documents/${documentId}`, {
+    method: "GET"
+  });
 };
 
 export const getDocumentHistory = async (
@@ -116,7 +97,6 @@ export const createDocumentComment = async (input: {
       authorName: input.authorName,
       body: input.body,
       mentions: input.mentions
-    }),
-    successMessage: "댓글이 등록되었습니다."
+    })
   });
 };

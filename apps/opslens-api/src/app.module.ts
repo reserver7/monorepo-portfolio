@@ -2,9 +2,9 @@ import { ApolloDriver, type ApolloDriverConfig } from "@nestjs/apollo";
 import { Module } from "@nestjs/common";
 import { GraphQLModule } from "@nestjs/graphql";
 import { join } from "node:path";
-import { PrismaModule } from "./platform/db/prisma.module.js";
-import { HealthController } from "./features/health/health.controller.js";
-import { OpsModule } from "./features/ops/ops.module.js";
+import { PrismaModule } from "./common/db/index.js";
+import { HealthController } from "./modules/health/index.js";
+import { OpsModule } from "./modules/ops/index.js";
 
 @Module({
   imports: [

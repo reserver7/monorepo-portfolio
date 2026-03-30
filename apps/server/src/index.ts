@@ -3,7 +3,7 @@ import http from "node:http";
 import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import { Server, Socket } from "socket.io";
-import type { AccessRole, Participant } from "@repo/utils/collab";
+import type { AccessRole, Participant } from "@repo/collab-types";
 import { serverEnv } from "./config";
 import { createLogger, getRequestId, requestObservabilityMiddleware, SocketEventMetrics } from "./observability";
 import {
@@ -37,19 +37,10 @@ import {
   SocketEventName,
   socketEventName,
   trimOptional
-} from "./features/collab";
-import {
-  API_ROUTES,
-  EventRateLimiter,
-  issueSessionToken,
-  readOptionalString,
-  readStringArray,
-  RealtimeStore,
-  sanitizeEditorAccessKey,
-  toJsonObject,
-  verifyEditorAccessKey,
-  verifySessionToken
-} from "./features/collab";
+} from "./realtime";
+import { readOptionalString, readStringArray, toJsonObject } from "./http";
+import { EventRateLimiter, issueSessionToken, sanitizeEditorAccessKey, verifyEditorAccessKey, verifySessionToken } from "./security";
+import { RealtimeStore } from "./store";
 
 const app = express();
 const store = new RealtimeStore(serverEnv.stateFilePath);
@@ -329,15 +320,15 @@ const teardownBoardAfterDelete = (boardId: string): void => {
   broadcastBoardParticipants(boardId);
 };
 
-app.get(API_ROUTES.health, (_req, res) => {
+app.get("/health", (_req, res) => {
   res.json({ ok: true, now: new Date().toISOString() });
 });
 
-app.get(API_ROUTES.documents, (_req, res) => {
+app.get("/api/documents", (_req, res) => {
   res.json({ documents: store.listDocuments() });
 });
 
-app.post(API_ROUTES.documents, (req, res) => {
+app.post("/api/documents", (req, res) => {
   const body = toJsonObject(req.body);
   const actor = sanitizeDisplayName(readOptionalString(body, "actor"));
   const title = readOptionalString(body, "title") ?? EMPTY_TITLE;
@@ -346,7 +337,7 @@ app.post(API_ROUTES.documents, (req, res) => {
   res.status(201).json({ document: created });
 });
 
-app.delete(API_ROUTES.documentById, (req, res) => {
+app.delete("/api/documents/:id", (req, res) => {
   const body = toJsonObject(req.body);
   const editorAccessKey = readOptionalString(body, "editorAccessKey");
   const deleted = store.deleteDocument({
@@ -368,7 +359,7 @@ app.delete(API_ROUTES.documentById, (req, res) => {
   res.json({ ok: true, documentId: deleted.documentId });
 });
 
-app.get(API_ROUTES.documentById, (req, res) => {
+app.get("/api/documents/:id", (req, res) => {
   const document = store.getDocument(req.params.id);
   if (!document) {
     res.status(404).json({ message: "Document not found" });
@@ -378,7 +369,7 @@ app.get(API_ROUTES.documentById, (req, res) => {
   res.json({ document });
 });
 
-app.get(API_ROUTES.documentHistory, (req, res) => {
+app.get("/api/documents/:id/history", (req, res) => {
   const document = store.getDocument(req.params.id);
   if (!document) {
     res.status(404).json({ message: "Document not found" });
@@ -388,7 +379,7 @@ app.get(API_ROUTES.documentHistory, (req, res) => {
   res.json({ documentId: document.id, history: store.getHistory(document.id) });
 });
 
-app.get(API_ROUTES.documentComments, (req, res) => {
+app.get("/api/documents/:id/comments", (req, res) => {
   const document = store.getDocument(req.params.id);
   if (!document) {
     res.status(404).json({ message: "Document not found" });
@@ -398,7 +389,7 @@ app.get(API_ROUTES.documentComments, (req, res) => {
   res.json({ documentId: document.id, comments: store.listDocumentComments(document.id) });
 });
 
-app.post(API_ROUTES.documentComments, (req, res) => {
+app.post("/api/documents/:id/comments", (req, res) => {
   const document = store.getDocument(req.params.id);
   if (!document) {
     res.status(404).json({ message: "Document not found" });
@@ -433,11 +424,11 @@ app.post(API_ROUTES.documentComments, (req, res) => {
   });
 });
 
-app.get(API_ROUTES.boards, (_req, res) => {
+app.get("/api/boards", (_req, res) => {
   res.json({ boards: store.listBoards() });
 });
 
-app.post(API_ROUTES.boards, (req, res) => {
+app.post("/api/boards", (req, res) => {
   const body = toJsonObject(req.body);
   const actor = sanitizeDisplayName(readOptionalString(body, "actor"));
   const title = readOptionalString(body, "title") ?? EMPTY_TITLE;
@@ -446,7 +437,7 @@ app.post(API_ROUTES.boards, (req, res) => {
   res.status(201).json({ board });
 });
 
-app.delete(API_ROUTES.boardById, (req, res) => {
+app.delete("/api/boards/:id", (req, res) => {
   const body = toJsonObject(req.body);
   const editorAccessKey = readOptionalString(body, "editorAccessKey");
   const deleted = store.deleteBoard({
@@ -468,7 +459,7 @@ app.delete(API_ROUTES.boardById, (req, res) => {
   res.json({ ok: true, boardId: deleted.boardId });
 });
 
-app.get(API_ROUTES.boardById, (req, res) => {
+app.get("/api/boards/:id", (req, res) => {
   const board = store.getBoard(req.params.id);
   if (!board) {
     res.status(404).json({ message: "Board not found" });

@@ -5,7 +5,7 @@ import type {
   WhiteboardRecord,
   WhiteboardShape,
   WhiteboardSummary
-} from "@repo/utils/collab";
+} from "@repo/collab-types";
 
 export type { AccessRole, ConnectionState, WhiteboardRecord, WhiteboardShape, WhiteboardSummary };
 
