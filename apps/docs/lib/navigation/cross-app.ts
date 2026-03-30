@@ -1,4 +1,4 @@
-import { navigateToApp } from "@repo/collab-client";
+import { navigateToApp } from "@repo/utils/collab";
 
 const DEFAULT_WHITEBOARD_APP_ORIGIN = "https://monorepo-portfolio-whiteboard.vercel.app";
 const whiteboardAppOrigin =
