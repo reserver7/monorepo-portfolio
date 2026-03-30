@@ -1,4 +1,4 @@
-import { navigateToApp } from "@repo/collab-client";
+import { navigateToApp } from "@repo/utils/collab";
 
 const DEFAULT_DOCS_APP_ORIGIN = "https://monorepo-portfolio-docs.vercel.app";
 const docsAppOrigin = process.env.NEXT_PUBLIC_DOCS_APP_URL?.trim() || DEFAULT_DOCS_APP_ORIGIN;
