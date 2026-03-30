@@ -2,8 +2,8 @@
 
 import { useMemo } from "react";
 import { Textarea } from "@repo/ui";
-import { OpsInfoItem, OpsSectionCard } from "@/components/opslens";
-import { useOpsFilterStore } from "@/lib/store";
+import { OpsInfoItem, OpsSectionCard } from "@/features/ops";
+import { useOpsFilterStore } from "@/features/ops/stores";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4100/graphql";
 
@@ -27,10 +27,9 @@ export default function SettingsPage() {
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <OpsSectionCard title="프로젝트 설정" description="현재 필터 상태와 API 연결 정보를 확인할 수 있습니다.">
-
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-3">
           <OpsInfoItem label="환경" value={environment} />
           <OpsInfoItem label="서비스" value={serviceName} />
           <OpsInfoItem label="검색어" value={search || "(없음)"} />
@@ -42,12 +41,12 @@ export default function SettingsPage() {
           readOnly
           value={envPreview}
           rows={10}
-          className="mt-3 bg-surface-elevated font-mono text-xs"
+          className="bg-surface-elevated font-mono text-xs"
         />
       </OpsSectionCard>
 
       <OpsSectionCard title="운영 확장 TODO">
-        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted">
+        <ul className="list-disc space-y-1 pl-5 text-sm text-muted">
           <li>Slack/Jira API 연동 토큰 연결</li>
           <li>Sentry/Datadog Webhook 수집 파이프라인 추가</li>
           <li>권한 모델(RBAC)과 감사 로그 적용</li>
