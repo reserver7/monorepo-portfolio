@@ -128,15 +128,16 @@ test.describe("권한 및 보호 키 플로우", () => {
     await expect(targetCard).toBeVisible();
     await deleteButton.click();
 
+    const deleteDialog = page.getByRole("dialog", { name: "문서를 삭제할까요?" });
     const deleteKeyInput = page.getByPlaceholder("삭제 비밀번호");
     await deleteKeyInput.fill("wrong-delete-key");
-    await page.getByRole("button", { name: "문서 삭제" }).click();
+    await deleteDialog.getByRole("button", { name: "문서 삭제" }).click();
 
-    await expect(page.getByText("문서 삭제 비밀번호가 올바르지 않습니다.")).toBeVisible();
+    await expect(deleteDialog.getByText("문서 삭제 비밀번호가 올바르지 않습니다.")).toBeVisible();
     await expect(deleteKeyInput).toHaveValue("");
 
     await deleteKeyInput.fill(editorAccessKey);
-    await page.getByRole("button", { name: "문서 삭제" }).click();
+    await deleteDialog.getByRole("button", { name: "문서 삭제" }).click();
 
     await expect(targetCard).toHaveCount(0);
   });
@@ -157,15 +158,16 @@ test.describe("권한 및 보호 키 플로우", () => {
     await expect(targetCard).toBeVisible();
     await deleteButton.click();
 
+    const deleteDialog = page.getByRole("dialog", { name: "화이트보드를 삭제할까요?" });
     const deleteKeyInput = page.getByPlaceholder("삭제 비밀번호");
     await deleteKeyInput.fill("wrong-delete-key");
-    await page.getByRole("button", { name: "화이트보드 삭제" }).click();
+    await deleteDialog.getByRole("button", { name: "화이트보드 삭제" }).click();
 
-    await expect(page.getByText("화이트보드 삭제 비밀번호가 올바르지 않습니다.")).toBeVisible();
+    await expect(deleteDialog.getByText("화이트보드 삭제 비밀번호가 올바르지 않습니다.")).toBeVisible();
     await expect(deleteKeyInput).toHaveValue("");
 
     await deleteKeyInput.fill(editorAccessKey);
-    await page.getByRole("button", { name: "화이트보드 삭제" }).click();
+    await deleteDialog.getByRole("button", { name: "화이트보드 삭제" }).click();
 
     await expect(targetCard).toHaveCount(0);
   });
