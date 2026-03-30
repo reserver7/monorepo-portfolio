@@ -75,6 +75,10 @@ test.describe("UI 상태 동기화", () => {
   });
 
   test("다크/라이트 모드가 문서에서 화이트보드로 이동해도 유지된다", async ({ page }) => {
+    const isDarkMode = async (): Promise<boolean> => {
+      return page.locator("html").evaluate((element) => element.classList.contains("dark"));
+    };
+
     await page.goto(docsUrl);
 
     const toggleButton = page.getByRole("button", { name: /모드로 전환/ });
@@ -85,7 +89,7 @@ test.describe("UI 상태 동기화", () => {
 
     await expect
       .poll(async () => {
-        return page.evaluate(() => document.documentElement.classList.contains("dark"));
+        return isDarkMode();
       })
       .toBe(true);
 
@@ -98,7 +102,7 @@ test.describe("UI 상태 동기화", () => {
       .toBe(`${whiteboardUrl}/`);
     await expect
       .poll(async () => {
-        return page.evaluate(() => document.documentElement.classList.contains("dark"));
+        return isDarkMode();
       })
       .toBe(true);
   });

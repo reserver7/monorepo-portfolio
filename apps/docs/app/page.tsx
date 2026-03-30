@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { RhfField, useAppForm } from "@repo/forms";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
-import { createDocument, deleteDocumentById, listDocuments } from "@/lib/http";
+import { createDocument, deleteDocumentById, docsQueryKeys, listDocuments } from "@/lib/http";
 import { navigateToWhiteboardApp } from "@/lib/navigation";
 import { docsClientEnv } from "@/lib/config";
 import {
@@ -15,7 +16,7 @@ import {
   setStoredRole
 } from "@/lib/collab";
 import { formatExactTime, formatRelativeTime } from "@/lib/collab";
-import { coerceAccessRole, collabFieldCopy } from "@repo/collab-client";
+import { coerceAccessRole, collabFieldCopy } from "@repo/utils/collab";
 import {
   Badge,
   Button,
@@ -27,11 +28,15 @@ import {
   DialogHeader,
   DialogTitle,
   Input,
+  Label,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Skeleton,
+  Spinner,
+  StateView,
   Typography
 } from "@repo/ui";
 
@@ -41,26 +46,39 @@ export default function HomePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const [displayName, setDisplayName] = useState<string>("");
-  const [draftTitle, setDraftTitle] = useState<string>("협업 문서");
-  const [role, setRole] = useState<"viewer" | "editor">(docsClientEnv.defaultRole);
-  const [editorAccessKey, setEditorAccessKey] = useState<string>("");
+  const createForm = useAppForm<{
+    displayName: string;
+    draftTitle: string;
+    role: "viewer" | "editor";
+    editorAccessKey: string;
+  }>({
+    defaultValues: {
+      displayName: "",
+      draftTitle: "협업 문서",
+      role: docsClientEnv.defaultRole,
+      editorAccessKey: ""
+    }
+  });
+
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
-  const [deleteAccessKeyDraft, setDeleteAccessKeyDraft] = useState<string>("");
+  const deleteForm = useAppForm<{ deleteAccessKeyDraft: string }>({
+    defaultValues: { deleteAccessKeyDraft: "" }
+  });
+  const deleteAccessKeyDraft = deleteForm.watch("deleteAccessKeyDraft");
   const [deleteErrorMessage, setDeleteErrorMessage] = useState<string | null>(null);
   const deleteAccessKeyInputRef = useRef<HTMLInputElement | null>(null);
   const shouldPreserveAccessKeyForRoomRef = useRef(false);
 
   const clearMainEditorAccessKey = () => {
     shouldPreserveAccessKeyForRoomRef.current = false;
-    setEditorAccessKey("");
+    createForm.setValue("editorAccessKey", "");
     setStoredEditorAccessKey("");
   };
 
   const keepAccessKeyForRoomEntry = (): string => {
-    const normalizedAccessKey = editorAccessKey.trim();
+    const normalizedAccessKey = (createForm.getValues("editorAccessKey") ?? "").trim();
     shouldPreserveAccessKeyForRoomRef.current = true;
-    setStoredRole(role);
+    setStoredRole(createForm.getValues("role"));
     setStoredEditorAccessKey(normalizedAccessKey);
     return normalizedAccessKey;
   };
@@ -69,11 +87,11 @@ export default function HomePage() {
     const stored = getStoredDisplayName();
     const storedRole = getStoredRole();
     const nextName = stored?.trim() ? stored : createGuestName();
-    setDisplayName(nextName);
+    createForm.setValue("displayName", nextName);
     setStoredDisplayName(nextName);
-    setRole(storedRole ?? docsClientEnv.defaultRole);
+    createForm.setValue("role", storedRole ?? docsClientEnv.defaultRole);
     shouldPreserveAccessKeyForRoomRef.current = false;
-    setEditorAccessKey("");
+    createForm.setValue("editorAccessKey", "");
     setStoredEditorAccessKey("");
   }, []);
 
@@ -97,19 +115,22 @@ export default function HomePage() {
   }, []);
 
   const documentsQuery = useQuery({
-    queryKey: ["documents"],
+    queryKey: docsQueryKeys.documents(),
     queryFn: listDocuments,
-    staleTime: 5000,
+    staleTime: 10 * 1000,
     refetchInterval: 5000
   });
 
   const createDocumentMutation = useMutation({
     mutationFn: (input: { title: string; actor: string; editorAccessKey?: string }) => createDocument(input),
     onSuccess: async ({ document }) => {
-      setDraftTitle("협업 문서");
-      setRole(docsClientEnv.defaultRole);
-      setEditorAccessKey("");
-      await queryClient.invalidateQueries({ queryKey: ["documents"] });
+      createForm.reset({
+        displayName: createForm.getValues("displayName"),
+        draftTitle: "협업 문서",
+        role: docsClientEnv.defaultRole,
+        editorAccessKey: ""
+      });
+      await queryClient.invalidateQueries({ queryKey: docsQueryKeys.documents() });
       router.push(`/doc/${document.id}`);
     },
     onError: () => {
@@ -120,14 +141,14 @@ export default function HomePage() {
   const deleteDocumentMutation = useMutation({
     mutationFn: (input: { documentId: string; editorAccessKey?: string }) => deleteDocumentById(input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["documents"] });
+      await queryClient.invalidateQueries({ queryKey: docsQueryKeys.documents() });
       setDeleteTargetId(null);
-      setDeleteAccessKeyDraft("");
+      deleteForm.setValue("deleteAccessKeyDraft", "");
       setDeleteErrorMessage(null);
     },
     onError: (error) => {
       setDeleteErrorMessage(error instanceof Error ? error.message : "문서 삭제에 실패했습니다.");
-      setDeleteAccessKeyDraft("");
+      deleteForm.setValue("deleteAccessKeyDraft", "");
       setTimeout(() => {
         deleteAccessKeyInputRef.current?.focus();
       }, 0);
@@ -136,6 +157,9 @@ export default function HomePage() {
 
   const documents = documentsQuery.data ?? [];
   const deleteTarget = documents.find((document) => document.id === deleteTargetId) ?? null;
+  const isActionPending = createDocumentMutation.isPending || deleteDocumentMutation.isPending;
+  const protectedDocumentCount = documents.filter((document) => document.isProtected).length;
+  const totalCommentCount = documents.reduce((total, document) => total + document.commentCount, 0);
 
   useEffect(() => {
     if (!deleteTargetId || !deleteTarget?.isProtected) {
@@ -151,115 +175,191 @@ export default function HomePage() {
     };
   }, [deleteTargetId, deleteTarget?.isProtected]);
 
-  const handleNameChange = (nextValue: string) => {
-    setDisplayName(nextValue);
-    setStoredDisplayName(nextValue.trim() || createGuestName());
-  };
-
-  const handleCreate = () => {
+  const handleCreate = (values: {
+    displayName: string;
+    draftTitle: string;
+    role: "viewer" | "editor";
+    editorAccessKey: string;
+  }) => {
+    setStoredDisplayName(values.displayName.trim() || createGuestName());
+    setStoredRole(values.role);
     const normalizedAccessKey = keepAccessKeyForRoomEntry();
     createDocumentMutation.mutate({
-      title: draftTitle.trim() || EMPTY_TITLE,
-      actor: displayName.trim() || createGuestName(),
+      title: values.draftTitle.trim() || EMPTY_TITLE,
+      actor: values.displayName.trim() || createGuestName(),
       editorAccessKey: normalizedAccessKey || undefined
     });
   };
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-10 md:px-8">
-      <section className="rounded-2xl border border-default/80 bg-gradient-to-b from-surface/95 to-surface-elevated/85 p-6 shadow-[0_16px_36px_rgba(15,23,42,0.08)] backdrop-blur-sm md:p-10 dark:border-default dark:from-surface/95 dark:to-surface-elevated/80 dark:shadow-[0_20px_45px_rgba(2,6,23,0.42)]">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <Badge
-            variant="outline"
-            className="border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary"
-          >
-            Real-time Collaboration MVP
-          </Badge>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              clearMainEditorAccessKey();
-              navigateToWhiteboardApp("/");
-            }}
-          >
-            화이트보드로 이동
-          </Button>
-        </div>
-        <Typography as="h1" variant="display" className="leading-tight">
-          실시간 협업 문서 서비스
-        </Typography>
-        <Typography as="p" variant="lead" className="mt-3 max-w-3xl">
-          여러 사용자가 동시에 접속해 문서를 함께 편집하고, 변경 사항이 즉시 동기화됩니다. 접속 상태, 자동
-          저장, Yjs 기반 CRDT 충돌 처리까지 포함한 포트폴리오형 아키텍처를 확인할 수 있습니다.
-        </Typography>
-
-        <div className="mt-8 grid gap-4 md:grid-cols-[1fr_1fr_220px_220px_auto]">
-          <div>
-            <p className="mb-2 text-xs font-medium text-muted">{collabFieldCopy.displayNameLabel}</p>
-            <Input
-              title={collabFieldCopy.displayNameLabel}
-              value={displayName}
-              onChange={(event) => handleNameChange(event.target.value)}
-              placeholder={collabFieldCopy.displayNamePlaceholder}
-            />
-          </div>
-          <div>
-            <p className="mb-2 text-xs font-medium text-muted">새 문서 제목</p>
-            <Input
-              value={draftTitle}
-              onChange={(event) => setDraftTitle(event.target.value)}
-              placeholder="문서 제목"
-            />
-          </div>
-          <div>
-            <p className="mb-2 text-xs font-medium text-muted">{collabFieldCopy.entryRoleLabel}</p>
-            <Select
-              value={role}
-              onValueChange={(value) => {
-                const nextRole = coerceAccessRole(value, docsClientEnv.defaultRole);
-                setRole(nextRole);
-                setStoredRole(nextRole);
-              }}
-            >
-              <SelectTrigger title={collabFieldCopy.entryRoleLabel}>
-                <SelectValue placeholder={collabFieldCopy.entryRolePlaceholder} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="editor">{collabFieldCopy.roleOptionEditor}</SelectItem>
-                <SelectItem value="viewer">{collabFieldCopy.roleOptionViewer}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <p className="mb-2 text-xs font-medium text-muted">
-              {collabFieldCopy.editorAccessKeyLabel} (문서별 설정/입장 기본값)
-            </p>
-            <Input
-              title={collabFieldCopy.editorAccessKeyLabel}
-              type="password"
-              value={editorAccessKey}
-              onChange={(event) => {
-                const nextValue = event.target.value;
-                setEditorAccessKey(nextValue);
-              }}
-              placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
-            />
-          </div>
-          <div className="flex items-end">
+    <main className="mx-auto min-h-screen w-full max-w-[1280px] px-4 py-8 md:px-8 md:py-10">
+      <section className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+        <Card className="p-6 md:p-8">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <Badge variant="info" size="lg" className="font-semibold uppercase tracking-[0.18em]">
+              Real-time Collaboration MVP
+            </Badge>
             <Button
-              size="lg"
-              className="w-full md:w-auto"
-              onClick={handleCreate}
-              disabled={createDocumentMutation.isPending}
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                clearMainEditorAccessKey();
+                navigateToWhiteboardApp("/");
+              }}
             >
-              {createDocumentMutation.isPending ? "생성 중..." : "새 문서 만들기"}
+              화이트보드로 이동
             </Button>
           </div>
-        </div>
+          <Typography as="h1" variant="h1" className="leading-tight">
+            실시간 협업 문서 서비스
+          </Typography>
+          <Typography as="p" variant="body" tone="muted" className="mt-3 max-w-3xl">
+            여러 사용자가 동시에 접속해 문서를 함께 편집하고, 변경 사항이 즉시 동기화됩니다.
+          </Typography>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            <div>
+              <Label size="sm" className="mb-2 block">
+                {collabFieldCopy.displayNameLabel}
+              </Label>
+              <RhfField
+                control={createForm.control}
+                name="displayName"
+                render={({ field }) => (
+                  <Input
+                    title={collabFieldCopy.displayNameLabel}
+                    value={field.value}
+                    onChange={(event) => {
+                      field.onChange(event.target.value);
+                      setStoredDisplayName(event.target.value.trim() || createGuestName());
+                    }}
+                    placeholder={collabFieldCopy.displayNamePlaceholder}
+                    size="md"
+                  />
+                )}
+              />
+            </div>
+            <div>
+              <Label size="sm" className="mb-2 block">
+                새 문서 제목
+              </Label>
+              <RhfField
+                control={createForm.control}
+                name="draftTitle"
+                render={({ field }) => (
+                  <Input value={field.value} onChange={field.onChange} placeholder="문서 제목" size="md" />
+                )}
+              />
+            </div>
+            <div>
+              <Label size="sm" className="mb-2 block">
+                {collabFieldCopy.entryRoleLabel}
+              </Label>
+              <RhfField
+                control={createForm.control}
+                name="role"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => {
+                      const nextRole = coerceAccessRole(value, docsClientEnv.defaultRole);
+                      field.onChange(nextRole);
+                      setStoredRole(nextRole);
+                    }}
+                  >
+                    <SelectTrigger title={collabFieldCopy.entryRoleLabel} size="md">
+                      <SelectValue placeholder={collabFieldCopy.entryRolePlaceholder} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="editor">{collabFieldCopy.roleOptionEditor}</SelectItem>
+                      <SelectItem value="viewer">{collabFieldCopy.roleOptionViewer}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div>
+              <Label size="sm" className="mb-2 block">
+                {collabFieldCopy.editorAccessKeyLabel}
+              </Label>
+              <RhfField
+                control={createForm.control}
+                name="editorAccessKey"
+                render={({ field }) => (
+                  <Input
+                    title={collabFieldCopy.editorAccessKeyLabel}
+                    type="password"
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
+                    size="md"
+                  />
+                )}
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Button
+              size="lg"
+              onClick={createForm.handleSubmit(handleCreate)}
+              loading={createDocumentMutation.isPending ? true : undefined}
+            >
+              새 문서 만들기
+            </Button>
+          </div>
+        </Card>
+
+        <Card variant="elevated" className="p-6 md:p-8">
+          <Typography as="h2" variant="h3">
+            워크스페이스 개요
+          </Typography>
+          <Typography as="p" variant="bodySm" tone="muted" className="mt-2">
+            문서와 권한 상태를 확인하고, 필요한 문서로 바로 진입하세요.
+          </Typography>
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            <Card className="p-3 text-center">
+              <Typography as="p" variant="caption" tone="subtle">
+                문서
+              </Typography>
+              <Typography as="p" variant="h3" className="mt-1">
+                {documents.length}
+              </Typography>
+            </Card>
+            <Card className="p-3 text-center">
+              <Typography as="p" variant="caption" tone="subtle">
+                보호됨
+              </Typography>
+              <Typography as="p" variant="h3" className="mt-1">
+                {protectedDocumentCount}
+              </Typography>
+            </Card>
+            <Card className="p-3 text-center">
+              <Typography as="p" variant="caption" tone="subtle">
+                댓글
+              </Typography>
+              <Typography as="p" variant="h3" className="mt-1">
+                {totalCommentCount}
+              </Typography>
+            </Card>
+          </div>
+          <div className="mt-5 space-y-2 rounded-xl border border-default bg-surface p-3.5">
+            <Typography as="p" variant="label" tone="subtle">
+              사용 가이드
+            </Typography>
+            <Typography as="p" variant="bodySm" tone="muted">
+              1) 이름/권한을 설정하고 문서를 생성합니다.
+            </Typography>
+            <Typography as="p" variant="bodySm" tone="muted">
+              2) 편집 키를 입력하면 문서 진입 시 기본으로 재사용됩니다.
+            </Typography>
+            <Typography as="p" variant="bodySm" tone="muted">
+              3) 삭제가 필요한 경우 문서 카드에서 즉시 처리합니다.
+            </Typography>
+          </div>
+        </Card>
       </section>
 
-      <section className="mt-8">
+      <section>
         <div className="mb-4 flex items-center justify-between">
           <Typography as="h2" variant="h2" className="text-heading-xl">
             문서 목록
@@ -270,29 +370,55 @@ export default function HomePage() {
         </div>
 
         {documentsQuery.isLoading ? (
-          <Card className="p-6 text-sm text-muted">문서 목록을 불러오는 중입니다...</Card>
+          <div className="grid gap-4 md:grid-cols-2">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Card key={`document-loading-skeleton-${index}`} className="p-5">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <Skeleton className="h-6 w-2/5" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-11/12" />
+                  <div className="space-y-2 pt-2">
+                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-3 w-2/3" />
+                    <Skeleton className="h-3 w-1/4" />
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
         ) : documentsQuery.isError ? (
-          <Card className="p-6 text-sm text-danger">
-            문서 목록 조회에 실패했습니다. 서버 상태를 확인해 주세요.
-          </Card>
+          <StateView
+            variant="error"
+            size="lg"
+            title="문서 목록 조회에 실패했습니다."
+            description="서버 상태를 확인해 주세요."
+          />
         ) : documents.length === 0 ? (
-          <Card className="p-6 text-sm text-muted">아직 문서가 없습니다. 첫 문서를 생성해보세요.</Card>
+          <StateView
+            variant="empty"
+            size="lg"
+            title="아직 문서가 없습니다."
+            description="첫 문서를 생성해보세요."
+          />
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {documents.map((document) => (
-              <Card key={document.id} className="p-5" data-testid={`document-card-${document.id}`}>
+              <Card key={document.id} className="p-5" interactive data-testid={`document-card-${document.id}`}>
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <Typography as="h3" variant="h3" className="text-heading-lg">
                     {document.title.trim() || EMPTY_TITLE}
                   </Typography>
                   <div className="flex items-center gap-1.5">
-                    <span className="rounded-full border border-default bg-surface-elevated px-2 py-0.5 text-xs text-muted">
+                    <Badge variant="outline" size="sm">
                       v{document.version}
-                    </span>
+                    </Badge>
                     {document.isProtected ? (
-                      <span className="rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-xs text-warning">
+                      <Badge variant="warning" size="sm">
                         키 보호
-                      </span>
+                      </Badge>
                     ) : null}
                   </div>
                 </div>
@@ -301,10 +427,16 @@ export default function HomePage() {
                   {document.snippet || "(내용 없음)"}
                 </Typography>
 
-                <div className="mt-4 space-y-1 text-xs text-muted-foreground">
-                  <p>최근 수정: {formatRelativeTime(document.updatedAt)}</p>
-                  <p>정확한 시각: {formatExactTime(document.updatedAt)}</p>
-                  <p>댓글 수: {document.commentCount}</p>
+                <div className="mt-4 space-y-1">
+                  <Typography as="p" variant="bodySm" tone="subtle">
+                    최근 수정: {formatRelativeTime(document.updatedAt)}
+                  </Typography>
+                  <Typography as="p" variant="bodySm" tone="subtle">
+                    정확한 시각: {formatExactTime(document.updatedAt)}
+                  </Typography>
+                  <Typography as="p" variant="bodySm" tone="subtle">
+                    댓글 수: {document.commentCount}
+                  </Typography>
                 </div>
 
                 <div className="mt-4 flex justify-end gap-2">
@@ -313,7 +445,7 @@ export default function HomePage() {
                     data-testid={`document-delete-${document.id}`}
                     onClick={() => {
                       setDeleteTargetId(document.id);
-                      setDeleteAccessKeyDraft("");
+                      deleteForm.setValue("deleteAccessKeyDraft", "");
                       setDeleteErrorMessage(null);
                     }}
                   >
@@ -323,8 +455,8 @@ export default function HomePage() {
                     variant="outline"
                     onClick={() => {
                       keepAccessKeyForRoomEntry();
-                      setStoredDisplayName(displayName.trim() || createGuestName());
-                      setEditorAccessKey("");
+                      setStoredDisplayName(createForm.getValues("displayName").trim() || createGuestName());
+                      createForm.setValue("editorAccessKey", "");
                       router.push(`/doc/${document.id}`);
                     }}
                   >
@@ -345,7 +477,7 @@ export default function HomePage() {
           }
 
           setDeleteTargetId(null);
-          setDeleteAccessKeyDraft("");
+          deleteForm.setValue("deleteAccessKeyDraft", "");
           setDeleteErrorMessage(null);
         }}
       >
@@ -360,15 +492,23 @@ export default function HomePage() {
           </DialogHeader>
 
           {deleteTarget?.isProtected ? (
-            <Input
-              ref={deleteAccessKeyInputRef}
-              type="password"
-              value={deleteAccessKeyDraft}
-              onChange={(event) => {
-                setDeleteAccessKeyDraft(event.target.value);
-                setDeleteErrorMessage(null);
-              }}
-              placeholder="삭제 비밀번호"
+            <RhfField
+              control={deleteForm.control}
+              name="deleteAccessKeyDraft"
+              render={({ field }) => (
+                <Input
+                  ref={deleteAccessKeyInputRef}
+                  type="password"
+                  value={field.value}
+                  onChange={(event) => {
+                    field.onChange(event);
+                    setDeleteErrorMessage(null);
+                  }}
+                  placeholder="삭제 비밀번호"
+                  size="md"
+                  state={deleteErrorMessage ? "error" : "default"}
+                />
+              )}
             />
           ) : null}
 
@@ -378,40 +518,33 @@ export default function HomePage() {
             </Typography>
           ) : null}
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDeleteTargetId(null);
-                setDeleteAccessKeyDraft("");
-                setDeleteErrorMessage(null);
-              }}
-            >
-              취소
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={
-                deleteDocumentMutation.isPending ||
-                !deleteTarget ||
-                (deleteTarget.isProtected && deleteAccessKeyDraft.trim().length === 0)
+          <DialogFooter
+            onCancel={() => {
+              setDeleteTargetId(null);
+              deleteForm.setValue("deleteAccessKeyDraft", "");
+              setDeleteErrorMessage(null);
+            }}
+            onConfirm={() => {
+              if (!deleteTarget) {
+                return;
               }
-              onClick={() => {
-                if (!deleteTarget) {
-                  return;
-                }
 
-                deleteDocumentMutation.mutate({
-                  documentId: deleteTarget.id,
-                  editorAccessKey: deleteTarget.isProtected ? deleteAccessKeyDraft.trim() : undefined
-                });
-              }}
-            >
-              {deleteDocumentMutation.isPending ? "삭제 중..." : "문서 삭제"}
-            </Button>
-          </DialogFooter>
+              deleteDocumentMutation.mutate({
+                documentId: deleteTarget.id,
+                editorAccessKey: deleteTarget.isProtected ? deleteAccessKeyDraft.trim() : undefined
+              });
+            }}
+            confirmDisabled={
+              deleteDocumentMutation.isPending ||
+              !deleteTarget ||
+              (deleteTarget.isProtected && deleteAccessKeyDraft.trim().length === 0)
+            }
+            confirmLoading={deleteDocumentMutation.isPending}
+          />
         </DialogContent>
       </Dialog>
+
+      <Spinner open={isActionPending} fullscreen size="lg" tone="primary" />
     </main>
   );
 }
