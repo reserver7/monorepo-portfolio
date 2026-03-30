@@ -1,32 +1,32 @@
 {
   "name": "@repo/__APP_NAME__",
-  "version": "0.1.0",
   "private": true,
+  "version": "0.1.0",
   "scripts": {
     "dev": "next dev -p __APP_PORT__",
     "build": "next build",
-    "start": "next start -p __APP_PORT__",
-    "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
-    "clean": "rm -rf .next"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@repo/collab-types": "workspace:*",
+    "@repo/forms": "workspace:*",
+    "@repo/react-query": "workspace:*",
+    "@repo/theme": "workspace:*",
     "@repo/ui": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/zustand": "workspace:*",
     "next": "^15.3.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@repo/configs": "workspace:*",
     "@repo/eslint-config": "workspace:*",
-    "@repo/postcss-config": "workspace:*",
-    "@repo/tailwind-config": "workspace:*",
     "@types/node": "^22.13.5",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",
-    "tailwindcss": "^3.4.17",
-    "typescript": "^5.8.2"
+    "tailwindcss": "^3.4.17"
   }
 }

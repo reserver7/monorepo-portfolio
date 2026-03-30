@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
-import { createTailwindConfig } from "@repo/tailwind-config";
+import { createAppTailwindConfig } from "@repo/configs/tailwind/create-app-config";
 
-const config: Config = createTailwindConfig();
+const config: Config = createAppTailwindConfig();
 
 export default config;
