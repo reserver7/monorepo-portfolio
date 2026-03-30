@@ -2,7 +2,7 @@ import "dotenv/config";
 import "reflect-metadata";
 import { Logger } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
-import { env } from "./common/config/index.js";
+import { env } from "./platform/config/env.js";
 import { AppModule } from "./app.module.js";
 
 async function bootstrap(): Promise<void> {
