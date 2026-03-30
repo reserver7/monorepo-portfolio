@@ -1,14 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button, FormField, Input, Spinner, StateView, Textarea } from "@repo/ui";
+import { Button, Input, Label, Textarea } from "@repo/ui";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
-import { useAppForm } from "@repo/forms";
-import { getDeploymentImpact, getDeployments, registerDeployment } from "@/features/ops/api";
-import { OpsCardListSkeleton, OpsInfoItem, OpsSectionCard, SeverityBadge } from "@/features/ops";
-import { useOpsFilters } from "@/features/ops/stores";
+import { useForm } from "react-hook-form";
+import { getDeploymentImpact, getDeployments, registerDeployment } from "@/lib/api";
+import { OpsInfoItem, OpsSectionCard } from "@/components/opslens";
+import { useOpsFilterStore } from "@/lib/store";
 import { formatDateTime, formatNumber } from "@/lib/utils";
-import { opslensQueryKeys } from "@/features/ops/api";
 
 type DeploymentFormValues = {
   version: string;
@@ -16,10 +15,10 @@ type DeploymentFormValues = {
 };
 
 export default function DeploymentsPage() {
-  const { environment } = useOpsFilters();
+  const environment = useOpsFilterStore((state) => state.environment);
   const queryClient = useQueryClient();
 
-  const form = useAppForm<DeploymentFormValues>({
+  const form = useForm<DeploymentFormValues>({
     defaultValues: {
       version: "",
       changelog: ""
@@ -27,8 +26,7 @@ export default function DeploymentsPage() {
   });
 
   const deploymentsQuery = useQuery({
-    queryKey: opslensQueryKeys.deployments(environment),
-    staleTime: 10 * 1000,
+    queryKey: ["opslens", "deployments", environment],
     queryFn: () => getDeployments(environment)
   });
 
@@ -36,8 +34,7 @@ export default function DeploymentsPage() {
   const [selectedVersion, setSelectedVersion] = useState<string | undefined>(undefined);
 
   const impactQuery = useQuery({
-    queryKey: opslensQueryKeys.deploymentImpact(environment, selectedVersion),
-    staleTime: 10 * 1000,
+    queryKey: ["opslens", "deployment-impact", environment, selectedVersion],
     queryFn: () => getDeploymentImpact(selectedVersion!, environment),
     enabled: Boolean(selectedVersion)
   });
@@ -52,45 +49,45 @@ export default function DeploymentsPage() {
     onSuccess: async (deployment) => {
       setSelectedVersion(deployment.version);
       form.reset({ version: "", changelog: "" });
-      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.deployments(environment) });
+      await queryClient.invalidateQueries({ queryKey: ["opslens", "deployments", environment] });
     }
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <OpsSectionCard title="배포 등록" description="배포 버전을 등록하면 배포 전/후 에러 증감 분석이 가능합니다.">
 
         <form className="grid gap-3" onSubmit={form.handleSubmit((values) => createMutation.mutate(values))}>
-          <FormField label="배포 버전" htmlFor="deployment-version" size="sm">
+          <div className="grid gap-1 text-sm">
+            <Label htmlFor="deployment-version">배포 버전</Label>
             <Input
               id="deployment-version"
               {...form.register("version", { required: true })}
               placeholder="예: 2026.03.25-hotfix.1"
-              size="md"
             />
-          </FormField>
+          </div>
 
-          <FormField label="변경 요약" htmlFor="deployment-changelog" size="sm">
+          <div className="grid gap-1 text-sm">
+            <Label htmlFor="deployment-changelog">변경 요약</Label>
             <Textarea
               id="deployment-changelog"
               {...form.register("changelog", { required: true })}
               rows={3}
               placeholder="결제 모듈 null-safe 처리 및 세션 토큰 검증 로직 개선"
             />
-          </FormField>
+          </div>
 
           <Button
             type="submit"
-            variant="default"
-            className="w-fit"
-            loading={createMutation.isPending ? true : undefined}
+            disabled={createMutation.isPending}
+            className="w-fit bg-primary hover:opacity-90"
           >
-            배포 등록
+            {createMutation.isPending ? "등록 중..." : "배포 등록"}
           </Button>
         </form>
       </OpsSectionCard>
 
-      <section className="grid gap-6 xl:grid-cols-2">
+      <section className="grid gap-5 xl:grid-cols-2">
         <OpsSectionCard title="최근 배포 이력">
           <div className="flex items-center justify-end gap-2">
             <Button
@@ -105,11 +102,11 @@ export default function DeploymentsPage() {
           </div>
 
           {deploymentsQuery.isLoading ? (
-            <OpsCardListSkeleton count={5} />
+            <p className="mt-3 text-sm text-muted">배포 이력을 불러오는 중...</p>
           ) : deploymentsQuery.isError ? (
-            <StateView variant="error" size="sm" title="배포 이력 조회에 실패했습니다." className="mt-3" />
+            <p className="mt-3 text-sm text-danger">배포 이력 조회에 실패했습니다.</p>
           ) : (deploymentsQuery.data?.length ?? 0) === 0 ? (
-            <StateView variant="empty" size="sm" title="등록된 배포가 없습니다." className="mt-3" />
+            <p className="mt-3 text-sm text-muted">등록된 배포가 없습니다.</p>
           ) : (
             <div className="mt-3 space-y-2">
               {deploymentsQuery.data?.map((deployment) => {
@@ -121,7 +118,7 @@ export default function DeploymentsPage() {
                     variant="outline"
                     onClick={() => setSelectedVersion(deployment.version)}
                     className={`h-auto w-full justify-start rounded-lg p-3 text-left ${
-                      selected ? "border-info/40 bg-info/10" : "border-default bg-surface"
+                      selected ? "border-primary/40 bg-primary/10" : "border-default bg-surface"
                     }`}
                   >
                     <p className="font-semibold text-foreground">{deployment.version}</p>
@@ -136,16 +133,11 @@ export default function DeploymentsPage() {
 
         <OpsSectionCard title="배포 영향 분석">
           {!selectedVersion ? (
-            <StateView variant="info" size="sm" title="분석할 버전을 선택해 주세요." className="mt-3" />
+            <p className="mt-3 text-sm text-muted">분석할 버전을 선택해 주세요.</p>
           ) : impactQuery.isLoading ? (
-            <StateView
-              variant="loading"
-              size="sm"
-              className="rounded-xl border border-default bg-surface-elevated p-4"
-              title="선택한 배포 버전 기준으로 영향도를 계산하는 중입니다."
-            />
+            <p className="mt-3 text-sm text-muted">영향 분석 중...</p>
           ) : impactQuery.isError || !impactQuery.data ? (
-            <StateView variant="error" size="sm" title="영향 분석에 실패했습니다." className="mt-3" />
+            <p className="mt-3 text-sm text-danger">영향 분석에 실패했습니다.</p>
           ) : (
             <div className="mt-3 space-y-3 text-sm">
               <div className="grid gap-3 md:grid-cols-2">
@@ -158,20 +150,15 @@ export default function DeploymentsPage() {
               <p className="rounded-lg border border-default bg-surface-elevated p-3 text-muted">{impactQuery.data.summary}</p>
 
               {impactQuery.data.increasedIssues.length === 0 ? (
-                <StateView variant="empty" size="sm" title="증가한 이슈가 없습니다." />
+                <p className="text-muted">증가한 이슈가 없습니다.</p>
               ) : (
                 <div className="space-y-2">
                   {impactQuery.data.increasedIssues.map((item) => (
                     <div key={item.issueId} className="rounded-lg border border-default p-3">
                       <p className="font-semibold text-foreground">{item.title}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
-                        <SeverityBadge severity={item.severity} />
-                        <span>{item.serviceName}</span>
-                        <span>·</span>
-                        <span>
-                          배포 전 {item.beforeCount} / 배포 후 {item.afterCount} (Δ {item.delta})
-                        </span>
-                      </div>
+                      <p className="mt-1 text-xs text-muted">
+                        {item.serviceName} · {item.severity} · 배포 전 {item.beforeCount} / 배포 후 {item.afterCount} (Δ {item.delta})
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -180,8 +167,6 @@ export default function DeploymentsPage() {
           )}
         </OpsSectionCard>
       </section>
-
-      <Spinner open={createMutation.isPending} fullscreen size="lg" tone="primary" />
     </div>
   );
 }

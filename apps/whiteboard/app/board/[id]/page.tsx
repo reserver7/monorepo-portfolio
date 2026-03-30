@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { RhfField, useAppForm } from "@repo/forms";
 import { useQuery } from "@repo/react-query";
 import {
   Badge,
@@ -22,25 +20,23 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  StateView,
-  PRIMITIVE_COLOR_PALETTE,
-  useDisclosure
+  PALETTE
 } from "@repo/ui";
-import { getBoard, whiteboardQueryKeys } from "@/lib/http";
-import { useWhiteboardRealtime } from "@/features/board/hooks/use-whiteboard-realtime";
-import { useWhiteboardStore } from "@/features/board/stores/use-whiteboard-store";
+import { getBoard } from "@/lib/http";
+import { useWhiteboardRealtime } from "@/hooks/realtime";
+import { useWhiteboardStore } from "@/stores/whiteboard";
 import { WhiteboardShape } from "@/lib/collab";
 import {
   createGuestName,
   getStoredDisplayName,
   getStoredEditorAccessKey,
   getStoredRole,
-  setStoredDisplayName,
   setStoredEditorAccessKey,
   setStoredRole
 } from "@/lib/collab";
 import { formatExactTime, formatRelativeTime } from "@/lib/collab";
-import { collabFieldCopy } from "@repo/utils/collab";
+import { collabFieldCopy } from "@repo/collab-client";
+import { BoardSidePanel } from "./board-side-panel";
 import {
   ConnectorHandle,
   findNearestNodeCenter,
@@ -52,72 +48,38 @@ import {
   ResizeHandle,
   shapePreset,
   WhiteboardTool
-} from "@/features/board/components/shape-utils";
-
-const BoardSidePanel = dynamic(
-  () => import("@/features/board/components/board-side-panel").then((mod) => mod.BoardSidePanel),
-  { ssr: false }
-);
-
-const connectionLabel = {
-  connecting: "연결 중",
-  online: "온라인",
-  offline: "오프라인"
-} as const;
-
-const toolLabel: Record<WhiteboardTool, string> = {
-  select: "선택/이동",
-  rect: "사각형",
-  ellipse: "타원",
-  diamond: "마름모",
-  text: "텍스트",
-  connector: "연결선"
-};
+} from "./shape-utils";
 
 export default function WhiteboardRoomPage() {
   const params = useParams<{ id: string }>();
   const boardId = Array.isArray(params.id) ? params.id[0] : params.id;
 
-  const sessionForm = useAppForm<{
-    displayName: string;
-    requestedRole: "viewer" | "editor";
-    editorAccessKey: string;
-  }>({
-    defaultValues: {
-      displayName: "게스트",
-      requestedRole: "editor",
-      editorAccessKey: ""
-    }
-  });
-  const displayName = sessionForm.watch("displayName");
-  const requestedRole = sessionForm.watch("requestedRole");
-  const editorAccessKey = sessionForm.watch("editorAccessKey");
+  const [displayName, setDisplayName] = useState("게스트");
+  const [requestedRole, setRequestedRole] = useState<"viewer" | "editor">("editor");
+  const [editorAccessKey, setEditorAccessKey] = useState<string>("");
   const [activeTool, setActiveTool] = useState<WhiteboardTool>("select");
   const [connectorFromShapeId, setConnectorFromShapeId] = useState<string | null>(null);
 
   const handleEditorRequestDenied = useCallback((resolvedRole: "viewer" | "editor") => {
-    sessionForm.setValue("requestedRole", resolvedRole);
+    setRequestedRole(resolvedRole);
     setStoredRole(resolvedRole);
-    sessionForm.setValue("editorAccessKey", "");
+    setEditorAccessKey("");
     setStoredEditorAccessKey("");
-  }, [sessionForm]);
+  }, []);
 
   useEffect(() => {
     const stored = getStoredDisplayName();
     const storedRole = getStoredRole();
     const storedEditorAccessKey = getStoredEditorAccessKey();
-    const nextDisplayName = stored?.trim() ? stored : createGuestName();
-    sessionForm.setValue("displayName", nextDisplayName);
-    setStoredDisplayName(nextDisplayName);
-    sessionForm.setValue("requestedRole", storedRole ?? "editor");
-    sessionForm.setValue("editorAccessKey", storedEditorAccessKey ?? "");
-  }, [sessionForm]);
+    setDisplayName(stored?.trim() ? stored : createGuestName());
+    setRequestedRole(storedRole ?? "editor");
+    setEditorAccessKey(storedEditorAccessKey ?? "");
+  }, []);
 
   const boardQuery = useQuery({
-    queryKey: whiteboardQueryKeys.board(boardId),
+    queryKey: ["board", boardId],
     queryFn: () => getBoard(boardId),
-    enabled: Boolean(boardId),
-    staleTime: 10 * 1000
+    enabled: Boolean(boardId)
   });
 
   const {
@@ -140,14 +102,14 @@ export default function WhiteboardRoomPage() {
     onEditorRequestDenied: handleEditorRequestDenied
   });
 
-  const title = useWhiteboardStore.use.title();
-  const shapes = useWhiteboardStore.use.shapes();
-  const version = useWhiteboardStore.use.version();
-  const updatedAt = useWhiteboardStore.use.updatedAt();
-  const participants = useWhiteboardStore.use.participants();
-  const connection = useWhiteboardStore.use.connection();
-  const eventLog = useWhiteboardStore.use.eventLog();
-  const conflictMessage = useWhiteboardStore.use.conflictMessage();
+  const title = useWhiteboardStore((state) => state.title);
+  const shapes = useWhiteboardStore((state) => state.shapes);
+  const version = useWhiteboardStore((state) => state.version);
+  const updatedAt = useWhiteboardStore((state) => state.updatedAt);
+  const participants = useWhiteboardStore((state) => state.participants);
+  const connection = useWhiteboardStore((state) => state.connection);
+  const eventLog = useWhiteboardStore((state) => state.eventLog);
+  const conflictMessage = useWhiteboardStore((state) => state.conflictMessage);
 
   const boardRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ shapeId: string; offsetX: number; offsetY: number } | null>(null);
@@ -170,22 +132,11 @@ export default function WhiteboardRoomPage() {
   const patchRafRef = useRef<number | null>(null);
 
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
-  const {
-    isOpen: isCreateTextDialogOpen,
-    setIsOpen: setIsCreateTextDialogOpen,
-    onOpen: openCreateTextDialog,
-    onClose: closeCreateTextDialog
-  } = useDisclosure();
-  const createTextForm = useAppForm<{ newTextDraft: string }>({
-    defaultValues: { newTextDraft: "새 텍스트" }
-  });
-  const newTextDraft = createTextForm.watch("newTextDraft");
+  const [isCreateTextDialogOpen, setIsCreateTextDialogOpen] = useState(false);
+  const [newTextDraft, setNewTextDraft] = useState("새 텍스트");
   const [pendingTextPosition, setPendingTextPosition] = useState<{ x: number; y: number } | null>(null);
   const [editingTextShapeId, setEditingTextShapeId] = useState<string | null>(null);
-  const editTextForm = useAppForm<{ editingTextDraft: string }>({
-    defaultValues: { editingTextDraft: "" }
-  });
-  const editingTextDraft = editTextForm.watch("editingTextDraft");
+  const [editingTextDraft, setEditingTextDraft] = useState("");
 
   const nodeShapes = useMemo(() => shapes.filter((shape) => shape.type !== "connector"), [shapes]);
   const connectorShapes = useMemo(() => shapes.filter((shape) => shape.type === "connector"), [shapes]);
@@ -202,20 +153,6 @@ export default function WhiteboardRoomPage() {
     () => participants.filter((participant) => participant.sessionId !== sessionId),
     [participants, sessionId]
   );
-  const boardHistoryEntries = useMemo(() => {
-    return [...shapes]
-      .sort((a, b) => {
-        const aTime = new Date(a.updatedAt).getTime();
-        const bTime = new Date(b.updatedAt).getTime();
-        return bTime - aTime;
-      })
-      .map((shape) => ({
-        id: shape.id,
-        shapeType: shape.type,
-        updatedAt: shape.updatedAt,
-        actor: shape.createdBy || "unknown"
-      }));
-  }, [shapes]);
 
   const toBoardPoint = (clientX: number, clientY: number) => {
     const rect = boardRef.current?.getBoundingClientRect();
@@ -340,8 +277,8 @@ export default function WhiteboardRoomPage() {
       } else {
         setPendingTextPosition(null);
       }
-      createTextForm.setValue("newTextDraft", "새 텍스트");
-      openCreateTextDialog();
+      setNewTextDraft("새 텍스트");
+      setIsCreateTextDialogOpen(true);
       return;
     }
 
@@ -375,9 +312,9 @@ export default function WhiteboardRoomPage() {
 
     if (!shapes.some((shape) => shape.id === editingTextShapeId)) {
       setEditingTextShapeId(null);
-      editTextForm.setValue("editingTextDraft", "");
+      setEditingTextDraft("");
     }
-  }, [editingTextShapeId, editTextForm, shapes]);
+  }, [editingTextShapeId, shapes]);
 
   useEffect(() => {
     if (!connectorFromShapeId) {
@@ -423,141 +360,23 @@ export default function WhiteboardRoomPage() {
   }
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[1280px] px-4 py-8 md:px-8 md:py-10">
-      <header className="mb-6 rounded-2xl border border-default bg-surface p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/"
-              className="rounded-xl border border-default bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:border-primary/40 hover:text-primary"
-            >
-              보드 목록으로
-            </Link>
-            <Badge variant="outline" size="md">
-              보드 ID: {boardId.slice(0, 8)}...
-            </Badge>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" size="md">
-              연결: {connectionLabel[connection]}
-            </Badge>
-            <Badge
-              variant={currentRole === "editor" ? "success" : "outline"}
-              size="md"
-              data-testid="board-current-role"
-            >
-              권한: {currentRole}
-            </Badge>
-            <Badge variant="outline" size="md">
-              도구: {toolLabel[activeTool]}
-            </Badge>
-          </div>
+    <main className="mx-auto min-h-screen w-full max-w-[1400px] px-4 py-6 md:px-8">
+      <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/"
+            className="rounded-md border border-default bg-surface px-3 py-1.5 text-xs hover:bg-surface-elevated"
+          >
+            보드 목록
+          </Link>
+          <Badge variant="outline">화이트보드</Badge>
+          <Badge variant="outline">연결: {connection}</Badge>
+          <Badge variant="outline" data-testid="board-current-role">
+            권한: {currentRole}
+          </Badge>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px]">
-          <RhfField
-            control={sessionForm.control}
-            name="displayName"
-            render={({ field }) => (
-              <Input
-                title={collabFieldCopy.displayNameLabel}
-                value={field.value}
-                onChange={(event) => {
-                  field.onChange(event);
-                  setStoredDisplayName(event.target.value.trim() || createGuestName());
-                }}
-                placeholder={collabFieldCopy.displayNamePlaceholder}
-                size="md"
-              />
-            )}
-          />
-          <RhfField
-            control={sessionForm.control}
-            name="requestedRole"
-            render={({ field }) => (
-              <Select
-                value={field.value}
-                onValueChange={(value) => {
-                  const nextRole = value === "viewer" ? "viewer" : "editor";
-                  field.onChange(nextRole);
-                  setStoredRole(nextRole);
-                }}
-              >
-                <SelectTrigger size="md" title={collabFieldCopy.requestRolePlaceholder}>
-                  <SelectValue placeholder={collabFieldCopy.requestRolePlaceholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="editor">{collabFieldCopy.requestOptionEditor}</SelectItem>
-                  <SelectItem value="viewer">{collabFieldCopy.requestOptionViewer}</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          <RhfField
-            control={sessionForm.control}
-            name="editorAccessKey"
-            render={({ field }) => (
-              <Input
-                title={collabFieldCopy.editorAccessKeyLabel}
-                type="password"
-                value={field.value}
-                onChange={(event) => {
-                  field.onChange(event);
-                  setStoredEditorAccessKey(event.target.value);
-                }}
-                placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
-                size="md"
-              />
-            )}
-          />
-        </div>
-      </header>
-
-      <section className="mb-4 rounded-2xl border border-default bg-surface p-5 shadow-sm">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-          <Input
-            title="보드 제목"
-            value={title}
-            onChange={(event) => updateTitle(event.target.value)}
-            readOnly={isReadOnly}
-            size="md"
-            className="text-base font-semibold"
-            placeholder="보드 제목"
-          />
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              size="md"
-              disabled={isReadOnly || activeTool === "connector"}
-              onClick={() => createShapeByActiveTool()}
-            >
-              {activeTool === "text" ? "텍스트 추가" : "도형 추가"}
-            </Button>
-            <Button
-              variant="destructive"
-              size="md"
-              disabled={isReadOnly || !selectedShapeId}
-              onClick={() => {
-                if (!selectedShapeId) {
-                  return;
-                }
-
-                removeShapeWithLinks(selectedShapeId);
-              }}
-            >
-              선택 삭제
-            </Button>
-            <Button variant="outline" size="md" onClick={undo} disabled={isReadOnly}>
-              Undo
-            </Button>
-            <Button variant="outline" size="md" onClick={redo} disabled={isReadOnly}>
-              Redo
-            </Button>
-          </div>
-        </div>
-
-        <div className="mt-3 grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <div className="flex flex-wrap items-center gap-2">
           <Select
             value={activeTool}
             onValueChange={(value) => {
@@ -565,7 +384,7 @@ export default function WhiteboardRoomPage() {
               setActiveTool(nextTool);
             }}
           >
-            <SelectTrigger size="md" title="도구 선택">
+            <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="도구 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -578,29 +397,86 @@ export default function WhiteboardRoomPage() {
             </SelectContent>
           </Select>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Card className="px-3 py-2 text-body-sm text-muted">버전 {version}</Card>
-            <Card className="px-3 py-2 text-body-sm text-muted">
-              {updatedAt
-                ? `최근 수정: ${formatRelativeTime(updatedAt)} (${formatExactTime(updatedAt)})`
-                : "최근 수정 -"}
-            </Card>
-          </div>
+          <Button
+            variant="outline"
+            disabled={isReadOnly || activeTool === "connector"}
+            onClick={() => createShapeByActiveTool()}
+          >
+            {activeTool === "text" ? "텍스트 추가" : "도형 추가"}
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={isReadOnly || !selectedShapeId}
+            onClick={() => {
+              if (!selectedShapeId) {
+                return;
+              }
+
+              removeShapeWithLinks(selectedShapeId);
+            }}
+          >
+            선택 삭제
+          </Button>
+          <Button variant="outline" onClick={undo} disabled={isReadOnly}>
+            Undo
+          </Button>
+          <Button variant="outline" onClick={redo} disabled={isReadOnly}>
+            Redo
+          </Button>
         </div>
-      </section>
+      </header>
+
+      <div className="mb-4 grid gap-3 md:grid-cols-[1fr_180px_220px_auto_auto] md:items-center">
+        <Input
+          title="보드 제목"
+          value={title}
+          onChange={(event) => updateTitle(event.target.value)}
+          readOnly={isReadOnly}
+          className="h-11 text-base font-semibold"
+          placeholder="보드 제목"
+        />
+        <Select
+          value={requestedRole}
+          onValueChange={(value) => {
+            const nextRole = value === "viewer" ? "viewer" : "editor";
+            setRequestedRole(nextRole);
+            setStoredRole(nextRole);
+          }}
+        >
+          <SelectTrigger className="h-11" title={collabFieldCopy.requestRolePlaceholder}>
+            <SelectValue placeholder={collabFieldCopy.requestRolePlaceholder} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="editor">{collabFieldCopy.requestOptionEditor}</SelectItem>
+            <SelectItem value="viewer">{collabFieldCopy.requestOptionViewer}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input
+          title={collabFieldCopy.editorAccessKeyLabel}
+          type="password"
+          value={editorAccessKey}
+          onChange={(event) => {
+            const nextValue = event.target.value;
+            setEditorAccessKey(nextValue);
+            setStoredEditorAccessKey(nextValue);
+          }}
+          placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
+          className="h-11"
+        />
+        <Card className="px-3 py-2 text-xs text-muted">버전 {version}</Card>
+        <Card className="px-3 py-2 text-xs text-muted">
+          {updatedAt
+            ? `최근 수정: ${formatRelativeTime(updatedAt)} (${formatExactTime(updatedAt)})`
+            : "최근 수정 -"}
+        </Card>
+      </div>
 
       {activeTool === "connector" && !isReadOnly ? (
-        <StateView
-          variant="info"
-          size="sm"
-          align="left"
-          className="mb-4"
-          title={
-            connectorFromShapeId
-              ? "시작 도형이 선택되었습니다. 연결할 대상 도형을 클릭하세요."
-              : "연결선 모드입니다. 시작 도형을 클릭한 뒤, 대상 도형을 클릭하면 선이 생성됩니다."
-          }
-        />
+        <Card className="mb-4 border-primary/30 bg-primary/10 p-3 text-sm text-primary">
+          {connectorFromShapeId
+            ? "시작 도형이 선택되었습니다. 연결할 대상 도형을 클릭하세요."
+            : "연결선 모드입니다. 시작 도형을 클릭한 뒤, 대상 도형을 클릭하면 선이 생성됩니다."}
+        </Card>
       ) : null}
 
       <Dialog
@@ -608,7 +484,7 @@ export default function WhiteboardRoomPage() {
         onOpenChange={(open) => {
           setIsCreateTextDialogOpen(open);
           if (!open) {
-            createTextForm.setValue("newTextDraft", "새 텍스트");
+            setNewTextDraft("새 텍스트");
             setPendingTextPosition(null);
           }
         }}
@@ -618,43 +494,44 @@ export default function WhiteboardRoomPage() {
             <DialogTitle>텍스트 추가</DialogTitle>
             <DialogDescription>보드에 생성할 텍스트를 입력하세요.</DialogDescription>
           </DialogHeader>
-          <RhfField
-            control={createTextForm.control}
-            name="newTextDraft"
-            render={({ field }) => (
-              <Input
-                autoFocus
-                value={field.value}
-                onChange={field.onChange}
-                placeholder="텍스트를 입력하세요"
-              />
-            )}
+          <Input
+            autoFocus
+            value={newTextDraft}
+            onChange={(event) => setNewTextDraft(event.target.value)}
+            placeholder="텍스트를 입력하세요"
           />
-          <DialogFooter
-            confirmText="생성"
-            confirmVariant="default"
-            onCancel={() => {
-              closeCreateTextDialog();
-              createTextForm.setValue("newTextDraft", "새 텍스트");
-              setPendingTextPosition(null);
-            }}
-            onConfirm={() => {
-              const normalizedText = newTextDraft.trim();
-              if (!normalizedText) {
-                return;
-              }
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsCreateTextDialogOpen(false);
+                setNewTextDraft("새 텍스트");
+                setPendingTextPosition(null);
+              }}
+            >
+              취소
+            </Button>
+            <Button
+              onClick={() => {
+                const normalizedText = newTextDraft.trim();
+                if (!normalizedText) {
+                  return;
+                }
 
-              const x = pendingTextPosition?.x ?? 120 + (nodeShapes.length % 7) * 20;
-              const y = pendingTextPosition?.y ?? 120 + (nodeShapes.length % 5) * 20;
-              const created = makeShape("text", sessionId, x, y, normalizedText);
-              addShape(created);
-              setSelectedShapeId(created.id);
-              closeCreateTextDialog();
-              createTextForm.setValue("newTextDraft", "새 텍스트");
-              setPendingTextPosition(null);
-            }}
-            confirmDisabled={!newTextDraft.trim()}
-          />
+                const x = pendingTextPosition?.x ?? 120 + (nodeShapes.length % 7) * 20;
+                const y = pendingTextPosition?.y ?? 120 + (nodeShapes.length % 5) * 20;
+                const created = makeShape("text", sessionId, x, y, normalizedText);
+                addShape(created);
+                setSelectedShapeId(created.id);
+                setIsCreateTextDialogOpen(false);
+                setNewTextDraft("새 텍스트");
+                setPendingTextPosition(null);
+              }}
+              disabled={!newTextDraft.trim()}
+            >
+              생성
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -663,7 +540,7 @@ export default function WhiteboardRoomPage() {
         onOpenChange={(open) => {
           if (!open) {
             setEditingTextShapeId(null);
-            editTextForm.setValue("editingTextDraft", "");
+            setEditingTextDraft("");
           }
         }}
       >
@@ -672,58 +549,57 @@ export default function WhiteboardRoomPage() {
             <DialogTitle>텍스트 수정</DialogTitle>
             <DialogDescription>선택한 텍스트 내용을 수정합니다.</DialogDescription>
           </DialogHeader>
-          <RhfField
-            control={editTextForm.control}
-            name="editingTextDraft"
-            render={({ field }) => (
-              <Input
-                autoFocus
-                value={field.value}
-                onChange={field.onChange}
-                placeholder="텍스트를 입력하세요"
-              />
-            )}
+          <Input
+            autoFocus
+            value={editingTextDraft}
+            onChange={(event) => setEditingTextDraft(event.target.value)}
+            placeholder="텍스트를 입력하세요"
           />
-          <DialogFooter
-            confirmText="저장"
-            confirmVariant="default"
-            onCancel={() => {
-              setEditingTextShapeId(null);
-              editTextForm.setValue("editingTextDraft", "");
-            }}
-            onConfirm={() => {
-              const normalizedText = editingTextDraft.trim();
-              if (!normalizedText || !editingTextShapeId) {
-                return;
-              }
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditingTextShapeId(null);
+                setEditingTextDraft("");
+              }}
+            >
+              취소
+            </Button>
+            <Button
+              onClick={() => {
+                const normalizedText = editingTextDraft.trim();
+                if (!normalizedText || !editingTextShapeId) {
+                  return;
+                }
 
-              patchShape(editingTextShapeId, { text: normalizedText });
-              setEditingTextShapeId(null);
-              editTextForm.setValue("editingTextDraft", "");
-            }}
-            confirmDisabled={!editingTextDraft.trim() || !editingTextShapeId}
-          />
+                patchShape(editingTextShapeId, { text: normalizedText });
+                setEditingTextShapeId(null);
+                setEditingTextDraft("");
+              }}
+              disabled={!editingTextDraft.trim() || !editingTextShapeId}
+            >
+              저장
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {conflictMessage ? (
-        <StateView variant="warning" size="sm" align="left" className="mb-4" title={conflictMessage} />
+        <Card className="mb-4 border-warning/30 bg-warning/10 p-3 text-sm text-warning">
+          {conflictMessage}
+        </Card>
       ) : null}
       {isReadOnly ? (
-        <StateView
-          variant="info"
-          size="sm"
-          align="left"
-          className="mb-4"
-          title="보기 전용(`viewer`) 세션입니다."
-          description="상단에서 `editor 요청`으로 바꾸고 편집 키를 입력하면 재요청됩니다. 보드 편집은 제한되며 참여자 커서 확인만 가능합니다."
-        />
+        <Card className="mb-4 border-default bg-surface-elevated p-3 text-sm text-muted">
+          보기 전용(`viewer`) 세션입니다. 상단에서 `editor 요청`으로 바꾸고 편집 키를 입력하면 재요청됩니다.
+          보드 편집은 제한되며 참여자 커서 확인만 가능합니다.
+        </Card>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_384px]">
+      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <div
           ref={boardRef}
-          className="board-grid relative h-[72vh] min-h-[520px] rounded-2xl border border-default bg-surface/90"
+          className="board-grid relative h-[70vh] rounded-2xl border border-default bg-surface/90"
           onMouseDown={(event) => {
             if (event.target === boardRef.current) {
               if (!isReadOnly && activeTool !== "select" && activeTool !== "connector") {
@@ -853,7 +729,7 @@ export default function WhiteboardRoomPage() {
               }
 
               const isSelected = selectedShapeId === connector.id;
-              const strokeColor = connector.stroke || PRIMITIVE_COLOR_PALETTE.NATURAL_700;
+              const strokeColor = connector.stroke || PALETTE.NATURAL_700;
               const dx = endpoints.endX - endpoints.startX;
               const dy = endpoints.endY - endpoints.startY;
               const length = Math.hypot(dx, dy) || 1;
@@ -923,7 +799,7 @@ export default function WhiteboardRoomPage() {
                         cx={startHandleX}
                         cy={startHandleY}
                         r={6}
-                        fill="rgb(var(--ds-surface))"
+                        fill="white"
                         stroke={strokeColor}
                         strokeWidth={2}
                         className="pointer-events-auto cursor-grab"
@@ -937,7 +813,7 @@ export default function WhiteboardRoomPage() {
                         cx={endHandleX}
                         cy={endHandleY}
                         r={6}
-                        fill="rgb(var(--ds-surface))"
+                        fill="white"
                         stroke={strokeColor}
                         strokeWidth={2}
                         className="pointer-events-auto cursor-grab"
@@ -975,7 +851,7 @@ export default function WhiteboardRoomPage() {
                   height: `${shape.h}px`,
                   background: shape.fill,
                   borderColor: shape.stroke,
-                  color: shape.type === "text" ? PRIMITIVE_COLOR_PALETTE.NATURAL_900 : PRIMITIVE_COLOR_PALETTE.NATURAL_700,
+                  color: shape.type === "text" ? PALETTE.NATURAL_900 : PALETTE.NATURAL_700,
                   clipPath:
                     shape.type === "diamond" ? "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" : undefined
                 }}
@@ -1024,7 +900,7 @@ export default function WhiteboardRoomPage() {
                   }
 
                   setEditingTextShapeId(shape.id);
-                  editTextForm.setValue("editingTextDraft", shape.text ?? "");
+                  setEditingTextDraft(shape.text ?? "");
                 }}
               >
                 {!isReadOnly ? (
@@ -1103,7 +979,6 @@ export default function WhiteboardRoomPage() {
           activeTool={activeTool}
           selectedShape={selectedShape}
           connectorFromShapeId={connectorFromShapeId}
-          historyEntries={boardHistoryEntries}
           eventLog={eventLog}
         />
       </div>

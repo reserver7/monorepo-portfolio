@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { THEME_BOOTSTRAP_SCRIPT } from "@repo/theme";
 import "./globals.css";
-import { Providers } from "@/app/providers";
+import { Providers } from "@/components/layout";
 
 export const metadata: Metadata = {
   title: "OpsLens AI",
@@ -10,11 +9,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
-      </head>
-      <body className="font-body min-h-screen text-foreground antialiased transition-colors dark:text-foreground">
+    <html lang="ko">
+      <body className="font-body min-h-screen text-foreground antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

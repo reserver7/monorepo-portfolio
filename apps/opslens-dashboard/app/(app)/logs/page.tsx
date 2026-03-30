@@ -1,24 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
-import {
-  Button,
-  FormField,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Spinner,
-  StateView,
-  Textarea
-} from "@repo/ui";
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@repo/ui";
 import { useMutation } from "@repo/react-query";
-import { RhfField, useAppForm } from "@repo/forms";
-import { analyzeLogs } from "@/features/ops/api";
-import { OpsSectionCard, SeverityBadge } from "@/features/ops";
-import { useOpsFilters } from "@/features/ops/stores";
+import { Controller, useForm } from "react-hook-form";
+import { analyzeLogs } from "@/lib/api";
+import { OpsSectionCard } from "@/components/opslens";
+import { useOpsFilterStore } from "@/lib/store";
 import { formatDateTime, formatNumber } from "@/lib/utils";
 
 type FormValues = {
@@ -29,12 +17,13 @@ type FormValues = {
 };
 
 export default function LogsPage() {
-  const { environment, serviceName } = useOpsFilters();
+  const environment = useOpsFilterStore((state) => state.environment);
+  const serviceName = useOpsFilterStore((state) => state.serviceName);
   const [clusters, setClusters] = useState<Awaited<ReturnType<typeof analyzeLogs>>["clusters"]>([]);
   const [summary, setSummary] = useState<{ createdIssues: number; updatedIssues: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const form = useAppForm<FormValues>({
+  const form = useForm<FormValues>({
     defaultValues: {
       source: "server",
       serviceName: serviceName === "all" ? "docs" : serviceName,
@@ -66,18 +55,22 @@ export default function LogsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <OpsSectionCard title="로그 분석" description="서버 로그, 콘솔 에러, Sentry 형태 JSON을 붙여넣으면 자동 그룹핑/요약합니다.">
 
-        <form className="grid gap-4" onSubmit={form.handleSubmit((values) => analyzeMutation.mutate(values))}>
+        <form
+          className="grid gap-3"
+          onSubmit={form.handleSubmit((values) => analyzeMutation.mutate(values))}
+        >
           <div className="grid gap-3 md:grid-cols-3">
-            <FormField label="로그 소스" htmlFor="logs-source" size="sm">
-              <RhfField
+            <div className="grid gap-1">
+              <Label htmlFor="logs-source">로그 소스</Label>
+              <Controller
                 control={form.control}
                 name="source"
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger id="logs-source" size="md">
+                    <SelectTrigger id="logs-source">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -90,29 +83,26 @@ export default function LogsPage() {
                   </Select>
                 )}
               />
-            </FormField>
+            </div>
 
-            <FormField label="서비스명" htmlFor="logs-service-name" size="sm">
+            <div className="grid gap-1">
+              <Label htmlFor="logs-service-name">서비스명</Label>
               <Input
                 id="logs-service-name"
                 {...form.register("serviceName", {
                   required: "서비스명을 입력하세요."
                 })}
-                size="md"
               />
-            </FormField>
+            </div>
 
-            <FormField label="배포 버전(선택)" htmlFor="logs-deployment-version" size="sm">
-              <Input id="logs-deployment-version" {...form.register("deploymentVersion")} size="md" />
-            </FormField>
+            <div className="grid gap-1">
+              <Label htmlFor="logs-deployment-version">배포 버전(선택)</Label>
+              <Input id="logs-deployment-version" {...form.register("deploymentVersion")} />
+            </div>
           </div>
 
-          <FormField
-            label="로그 원문"
-            htmlFor="logs-raw-message"
-            size="sm"
-            error={form.formState.errors.rawLogs?.message}
-          >
+          <div className="grid gap-1">
+            <Label htmlFor="logs-raw-message">로그 원문</Label>
             <Textarea
               id="logs-raw-message"
               rows={10}
@@ -126,17 +116,23 @@ export default function LogsPage() {
               className="font-mono text-xs"
               placeholder="2026-03-25T10:14:11Z ERROR Cannot read properties of undefined at ..."
             />
-          </FormField>
+            {form.formState.errors.rawLogs ? (
+              <span className="text-xs text-danger">{form.formState.errors.rawLogs.message}</span>
+            ) : null}
+          </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="submit" variant="default" loading={analyzeMutation.isPending ? true : undefined}>
-              로그 분석 실행
+            <Button
+              type="submit"
+              disabled={analyzeMutation.isPending}
+              className="bg-primary hover:opacity-90"
+            >
+              {analyzeMutation.isPending ? "분석 중..." : "로그 분석 실행"}
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
-              disabled={analyzeMutation.isPending}
             >
               파일 업로드
             </Button>
@@ -153,36 +149,27 @@ export default function LogsPage() {
 
       {summary ? (
         <section className="grid gap-3 md:grid-cols-2">
-          <StateView
-            variant="success"
-            size="sm"
-            align="left"
-            title="신규 이슈 생성"
-            description={`${formatNumber(summary.createdIssues)}건`}
-          />
-          <StateView
-            variant="warning"
-            size="sm"
-            align="left"
-            title="기존 이슈 업데이트"
-            description={`${formatNumber(summary.updatedIssues)}건`}
-          />
+          <div className="rounded-xl border border-success/30 bg-success/10 p-4 text-sm">
+            신규 이슈 생성: <strong>{formatNumber(summary.createdIssues)}건</strong>
+          </div>
+          <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm">
+            기존 이슈 업데이트: <strong>{formatNumber(summary.updatedIssues)}건</strong>
+          </div>
         </section>
       ) : null}
 
       <OpsSectionCard title="분석 결과 클러스터">
         {clusters.length === 0 ? (
-          <StateView variant="empty" size="sm" title="분석 결과가 없습니다." />
+          <p className="text-sm text-muted">분석 결과가 없습니다.</p>
         ) : (
           <div className="space-y-3">
             {clusters.map((cluster) => (
               <article key={cluster.normalizedMessage} className="rounded-lg border border-default p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-semibold text-foreground">{cluster.title}</p>
-                  <div className="flex items-center gap-2">
-                    <SeverityBadge severity={cluster.severity} />
-                    <span className="text-xs text-muted">{formatNumber(cluster.count)}회</span>
-                  </div>
+                  <span className="text-xs text-muted">
+                    {cluster.severity} · {formatNumber(cluster.count)}회
+                  </span>
                 </div>
                 <p className="mt-1 text-xs text-muted">{cluster.normalizedMessage}</p>
                 <p className="mt-2 text-xs text-muted-foreground">
@@ -198,8 +185,6 @@ export default function LogsPage() {
           </div>
         )}
       </OpsSectionCard>
-
-      <Spinner open={analyzeMutation.isPending} fullscreen size="lg" tone="primary" />
     </div>
   );
 }

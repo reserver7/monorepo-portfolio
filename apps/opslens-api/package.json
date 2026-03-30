@@ -1,16 +1,24 @@
 {
   "name": "@repo/opslens-api",
-  "private": true,
   "version": "0.1.0",
+  "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/main.ts",
-    "build": "pnpm --filter @repo/opslens-api exec prisma generate && tsc -p tsconfig.json",
+    "dev": "pnpm run build && node dist/main.js",
+    "prebuild": "pnpm run prisma:generate",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "pretypecheck": "pnpm run prisma:generate",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . --max-warnings=0",
-    "typecheck": "pnpm --filter @repo/opslens-api exec prisma generate && tsc -p tsconfig.json --noEmit"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "clean": "rm -rf dist",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:migrate:status": "prisma migrate status",
+    "prisma:migrate:resolve": "prisma migrate resolve",
+    "prisma:studio": "prisma studio"
   },
   "dependencies": {
     "@apollo/server": "^4.11.3",
@@ -29,10 +37,11 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@repo/configs": "workspace:*",
-    "@repo/eslint-config": "workspace:*",
     "@types/node": "^22.13.5",
+    "@repo/eslint-config": "workspace:*",
+    "eslint": "^9.35.0",
     "prisma": "^5.22.0",
-    "tsx": "^4.20.6"
+    "tsx": "^4.20.6",
+    "typescript": "^5.8.2"
   }
 }

@@ -1,54 +1,39 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button, Skeleton, StateView, Textarea } from "@repo/ui";
+import { Button, Textarea } from "@repo/ui";
 import { useQuery } from "@repo/react-query";
-import { getAiBriefing, getDashboardSummary, listIssues } from "@/features/ops/api";
-import { OpsCardListSkeleton, OpsSectionCard, SeverityBadge, StatusBadge } from "@/features/ops";
-import { useOpsFilters } from "@/features/ops/stores";
+import { getAiBriefing, getDashboardSummary, listIssues } from "@/lib/api";
+import { OpsSectionCard } from "@/components/opslens";
+import { useOpsFilterStore } from "@/lib/store";
 import { formatDateTime, formatNumber } from "@/lib/utils";
-import { opslensQueryKeys, toOptionalSearch, toOptionalServiceName } from "@/features/ops/api";
 
 export default function ReportsPage() {
-  const { environment, serviceName, search, from, to } = useOpsFilters();
-  const filter = { environment, serviceName, search, from, to };
+  const environment = useOpsFilterStore((state) => state.environment);
+  const serviceName = useOpsFilterStore((state) => state.serviceName);
+  const search = useOpsFilterStore((state) => state.search);
+  const from = useOpsFilterStore((state) => state.from);
+  const to = useOpsFilterStore((state) => state.to);
 
   const [audience, setAudience] = useState<"developer" | "stakeholder">("developer");
 
   const summaryQuery = useQuery({
-    queryKey: opslensQueryKeys.reportsSummary(filter),
-    staleTime: 10 * 1000,
-    queryFn: () =>
-      getDashboardSummary({
-        environment,
-        serviceName: toOptionalServiceName(serviceName),
-        query: toOptionalSearch(search),
-        from,
-        to
-      })
+    queryKey: ["opslens", "reports", "summary", environment, serviceName, search, from, to],
+    queryFn: () => getDashboardSummary({ environment, serviceName, query: search, from, to })
   });
 
   const briefingQuery = useQuery({
-    queryKey: opslensQueryKeys.reportsBriefing(filter),
-    staleTime: 10 * 1000,
-    queryFn: () =>
-      getAiBriefing({
-        environment,
-        serviceName: toOptionalServiceName(serviceName),
-        query: toOptionalSearch(search),
-        from,
-        to
-      })
+    queryKey: ["opslens", "reports", "briefing", environment, serviceName, search, from, to],
+    queryFn: () => getAiBriefing({ environment, serviceName, query: search, from, to })
   });
 
   const issuesQuery = useQuery({
-    queryKey: opslensQueryKeys.reportsIssues(filter),
-    staleTime: 10 * 1000,
+    queryKey: ["opslens", "reports", "issues", environment, serviceName, search],
     queryFn: () =>
       listIssues({
         environment,
-        serviceName: toOptionalServiceName(serviceName),
-        query: toOptionalSearch(search),
+        serviceName,
+        query: search || undefined,
         page: 1,
         pageSize: 5
       })
@@ -84,7 +69,7 @@ export default function ReportsPage() {
   }, [audience, environment, issuesQuery.data?.items, summaryQuery.data]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <OpsSectionCard title="AI 브리핑" description="운영/개발/기획이 같은 맥락으로 이슈를 이해할 수 있도록 브리핑을 자동 생성합니다.">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm">
@@ -108,13 +93,9 @@ export default function ReportsPage() {
         </div>
 
         {briefingQuery.isLoading ? (
-          <div className="mt-3 space-y-2 rounded-xl border border-default bg-surface-elevated p-4">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-11/12" />
-            <Skeleton className="h-4 w-4/5" />
-          </div>
+          <p className="mt-3 text-sm text-muted">브리핑 생성 중...</p>
         ) : briefingQuery.isError ? (
-          <StateView variant="error" size="sm" title="브리핑 생성에 실패했습니다." className="mt-3" />
+          <p className="mt-3 text-sm text-danger">브리핑 생성에 실패했습니다.</p>
         ) : (
           <div className="mt-3 rounded-xl border border-default bg-surface-elevated p-4">
             <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">{briefingQuery.data}</p>
@@ -122,7 +103,7 @@ export default function ReportsPage() {
         )}
       </OpsSectionCard>
 
-      <section className="grid gap-6 xl:grid-cols-2">
+      <section className="grid gap-5 xl:grid-cols-2">
         <OpsSectionCard title="리포트 포맷 (Slack/Jira 공유용)" description="아래 문구를 그대로 공유하면 운영 정렬이 빠르게 됩니다.">
           <Textarea
             readOnly
@@ -135,23 +116,19 @@ export default function ReportsPage() {
         <OpsSectionCard title="우선 대응 이슈 TOP 5">
 
           {issuesQuery.isLoading ? (
-            <OpsCardListSkeleton count={5} />
+            <p className="mt-3 text-sm text-muted">이슈를 불러오는 중...</p>
           ) : issuesQuery.isError ? (
-            <StateView variant="error" size="sm" title="이슈 조회에 실패했습니다." className="mt-3" />
+            <p className="mt-3 text-sm text-danger">이슈 조회에 실패했습니다.</p>
           ) : (issuesQuery.data?.items.length ?? 0) === 0 ? (
-            <StateView variant="empty" size="sm" title="대상 이슈가 없습니다." className="mt-3" />
+            <p className="mt-3 text-sm text-muted">대상 이슈가 없습니다.</p>
           ) : (
             <div className="mt-3 space-y-2">
               {issuesQuery.data?.items.map((issue) => (
                 <div key={issue.id} className="rounded-lg border border-default p-3 text-sm">
                   <p className="font-semibold text-foreground">{issue.title}</p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
-                    <SeverityBadge severity={issue.severity} />
-                    <StatusBadge status={issue.status} />
-                    <span>{issue.serviceName}</span>
-                    <span>·</span>
-                    <span>{formatNumber(issue.occurrenceCount)}회</span>
-                  </div>
+                  <p className="mt-1 text-xs text-muted">
+                    {issue.severity} · {issue.status} · {issue.serviceName} · {formatNumber(issue.occurrenceCount)}회
+                  </p>
                   <p className="mt-1 text-xs text-muted-foreground">최근 발생: {formatDateTime(issue.lastOccurredAt)}</p>
                 </div>
               ))}
@@ -159,15 +136,6 @@ export default function ReportsPage() {
           )}
         </OpsSectionCard>
       </section>
-
-      {summaryQuery.isLoading ? (
-        <StateView
-          variant="loading"
-          size="sm"
-          className="rounded-xl border border-default bg-surface p-4"
-          title="대시보드 요약 데이터를 갱신하는 중입니다."
-        />
-      ) : null}
     </div>
   );
 }

@@ -1,3 +1,3 @@
-import postcssConfig from "@repo/configs/postcss.config";
+import postcssConfig from "@repo/postcss-config";
 
 export default postcssConfig;

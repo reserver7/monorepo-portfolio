@@ -2,12 +2,10 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { RhfField, useAppForm } from "@repo/forms";
 import { useQuery } from "@repo/react-query";
 import {
-  Badge,
   Button,
   Card,
   Input,
@@ -16,12 +14,10 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  StateView,
-  Textarea,
-  Typography
+  Textarea
 } from "@repo/ui";
-import { useCollaboration } from "@/features/collaboration/hooks/use-collaboration";
-import { docsQueryKeys, getDocument, getDocumentHistory } from "@/lib/http";
+import { useCollaboration } from "@/hooks/collaboration";
+import { getDocument, getDocumentHistory } from "@/lib/http";
 import {
   createGuestName,
   getStoredDisplayName,
@@ -32,8 +28,8 @@ import {
   setStoredRole
 } from "@/lib/collab";
 import { formatExactTime, formatRelativeTime } from "@/lib/collab";
-import { useCollabStore } from "@/features/collaboration/stores/use-collab-store";
-import { collabFieldCopy } from "@repo/utils/collab";
+import { useCollabStore } from "@/stores/collaboration";
+import { collabFieldCopy } from "@repo/collab-client";
 
 const connectionLabel = {
   connecting: "연결 중",
@@ -48,38 +44,19 @@ const saveLabel = {
   offline: "오프라인 보류"
 } as const;
 
-const renderPanelLoading = () => (
-  <Card className="p-5">
-    <StateView variant="loading" title="패널 불러오는 중" description="잠시만 기다려 주세요." />
-  </Card>
-);
-
-const PresencePanel = dynamic(
-  () => import("@/features/collaboration/components/panels/presence-panel").then((mod) => mod.PresencePanel),
-  {
-    ssr: false,
-    loading: renderPanelLoading
-  }
-);
-const CommentsPanel = dynamic(
-  () => import("@/features/collaboration/components/panels/comments-panel").then((mod) => mod.CommentsPanel),
-  {
-    ssr: false,
-    loading: renderPanelLoading
-  }
-);
-const HistoryPanel = dynamic(
-  () => import("@/features/collaboration/components/panels/history-panel").then((mod) => mod.HistoryPanel),
-  {
-    ssr: false,
-    loading: renderPanelLoading
-  }
-);
+const PresencePanel = dynamic(() => import("@/components/panels/presence-panel").then((mod) => mod.PresencePanel), {
+  ssr: false
+});
+const CommentsPanel = dynamic(() => import("@/components/panels/comments-panel").then((mod) => mod.CommentsPanel), {
+  ssr: false
+});
+const HistoryPanel = dynamic(() => import("@/components/panels/history-panel").then((mod) => mod.HistoryPanel), {
+  ssr: false
+});
 const ActivityLogPanel = dynamic(
-  () => import("@/features/collaboration/components/panels/activity-log-panel").then((mod) => mod.ActivityLogPanel),
+  () => import("@/components/panels/activity-log-panel").then((mod) => mod.ActivityLogPanel),
   {
-    ssr: false,
-    loading: renderPanelLoading
+    ssr: false
   }
 );
 
@@ -87,51 +64,39 @@ export default function DocumentRoomPage() {
   const params = useParams<{ id: string }>();
   const documentId = Array.isArray(params.id) ? params.id[0] : params.id;
 
-  const sessionForm = useAppForm<{
-    displayName: string;
-    requestedRole: "viewer" | "editor";
-    editorAccessKey: string;
-  }>({
-    defaultValues: {
-      displayName: "게스트",
-      requestedRole: "editor",
-      editorAccessKey: ""
-    }
-  });
-  const displayName = sessionForm.watch("displayName");
-  const requestedRole = sessionForm.watch("requestedRole");
-  const editorAccessKey = sessionForm.watch("editorAccessKey");
+  const [displayName, setDisplayName] = useState<string>("게스트");
+  const [requestedRole, setRequestedRole] = useState<"viewer" | "editor">("editor");
+  const [editorAccessKey, setEditorAccessKey] = useState<string>("");
 
   const handleEditorRequestDenied = useCallback((resolvedRole: "viewer" | "editor") => {
-    sessionForm.setValue("requestedRole", resolvedRole);
+    setRequestedRole(resolvedRole);
     setStoredRole(resolvedRole);
-    sessionForm.setValue("editorAccessKey", "");
+    setEditorAccessKey("");
     setStoredEditorAccessKey("");
-  }, [sessionForm]);
+  }, []);
 
   useEffect(() => {
     const stored = getStoredDisplayName();
     const storedRole = getStoredRole();
     const storedEditorAccessKey = getStoredEditorAccessKey();
     const nextValue = stored?.trim() ? stored : createGuestName();
-    sessionForm.setValue("displayName", nextValue);
+    setDisplayName(nextValue);
     setStoredDisplayName(nextValue);
-    sessionForm.setValue("requestedRole", storedRole ?? "editor");
-    sessionForm.setValue("editorAccessKey", storedEditorAccessKey ?? "");
-  }, [sessionForm]);
+    setRequestedRole(storedRole ?? "editor");
+    setEditorAccessKey(storedEditorAccessKey ?? "");
+  }, []);
 
   const documentQuery = useQuery({
-    queryKey: docsQueryKeys.document(documentId),
+    queryKey: ["document", documentId],
     queryFn: () => getDocument(documentId),
-    enabled: Boolean(documentId),
-    staleTime: 10 * 1000
+    enabled: Boolean(documentId)
   });
 
   const historyQuery = useQuery({
-    queryKey: docsQueryKeys.history(documentId),
+    queryKey: ["history", documentId],
     queryFn: () => getDocumentHistory(documentId),
     enabled: Boolean(documentId),
-    staleTime: 10 * 1000,
+    staleTime: 6000,
     refetchInterval: 6000
   });
 
@@ -155,16 +120,16 @@ export default function DocumentRoomPage() {
     onEditorRequestDenied: handleEditorRequestDenied
   });
 
-  const title = useCollabStore.use.title();
-  const content = useCollabStore.use.content();
-  const participants = useCollabStore.use.participants();
-  const comments = useCollabStore.use.comments();
-  const connection = useCollabStore.use.connection();
-  const saveState = useCollabStore.use.saveState();
-  const updatedAt = useCollabStore.use.updatedAt();
-  const version = useCollabStore.use.version();
-  const conflictMessage = useCollabStore.use.conflictMessage();
-  const eventLog = useCollabStore.use.eventLog();
+  const title = useCollabStore((state) => state.title);
+  const content = useCollabStore((state) => state.content);
+  const participants = useCollabStore((state) => state.participants);
+  const comments = useCollabStore((state) => state.comments);
+  const connection = useCollabStore((state) => state.connection);
+  const saveState = useCollabStore((state) => state.saveState);
+  const updatedAt = useCollabStore((state) => state.updatedAt);
+  const version = useCollabStore((state) => state.version);
+  const conflictMessage = useCollabStore((state) => state.conflictMessage);
+  const eventLog = useCollabStore((state) => state.eventLog);
 
   const historyEntries = historyQuery.data?.history ?? [];
 
@@ -173,129 +138,108 @@ export default function DocumentRoomPage() {
   }
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[1280px] px-4 py-8 md:px-8 md:py-10">
-      <header className="mb-6 rounded-2xl border border-default bg-surface p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/"
-              className="rounded-xl border border-default bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:border-primary/40 hover:text-primary"
-            >
-              문서 목록으로
-            </Link>
-            <Badge variant="outline" size="md">
-              문서 ID: {documentId.slice(0, 8)}...
-            </Badge>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" size="md">
-              연결: {connectionLabel[connection]}
-            </Badge>
-            <Badge variant="outline" size="md">
-              저장: {saveLabel[saveState]}
-            </Badge>
-            <Badge
-              data-testid="document-current-role"
-              variant={currentRole === "editor" ? "success" : "outline"}
-              size="md"
-            >
-              권한: {currentRole}
-            </Badge>
-            <Button variant="outline" size="md" onClick={forceSave} disabled={isReadOnly}>
-              지금 저장
-            </Button>
-          </div>
+    <main className="mx-auto min-h-screen w-full max-w-[1280px] px-4 py-6 md:px-8">
+      <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/"
+            className="rounded-xl border border-default bg-surface/80 px-3 py-1.5 text-xs font-medium text-muted hover:border-primary/40 hover:text-primary"
+          >
+            문서 목록으로
+          </Link>
+          <span className="rounded-full border border-default bg-surface/80 px-3 py-1 text-xs text-muted">
+            문서 ID: {documentId.slice(0, 8)}...
+          </span>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px]">
-          <RhfField
-            control={sessionForm.control}
-            name="displayName"
-            render={({ field }) => (
-              <Input
-                title={collabFieldCopy.displayNameLabel}
-                value={field.value}
-                onChange={(event) => {
-                  field.onChange(event);
-                  setStoredDisplayName(event.target.value.trim() || createGuestName());
-                }}
-                placeholder={collabFieldCopy.displayNamePlaceholder}
-                size="md"
-              />
-            )}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full border border-default bg-surface/80 px-3 py-1 text-xs text-muted">
+            연결: {connectionLabel[connection]}
+          </span>
+          <span className="rounded-full border border-default bg-surface/80 px-3 py-1 text-xs text-muted">
+            저장: {saveLabel[saveState]}
+          </span>
+          <span
+            data-testid="document-current-role"
+            className={`rounded-full border px-3 py-1 text-xs ${
+              currentRole === "editor"
+                ? "border-success/30 bg-success/10 text-success"
+                : "border-default bg-surface-elevated text-muted"
+            }`}
+          >
+            권한: {currentRole}
+          </span>
+          <Input
+            title={collabFieldCopy.displayNameLabel}
+            value={displayName}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+              setDisplayName(nextValue);
+              setStoredDisplayName(nextValue.trim() || createGuestName());
+            }}
+            placeholder={collabFieldCopy.displayNamePlaceholder}
+            className="w-36"
           />
-          <RhfField
-            control={sessionForm.control}
-            name="requestedRole"
-            render={({ field }) => (
-              <Select
-                value={field.value}
-                onValueChange={(value) => {
-                  const nextRole = value === "viewer" ? "viewer" : "editor";
-                  field.onChange(nextRole);
-                  setStoredRole(nextRole);
-                }}
-              >
-                <SelectTrigger size="md" title={collabFieldCopy.requestRolePlaceholder}>
-                  <SelectValue placeholder={collabFieldCopy.requestRolePlaceholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="editor">{collabFieldCopy.requestOptionEditor}</SelectItem>
-                  <SelectItem value="viewer">{collabFieldCopy.requestOptionViewer}</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
+          <Select
+            value={requestedRole}
+            onValueChange={(value) => {
+              const nextRole = value === "viewer" ? "viewer" : "editor";
+              setRequestedRole(nextRole);
+              setStoredRole(nextRole);
+            }}
+          >
+            <SelectTrigger className="w-44" title={collabFieldCopy.requestRolePlaceholder}>
+              <SelectValue placeholder={collabFieldCopy.requestRolePlaceholder} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="editor">{collabFieldCopy.requestOptionEditor}</SelectItem>
+              <SelectItem value="viewer">{collabFieldCopy.requestOptionViewer}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
+            title={collabFieldCopy.editorAccessKeyLabel}
+            type="password"
+            value={editorAccessKey}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+              setEditorAccessKey(nextValue);
+              setStoredEditorAccessKey(nextValue);
+            }}
+            placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
+            className="w-40"
           />
-          <RhfField
-            control={sessionForm.control}
-            name="editorAccessKey"
-            render={({ field }) => (
-              <Input
-                title={collabFieldCopy.editorAccessKeyLabel}
-                type="password"
-                value={field.value}
-                onChange={(event) => {
-                  field.onChange(event);
-                  setStoredEditorAccessKey(event.target.value);
-                }}
-                placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
-                size="md"
-              />
-            )}
-          />
+          <Button variant="outline" size="sm" onClick={forceSave} disabled={isReadOnly}>
+            지금 저장
+          </Button>
         </div>
       </header>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_392px]">
+      <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
         <Card className="p-5 md:p-6">
           <div className="mb-4 grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
             <Input
               value={title}
               onChange={(event) => updateTitle(event.target.value)}
               readOnly={isReadOnly}
-              size="md"
-              className="text-base font-semibold"
+              className="h-12 text-base font-semibold"
               placeholder="문서 제목"
             />
-            <Badge variant="outline" size="md" className="rounded-xl px-3 py-2">
+            <div className="rounded-xl border border-default bg-surface-elevated px-3 py-2 text-xs text-muted">
               버전 {version}
-            </Badge>
+            </div>
           </div>
 
           {conflictMessage ? (
-            <StateView variant="warning" size="sm" align="left" title={conflictMessage} className="mb-4" />
+            <div className="mb-4 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
+              {conflictMessage}
+            </div>
           ) : null}
 
           {isReadOnly ? (
-            <StateView
-              variant="info"
-              size="sm"
-              align="left"
-              title="보기 전용(`viewer`) 세션입니다."
-              description="상단에서 `editor 요청`으로 바꾸고 편집 키를 입력하면 재요청됩니다. 문서 편집은 비활성화되어 있으며 댓글 작성은 가능합니다."
-              className="mb-4"
-            />
+            <div className="mb-4 rounded-xl border border-default bg-surface-elevated px-3 py-2 text-sm text-muted">
+              보기 전용(`viewer`) 세션입니다. 상단에서 `editor 요청`으로 바꾸고 편집 키를 입력하면
+              재요청됩니다. 문서 편집은 비활성화되어 있으며 댓글 작성은 가능합니다.
+            </div>
           ) : null}
 
           <Textarea
@@ -305,22 +249,20 @@ export default function DocumentRoomPage() {
             onKeyUp={(event) => sendCursor(event.currentTarget.selectionStart ?? 0)}
             onSelect={(event) => sendCursor(event.currentTarget.selectionStart ?? 0)}
             readOnly={isReadOnly}
-            className="h-[62vh] w-full resize-none rounded-2xl border border-default bg-surface p-4 text-body-sm leading-7 text-foreground"
+            className="h-[56vh] w-full resize-none rounded-2xl border border-default bg-surface p-4 text-sm leading-7 text-foreground"
             placeholder="여기서부터 실시간 협업이 시작됩니다..."
           />
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-            <Typography as="span" variant="bodySm" tone="subtle">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+            <span>
               최근 수정:{" "}
               {updatedAt ? `${formatRelativeTime(updatedAt)} (${formatExactTime(updatedAt)})` : "-"}
-            </Typography>
-            <Typography as="span" variant="bodySm" tone="subtle">
-              동시 접속: {participants.length}명
-            </Typography>
+            </span>
+            <span>동시 접속: {participants.length}명</span>
           </div>
         </Card>
 
-        <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+        <div className="space-y-4">
           <PresencePanel participants={participants} mySessionId={sessionId} />
           <CommentsPanel
             comments={comments}
@@ -336,13 +278,9 @@ export default function DocumentRoomPage() {
       </div>
 
       {documentQuery.isError ? (
-        <StateView
-          variant="error"
-          size="md"
-          title="문서를 불러오지 못했습니다."
-          description="존재하지 않는 문서이거나 서버가 실행 중이 아닐 수 있습니다."
-          className="mt-5"
-        />
+        <Card className="mt-5 border-danger/30 bg-danger/10 p-4 text-sm text-danger">
+          문서를 불러오지 못했습니다. 존재하지 않는 문서이거나 서버가 실행 중이 아닐 수 있습니다.
+        </Card>
       ) : null}
     </main>
   );

@@ -1,32 +1,14 @@
 import { WhiteboardRecord, WhiteboardSummary } from "@/lib/collab";
 import { whiteboardClientEnv } from "@/lib/config";
-import { createResourceClient, requestJson } from "@repo/react-query";
+import { requestJson } from "@repo/http";
 
 export const API_BASE_URL = whiteboardClientEnv.apiBaseUrl;
-export const whiteboardQueryKeys = {
-  all: ["whiteboard"] as const,
-  boards: () => [...whiteboardQueryKeys.all, "boards"] as const,
-  board: (boardId: string) => [...whiteboardQueryKeys.all, "board", boardId] as const
-};
-
-const boardsResource = createResourceClient<
-  WhiteboardSummary,
-  WhiteboardRecord,
-  "boards",
-  "board",
-  "boardId"
->(
-  API_BASE_URL,
-  "/api/boards",
-  {
-    list: "boards",
-    item: "board",
-    deleteId: "boardId"
-  }
-);
 
 export const listBoards = async (): Promise<WhiteboardSummary[]> => {
-  return boardsResource.list();
+  const payload = await requestJson<{ boards: WhiteboardSummary[] }>(API_BASE_URL, "/api/boards", {
+    method: "GET"
+  });
+  return payload.boards;
 };
 
 export const createBoard = async (input: {
@@ -36,8 +18,7 @@ export const createBoard = async (input: {
 }): Promise<{ board: WhiteboardRecord }> => {
   return requestJson<{ board: WhiteboardRecord }>(API_BASE_URL, "/api/boards", {
     method: "POST",
-    body: JSON.stringify(input),
-    successMessage: "화이트보드가 생성되었습니다."
+    body: JSON.stringify(input)
   });
 };
 
@@ -49,11 +30,12 @@ export const deleteBoardById = async (input: {
     method: "DELETE",
     body: JSON.stringify({
       editorAccessKey: input.editorAccessKey
-    }),
-    successMessage: "화이트보드가 삭제되었습니다."
+    })
   });
 };
 
 export const getBoard = async (boardId: string): Promise<{ board: WhiteboardRecord }> => {
-  return boardsResource.getById(boardId);
+  return requestJson<{ board: WhiteboardRecord }>(API_BASE_URL, `/api/boards/${boardId}`, {
+    method: "GET"
+  });
 };
