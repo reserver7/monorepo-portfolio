@@ -4,6 +4,18 @@ export interface NavigateToAppOptions {
   localPort?: number;
 }
 
+type BrowserWindowLike = {
+  location: {
+    protocol: string;
+    hostname: string;
+    assign: (url: string) => void;
+  };
+  localStorage: {
+    getItem: (key: string) => string | null;
+  };
+  name: string;
+};
+
 const THEME_STORAGE_KEY = "collab-theme";
 const WINDOW_NAME_THEME_PREFIX = "__collab_theme__:";
 
@@ -24,51 +36,61 @@ const isLocalHost = (hostname: string): boolean => {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
 };
 
-const urlFromPort = (port: number, pathname: string): string => {
-  return `${window.location.protocol}//${window.location.hostname}:${port}${pathname}`;
+const getBrowserWindow = (): BrowserWindowLike | null => {
+  const target = (globalThis as { window?: unknown }).window as Partial<BrowserWindowLike> | undefined;
+  if (!target?.location || !target.localStorage) {
+    return null;
+  }
+
+  return target as BrowserWindowLike;
 };
 
-const readCurrentTheme = (): "light" | "dark" | "system" | null => {
-  const value = window.localStorage.getItem(THEME_STORAGE_KEY)?.trim();
+const urlFromPort = (browserWindow: BrowserWindowLike, port: number, pathname: string): string => {
+  return `${browserWindow.location.protocol}//${browserWindow.location.hostname}:${port}${pathname}`;
+};
+
+const readCurrentTheme = (browserWindow: BrowserWindowLike): "light" | "dark" | "system" | null => {
+  const value = browserWindow.localStorage.getItem(THEME_STORAGE_KEY)?.trim();
   return value === "light" || value === "dark" || value === "system" ? value : null;
 };
 
-const writeThemeBridge = (): void => {
-  const currentTheme = readCurrentTheme();
+const writeThemeBridge = (browserWindow: BrowserWindowLike): void => {
+  const currentTheme = readCurrentTheme(browserWindow);
   if (!currentTheme) {
     return;
   }
 
-  if (window.name.length > 0 && !window.name.startsWith(WINDOW_NAME_THEME_PREFIX)) {
+  if (browserWindow.name.length > 0 && !browserWindow.name.startsWith(WINDOW_NAME_THEME_PREFIX)) {
     return;
   }
 
-  window.name = `${WINDOW_NAME_THEME_PREFIX}${currentTheme}`;
+  browserWindow.name = `${WINDOW_NAME_THEME_PREFIX}${currentTheme}`;
 };
 
 export const navigateToApp = ({ pathname = "/", targetOrigin, localPort }: NavigateToAppOptions): void => {
-  if (typeof window === "undefined") {
+  const browserWindow = getBrowserWindow();
+  if (!browserWindow) {
     return;
   }
 
-  writeThemeBridge();
+  writeThemeBridge(browserWindow);
 
   const normalizedPathname = normalizePathname(pathname);
   const normalizedTargetOrigin = normalizeOrigin(targetOrigin);
-  const onLocalHost = isLocalHost(window.location.hostname);
+  const onLocalHost = isLocalHost(browserWindow.location.hostname);
 
   if (onLocalHost && localPort) {
-    window.location.assign(urlFromPort(localPort, normalizedPathname));
+    browserWindow.location.assign(urlFromPort(browserWindow, localPort, normalizedPathname));
     return;
   }
 
   if (normalizedTargetOrigin) {
-    window.location.assign(`${normalizedTargetOrigin}${normalizedPathname}`);
+    browserWindow.location.assign(`${normalizedTargetOrigin}${normalizedPathname}`);
     return;
   }
 
   if (localPort) {
-    window.location.assign(urlFromPort(localPort, normalizedPathname));
+    browserWindow.location.assign(urlFromPort(browserWindow, localPort, normalizedPathname));
   }
 };
 
