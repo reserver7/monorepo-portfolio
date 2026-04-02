@@ -1,11 +1,5 @@
 import "dotenv/config";
-import {
-  IssueSeverity,
-  IssueStatus,
-  LogSource,
-  OpsEnvironment,
-  PrismaClient
-} from "@prisma/client";
+import { IssueSeverity, IssueStatus, LogSource, OpsEnvironment, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -62,7 +56,11 @@ async function main(): Promise<void> {
         status: IssueStatus.in_progress,
         summary: "결제 승인 시 일부 사용자에서 런타임 오류가 발생합니다.",
         probableCauses: ["신규 응답 스키마에서 totalDiscount 필드 누락 가능성", "null-safe 처리 누락"],
-        suggestedActions: ["결제 API 응답 스키마 확인", "프론트 null-safe 방어코드 추가", "배포 전후 응답 비교"],
+        suggestedActions: [
+          "결제 API 응답 스키마 확인",
+          "프론트 null-safe 방어코드 추가",
+          "배포 전후 응답 비교"
+        ],
         reproductionGuide: "1) 장바구니에서 결제 진행 2) 쿠폰 적용 3) 결제 승인 버튼 클릭",
         assignee: "FE-정우석",
         serviceName: "payments-web",

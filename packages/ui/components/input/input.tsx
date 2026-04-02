@@ -58,7 +58,11 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
       defaultValue: defaultValue != null ? String(defaultValue) : ""
     });
     const controlledValue = isControlled ? currentValue : undefined;
-    const uncontrolledDefaultValue = isControlled ? undefined : (defaultValue != null ? String(defaultValue) : undefined);
+    const uncontrolledDefaultValue = isControlled
+      ? undefined
+      : defaultValue != null
+        ? String(defaultValue)
+        : undefined;
 
     const activeStatus = resolveInputStatus(status, state, Boolean(errorMessage));
     const supportMessage = errorMessage ?? helperText;
@@ -106,7 +110,7 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
         onBlur={onBlur}
         name={name}
         className={cn(
-          "w-full text-foreground placeholder:text-muted outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+          "text-foreground placeholder:text-muted w-full outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50",
           hasDecorator
             ? "h-auto min-w-0 flex-1 border-0 bg-transparent p-0 focus:ring-0"
             : "rounded-md border px-3 py-2 ring-0 focus:ring-2",
@@ -146,7 +150,7 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
               disabled ? "cursor-not-allowed opacity-50" : null
             )}
           >
-            {prefix ? <span className="flex shrink-0 items-center text-muted">{prefix}</span> : null}
+            {prefix ? <span className="text-muted flex shrink-0 items-center">{prefix}</span> : null}
             {inputElement}
             {showClearButton ? (
               <button
@@ -157,14 +161,14 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
                 onClick={handleClear}
                 tabIndex={-1}
                 aria-label="입력값 비우기"
-                className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted transition-colors hover:bg-surface-elevated hover:text-foreground"
+                className="text-muted hover:bg-surface-elevated hover:text-foreground inline-flex h-5 w-5 shrink-0 items-center justify-center rounded transition-colors"
               >
                 <span aria-hidden className="text-caption leading-none">
                   ×
                 </span>
               </button>
             ) : null}
-            {suffix ? <span className="flex shrink-0 items-center text-muted">{suffix}</span> : null}
+            {suffix ? <span className="text-muted flex shrink-0 items-center">{suffix}</span> : null}
           </div>
         ) : (
           inputElement

@@ -5,7 +5,7 @@ import {
   type ControllerProps,
   type ControllerRenderProps,
   type FieldPath,
-  type FieldValues,
+  type FieldValues
 } from "react-hook-form";
 
 type RhfFieldRenderParams<TFieldValues extends FieldValues, TName extends FieldPath<TFieldValues>> = {

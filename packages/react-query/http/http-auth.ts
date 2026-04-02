@@ -25,9 +25,7 @@ export const setHttpAccessToken = (token: string | null | undefined) => {
   authState.accessToken = normalized.length > 0 ? normalized : null;
 };
 
-export const configureHttpAuth = (options: {
-  getAccessToken?: AccessTokenResolver;
-}) => {
+export const configureHttpAuth = (options: { getAccessToken?: AccessTokenResolver }) => {
   authState.accessTokenResolver = options.getAccessToken;
 };
 

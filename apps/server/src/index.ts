@@ -5,7 +5,12 @@ import express, { NextFunction, Request, Response } from "express";
 import { Server, Socket } from "socket.io";
 import type { AccessRole, Participant } from "@repo/utils/collab";
 import { serverEnv } from "./config";
-import { createLogger, getRequestId, requestObservabilityMiddleware, SocketEventMetrics } from "./observability";
+import {
+  createLogger,
+  getRequestId,
+  requestObservabilityMiddleware,
+  SocketEventMetrics
+} from "./observability";
 import {
   BoardAddShapePayload,
   BoardCursorPayload,
@@ -647,7 +652,14 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (rejectOversizedPayload(socket, socketEventName.documentUpdate, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+    if (
+      rejectOversizedPayload(
+        socket,
+        socketEventName.documentUpdate,
+        payload,
+        "요청 본문이 허용 크기를 초과했습니다."
+      )
+    ) {
       return;
     }
 
@@ -739,7 +751,9 @@ io.on("connection", (socket) => {
   socket.on(socketEventName.documentCommentUpdate, (payload: DocumentCommentUpdatePayload) => {
     socketMetrics.record(socketEventName.documentCommentUpdate, "received");
 
-    if (!enforceRateLimit(socket, socketEventName.documentCommentUpdate, serverEnv.socketWriteEventsPerWindow)) {
+    if (
+      !enforceRateLimit(socket, socketEventName.documentCommentUpdate, serverEnv.socketWriteEventsPerWindow)
+    ) {
       return;
     }
 
@@ -793,7 +807,9 @@ io.on("connection", (socket) => {
   socket.on(socketEventName.documentCommentDelete, (payload: DocumentCommentDeletePayload) => {
     socketMetrics.record(socketEventName.documentCommentDelete, "received");
 
-    if (!enforceRateLimit(socket, socketEventName.documentCommentDelete, serverEnv.socketWriteEventsPerWindow)) {
+    if (
+      !enforceRateLimit(socket, socketEventName.documentCommentDelete, serverEnv.socketWriteEventsPerWindow)
+    ) {
       return;
     }
 
@@ -840,11 +856,20 @@ io.on("connection", (socket) => {
   socket.on(socketEventName.documentCursorMove, (payload: CursorPayload) => {
     socketMetrics.record(socketEventName.documentCursorMove, "received");
 
-    if (!enforceRateLimit(socket, socketEventName.documentCursorMove, serverEnv.socketCursorEventsPerWindow)) {
+    if (
+      !enforceRateLimit(socket, socketEventName.documentCursorMove, serverEnv.socketCursorEventsPerWindow)
+    ) {
       return;
     }
 
-    if (rejectOversizedPayload(socket, socketEventName.documentCursorMove, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+    if (
+      rejectOversizedPayload(
+        socket,
+        socketEventName.documentCursorMove,
+        payload,
+        "요청 본문이 허용 크기를 초과했습니다."
+      )
+    ) {
       return;
     }
 
@@ -879,7 +904,14 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (rejectOversizedPayload(socket, socketEventName.documentSave, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+    if (
+      rejectOversizedPayload(
+        socket,
+        socketEventName.documentSave,
+        payload,
+        "요청 본문이 허용 크기를 초과했습니다."
+      )
+    ) {
       return;
     }
 
@@ -1217,7 +1249,14 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (rejectOversizedPayload(socket, socketEventName.boardCursor, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+    if (
+      rejectOversizedPayload(
+        socket,
+        socketEventName.boardCursor,
+        payload,
+        "요청 본문이 허용 크기를 초과했습니다."
+      )
+    ) {
       return;
     }
 
@@ -1254,7 +1293,14 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (rejectOversizedPayload(socket, socketEventName.boardUndo, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+    if (
+      rejectOversizedPayload(
+        socket,
+        socketEventName.boardUndo,
+        payload,
+        "요청 본문이 허용 크기를 초과했습니다."
+      )
+    ) {
       return;
     }
 
@@ -1289,7 +1335,14 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (rejectOversizedPayload(socket, socketEventName.boardRedo, payload, "요청 본문이 허용 크기를 초과했습니다.")) {
+    if (
+      rejectOversizedPayload(
+        socket,
+        socketEventName.boardRedo,
+        payload,
+        "요청 본문이 허용 크기를 초과했습니다."
+      )
+    ) {
       return;
     }
 

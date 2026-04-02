@@ -28,7 +28,10 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <OpsSectionCard title="프로젝트 설정" description="현재 필터 상태와 API 연결 정보를 확인할 수 있습니다.">
+      <OpsSectionCard
+        title="프로젝트 설정"
+        description="현재 필터 상태와 API 연결 정보를 확인할 수 있습니다."
+      >
         <div className="grid gap-3 md:grid-cols-3">
           <OpsInfoItem label="환경" value={environment} />
           <OpsInfoItem label="서비스" value={serviceName} />
@@ -36,17 +39,15 @@ export default function SettingsPage() {
         </div>
       </OpsSectionCard>
 
-      <OpsSectionCard title="환경 변수 예시" description="프론트/백엔드 배포 시 아래 키를 기준으로 설정하세요.">
-        <Textarea
-          readOnly
-          value={envPreview}
-          rows={10}
-          className="bg-surface-elevated font-mono text-xs"
-        />
+      <OpsSectionCard
+        title="환경 변수 예시"
+        description="프론트/백엔드 배포 시 아래 키를 기준으로 설정하세요."
+      >
+        <Textarea readOnly value={envPreview} rows={10} className="bg-surface-elevated font-mono text-xs" />
       </OpsSectionCard>
 
       <OpsSectionCard title="운영 확장 TODO">
-        <ul className="list-disc space-y-1 pl-5 text-sm text-muted">
+        <ul className="text-muted list-disc space-y-1 pl-5 text-sm">
           <li>Slack/Jira API 연동 토큰 연결</li>
           <li>Sentry/Datadog Webhook 수집 파이프라인 추가</li>
           <li>권한 모델(RBAC)과 감사 로그 적용</li>

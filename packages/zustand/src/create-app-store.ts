@@ -34,4 +34,3 @@ export function createAppStore<TState extends object>(
 
   return create<TState>()(wrapped);
 }
-

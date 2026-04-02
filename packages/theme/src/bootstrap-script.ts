@@ -23,19 +23,16 @@ export const THEME_BOOTSTRAP_SCRIPT = `
     const cookieTheme = normalizeTheme(cookieMatch ? decodeURIComponent(cookieMatch[1]) : null);
     const windowNameTheme = readThemeFromWindowName();
     const storedTheme = normalizeTheme(localStorage.getItem(storageKey));
-    const effectiveTheme = windowNameTheme || cookieTheme || storedTheme || "system";
+    // 앱 간(포트 간) 테마 동기화를 위해 cookie를 최우선으로 사용하고,
+    // 각 앱 localStorage는 그 다음 우선순위로 사용한다.
+    const preferredTheme = cookieTheme || storedTheme || windowNameTheme || "light";
+    const effectiveTheme = preferredTheme === "system" ? "light" : preferredTheme;
 
     localStorage.setItem(storageKey, effectiveTheme);
 
-    const resolvedTheme =
-      effectiveTheme === "system"
-        ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-        : effectiveTheme;
-
-    const isDark = resolvedTheme === "dark";
+    const isDark = effectiveTheme === "dark";
     document.documentElement.classList.toggle("dark", isDark);
     document.documentElement.style.colorScheme = isDark ? "dark" : "light";
   } catch {}
 })();
 `;
-

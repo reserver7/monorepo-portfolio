@@ -8,7 +8,15 @@ export { Switch } from "./switch";
 export { RadioGroup, RadioGroupItem } from "./radio-group";
 export { Badge, type BadgeProps } from "./badge";
 export { Avatar, AvatarImage, AvatarFallback } from "./avatar";
-export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, type CardProps } from "./card";
+export {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+  type CardProps
+} from "./card";
 export { Separator } from "./separator";
 export { Progress } from "./progress";
 export { ScrollArea, ScrollBar } from "./scroll-area";

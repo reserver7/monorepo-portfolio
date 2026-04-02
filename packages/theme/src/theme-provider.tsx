@@ -10,7 +10,13 @@ export type AppThemeProviderProps = Omit<ThemeProviderProps, "storageKey">;
 
 export function AppThemeProvider({ children, ...props }: AppThemeProviderProps) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey={THEME_STORAGE_KEY} {...props}>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="light"
+      enableSystem={false}
+      storageKey={THEME_STORAGE_KEY}
+      {...props}
+    >
       {children}
     </ThemeProvider>
   );

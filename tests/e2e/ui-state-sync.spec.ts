@@ -53,10 +53,7 @@ test.describe("UI 상태 동기화", () => {
     await expect(homeEditorKeyInput).toHaveValue("");
   });
 
-  test("화이트보드 방 입장 후 목록 복귀 시 홈 편집 키 입력값이 초기화된다", async ({
-    page,
-    request
-  }) => {
+  test("화이트보드 방 입장 후 목록 복귀 시 홈 편집 키 입력값이 초기화된다", async ({ page, request }) => {
     const boardId = await createBoard(request, uniqueName("보드-키-초기화"));
 
     await page.goto(whiteboardUrl);

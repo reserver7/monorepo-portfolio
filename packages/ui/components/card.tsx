@@ -16,11 +16,14 @@ export function Card({ className, variant = "default", interactive = false, ...p
     muted: "border-default bg-surface-elevated shadow-sm",
     ghost: "border-transparent bg-transparent shadow-none"
   };
-  const interactiveClassName = interactive
-    ? "transition-all hover:-translate-y-0.5 hover:shadow-md"
-    : "";
+  const interactiveClassName = interactive ? "transition-all hover:-translate-y-0.5 hover:shadow-md" : "";
 
-  return <div className={cn("rounded-xl border", byVariant[variant], interactiveClassName, className)} {...props} />;
+  return (
+    <div
+      className={cn("rounded-xl border", byVariant[variant], interactiveClassName, className)}
+      {...props}
+    />
+  );
 }
 
 export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

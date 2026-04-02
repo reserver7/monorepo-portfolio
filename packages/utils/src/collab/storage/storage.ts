@@ -40,7 +40,8 @@ export const getOrCreateSessionId = (storageKey: string): string => {
     return existing;
   }
 
-  const created = browserWindow.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const created =
+    browserWindow.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   browserWindow.localStorage.setItem(storageKey, created);
   return created;
 };

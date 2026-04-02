@@ -58,8 +58,10 @@ export default function DeploymentsPage() {
 
   return (
     <div className="space-y-6">
-      <OpsSectionCard title="배포 등록" description="배포 버전을 등록하면 배포 전/후 에러 증감 분석이 가능합니다.">
-
+      <OpsSectionCard
+        title="배포 등록"
+        description="배포 버전을 등록하면 배포 전/후 에러 증감 분석이 가능합니다."
+      >
         <form className="grid gap-3" onSubmit={form.handleSubmit((values) => createMutation.mutate(values))}>
           <FormField label="배포 버전" htmlFor="deployment-version" size="sm">
             <Input
@@ -124,9 +126,9 @@ export default function DeploymentsPage() {
                       selected ? "border-info/40 bg-info/10" : "border-default bg-surface"
                     }`}
                   >
-                    <p className="font-semibold text-foreground">{deployment.version}</p>
-                    <p className="mt-1 text-xs text-muted">{formatDateTime(deployment.deployedAt)}</p>
-                    <p className="mt-1 line-clamp-2 text-xs text-muted">{deployment.changelog}</p>
+                    <p className="text-foreground font-semibold">{deployment.version}</p>
+                    <p className="text-muted mt-1 text-xs">{formatDateTime(deployment.deployedAt)}</p>
+                    <p className="text-muted mt-1 line-clamp-2 text-xs">{deployment.changelog}</p>
                   </Button>
                 );
               })}
@@ -141,7 +143,7 @@ export default function DeploymentsPage() {
             <StateView
               variant="loading"
               size="sm"
-              className="rounded-xl border border-default bg-surface-elevated p-4"
+              className="border-default bg-surface-elevated rounded-xl border p-4"
               title="선택한 배포 버전 기준으로 영향도를 계산하는 중입니다."
             />
           ) : impactQuery.isError || !impactQuery.data ? (
@@ -151,20 +153,28 @@ export default function DeploymentsPage() {
               <div className="grid gap-3 md:grid-cols-2">
                 <OpsInfoItem label="배포 버전" value={impactQuery.data.version} />
                 <OpsInfoItem label="배포 시각" value={formatDateTime(impactQuery.data.deployedAt)} />
-                <OpsInfoItem label="증가 이슈 수" value={`${formatNumber(impactQuery.data.increasedIssueCount)}건`} />
-                <OpsInfoItem label="배포 후 총 에러 이벤트" value={`${formatNumber(impactQuery.data.totalAfterErrorCount)}건`} />
+                <OpsInfoItem
+                  label="증가 이슈 수"
+                  value={`${formatNumber(impactQuery.data.increasedIssueCount)}건`}
+                />
+                <OpsInfoItem
+                  label="배포 후 총 에러 이벤트"
+                  value={`${formatNumber(impactQuery.data.totalAfterErrorCount)}건`}
+                />
               </div>
 
-              <p className="rounded-lg border border-default bg-surface-elevated p-3 text-muted">{impactQuery.data.summary}</p>
+              <p className="border-default bg-surface-elevated text-muted rounded-lg border p-3">
+                {impactQuery.data.summary}
+              </p>
 
               {impactQuery.data.increasedIssues.length === 0 ? (
                 <StateView variant="empty" size="sm" title="증가한 이슈가 없습니다." />
               ) : (
                 <div className="space-y-2">
                   {impactQuery.data.increasedIssues.map((item) => (
-                    <div key={item.issueId} className="rounded-lg border border-default p-3">
-                      <p className="font-semibold text-foreground">{item.title}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
+                    <div key={item.issueId} className="border-default rounded-lg border p-3">
+                      <p className="text-foreground font-semibold">{item.title}</p>
+                      <div className="text-muted mt-1 flex flex-wrap items-center gap-2 text-xs">
                         <SeverityBadge severity={item.severity} />
                         <span>{item.serviceName}</span>
                         <span>·</span>

@@ -70,7 +70,11 @@ export function TopRepeatedErrorsChart({ summary }: { summary: Summary }) {
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={summary.topRepeatedErrors} layout="vertical">
           <CartesianGrid stroke="rgb(var(--color-border-default) / 0.8)" strokeDasharray="3 3" />
-          <XAxis type="number" allowDecimals={false} tick={{ fill: "rgb(var(--color-fg-muted))", fontSize: 12 }} />
+          <XAxis
+            type="number"
+            allowDecimals={false}
+            tick={{ fill: "rgb(var(--color-fg-muted))", fontSize: 12 }}
+          />
           <YAxis
             type="category"
             dataKey="title"

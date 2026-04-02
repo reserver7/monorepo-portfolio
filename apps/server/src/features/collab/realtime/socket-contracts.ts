@@ -36,7 +36,9 @@ export const colorFromSession = (sessionId: string): string => {
     hash |= 0;
   }
 
-  return COLLAB_PRESENCE_COLORS[Math.abs(hash) % COLLAB_PRESENCE_COLORS.length] ?? DEFAULT_COLLAB_PRESENCE_COLOR;
+  return (
+    COLLAB_PRESENCE_COLORS[Math.abs(hash) % COLLAB_PRESENCE_COLORS.length] ?? DEFAULT_COLLAB_PRESENCE_COLOR
+  );
 };
 
 export const sanitizeDisplayName = (raw?: string): string => {

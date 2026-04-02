@@ -38,8 +38,7 @@ export interface SelectProps<T = SelectPrimitiveValue> {
   maxVisibleItems?: number;
 }
 
-export interface SelectTriggerProps
-  extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> {
+export interface SelectTriggerProps extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> {
   size?: SelectTriggerSize;
   variant?: SelectTriggerVariant;
   state?: SelectTriggerState;

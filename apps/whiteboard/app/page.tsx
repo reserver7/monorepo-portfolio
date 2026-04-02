@@ -8,10 +8,6 @@ import {
   Badge,
   Button,
   Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   Input,
   Label,
   Select,
@@ -187,11 +183,7 @@ export default function WhiteboardHomePage() {
       <section className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
         <Card className="p-6 md:p-8">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <Badge
-              variant="success"
-              size="lg"
-              className="font-semibold uppercase tracking-[0.18em]"
-            >
+            <Badge variant="success" size="lg" className="font-semibold uppercase tracking-[0.18em]">
               Realtime Whiteboard
             </Badge>
             <Button
@@ -213,33 +205,23 @@ export default function WhiteboardHomePage() {
           </Typography>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <div>
-              <Label size="sm" className="mb-2 block">
-                {collabFieldCopy.displayNameLabel}
-              </Label>
-              <Input
-                control={createForm.control}
-                name="displayName"
-                title={collabFieldCopy.displayNameLabel}
-                onChange={(event) => {
-                  setStoredDisplayName(event.target.value.trim() || createGuestName());
-                }}
-                placeholder={collabFieldCopy.displayNamePlaceholder}
-                size="md"
-              />
-            </div>
-            <div>
-              <Label size="sm" className="mb-2 block">
-                새 보드 제목
-              </Label>
-              <Input
-                control={createForm.control}
-                name="boardTitle"
-                title="새 보드 제목"
-                placeholder="보드 제목"
-                size="md"
-              />
-            </div>
+            <Input
+              control={createForm.control}
+              name="displayName"
+              label={collabFieldCopy.displayNameLabel}
+              onChange={(event) => {
+                setStoredDisplayName(event.target.value.trim() || createGuestName());
+              }}
+              placeholder={collabFieldCopy.displayNamePlaceholder}
+              size="md"
+            />
+            <Input
+              control={createForm.control}
+              name="boardTitle"
+              label="새 보드 제목"
+              placeholder="보드 제목"
+              size="md"
+            />
             <div>
               <Label size="sm" className="mb-2 block">
                 {collabFieldCopy.entryRoleLabel}
@@ -260,19 +242,14 @@ export default function WhiteboardHomePage() {
                 size="md"
               />
             </div>
-            <div>
-              <Label size="sm" className="mb-2 block">
-                {collabFieldCopy.editorAccessKeyLabel}
-              </Label>
-              <Input
-                control={createForm.control}
-                name="editorAccessKey"
-                title={collabFieldCopy.editorAccessKeyLabel}
-                type="password"
-                placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
-                size="md"
-              />
-            </div>
+            <Input
+              control={createForm.control}
+              name="editorAccessKey"
+              label={collabFieldCopy.editorAccessKeyLabel}
+              type="password"
+              placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
+              size="md"
+            />
           </div>
           <div className="mt-4 flex justify-end">
             <Button
@@ -318,7 +295,7 @@ export default function WhiteboardHomePage() {
               </Typography>
             </Card>
           </div>
-          <div className="mt-5 space-y-2 rounded-xl border border-default bg-surface p-3.5">
+          <div className="border-default bg-surface mt-5 space-y-2 rounded-xl border p-3.5">
             <Typography as="p" variant="label" tone="subtle">
               사용 가이드
             </Typography>
@@ -351,46 +328,63 @@ export default function WhiteboardHomePage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-3">
                     <Skeleton className="h-6 w-2/5" />
-                    <Skeleton className="h-5 w-24 rounded-full" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
                   </div>
-                  <Skeleton className="h-3 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-11/12" />
                   <div className="space-y-2 pt-2">
-                    <Skeleton className="h-3 w-2/3" />
                     <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-3 w-2/3" />
+                    <Skeleton className="h-3 w-1/4" />
                   </div>
                 </div>
               </Card>
             ))}
           </div>
-        ) : null}
-        {boardsQuery.isError ? (
-          <StateView variant="error" size="lg" title="보드 목록 조회에 실패했습니다." />
-        ) : null}
-        {!boardsQuery.isLoading && !boardsQuery.isError && boards.length === 0 ? (
+        ) : boardsQuery.isError ? (
+          <StateView
+            variant="error"
+            size="lg"
+            title="보드 목록 조회에 실패했습니다."
+            description="서버 상태를 확인해 주세요."
+          />
+        ) : boards.length === 0 ? (
           <StateView
             variant="empty"
             size="lg"
             title="아직 보드가 없습니다."
             description="첫 보드를 생성해보세요."
-            className="mb-4"
           />
-        ) : null}
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {boards.map((board) => (
+              <Card key={board.id} className="p-5" interactive data-testid={`board-card-${board.id}`}>
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <Typography as="h3" variant="h3" className="text-heading-lg">
+                    {board.title.trim() || EMPTY_TITLE}
+                  </Typography>
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant="outline" size="sm">
+                      v{board.version}
+                    </Badge>
+                    {board.isProtected ? (
+                      <Badge variant="warning" size="sm">
+                        키 보호
+                      </Badge>
+                    ) : null}
+                  </div>
+                </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {boards.map((board) => (
-            <Card key={board.id} interactive data-testid={`board-card-${board.id}`}>
-              <CardHeader>
-                <CardTitle>{board.title.trim() || EMPTY_TITLE}</CardTitle>
-                <CardDescription>
-                  도형 {board.shapeCount}개 · 버전 {board.version}
-                  {board.isProtected ? " · 키 보호" : ""}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Typography as="p" variant="bodySm" tone="subtle" className="mb-4">
-                  최근 수정: {formatRelativeTime(board.updatedAt)} ({formatExactTime(board.updatedAt)})
-                </Typography>
-                <div className="flex items-center justify-end gap-2">
+                <div className="mt-4 space-y-1">
+                  <Typography as="p" variant="bodySm" tone="subtle">
+                    최근 수정: {formatRelativeTime(board.updatedAt)}
+                  </Typography>
+                  <Typography as="p" variant="bodySm" tone="subtle">
+                    수정 일시: {formatExactTime(board.updatedAt)}
+                  </Typography>
+                </div>
+
+                <div className="mt-4 flex justify-end gap-2">
                   <Button
                     variant="danger"
                     data-testid={`board-delete-${board.id}`}
@@ -398,7 +392,8 @@ export default function WhiteboardHomePage() {
                       if (board.isProtected) {
                         const accessKey = await promptConfirm({
                           title: "화이트보드를 삭제할까요?",
-                          description: "이 화이트보드는 편집 키로 보호되어 있습니다. 삭제 비밀번호를 입력해 주세요.",
+                          description:
+                            "이 화이트보드는 편집 키로 보호되어 있습니다. 삭제 비밀번호를 입력해 주세요.",
                           inputLabel: "삭제 비밀번호",
                           inputPlaceholder: "삭제 비밀번호",
                           inputType: "password",
@@ -466,10 +461,10 @@ export default function WhiteboardHomePage() {
                     보드 입장
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </section>
 
       <Spinner open={isActionPending} fullscreen size="lg" tone="primary" />

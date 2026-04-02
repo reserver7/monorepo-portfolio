@@ -17,7 +17,7 @@ const CHOSUNG = [
   "ㅋ",
   "ㅌ",
   "ㅍ",
-  "ㅎ",
+  "ㅎ"
 ];
 const UNICODE_INITIAL = 44032; // '가'의 유니코드 값
 const CHOSUNG_UNICODE = 588; // 초성 한글 유니코드 값 차이

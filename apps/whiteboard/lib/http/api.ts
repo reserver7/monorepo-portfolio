@@ -15,15 +15,11 @@ const boardsResource = createResourceClient<
   "boards",
   "board",
   "boardId"
->(
-  API_BASE_URL,
-  "/api/boards",
-  {
-    list: "boards",
-    item: "board",
-    deleteId: "boardId"
-  }
-);
+>(API_BASE_URL, "/api/boards", {
+  list: "boards",
+  item: "board",
+  deleteId: "boardId"
+});
 
 export const listBoards = async (): Promise<WhiteboardSummary[]> => {
   return boardsResource.list();

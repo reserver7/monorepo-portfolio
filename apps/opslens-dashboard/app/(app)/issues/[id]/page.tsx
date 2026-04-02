@@ -4,16 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAppForm } from "@repo/forms";
-import {
-  Button,
-  Input,
-  Label,
-  Select,
-  Spinner,
-  StateView,
-  Textarea,
-  Typography
-} from "@repo/ui";
+import { Button, Input, Label, Select, Spinner, StateView, Textarea, Typography } from "@repo/ui";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import {
   addIssueComment,
@@ -120,7 +111,7 @@ export default function IssueDetailPage() {
               {issue.summary}
             </Typography>
           </div>
-          <Link href="/issues" className="text-sm font-semibold text-primary hover:underline">
+          <Link href="/issues" className="text-primary text-sm font-semibold hover:underline">
             목록으로 이동
           </Link>
         </div>
@@ -153,7 +144,10 @@ export default function IssueDetailPage() {
 
             <div className="grid gap-1 text-sm">
               <Label htmlFor="issue-assignee">담당자 지정</Label>
-              <form className="flex gap-2" onSubmit={assigneeForm.handleSubmit((values) => assigneeMutation.mutate(values))}>
+              <form
+                className="flex gap-2"
+                onSubmit={assigneeForm.handleSubmit((values) => assigneeMutation.mutate(values))}
+              >
                 <Input
                   id="issue-assignee"
                   placeholder="예: reserver7"
@@ -178,23 +172,23 @@ export default function IssueDetailPage() {
         <OpsSectionCard title="AI 원인 후보 / 대응 액션">
           <div className="mt-3 space-y-3 text-sm">
             <div>
-              <p className="mb-1 font-semibold text-foreground">원인 후보</p>
-              <ul className="list-disc space-y-1 pl-5 text-muted">
+              <p className="text-foreground mb-1 font-semibold">원인 후보</p>
+              <ul className="text-muted list-disc space-y-1 pl-5">
                 {issue.probableCauses.map((cause) => (
                   <li key={cause}>{cause}</li>
                 ))}
               </ul>
             </div>
             <div>
-              <p className="mb-1 font-semibold text-foreground">권장 액션</p>
-              <ul className="list-disc space-y-1 pl-5 text-muted">
+              <p className="text-foreground mb-1 font-semibold">권장 액션</p>
+              <ul className="text-muted list-disc space-y-1 pl-5">
                 {issue.suggestedActions.map((action) => (
                   <li key={action}>{action}</li>
                 ))}
               </ul>
             </div>
             <div>
-              <p className="mb-1 font-semibold text-foreground">재현 가이드</p>
+              <p className="text-foreground mb-1 font-semibold">재현 가이드</p>
               <p className="text-muted">{issue.reproductionGuide}</p>
             </div>
           </div>
@@ -208,9 +202,13 @@ export default function IssueDetailPage() {
           ) : (
             <div className="mt-3 max-h-[360px] space-y-2 overflow-auto pr-1">
               {issue.logs.map((log) => (
-                <div key={log.id} className="rounded-lg border border-default p-3">
-                  <p className="text-xs text-muted-foreground">{formatDateTime(log.occurredAt)} · {log.source} · {log.level}</p>
-                  <p className="mt-1 whitespace-pre-wrap break-all font-mono text-xs text-foreground">{log.rawMessage}</p>
+                <div key={log.id} className="border-default rounded-lg border p-3">
+                  <p className="text-muted-foreground text-xs">
+                    {formatDateTime(log.occurredAt)} · {log.source} · {log.level}
+                  </p>
+                  <p className="text-foreground mt-1 whitespace-pre-wrap break-all font-mono text-xs">
+                    {log.rawMessage}
+                  </p>
                 </div>
               ))}
             </div>
@@ -252,10 +250,10 @@ export default function IssueDetailPage() {
               <StateView variant="empty" size="sm" title="등록된 댓글이 없습니다." />
             ) : (
               issue.comments.map((comment) => (
-                <div key={comment.id} className="rounded-lg border border-default p-3 text-sm">
-                  <p className="font-semibold text-foreground">{comment.author}</p>
-                  <p className="mt-1 whitespace-pre-wrap text-muted">{comment.body}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(comment.createdAt)}</p>
+                <div key={comment.id} className="border-default rounded-lg border p-3 text-sm">
+                  <p className="text-foreground font-semibold">{comment.author}</p>
+                  <p className="text-muted mt-1 whitespace-pre-wrap">{comment.body}</p>
+                  <p className="text-muted-foreground mt-1 text-xs">{formatDateTime(comment.createdAt)}</p>
                 </div>
               ))
             )}

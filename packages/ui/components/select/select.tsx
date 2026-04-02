@@ -38,14 +38,17 @@ export const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,
   SelectTriggerProps
 >(
-  ({
-    className,
-    children,
-    size = SELECT_DEFAULTS.size,
-    variant = SELECT_DEFAULTS.variant,
-    state = SELECT_DEFAULTS.state,
-    ...props
-  }, ref) => {
+  (
+    {
+      className,
+      children,
+      size = SELECT_DEFAULTS.size,
+      variant = SELECT_DEFAULTS.variant,
+      state = SELECT_DEFAULTS.state,
+      ...props
+    },
+    ref
+  ) => {
     return (
       <SelectPrimitive.Trigger
         ref={ref}
@@ -60,7 +63,7 @@ export const SelectTrigger = React.forwardRef<
       >
         {children}
         <SelectPrimitive.Icon asChild>
-          <ChevronDown className="h-4 w-4 shrink-0 text-muted" />
+          <ChevronDown className="text-muted h-4 w-4 shrink-0" />
         </SelectPrimitive.Icon>
       </SelectPrimitive.Trigger>
     );
@@ -85,26 +88,25 @@ export const SelectContent = React.forwardRef<
 ));
 SelectContent.displayName = SelectPrimitive.Content.displayName;
 
-export const SelectItem = React.forwardRef<
-  React.ElementRef<typeof SelectPrimitive.Item>,
-  SelectItemProps
->(({ className, children, ...props }, ref) => (
-  <SelectPrimitive.Item
-    ref={ref}
-    className={cn(
-      "relative flex h-9 w-full cursor-default select-none items-center rounded-sm pl-8 pr-2 text-body-sm leading-none outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-surface-elevated",
-      className
-    )}
-    {...props}
-  >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-      <SelectPrimitive.ItemIndicator>
-        <Check className="h-4 w-4" />
-      </SelectPrimitive.ItemIndicator>
-    </span>
-    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
-  </SelectPrimitive.Item>
-));
+export const SelectItem = React.forwardRef<React.ElementRef<typeof SelectPrimitive.Item>, SelectItemProps>(
+  ({ className, children, ...props }, ref) => (
+    <SelectPrimitive.Item
+      ref={ref}
+      className={cn(
+        "text-body-sm data-[highlighted]:bg-surface-elevated relative flex h-9 w-full cursor-default select-none items-center rounded-sm pl-8 pr-2 leading-none outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        className
+      )}
+      {...props}
+    >
+      <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+        <SelectPrimitive.ItemIndicator>
+          <Check className="h-4 w-4" />
+        </SelectPrimitive.ItemIndicator>
+      </span>
+      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+    </SelectPrimitive.Item>
+  )
+);
 SelectItem.displayName = SelectPrimitive.Item.displayName;
 
 function SelectSingle<T = SelectPrimitiveValue>({
@@ -160,7 +162,11 @@ function SelectSingle<T = SelectPrimitiveValue>({
   );
 
   return (
-    <SelectRoot value={selectedValueString || undefined} onValueChange={handleValueChange} disabled={disabled || loading}>
+    <SelectRoot
+      value={selectedValueString || undefined}
+      onValueChange={handleValueChange}
+      disabled={disabled || loading}
+    >
       <SelectTrigger size={size} variant={variant} state={state} className={className}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
@@ -171,7 +177,7 @@ function SelectSingle<T = SelectPrimitiveValue>({
               value={query}
               onChange={handleQueryChange}
               placeholder={searchPlaceholder}
-              className="h-8 w-full rounded-md border border-default bg-surface px-2 text-body-sm text-foreground outline-none focus:border-primary"
+              className="border-default bg-surface text-body-sm text-foreground focus:border-primary h-8 w-full rounded-md border px-2 outline-none"
             />
           </div>
         ) : null}
@@ -179,7 +185,7 @@ function SelectSingle<T = SelectPrimitiveValue>({
         {clearable && selectedValueString ? (
           <button
             type="button"
-            className="mb-1 flex h-8 w-full items-center gap-2 rounded-sm px-2 text-body-sm text-muted hover:bg-surface-elevated hover:text-foreground"
+            className="text-body-sm text-muted hover:bg-surface-elevated hover:text-foreground mb-1 flex h-8 w-full items-center gap-2 rounded-sm px-2"
             onClick={handleClear}
           >
             <X className="h-4 w-4" />
@@ -188,11 +194,14 @@ function SelectSingle<T = SelectPrimitiveValue>({
         ) : null}
 
         {loading ? (
-          <div className="px-2 py-2 text-body-sm text-muted">불러오는 중...</div>
+          <div className="text-body-sm text-muted px-2 py-2">불러오는 중...</div>
         ) : filteredOptions.length === 0 ? (
-          <div className="px-2 py-2 text-body-sm text-muted">{emptyMessage}</div>
+          <div className="text-body-sm text-muted px-2 py-2">{emptyMessage}</div>
         ) : (
-          <div className="overflow-auto" style={{ maxHeight: resolveSelectViewportHeight(maxVisibleItems, SELECT_ROW_HEIGHT_PX) }}>
+          <div
+            className="overflow-auto"
+            style={{ maxHeight: resolveSelectViewportHeight(maxVisibleItems, SELECT_ROW_HEIGHT_PX) }}
+          >
             {filteredOptions.map((option) => (
               <SelectItem key={String(option.value)} value={String(option.value)} disabled={option.disabled}>
                 {option.label}
@@ -275,14 +284,14 @@ function SelectMultiple<T = SelectPrimitiveValue>({
           <span className={cn("truncate", selectedValues.length === 0 ? "text-muted" : "text-foreground")}>
             {selectedLabel}
           </span>
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 text-muted" />
+          <ChevronDown className="text-muted ml-2 h-4 w-4 shrink-0" />
         </button>
       </PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
         <PopoverPrimitive.Content
           align="start"
           sideOffset={6}
-          className={cn("z-50 rounded-md border border-default bg-surface p-2 shadow-md", contentClassName)}
+          className={cn("border-default bg-surface z-50 rounded-md border p-2 shadow-md", contentClassName)}
           style={{ width: triggerWidth || undefined }}
         >
           {searchable ? (
@@ -291,7 +300,7 @@ function SelectMultiple<T = SelectPrimitiveValue>({
                 value={query}
                 onChange={handleQueryChange}
                 placeholder={searchPlaceholder}
-                className="h-8 w-full rounded-md border border-default bg-surface px-2 text-body-sm text-foreground outline-none focus:border-primary"
+                className="border-default bg-surface text-body-sm text-foreground focus:border-primary h-8 w-full rounded-md border px-2 outline-none"
               />
             </div>
           ) : null}
@@ -299,7 +308,7 @@ function SelectMultiple<T = SelectPrimitiveValue>({
           {clearable && selectedValues.length > 0 ? (
             <button
               type="button"
-              className="mb-1 flex h-8 w-full items-center gap-2 rounded-sm px-2 text-body-sm text-muted hover:bg-surface-elevated hover:text-foreground"
+              className="text-body-sm text-muted hover:bg-surface-elevated hover:text-foreground mb-1 flex h-8 w-full items-center gap-2 rounded-sm px-2"
               onClick={handleClear}
             >
               <X className="h-4 w-4" />
@@ -308,11 +317,14 @@ function SelectMultiple<T = SelectPrimitiveValue>({
           ) : null}
 
           {loading ? (
-            <div className="px-2 py-2 text-body-sm text-muted">불러오는 중...</div>
+            <div className="text-body-sm text-muted px-2 py-2">불러오는 중...</div>
           ) : filteredOptions.length === 0 ? (
-            <div className="px-2 py-2 text-body-sm text-muted">{emptyMessage}</div>
+            <div className="text-body-sm text-muted px-2 py-2">{emptyMessage}</div>
           ) : (
-            <div className="overflow-auto" style={{ maxHeight: resolveSelectViewportHeight(maxVisibleItems, SELECT_ROW_HEIGHT_PX) }}>
+            <div
+              className="overflow-auto"
+              style={{ maxHeight: resolveSelectViewportHeight(maxVisibleItems, SELECT_ROW_HEIGHT_PX) }}
+            >
               {filteredOptions.map((option) => {
                 const checked = selectedValueSet.has(toSelectKey(option.value));
                 return (
@@ -321,13 +333,13 @@ function SelectMultiple<T = SelectPrimitiveValue>({
                     type="button"
                     disabled={option.disabled}
                     className={cn(
-                      "flex h-9 w-full items-center gap-2 rounded-sm px-2 text-left text-body-sm text-foreground hover:bg-surface-elevated disabled:cursor-not-allowed disabled:opacity-50",
+                      "text-body-sm text-foreground hover:bg-surface-elevated flex h-9 w-full items-center gap-2 rounded-sm px-2 text-left disabled:cursor-not-allowed disabled:opacity-50",
                       checked ? "bg-surface-elevated" : null
                     )}
                     onClick={() => toggleValue(option.value)}
                   >
-                    <span className="flex h-4 w-4 items-center justify-center rounded border border-default bg-surface">
-                      {checked ? <Check className="h-3.5 w-3.5 text-primary" /> : null}
+                    <span className="border-default bg-surface flex h-4 w-4 items-center justify-center rounded border">
+                      {checked ? <Check className="text-primary h-3.5 w-3.5" /> : null}
                     </span>
                     <span className="truncate">{option.label}</span>
                   </button>

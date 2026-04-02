@@ -8,9 +8,15 @@ export default function HomePage() {
           신규 앱이 생성되었습니다. 이 페이지를 기준으로 기능을 확장하세요.
         </p>
         <ul className="mt-6 list-disc space-y-2 pl-5 text-sm text-slate-700">
-          <li>앱 패키지명: <code>@repo/__APP_NAME__</code></li>
-          <li>개발 포트: <code>__APP_PORT__</code></li>
-          <li>실행 명령: <code>pnpm dev:__APP_NAME__</code></li>
+          <li>
+            앱 패키지명: <code>@repo/__APP_NAME__</code>
+          </li>
+          <li>
+            개발 포트: <code>__APP_PORT__</code>
+          </li>
+          <li>
+            실행 명령: <code>pnpm dev:__APP_NAME__</code>
+          </li>
         </ul>
       </div>
     </main>

@@ -9,19 +9,19 @@ const QUERY_CLIENT_DEFAULT_CONFIG: QueryClientConfig = {
     queries: {
       staleTime: 5 * 1000,
       retry: 0,
-      refetchOnWindowFocus: false,
-    },
-  },
+      refetchOnWindowFocus: false
+    }
+  }
 };
 
 export const createAppQueryClient = (config?: QueryClientConfig) => {
   const queryDefaults = {
     ...QUERY_CLIENT_DEFAULT_CONFIG.defaultOptions?.queries,
-    ...config?.defaultOptions?.queries,
+    ...config?.defaultOptions?.queries
   };
   const mutationDefaults = {
     ...QUERY_CLIENT_DEFAULT_CONFIG.defaultOptions?.mutations,
-    ...config?.defaultOptions?.mutations,
+    ...config?.defaultOptions?.mutations
   };
 
   return new QueryClient({
@@ -31,8 +31,8 @@ export const createAppQueryClient = (config?: QueryClientConfig) => {
       ...QUERY_CLIENT_DEFAULT_CONFIG.defaultOptions,
       ...config?.defaultOptions,
       queries: queryDefaults,
-      mutations: mutationDefaults,
-    },
+      mutations: mutationDefaults
+    }
   });
 };
 

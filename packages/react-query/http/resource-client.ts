@@ -48,12 +48,16 @@ export const createResourceClient = <
       resourceId: string,
       input?: ResourceDeletePayload
     ): Promise<{ ok: true } & Record<TDeleteIdKey, string>> => {
-      return requestJson<{ ok: true } & Record<TDeleteIdKey, string>>(apiBaseUrl, `${basePath}/${resourceId}`, {
-        method: "DELETE",
-        body: JSON.stringify({
-          editorAccessKey: input?.editorAccessKey
-        })
-      });
+      return requestJson<{ ok: true } & Record<TDeleteIdKey, string>>(
+        apiBaseUrl,
+        `${basePath}/${resourceId}`,
+        {
+          method: "DELETE",
+          body: JSON.stringify({
+            editorAccessKey: input?.editorAccessKey
+          })
+        }
+      );
     },
 
     getById: async (resourceId: string): Promise<Record<TItemKey, TRecord>> => {

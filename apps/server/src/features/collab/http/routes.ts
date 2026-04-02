@@ -7,4 +7,3 @@ export const API_ROUTES = {
   boards: "/api/boards",
   boardById: "/api/boards/:id"
 } as const;
-

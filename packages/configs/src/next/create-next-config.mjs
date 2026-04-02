@@ -9,7 +9,14 @@ export function createNextConfig(appDir, override = {}) {
   const baseConfig = {
     reactStrictMode: true,
     outputFileTracingRoot: path.join(appDir, "../.."),
-    transpilePackages: ["@repo/ui", "@repo/utils", "@repo/forms", "@repo/theme", "@repo/react-query", "@repo/zustand"],
+    transpilePackages: [
+      "@repo/ui",
+      "@repo/utils",
+      "@repo/forms",
+      "@repo/theme",
+      "@repo/react-query",
+      "@repo/zustand"
+    ],
     images: {
       formats: ["image/avif", "image/webp"],
       minimumCacheTTL: 60,

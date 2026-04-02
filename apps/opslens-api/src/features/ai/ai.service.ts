@@ -8,7 +8,8 @@ export class AiService {
   private readonly responseCache = new Map<string, { value: string; expiresAt: number }>();
   private readonly inFlight = new Map<string, Promise<string>>();
   private rateLimitedUntil = 0;
-  private readonly rateLimitFallbackPrefix = "AI 요청 한도(429)로 기본 결과를 표시합니다. 잠시 후 다시 시도해 주세요.";
+  private readonly rateLimitFallbackPrefix =
+    "AI 요청 한도(429)로 기본 결과를 표시합니다. 잠시 후 다시 시도해 주세요.";
 
   async generateText(prompt: string, fallback: string): Promise<string> {
     if (env.AI_PROVIDER !== "gemini" || !env.GEMINI_API_KEY) {
@@ -46,7 +47,10 @@ export class AiService {
     const text = await this.generateText(prompt, fallbackString);
 
     try {
-      const normalized = text.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
+      const normalized = text
+        .replace(/^```json\s*/i, "")
+        .replace(/```$/i, "")
+        .trim();
       return JSON.parse(normalized) as T;
     } catch {
       return fallback;
@@ -93,7 +97,9 @@ export class AiService {
           this.rateLimitedUntil = Date.now() + delayMs;
 
           if (attempt < maxRetries) {
-            this.logger.warn(`Gemini request failed: 429 (retry ${attempt + 1}/${maxRetries}, wait ${delayMs}ms)`);
+            this.logger.warn(
+              `Gemini request failed: 429 (retry ${attempt + 1}/${maxRetries}, wait ${delayMs}ms)`
+            );
             await this.sleep(delayMs);
             continue;
           }
@@ -117,7 +123,9 @@ export class AiService {
       } catch (error) {
         if (attempt < maxRetries) {
           const delayMs = baseDelay * 2 ** attempt + Math.floor(Math.random() * 200);
-          this.logger.warn(`Gemini request error: ${(error as Error).message} (retry ${attempt + 1}/${maxRetries})`);
+          this.logger.warn(
+            `Gemini request error: ${(error as Error).message} (retry ${attempt + 1}/${maxRetries})`
+          );
           await this.sleep(delayMs);
           continue;
         }

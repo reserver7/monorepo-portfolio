@@ -410,7 +410,10 @@ export function AlertConfirmProvider() {
       }
 
       if (typeof globalThis.window !== "undefined") {
-        globalThis.window.removeEventListener(UI_ALERT_CONFIRM_EVENT_NAME, handleBridgeRequest as EventListener);
+        globalThis.window.removeEventListener(
+          UI_ALERT_CONFIRM_EVENT_NAME,
+          handleBridgeRequest as EventListener
+        );
       }
     };
   }, [enqueueAlert, enqueueConfirm, enqueuePromptConfirm]);
@@ -439,30 +442,27 @@ export function AlertConfirmProvider() {
     };
   }, [current, promptForm]);
 
-  const settleRequest = useCallback(
-    (request: DialogRequest, result?: boolean | string | null) => {
-      if (settledRequestIdsRef.current.has(request.id)) {
-        return;
-      }
-      settledRequestIdsRef.current.add(request.id);
+  const settleRequest = useCallback((request: DialogRequest, result?: boolean | string | null) => {
+    if (settledRequestIdsRef.current.has(request.id)) {
+      return;
+    }
+    settledRequestIdsRef.current.add(request.id);
 
-      if (request.kind === "confirm") {
-        request.resolve(Boolean(result));
-      } else if (request.kind === "prompt") {
-        request.resolve(typeof result === "string" ? result : null);
-      } else {
-        request.resolve();
-      }
+    if (request.kind === "confirm") {
+      request.resolve(Boolean(result));
+    } else if (request.kind === "prompt") {
+      request.resolve(typeof result === "string" ? result : null);
+    } else {
+      request.resolve();
+    }
 
-      setQueue((prev) => {
-        if (prev[0]?.id === request.id) {
-          return prev.slice(1);
-        }
-        return prev.filter((entry) => entry.id !== request.id);
-      });
-    },
-    []
-  );
+    setQueue((prev) => {
+      if (prev[0]?.id === request.id) {
+        return prev.slice(1);
+      }
+      return prev.filter((entry) => entry.id !== request.id);
+    });
+  }, []);
 
   if (!current) {
     return null;
@@ -512,9 +512,15 @@ export function AlertConfirmProvider() {
       }
 
       if (asyncValidationError) {
+        promptForm.setValue("value", "", {
+          shouldDirty: true
+        });
         promptForm.setError("value", {
           type: "validate",
           message: asyncValidationError
+        });
+        queueMicrotask(() => {
+          promptInputRef.current?.focus();
         });
         return;
       }
@@ -582,7 +588,7 @@ export function AlertConfirmProvider() {
               size="md"
               status={promptFieldError ? "error" : "default"}
             />
-            {promptFieldError ? <p className="text-sm text-danger">{promptFieldError}</p> : null}
+            {promptFieldError ? <p className="text-danger text-sm">{promptFieldError}</p> : null}
           </div>
         ) : null}
 

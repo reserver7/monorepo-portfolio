@@ -32,7 +32,8 @@ export const INPUT_STATUS_CLASS: Record<InputStatus, string> = {
 };
 
 export const INPUT_DECORATED_STATUS_CLASS: Record<InputStatus, string> = {
-  default: "focus-within:border-primary focus-within:ring-primary/20 focus-within:ring-offset-2 focus-within:ring-offset-surface",
+  default:
+    "focus-within:border-primary focus-within:ring-primary/20 focus-within:ring-offset-2 focus-within:ring-offset-surface",
   error: "border-danger/40 focus-within:border-danger focus-within:ring-danger/20",
   success: "border-success/40 focus-within:border-success focus-within:ring-success/20"
 };

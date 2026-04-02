@@ -24,7 +24,8 @@ export const createNextAppEslintConfig = (appDir = process.cwd()) => {
             patterns: [
               {
                 group: ["~/*"],
-                message: "모노레포 규칙상 alias는 '@/*'(앱 로컬) 또는 '@repo/*'(워크스페이스 패키지)만 사용하세요."
+                message:
+                  "모노레포 규칙상 alias는 '@/*'(앱 로컬) 또는 '@repo/*'(워크스페이스 패키지)만 사용하세요."
               }
             ]
           }

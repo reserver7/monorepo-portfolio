@@ -19,7 +19,8 @@ export const BUTTON_VARIANT_CLASS: Record<ButtonVariant, string> = {
     "border border-default bg-surface-elevated text-foreground shadow-sm hover:bg-surface active:bg-surface-elevated focus-visible:ring-primary/20",
   danger:
     "bg-danger !text-danger-foreground shadow-sm hover:brightness-95 active:brightness-90 focus-visible:ring-danger/30",
-  ghost: "bg-transparent text-muted hover:bg-surface-elevated hover:text-foreground focus-visible:ring-primary/20",
+  ghost:
+    "bg-transparent text-muted hover:bg-surface-elevated hover:text-foreground focus-visible:ring-primary/20",
   outline:
     "border border-default bg-surface text-foreground shadow-sm hover:bg-surface-elevated active:bg-surface focus-visible:ring-primary/20"
 };

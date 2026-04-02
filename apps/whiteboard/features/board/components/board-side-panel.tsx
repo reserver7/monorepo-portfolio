@@ -53,13 +53,13 @@ export const BoardSidePanel = ({
               const cursorY = Math.round(participant.cursorY ?? 0);
 
               return (
-                <div
-                  key={`${participant.socketId}-${participant.sessionId}`}
-                  className={panelItemClass}
-                >
+                <div key={`${participant.socketId}-${participant.sessionId}`} className={panelItemClass}>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: participant.color }} />
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: participant.color }}
+                      />
                       <Typography as="span" variant="bodySm" className="truncate font-medium">
                         {participant.displayName}
                         {isMe ? " (나)" : ""}

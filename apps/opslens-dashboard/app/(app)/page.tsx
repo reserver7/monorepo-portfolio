@@ -102,7 +102,7 @@ export default function DashboardPage() {
               {summary.newAfterLatestDeployment.map((issue) => (
                 <li key={issue.issueId} className="border-default rounded-lg border p-3">
                   <p className="text-foreground text-sm font-semibold">{issue.title}</p>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-muted">
+                  <div className="text-muted mt-1 flex items-center gap-2 text-xs">
                     <SeverityBadge severity={issue.severity} />
                     <span>횟수: {formatNumber(issue.count)}</span>
                   </div>

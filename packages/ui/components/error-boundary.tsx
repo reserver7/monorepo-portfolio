@@ -30,11 +30,11 @@ function ErrorFallbackView({ title, description, detail, onRetry }: ErrorFallbac
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-background px-4 py-8 md:px-8">
+    <div className="bg-background min-h-screen px-4 py-8 md:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-2xl items-center justify-center">
-        <Card className="w-full rounded-2xl border border-default bg-surface p-6 shadow-sm md:p-8">
+        <Card className="border-default bg-surface w-full rounded-2xl border p-6 shadow-sm md:p-8">
           <div className="mx-auto flex max-w-xl flex-col items-center text-center">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-danger/10 text-danger">
+            <div className="bg-danger/10 text-danger mb-4 flex h-12 w-12 items-center justify-center rounded-full">
               <AlertCircle className="h-6 w-6" />
             </div>
 
@@ -70,11 +70,16 @@ function ErrorFallbackView({ title, description, detail, onRetry }: ErrorFallbac
             </div>
 
             {process.env.NODE_ENV !== "production" && detail ? (
-              <details className="mt-6 w-full rounded-xl border border-default bg-surface-elevated p-3 text-left">
-                <summary className="cursor-pointer text-body-sm font-semibold text-foreground">
+              <details className="border-default bg-surface-elevated mt-6 w-full rounded-xl border p-3 text-left">
+                <summary className="text-body-sm text-foreground cursor-pointer font-semibold">
                   개발용 오류 상세
                 </summary>
-                <Typography as="pre" variant="caption" tone="subtle" className="mt-2 whitespace-pre-wrap break-words">
+                <Typography
+                  as="pre"
+                  variant="caption"
+                  tone="subtle"
+                  className="mt-2 whitespace-pre-wrap break-words"
+                >
                   {detail}
                 </Typography>
               </details>

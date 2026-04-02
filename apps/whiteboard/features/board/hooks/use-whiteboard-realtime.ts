@@ -195,20 +195,23 @@ export const useWhiteboardRealtime = ({
       pushEvent("서버 연결 실패. 자동 재시도 중입니다.");
     });
 
-    socket.on(socketEventName.boardState, ({ board, role: nextRole, sessionId, sessionToken }: BoardStatePayload) => {
-      if (typeof sessionId === "string" && typeof sessionToken === "string") {
-        sessionIdRef.current = sessionId;
-        sessionTokenRef.current = sessionToken;
-        setStoredSessionIdentity(sessionId, sessionToken);
-      }
+    socket.on(
+      socketEventName.boardState,
+      ({ board, role: nextRole, sessionId, sessionToken }: BoardStatePayload) => {
+        if (typeof sessionId === "string" && typeof sessionToken === "string") {
+          sessionIdRef.current = sessionId;
+          sessionTokenRef.current = sessionToken;
+          setStoredSessionIdentity(sessionId, sessionToken);
+        }
 
-      roleRef.current = nextRole;
-      hydrateBoard(board, nextRole);
-      versionRef.current = board.version;
-      titleRef.current = board.title;
-      setConflictMessage(null);
-      pushEvent(`보드 최신 상태를 수신했습니다. (권한: ${nextRole})`);
-    });
+        roleRef.current = nextRole;
+        hydrateBoard(board, nextRole);
+        versionRef.current = board.version;
+        titleRef.current = board.title;
+        setConflictMessage(null);
+        pushEvent(`보드 최신 상태를 수신했습니다. (권한: ${nextRole})`);
+      }
+    );
 
     socket.on(socketEventName.boardUpdate, ({ board, editor }: BoardUpdatePayload) => {
       hydrateBoard(board);
@@ -219,49 +222,61 @@ export const useWhiteboardRealtime = ({
       }
     });
 
-    socket.on(socketEventName.participantsUpdate, ({ boardId: incomingBoardId, participants }: BoardParticipantsPayload) => {
-      if (incomingBoardId !== boardId) {
-        return;
+    socket.on(
+      socketEventName.participantsUpdate,
+      ({ boardId: incomingBoardId, participants }: BoardParticipantsPayload) => {
+        if (incomingBoardId !== boardId) {
+          return;
+        }
+
+        setParticipants(participants.map(normalizeParticipant));
       }
+    );
 
-      setParticipants(participants.map(normalizeParticipant));
-    });
+    socket.on(
+      socketEventName.boardCursorUpdate,
+      ({ boardId: incomingBoardId, participant }: BoardCursorUpdatePayload) => {
+        if (incomingBoardId !== boardId) {
+          return;
+        }
 
-    socket.on(socketEventName.boardCursorUpdate, ({ boardId: incomingBoardId, participant }: BoardCursorUpdatePayload) => {
-      if (incomingBoardId !== boardId) {
-        return;
+        upsertParticipant(normalizeParticipant(participant));
       }
+    );
 
-      upsertParticipant(normalizeParticipant(participant));
-    });
+    socket.on(
+      socketEventName.boardConflict,
+      ({ boardId: incomingBoardId, serverVersion }: BoardConflictPayload) => {
+        if (incomingBoardId !== boardId) {
+          return;
+        }
 
-    socket.on(socketEventName.boardConflict, ({ boardId: incomingBoardId, serverVersion }: BoardConflictPayload) => {
-      if (incomingBoardId !== boardId) {
-        return;
+        setConflictMessage(
+          `동시 수정 충돌이 발생해 서버 기준(last-write-wins)으로 정리되었습니다. (서버 버전 ${serverVersion})`
+        );
+        pushEvent("충돌이 감지되어 서버 기준으로 반영되었습니다.");
       }
+    );
 
-      setConflictMessage(
-        `동시 수정 충돌이 발생해 서버 기준(last-write-wins)으로 정리되었습니다. (서버 버전 ${serverVersion})`
-      );
-      pushEvent("충돌이 감지되어 서버 기준으로 반영되었습니다.");
-    });
+    socket.on(
+      socketEventName.permissionDenied,
+      ({ scope, currentRole: deniedRole }: PermissionDeniedPayload) => {
+        if (scope !== "board") {
+          return;
+        }
 
-    socket.on(socketEventName.permissionDenied, ({ scope, currentRole: deniedRole }: PermissionDeniedPayload) => {
-      if (scope !== "board") {
-        return;
+        const wasRequestingEditor = requestedRoleRef.current === "editor";
+        roleRef.current = deniedRole;
+        setRole(deniedRole);
+        pushEvent("읽기 전용 권한으로 전환되어 편집이 제한됩니다.");
+
+        if (wasRequestingEditor && deniedRole !== "editor") {
+          requestedRoleRef.current = deniedRole;
+          editorAccessKeyRef.current = undefined;
+          onEditorRequestDeniedRef.current?.(deniedRole);
+        }
       }
-
-      const wasRequestingEditor = requestedRoleRef.current === "editor";
-      roleRef.current = deniedRole;
-      setRole(deniedRole);
-      pushEvent("읽기 전용 권한으로 전환되어 편집이 제한됩니다.");
-
-      if (wasRequestingEditor && deniedRole !== "editor") {
-        requestedRoleRef.current = deniedRole;
-        editorAccessKeyRef.current = undefined;
-        onEditorRequestDeniedRef.current?.(deniedRole);
-      }
-    });
+    );
 
     socket.on(socketEventName.socketError, ({ message }: SocketErrorPayload) => {
       if (message) {

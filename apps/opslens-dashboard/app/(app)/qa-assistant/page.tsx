@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  Button,
-  FormField,
-  Input,
-  Select,
-  Spinner,
-  StateView,
-  Textarea
-} from "@repo/ui";
+import { Button, FormField, Input, Select, Spinner, StateView, Textarea } from "@repo/ui";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
 import { generateQaScenario, getRecentQaScenarios } from "@/features/ops/api";
@@ -70,8 +62,10 @@ export default function QaAssistantPage() {
         title="QA 자동화 지원"
         description="기능 변경 정보를 입력하면 테스트 시나리오/위험 포인트/회귀 대상이 자동 생성됩니다."
       >
-
-        <form className="grid gap-3" onSubmit={form.handleSubmit((values) => generateMutation.mutate(values))}>
+        <form
+          className="grid gap-3"
+          onSubmit={form.handleSubmit((values) => generateMutation.mutate(values))}
+        >
           <FormField label="기능 설명" htmlFor="qa-feature-name" size="sm">
             <Input
               id="qa-feature-name"
@@ -121,14 +115,18 @@ export default function QaAssistantPage() {
             />
           </FormField>
 
-          <Button type="submit" variant="primary" className="w-fit" loading={generateMutation.isPending ? true : undefined}>
+          <Button
+            type="submit"
+            variant="primary"
+            className="w-fit"
+            loading={generateMutation.isPending ? true : undefined}
+          >
             QA 시나리오 생성
           </Button>
         </form>
       </OpsSectionCard>
 
       <OpsSectionCard title="최근 생성된 QA 시나리오">
-
         {scenariosQuery.isLoading ? (
           <OpsCardListSkeleton count={3} />
         ) : scenariosQuery.isError ? (
@@ -138,13 +136,13 @@ export default function QaAssistantPage() {
         ) : (
           <div className="mt-3 space-y-3">
             {scenariosQuery.data?.map((scenario) => (
-              <article key={scenario.id} className="rounded-lg border border-default p-4">
+              <article key={scenario.id} className="border-default rounded-lg border p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold text-foreground">{scenario.featureName}</p>
-                  <p className="text-xs text-muted-foreground">{formatDateTime(scenario.createdAt)}</p>
+                  <p className="text-foreground font-semibold">{scenario.featureName}</p>
+                  <p className="text-muted-foreground text-xs">{formatDateTime(scenario.createdAt)}</p>
                 </div>
 
-                <p className="mt-1 text-xs text-muted-foreground">대상: {scenario.audience}</p>
+                <p className="text-muted-foreground mt-1 text-xs">대상: {scenario.audience}</p>
 
                 <div className="mt-3 grid gap-3 md:grid-cols-3">
                   <ListBlock title="테스트 케이스" items={scenario.generatedCases} />
@@ -164,9 +162,9 @@ export default function QaAssistantPage() {
 
 function ListBlock({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-lg border border-default bg-surface-elevated p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
-      <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-foreground/85">
+    <div className="border-default bg-surface-elevated rounded-lg border p-3">
+      <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">{title}</p>
+      <ul className="text-foreground/85 mt-2 list-disc space-y-1 pl-4 text-xs">
         {items.map((item) => (
           <li key={item}>{item}</li>
         ))}

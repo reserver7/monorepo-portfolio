@@ -146,9 +146,7 @@ export class RealtimeStore {
                 ...comment,
                 body: sanitizeCommentBody(comment.body ?? ""),
                 mentions: Array.isArray(comment.mentions)
-                  ? comment.mentions
-                      .map(sanitizeMention)
-                      .filter((mention: string) => mention.length > 0)
+                  ? comment.mentions.map(sanitizeMention).filter((mention: string) => mention.length > 0)
                   : []
               }))
             : [],

@@ -53,9 +53,7 @@ const waitForHealth = async (baseUrl: string, timeoutMs: number): Promise<void> 
     await sleep(120);
   }
 
-  throw new Error(
-    `서버 기동 대기 시간이 초과되었습니다. baseUrl=${baseUrl}, error=${String(lastError)}`
-  );
+  throw new Error(`서버 기동 대기 시간이 초과되었습니다. baseUrl=${baseUrl}, error=${String(lastError)}`);
 };
 
 export interface TestServerProcess {
@@ -133,10 +131,7 @@ export const startTestServerProcess = async (
   };
 };
 
-const stopChild = async (
-  child: ChildProcessWithoutNullStreams,
-  tempDir: string
-): Promise<void> => {
+const stopChild = async (child: ChildProcessWithoutNullStreams, tempDir: string): Promise<void> => {
   const waitForExitWithTimeout = async (timeoutMs: number): Promise<boolean> => {
     return new Promise((resolve) => {
       if (child.exitCode !== null) {

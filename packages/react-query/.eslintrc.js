@@ -8,6 +8,6 @@ module.exports = {
     "@tanstack/query/exhaustive-deps": "error",
     "@tanstack/query/no-rest-destructuring": "warn",
     "@tanstack/query/stable-query-client": "error",
-    "@typescript-eslint/naming-convention": "off",
-  },
+    "@typescript-eslint/naming-convention": "off"
+  }
 };

@@ -10,9 +10,24 @@ export const CONNECTOR_SNAP_RADIUS = 36;
 
 export const shapePreset: Record<NodeShapeType, { fill: string; stroke: string; w: number; h: number }> = {
   rect: { fill: PRIMITIVE_COLOR_PALETTE.BLUE_300, stroke: PRIMITIVE_COLOR_PALETTE.BLUE_700, w: 140, h: 100 },
-  ellipse: { fill: PRIMITIVE_COLOR_PALETTE.GREEN_200, stroke: PRIMITIVE_COLOR_PALETTE.GREEN_600, w: 150, h: 104 },
-  diamond: { fill: PRIMITIVE_COLOR_PALETTE.YELLOW_200, stroke: PRIMITIVE_COLOR_PALETTE.ORANGE_600, w: 148, h: 106 },
-  text: { fill: PRIMITIVE_COLOR_PALETTE.YELLOW_200, stroke: PRIMITIVE_COLOR_PALETTE.YELLOW_600, w: 180, h: 56 }
+  ellipse: {
+    fill: PRIMITIVE_COLOR_PALETTE.GREEN_200,
+    stroke: PRIMITIVE_COLOR_PALETTE.GREEN_600,
+    w: 150,
+    h: 104
+  },
+  diamond: {
+    fill: PRIMITIVE_COLOR_PALETTE.YELLOW_200,
+    stroke: PRIMITIVE_COLOR_PALETTE.ORANGE_600,
+    w: 148,
+    h: 106
+  },
+  text: {
+    fill: PRIMITIVE_COLOR_PALETTE.YELLOW_200,
+    stroke: PRIMITIVE_COLOR_PALETTE.YELLOW_600,
+    w: 180,
+    h: 56
+  }
 };
 
 export const resizeHandleStyle: Record<ResizeHandle, CSSProperties> = {

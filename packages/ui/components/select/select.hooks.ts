@@ -76,10 +76,7 @@ export const buildMultiSelectLabel = (
   return labels.length > 0 ? labels.join(", ") : `${selectedKeys.length}개 선택`;
 };
 
-export const usePopoverTriggerWidth = (
-  triggerRef: React.RefObject<HTMLElement | null>,
-  open: boolean
-) => {
+export const usePopoverTriggerWidth = (triggerRef: React.RefObject<HTMLElement | null>, open: boolean) => {
   const [triggerWidth, setTriggerWidth] = React.useState<number>(0);
 
   React.useLayoutEffect(() => {
