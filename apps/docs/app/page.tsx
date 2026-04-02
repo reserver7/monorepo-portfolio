@@ -205,32 +205,23 @@ export default function HomePage() {
           </Typography>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <div>
-              <Label size="sm" className="mb-2 block">
-                {collabFieldCopy.displayNameLabel}
-              </Label>
-              <Input
-                control={createForm.control}
-                name="displayName"
-                title={collabFieldCopy.displayNameLabel}
-                onChange={(event) => {
-                  setStoredDisplayName(event.target.value.trim() || createGuestName());
-                }}
-                placeholder={collabFieldCopy.displayNamePlaceholder}
-                size="md"
-              />
-            </div>
-            <div>
-              <Label size="sm" className="mb-2 block">
-                새 문서 제목
-              </Label>
-              <Input
-                control={createForm.control}
-                name="draftTitle"
-                placeholder="문서 제목"
-                size="md"
-              />
-            </div>
+            <Input
+              control={createForm.control}
+              name="displayName"
+              label={collabFieldCopy.displayNameLabel}
+              onChange={(event) => {
+                setStoredDisplayName(event.target.value.trim() || createGuestName());
+              }}
+              placeholder={collabFieldCopy.displayNamePlaceholder}
+              size="md"
+            />
+            <Input
+              control={createForm.control}
+              name="draftTitle"
+              label="새 문서 제목"
+              placeholder="문서 제목"
+              size="md"
+            />
             <div>
               <Label size="sm" className="mb-2 block">
                 {collabFieldCopy.entryRoleLabel}
@@ -251,19 +242,14 @@ export default function HomePage() {
                 size="md"
               />
             </div>
-            <div>
-              <Label size="sm" className="mb-2 block">
-                {collabFieldCopy.editorAccessKeyLabel}
-              </Label>
-              <Input
-                control={createForm.control}
-                name="editorAccessKey"
-                title={collabFieldCopy.editorAccessKeyLabel}
-                type="password"
-                placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
-                size="md"
-              />
-            </div>
+            <Input
+              control={createForm.control}
+              name="editorAccessKey"
+              label={collabFieldCopy.editorAccessKeyLabel}
+              type="password"
+              placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
+              size="md"
+            />
           </div>
           <div className="mt-4 flex justify-end">
             <Button
@@ -309,7 +295,7 @@ export default function HomePage() {
               </Typography>
             </Card>
           </div>
-          <div className="mt-5 space-y-2 rounded-xl border border-default bg-surface p-3.5">
+          <div className="border-default bg-surface mt-5 space-y-2 rounded-xl border p-3.5">
             <Typography as="p" variant="label" tone="subtle">
               사용 가이드
             </Typography>
@@ -373,7 +359,12 @@ export default function HomePage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {documents.map((document) => (
-              <Card key={document.id} className="p-5" interactive data-testid={`document-card-${document.id}`}>
+              <Card
+                key={document.id}
+                className="p-5"
+                interactive
+                data-testid={`document-card-${document.id}`}
+              >
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <Typography as="h3" variant="h3" className="text-heading-lg">
                     {document.title.trim() || EMPTY_TITLE}
@@ -390,19 +381,12 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <Typography as="p" variant="bodySm" tone="muted" className="min-h-12">
-                  {document.snippet || "(내용 없음)"}
-                </Typography>
-
                 <div className="mt-4 space-y-1">
                   <Typography as="p" variant="bodySm" tone="subtle">
                     최근 수정: {formatRelativeTime(document.updatedAt)}
                   </Typography>
                   <Typography as="p" variant="bodySm" tone="subtle">
-                    정확한 시각: {formatExactTime(document.updatedAt)}
-                  </Typography>
-                  <Typography as="p" variant="bodySm" tone="subtle">
-                    댓글 수: {document.commentCount}
+                    수정 일시: {formatExactTime(document.updatedAt)}
                   </Typography>
                 </div>
 
@@ -414,7 +398,8 @@ export default function HomePage() {
                       if (document.isProtected) {
                         const accessKey = await promptConfirm({
                           title: "문서를 삭제할까요?",
-                          description: "이 문서는 편집 키로 보호되어 있습니다. 삭제 비밀번호를 입력해 주세요.",
+                          description:
+                            "이 문서는 편집 키로 보호되어 있습니다. 삭제 비밀번호를 입력해 주세요.",
                           inputLabel: "삭제 비밀번호",
                           inputPlaceholder: "삭제 비밀번호",
                           inputType: "password",

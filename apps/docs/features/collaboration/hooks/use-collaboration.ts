@@ -36,11 +36,7 @@ import {
   setStoredSessionIdentity,
   setStoredYjsSnapshot
 } from "@/lib/collab";
-import {
-  AccessRole,
-  DocumentRecord,
-  Participant
-} from "@/lib/collab";
+import { AccessRole, DocumentRecord, Participant } from "@/lib/collab";
 import { useCollabStore } from "@/features/collaboration/stores/use-collab-store";
 
 interface UseCollaborationOptions {
@@ -423,21 +419,27 @@ export const useCollaboration = ({
       dirtyRef.current = false;
     });
 
-    socket.on(socketEventName.participantsUpdate, ({ documentId: incomingDocumentId, participants }: DocumentParticipantsPayload) => {
-      if (incomingDocumentId !== documentId) {
-        return;
+    socket.on(
+      socketEventName.participantsUpdate,
+      ({ documentId: incomingDocumentId, participants }: DocumentParticipantsPayload) => {
+        if (incomingDocumentId !== documentId) {
+          return;
+        }
+
+        setParticipants(participants.map(normalizeParticipant));
       }
+    );
 
-      setParticipants(participants.map(normalizeParticipant));
-    });
+    socket.on(
+      socketEventName.cursorUpdate,
+      ({ documentId: incomingDocumentId, participant }: DocumentCursorUpdatePayload) => {
+        if (incomingDocumentId !== documentId) {
+          return;
+        }
 
-    socket.on(socketEventName.cursorUpdate, ({ documentId: incomingDocumentId, participant }: DocumentCursorUpdatePayload) => {
-      if (incomingDocumentId !== documentId) {
-        return;
+        upsertParticipant(normalizeParticipant(participant));
       }
-
-      upsertParticipant(normalizeParticipant(participant));
-    });
+    );
 
     socket.on(socketEventName.documentCommentAdd, ({ comment }: DocumentCommentEventPayload) => {
       addCommentToStore(comment);
@@ -468,14 +470,17 @@ export const useCollaboration = ({
       notifyUiSuccess("댓글이 삭제되었습니다.");
     });
 
-    socket.on(socketEventName.documentSaved, ({ documentId: incomingDocumentId, updatedAt, version: savedVersion }: DocumentSavedPayload) => {
-      if (incomingDocumentId !== documentId) {
-        return;
-      }
+    socket.on(
+      socketEventName.documentSaved,
+      ({ documentId: incomingDocumentId, updatedAt, version: savedVersion }: DocumentSavedPayload) => {
+        if (incomingDocumentId !== documentId) {
+          return;
+        }
 
-      markSavedCheckpoint(updatedAt, savedVersion);
-      dirtyRef.current = false;
-    });
+        markSavedCheckpoint(updatedAt, savedVersion);
+        dirtyRef.current = false;
+      }
+    );
 
     socket.on(socketEventName.permissionDenied, ({ scope, currentRole }: PermissionDeniedPayload) => {
       if (scope !== "document") {
@@ -495,16 +500,19 @@ export const useCollaboration = ({
       }
     });
 
-    socket.on(socketEventName.documentConflict, ({ documentId: incomingDocumentId, serverVersion }: DocumentConflictPayload) => {
-      if (incomingDocumentId !== documentId) {
-        return;
-      }
+    socket.on(
+      socketEventName.documentConflict,
+      ({ documentId: incomingDocumentId, serverVersion }: DocumentConflictPayload) => {
+        if (incomingDocumentId !== documentId) {
+          return;
+        }
 
-      setConflictMessage(
-        `동시 수정 충돌이 감지되어 서버 기준(last-write-wins)으로 정리되었습니다. (서버 버전 ${serverVersion})`
-      );
-      pushEvent("충돌이 감지되어 서버 기준으로 병합되었습니다.");
-    });
+        setConflictMessage(
+          `동시 수정 충돌이 감지되어 서버 기준(last-write-wins)으로 정리되었습니다. (서버 버전 ${serverVersion})`
+        );
+        pushEvent("충돌이 감지되어 서버 기준으로 병합되었습니다.");
+      }
+    );
 
     socket.on(socketEventName.socketError, ({ message }: SocketErrorPayload) => {
       if (message) {

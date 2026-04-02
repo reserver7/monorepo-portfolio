@@ -17,15 +17,11 @@ const documentsResource = createResourceClient<
   "documents",
   "document",
   "documentId"
->(
-  API_BASE_URL,
-  "/api/documents",
-  {
-    list: "documents",
-    item: "document",
-    deleteId: "documentId"
-  }
-);
+>(API_BASE_URL, "/api/documents", {
+  list: "documents",
+  item: "document",
+  deleteId: "documentId"
+});
 
 export const listDocuments = async (): Promise<DocumentSummary[]> => {
   return documentsResource.list();

@@ -14,7 +14,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
       </head>
-      <body className="font-body min-h-screen text-foreground antialiased transition-colors dark:text-foreground">
+      <body className="font-body text-foreground dark:text-foreground min-h-screen antialiased transition-colors">
         <Providers>{children}</Providers>
       </body>
     </html>

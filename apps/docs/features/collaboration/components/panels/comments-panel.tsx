@@ -2,14 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useAppForm } from "@repo/forms";
-import {
-  Badge,
-  Button,
-  Card,
-  Textarea,
-  confirm,
-  Typography
-} from "@repo/ui";
+import { Badge, Button, Card, Textarea, confirm, Typography } from "@repo/ui";
 import { formatExactTime } from "@/lib/collab";
 import { DocumentComment, Participant } from "@/lib/collab";
 
@@ -72,7 +65,7 @@ export const CommentsPanel = ({
         <Textarea
           control={createForm.control}
           name="draftComment"
-          className="min-h-24 border-default bg-surface text-body-sm leading-6 text-foreground"
+          className="border-default bg-surface text-body-sm text-foreground min-h-24 leading-6"
           placeholder="댓글을 입력하세요. 예) @Luke 확인 부탁드립니다"
         />
 
@@ -123,7 +116,7 @@ export const CommentsPanel = ({
             return (
               <div key={comment.id} className={panelItemClass}>
                 <div className="mb-2 flex items-start justify-between gap-2">
-                  <Typography as="p" variant="bodySm" className="font-semibold text-foreground">
+                  <Typography as="p" variant="bodySm" className="text-foreground font-semibold">
                     {comment.authorName}
                     {isMine ? " (나)" : ""}
                   </Typography>
@@ -137,7 +130,7 @@ export const CommentsPanel = ({
                     <Textarea
                       control={editForm.control}
                       name="editingDraft"
-                      className="min-h-20 border-default bg-surface text-body-sm leading-6"
+                      className="border-default bg-surface text-body-sm min-h-20 leading-6"
                     />
                     <div className="flex items-center justify-end gap-2">
                       <Button
@@ -176,7 +169,12 @@ export const CommentsPanel = ({
                     {comment.mentions.length > 0 ? (
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         {comment.mentions.map((mention) => (
-                          <Badge key={`${comment.id}-${mention}`} variant="outline" size="sm" className="border-primary/30">
+                          <Badge
+                            key={`${comment.id}-${mention}`}
+                            variant="outline"
+                            size="sm"
+                            className="border-primary/30"
+                          >
                             @{mention}
                           </Badge>
                         ))}

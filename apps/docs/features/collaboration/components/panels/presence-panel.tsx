@@ -30,10 +30,7 @@ export const PresencePanel = ({ participants, mySessionId }: PresencePanelProps)
             const isMe = participant.sessionId === mySessionId;
 
             return (
-              <div
-                key={`${participant.socketId}-${participant.sessionId}`}
-                className={panelItemClass}
-              >
+              <div key={`${participant.socketId}-${participant.sessionId}`} className={panelItemClass}>
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
                     <span

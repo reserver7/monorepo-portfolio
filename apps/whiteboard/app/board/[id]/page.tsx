@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
   Input,
+  Label,
   SplitWorkspaceLayout,
   Select,
   StateView,
@@ -93,12 +94,15 @@ export default function WhiteboardRoomPage() {
   const [activeTool, setActiveTool] = useState<WhiteboardTool>("select");
   const [connectorFromShapeId, setConnectorFromShapeId] = useState<string | null>(null);
 
-  const handleEditorRequestDenied = useCallback((resolvedRole: "viewer" | "editor") => {
-    sessionForm.setValue("requestedRole", resolvedRole);
-    setStoredRole(resolvedRole);
-    sessionForm.setValue("editorAccessKey", "");
-    setStoredEditorAccessKey("");
-  }, [sessionForm]);
+  const handleEditorRequestDenied = useCallback(
+    (resolvedRole: "viewer" | "editor") => {
+      sessionForm.setValue("requestedRole", resolvedRole);
+      setStoredRole(resolvedRole);
+      sessionForm.setValue("editorAccessKey", "");
+      setStoredEditorAccessKey("");
+    },
+    [sessionForm]
+  );
 
   useEffect(() => {
     const stored = getStoredDisplayName();
@@ -331,10 +335,12 @@ export default function WhiteboardRoomPage() {
           ? 0
           : shapes.filter(
               (shape) =>
-                shape.type === "connector" && (shape.fromShapeId === target.id || shape.toShapeId === target.id)
+                shape.type === "connector" &&
+                (shape.fromShapeId === target.id || shape.toShapeId === target.id)
             ).length;
 
-      const elementLabel = target.type === "connector" ? "연결선" : target.type === "text" ? "텍스트" : "도형";
+      const elementLabel =
+        target.type === "connector" ? "연결선" : target.type === "text" ? "텍스트" : "도형";
       const shouldDelete = await confirm({
         title: `${elementLabel}을 삭제할까요?`,
         description:
@@ -458,12 +464,12 @@ export default function WhiteboardRoomPage() {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-[1280px] px-4 py-8 md:px-8 md:py-10">
-      <header className="mb-6 rounded-2xl border border-default bg-surface p-5 shadow-sm">
+      <header className="border-default bg-surface mb-6 rounded-2xl border p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/"
-              className="rounded-xl border border-default bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:border-primary/40 hover:text-primary"
+              className="border-default bg-surface text-muted hover:border-primary/40 hover:text-primary rounded-xl border px-3 py-1.5 text-xs font-medium"
             >
               보드 목록으로
             </Link>
@@ -491,7 +497,7 @@ export default function WhiteboardRoomPage() {
 
         <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px]">
           <Input
-            title={collabFieldCopy.displayNameLabel}
+            label={collabFieldCopy.displayNameLabel}
             control={sessionForm.control}
             name="displayName"
             onChange={(event) => {
@@ -500,25 +506,30 @@ export default function WhiteboardRoomPage() {
             placeholder={collabFieldCopy.displayNamePlaceholder}
             size="md"
           />
-          <Select
-            options={[
-              { label: collabFieldCopy.requestOptionEditor, value: "editor" },
-              { label: collabFieldCopy.requestOptionViewer, value: "viewer" }
-            ]}
-            control={sessionForm.control}
-            name="requestedRole"
-            onChange={(value) => {
-              const nextRole = String(value) === "viewer" ? "viewer" : "editor";
-              setStoredRole(nextRole);
-            }}
-            placeholder={collabFieldCopy.requestRolePlaceholder}
-            size="md"
-          />
+          <div className="grid gap-1" data-testid="board-requested-role-select">
+            <Label size="sm">{collabFieldCopy.requestRolePlaceholder}</Label>
+            <Select
+              options={[
+                { label: collabFieldCopy.requestOptionEditor, value: "editor" },
+                { label: collabFieldCopy.requestOptionViewer, value: "viewer" }
+              ]}
+              control={sessionForm.control}
+              name="requestedRole"
+              onChange={(value) => {
+                const nextRole = String(value) === "viewer" ? "viewer" : "editor";
+                setStoredRole(nextRole);
+              }}
+              placeholder={collabFieldCopy.requestRolePlaceholder}
+              size="md"
+              className="w-full"
+            />
+          </div>
           <Input
-            title={collabFieldCopy.editorAccessKeyLabel}
+            label={collabFieldCopy.editorAccessKeyLabel}
             type="password"
             control={sessionForm.control}
             name="editorAccessKey"
+            data-testid="board-editor-access-key-input"
             onChange={(event) => {
               setStoredEditorAccessKey(event.target.value);
             }}
@@ -528,10 +539,10 @@ export default function WhiteboardRoomPage() {
         </div>
       </header>
 
-      <section className="mb-4 rounded-2xl border border-default bg-surface p-5 shadow-sm">
+      <section className="border-default bg-surface mb-4 rounded-2xl border p-5 shadow-sm">
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
           <Input
-            title="보드 제목"
+            label="보드 제목"
             value={title}
             onChange={(event) => updateTitle(event.target.value)}
             readOnly={isReadOnly}
@@ -591,8 +602,8 @@ export default function WhiteboardRoomPage() {
           />
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <Card className="px-3 py-2 text-body-sm text-muted">버전 {version}</Card>
-            <Card className="px-3 py-2 text-body-sm text-muted">
+            <Card className="text-body-sm text-muted px-3 py-2">버전 {version}</Card>
+            <Card className="text-body-sm text-muted px-3 py-2">
               {updatedAt
                 ? `최근 수정: ${formatRelativeTime(updatedAt)} (${formatExactTime(updatedAt)})`
                 : "최근 수정 -"}
@@ -725,7 +736,7 @@ export default function WhiteboardRoomPage() {
         main={
           <div
             ref={boardRef}
-            className="board-grid relative h-[72vh] min-h-[520px] rounded-2xl border border-default bg-surface/90"
+            className="board-grid border-default bg-surface/90 relative h-[72vh] min-h-[520px] rounded-2xl border"
             onMouseDown={(event) => {
               if (event.target === boardRef.current) {
                 if (!isReadOnly && activeTool !== "select" && activeTool !== "connector") {
@@ -847,256 +858,259 @@ export default function WhiteboardRoomPage() {
             onMouseUp={clearPointerActions}
             onMouseLeave={clearPointerActions}
           >
-          <svg className="pointer-events-none absolute inset-0 z-[12] h-full w-full">
-            {connectorShapes.map((connector) => {
-              const endpoints = resolveConnectorEndpoints(connector, nodeShapeById);
-              if (!endpoints) {
-                return null;
-              }
+            <svg className="pointer-events-none absolute inset-0 z-[12] h-full w-full">
+              {connectorShapes.map((connector) => {
+                const endpoints = resolveConnectorEndpoints(connector, nodeShapeById);
+                if (!endpoints) {
+                  return null;
+                }
 
-              const isSelected = selectedShapeId === connector.id;
-              const strokeColor = connector.stroke || PRIMITIVE_COLOR_PALETTE.NATURAL_700;
-              const dx = endpoints.endX - endpoints.startX;
-              const dy = endpoints.endY - endpoints.startY;
-              const length = Math.hypot(dx, dy) || 1;
-              const offset = 10;
-              const startHandleX = endpoints.startX + (dx / length) * offset;
-              const startHandleY = endpoints.startY + (dy / length) * offset;
-              const endHandleX = endpoints.endX - (dx / length) * offset;
-              const endHandleY = endpoints.endY - (dy / length) * offset;
+                const isSelected = selectedShapeId === connector.id;
+                const strokeColor = connector.stroke || PRIMITIVE_COLOR_PALETTE.NATURAL_700;
+                const dx = endpoints.endX - endpoints.startX;
+                const dy = endpoints.endY - endpoints.startY;
+                const length = Math.hypot(dx, dy) || 1;
+                const offset = 10;
+                const startHandleX = endpoints.startX + (dx / length) * offset;
+                const startHandleY = endpoints.startY + (dy / length) * offset;
+                const endHandleX = endpoints.endX - (dx / length) * offset;
+                const endHandleY = endpoints.endY - (dy / length) * offset;
+
+                return (
+                  <g key={connector.id}>
+                    <line
+                      x1={endpoints.startX}
+                      y1={endpoints.startY}
+                      x2={endpoints.endX}
+                      y2={endpoints.endY}
+                      stroke={strokeColor}
+                      strokeWidth={isSelected ? 3 : 2}
+                      className="pointer-events-none"
+                    />
+                    <circle
+                      cx={endpoints.endX}
+                      cy={endpoints.endY}
+                      r={isSelected ? 4 : 3}
+                      fill={strokeColor}
+                      className="pointer-events-none"
+                    />
+                    <line
+                      x1={endpoints.startX}
+                      y1={endpoints.startY}
+                      x2={endpoints.endX}
+                      y2={endpoints.endY}
+                      stroke="transparent"
+                      strokeWidth={16}
+                      onMouseDown={(event) => {
+                        event.stopPropagation();
+                        setSelectedShapeId(connector.id);
+                      }}
+                      className="pointer-events-auto cursor-pointer"
+                    />
+
+                    {!isReadOnly && isSelected ? (
+                      <>
+                        <line
+                          x1={endpoints.startX}
+                          y1={endpoints.startY}
+                          x2={startHandleX}
+                          y2={startHandleY}
+                          stroke={strokeColor}
+                          strokeOpacity={0.55}
+                          strokeWidth={1.5}
+                          strokeDasharray="4 3"
+                          className="pointer-events-none"
+                        />
+                        <line
+                          x1={endpoints.endX}
+                          y1={endpoints.endY}
+                          x2={endHandleX}
+                          y2={endHandleY}
+                          stroke={strokeColor}
+                          strokeOpacity={0.55}
+                          strokeWidth={1.5}
+                          strokeDasharray="4 3"
+                          className="pointer-events-none"
+                        />
+                        <circle
+                          cx={startHandleX}
+                          cy={startHandleY}
+                          r={6}
+                          fill="rgb(var(--color-bg-surface))"
+                          stroke={strokeColor}
+                          strokeWidth={2}
+                          className="pointer-events-auto cursor-grab"
+                          onMouseDown={(event) => {
+                            event.stopPropagation();
+                            setSelectedShapeId(connector.id);
+                            connectorResizeRef.current = { shapeId: connector.id, handle: "start" };
+                          }}
+                        />
+                        <circle
+                          cx={endHandleX}
+                          cy={endHandleY}
+                          r={6}
+                          fill="rgb(var(--color-bg-surface))"
+                          stroke={strokeColor}
+                          strokeWidth={2}
+                          className="pointer-events-auto cursor-grab"
+                          onMouseDown={(event) => {
+                            event.stopPropagation();
+                            setSelectedShapeId(connector.id);
+                            connectorResizeRef.current = { shapeId: connector.id, handle: "end" };
+                          }}
+                        />
+                      </>
+                    ) : null}
+                  </g>
+                );
+              })}
+            </svg>
+
+            {nodeShapes.map((shape) => {
+              const isSelected = selectedShapeId === shape.id;
+              const isConnectorAnchor = connectorFromShapeId === shape.id;
+              const canDragWithPointer = !isReadOnly && activeTool !== "connector";
+              const ringClass = isSelected
+                ? "ring-2 ring-primary"
+                : isConnectorAnchor
+                  ? "ring-2 ring-success"
+                  : "";
 
               return (
-                <g key={connector.id}>
-                  <line
-                    x1={endpoints.startX}
-                    y1={endpoints.startY}
-                    x2={endpoints.endX}
-                    y2={endpoints.endY}
-                    stroke={strokeColor}
-                    strokeWidth={isSelected ? 3 : 2}
-                    className="pointer-events-none"
-                  />
-                  <circle
-                    cx={endpoints.endX}
-                    cy={endpoints.endY}
-                    r={isSelected ? 4 : 3}
-                    fill={strokeColor}
-                    className="pointer-events-none"
-                  />
-                  <line
-                    x1={endpoints.startX}
-                    y1={endpoints.startY}
-                    x2={endpoints.endX}
-                    y2={endpoints.endY}
-                    stroke="transparent"
-                    strokeWidth={16}
-                    onMouseDown={(event) => {
-                      event.stopPropagation();
+                <div
+                  key={shape.id}
+                  className={`absolute z-10 select-none border text-xs ${shape.type === "ellipse" ? "rounded-full" : "rounded-md"} ${canDragWithPointer ? "cursor-move" : "cursor-pointer"} ${ringClass}`}
+                  style={{
+                    left: `${shape.x}px`,
+                    top: `${shape.y}px`,
+                    width: `${shape.w}px`,
+                    height: `${shape.h}px`,
+                    background: shape.fill,
+                    borderColor: shape.stroke,
+                    color:
+                      shape.type === "text"
+                        ? PRIMITIVE_COLOR_PALETTE.NATURAL_900
+                        : PRIMITIVE_COLOR_PALETTE.NATURAL_700,
+                    clipPath:
+                      shape.type === "diamond" ? "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" : undefined
+                  }}
+                  onMouseDown={(event) => {
+                    event.stopPropagation();
+                    setSelectedShapeId(shape.id);
+
+                    if (isReadOnly) {
+                      return;
+                    }
+
+                    if (activeTool === "connector") {
+                      if (!connectorFromShapeId) {
+                        setConnectorFromShapeId(shape.id);
+                        return;
+                      }
+
+                      if (connectorFromShapeId === shape.id) {
+                        setConnectorFromShapeId(null);
+                        return;
+                      }
+
+                      const fromShape = nodeShapeById.get(connectorFromShapeId);
+                      if (!fromShape) {
+                        setConnectorFromShapeId(null);
+                        return;
+                      }
+
+                      const connector = makeConnector(fromShape, shape, sessionId);
+                      addShape(connector);
                       setSelectedShapeId(connector.id);
-                    }}
-                    className="pointer-events-auto cursor-pointer"
-                  />
+                      setConnectorFromShapeId(null);
+                      return;
+                    }
+
+                    const point = toBoardPoint(event.clientX, event.clientY);
+                    dragRef.current = {
+                      shapeId: shape.id,
+                      offsetX: point.x - shape.x,
+                      offsetY: point.y - shape.y
+                    };
+                  }}
+                  onDoubleClick={() => {
+                    if (isReadOnly || shape.type !== "text") {
+                      return;
+                    }
+
+                    setEditingTextShapeId(shape.id);
+                    editTextForm.setValue("editingTextDraft", shape.text ?? "");
+                  }}
+                >
+                  {!isReadOnly ? (
+                    <button
+                      type="button"
+                      onMouseDown={(event) => event.stopPropagation()}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void requestRemoveShapeWithConfirm(shape.id);
+                      }}
+                      className="border-default bg-surface text-muted hover:bg-surface-elevated absolute -right-2 -top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border text-[10px]"
+                    >
+                      ×
+                    </button>
+                  ) : null}
 
                   {!isReadOnly && isSelected ? (
                     <>
-                      <line
-                        x1={endpoints.startX}
-                        y1={endpoints.startY}
-                        x2={startHandleX}
-                        y2={startHandleY}
-                        stroke={strokeColor}
-                        strokeOpacity={0.55}
-                        strokeWidth={1.5}
-                        strokeDasharray="4 3"
-                        className="pointer-events-none"
-                      />
-                      <line
-                        x1={endpoints.endX}
-                        y1={endpoints.endY}
-                        x2={endHandleX}
-                        y2={endHandleY}
-                        stroke={strokeColor}
-                        strokeOpacity={0.55}
-                        strokeWidth={1.5}
-                        strokeDasharray="4 3"
-                        className="pointer-events-none"
-                      />
-                      <circle
-                        cx={startHandleX}
-                        cy={startHandleY}
-                        r={6}
-                        fill="rgb(var(--color-bg-surface))"
-                        stroke={strokeColor}
-                        strokeWidth={2}
-                        className="pointer-events-auto cursor-grab"
-                        onMouseDown={(event) => {
-                          event.stopPropagation();
-                          setSelectedShapeId(connector.id);
-                          connectorResizeRef.current = { shapeId: connector.id, handle: "start" };
-                        }}
-                      />
-                      <circle
-                        cx={endHandleX}
-                        cy={endHandleY}
-                        r={6}
-                        fill="rgb(var(--color-bg-surface))"
-                        stroke={strokeColor}
-                        strokeWidth={2}
-                        className="pointer-events-auto cursor-grab"
-                        onMouseDown={(event) => {
-                          event.stopPropagation();
-                          setSelectedShapeId(connector.id);
-                          connectorResizeRef.current = { shapeId: connector.id, handle: "end" };
-                        }}
-                      />
+                      {(Object.keys(resizeHandleStyle) as ResizeHandle[]).map((handle) => (
+                        <button
+                          key={handle}
+                          type="button"
+                          onMouseDown={(event) => {
+                            event.stopPropagation();
+                            const point = toBoardPoint(event.clientX, event.clientY);
+                            resizeRef.current = {
+                              shapeId: shape.id,
+                              shapeType: shape.type,
+                              handle,
+                              pointerX: point.x,
+                              pointerY: point.y,
+                              x: shape.x,
+                              y: shape.y,
+                              w: shape.w,
+                              h: shape.h
+                            };
+                          }}
+                          className="border-primary bg-surface absolute z-20 h-3 w-3 rounded-full border shadow"
+                          style={resizeHandleStyle[handle]}
+                          aria-label={`resize-${handle}`}
+                        />
+                      ))}
                     </>
                   ) : null}
-                </g>
+
+                  {shape.type === "text" ? (
+                    <div className="text-foreground flex h-full items-center justify-center px-2 text-center text-xs font-medium">
+                      {shape.text || "텍스트"}
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground pointer-events-none flex h-full items-center justify-center text-[10px] font-semibold uppercase tracking-[0.12em]">
+                      {shape.type}
+                    </div>
+                  )}
+                </div>
               );
             })}
-          </svg>
 
-          {nodeShapes.map((shape) => {
-            const isSelected = selectedShapeId === shape.id;
-            const isConnectorAnchor = connectorFromShapeId === shape.id;
-            const canDragWithPointer = !isReadOnly && activeTool !== "connector";
-            const ringClass = isSelected
-              ? "ring-2 ring-primary"
-              : isConnectorAnchor
-                ? "ring-2 ring-success"
-                : "";
-
-            return (
+            {otherParticipants.map((participant) => (
               <div
-                key={shape.id}
-                className={`absolute z-10 select-none border text-xs ${shape.type === "ellipse" ? "rounded-full" : "rounded-md"} ${canDragWithPointer ? "cursor-move" : "cursor-pointer"} ${ringClass}`}
-                style={{
-                  left: `${shape.x}px`,
-                  top: `${shape.y}px`,
-                  width: `${shape.w}px`,
-                  height: `${shape.h}px`,
-                  background: shape.fill,
-                  borderColor: shape.stroke,
-                  color: shape.type === "text" ? PRIMITIVE_COLOR_PALETTE.NATURAL_900 : PRIMITIVE_COLOR_PALETTE.NATURAL_700,
-                  clipPath:
-                    shape.type === "diamond" ? "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" : undefined
-                }}
-                onMouseDown={(event) => {
-                  event.stopPropagation();
-                  setSelectedShapeId(shape.id);
-
-                  if (isReadOnly) {
-                    return;
-                  }
-
-                  if (activeTool === "connector") {
-                    if (!connectorFromShapeId) {
-                      setConnectorFromShapeId(shape.id);
-                      return;
-                    }
-
-                    if (connectorFromShapeId === shape.id) {
-                      setConnectorFromShapeId(null);
-                      return;
-                    }
-
-                    const fromShape = nodeShapeById.get(connectorFromShapeId);
-                    if (!fromShape) {
-                      setConnectorFromShapeId(null);
-                      return;
-                    }
-
-                    const connector = makeConnector(fromShape, shape, sessionId);
-                    addShape(connector);
-                    setSelectedShapeId(connector.id);
-                    setConnectorFromShapeId(null);
-                    return;
-                  }
-
-                  const point = toBoardPoint(event.clientX, event.clientY);
-                  dragRef.current = {
-                    shapeId: shape.id,
-                    offsetX: point.x - shape.x,
-                    offsetY: point.y - shape.y
-                  };
-                }}
-                onDoubleClick={() => {
-                  if (isReadOnly || shape.type !== "text") {
-                    return;
-                  }
-
-                  setEditingTextShapeId(shape.id);
-                  editTextForm.setValue("editingTextDraft", shape.text ?? "");
-                }}
+                key={`${participant.socketId}-${participant.sessionId}`}
+                className="pointer-events-none absolute z-30"
+                style={{ left: participant.cursorX, top: participant.cursorY }}
               >
-                {!isReadOnly ? (
-                  <button
-                    type="button"
-                    onMouseDown={(event) => event.stopPropagation()}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void requestRemoveShapeWithConfirm(shape.id);
-                    }}
-                    className="absolute -right-2 -top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border border-default bg-surface text-[10px] text-muted hover:bg-surface-elevated"
-                  >
-                    ×
-                  </button>
-                ) : null}
-
-                {!isReadOnly && isSelected ? (
-                  <>
-                    {(Object.keys(resizeHandleStyle) as ResizeHandle[]).map((handle) => (
-                      <button
-                        key={handle}
-                        type="button"
-                        onMouseDown={(event) => {
-                          event.stopPropagation();
-                          const point = toBoardPoint(event.clientX, event.clientY);
-                          resizeRef.current = {
-                            shapeId: shape.id,
-                            shapeType: shape.type,
-                            handle,
-                            pointerX: point.x,
-                            pointerY: point.y,
-                            x: shape.x,
-                            y: shape.y,
-                            w: shape.w,
-                            h: shape.h
-                          };
-                        }}
-                        className="absolute z-20 h-3 w-3 rounded-full border border-primary bg-surface shadow"
-                        style={resizeHandleStyle[handle]}
-                        aria-label={`resize-${handle}`}
-                      />
-                    ))}
-                  </>
-                ) : null}
-
-                {shape.type === "text" ? (
-                  <div className="flex h-full items-center justify-center px-2 text-center text-xs font-medium text-foreground">
-                    {shape.text || "텍스트"}
-                  </div>
-                ) : (
-                  <div className="pointer-events-none flex h-full items-center justify-center text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                    {shape.type}
-                  </div>
-                )}
+                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: participant.color }} />
+                <div className="bg-foreground mt-1 rounded px-1.5 py-0.5 text-[10px] text-white">
+                  {participant.displayName}
+                </div>
               </div>
-            );
-          })}
-
-          {otherParticipants.map((participant) => (
-            <div
-              key={`${participant.socketId}-${participant.sessionId}`}
-              className="pointer-events-none absolute z-30"
-              style={{ left: participant.cursorX, top: participant.cursorY }}
-            >
-              <div className="h-3 w-3 rounded-full" style={{ backgroundColor: participant.color }} />
-              <div className="mt-1 rounded bg-foreground px-1.5 py-0.5 text-[10px] text-white">
-                {participant.displayName}
-              </div>
-            </div>
-          ))}
+            ))}
           </div>
         }
         sidebar={

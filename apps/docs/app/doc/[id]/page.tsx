@@ -11,6 +11,7 @@ import {
   Button,
   Card,
   Input,
+  Label,
   Select,
   SplitWorkspaceLayout,
   StateView,
@@ -73,7 +74,10 @@ const HistoryPanel = dynamic(
   }
 );
 const ActivityLogPanel = dynamic(
-  () => import("@/features/collaboration/components/panels/activity-log-panel").then((mod) => mod.ActivityLogPanel),
+  () =>
+    import("@/features/collaboration/components/panels/activity-log-panel").then(
+      (mod) => mod.ActivityLogPanel
+    ),
   {
     ssr: false,
     loading: renderPanelLoading
@@ -99,12 +103,15 @@ export default function DocumentRoomPage() {
   const requestedRole = sessionForm.watch("requestedRole");
   const editorAccessKey = sessionForm.watch("editorAccessKey");
 
-  const handleEditorRequestDenied = useCallback((resolvedRole: "viewer" | "editor") => {
-    sessionForm.setValue("requestedRole", resolvedRole);
-    setStoredRole(resolvedRole);
-    sessionForm.setValue("editorAccessKey", "");
-    setStoredEditorAccessKey("");
-  }, [sessionForm]);
+  const handleEditorRequestDenied = useCallback(
+    (resolvedRole: "viewer" | "editor") => {
+      sessionForm.setValue("requestedRole", resolvedRole);
+      setStoredRole(resolvedRole);
+      sessionForm.setValue("editorAccessKey", "");
+      setStoredEditorAccessKey("");
+    },
+    [sessionForm]
+  );
 
   useEffect(() => {
     const stored = getStoredDisplayName();
@@ -171,12 +178,12 @@ export default function DocumentRoomPage() {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-[1280px] px-4 py-8 md:px-8 md:py-10">
-      <header className="mb-6 rounded-2xl border border-default bg-surface p-5 shadow-sm">
+      <header className="border-default bg-surface mb-6 rounded-2xl border p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/"
-              className="rounded-xl border border-default bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:border-primary/40 hover:text-primary"
+              className="border-default bg-surface text-muted hover:border-primary/40 hover:text-primary rounded-xl border px-3 py-1.5 text-xs font-medium"
             >
               문서 목록으로
             </Link>
@@ -207,7 +214,7 @@ export default function DocumentRoomPage() {
 
         <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px]">
           <Input
-            title={collabFieldCopy.displayNameLabel}
+            label={collabFieldCopy.displayNameLabel}
             control={sessionForm.control}
             name="displayName"
             onChange={(event) => {
@@ -216,25 +223,30 @@ export default function DocumentRoomPage() {
             placeholder={collabFieldCopy.displayNamePlaceholder}
             size="md"
           />
-          <Select
-            options={[
-              { label: collabFieldCopy.requestOptionEditor, value: "editor" },
-              { label: collabFieldCopy.requestOptionViewer, value: "viewer" }
-            ]}
-            control={sessionForm.control}
-            name="requestedRole"
-            onChange={(value) => {
-              const nextRole = String(value) === "viewer" ? "viewer" : "editor";
-              setStoredRole(nextRole);
-            }}
-            placeholder={collabFieldCopy.requestRolePlaceholder}
-            size="md"
-          />
+          <div className="grid gap-1" data-testid="document-requested-role-select">
+            <Label size="sm">{collabFieldCopy.requestRolePlaceholder}</Label>
+            <Select
+              options={[
+                { label: collabFieldCopy.requestOptionEditor, value: "editor" },
+                { label: collabFieldCopy.requestOptionViewer, value: "viewer" }
+              ]}
+              control={sessionForm.control}
+              name="requestedRole"
+              onChange={(value) => {
+                const nextRole = String(value) === "viewer" ? "viewer" : "editor";
+                setStoredRole(nextRole);
+              }}
+              placeholder={collabFieldCopy.requestRolePlaceholder}
+              size="md"
+              className="w-full"
+            />
+          </div>
           <Input
-            title={collabFieldCopy.editorAccessKeyLabel}
+            label={collabFieldCopy.editorAccessKeyLabel}
             type="password"
             control={sessionForm.control}
             name="editorAccessKey"
+            data-testid="document-editor-access-key-input"
             onChange={(event) => {
               setStoredEditorAccessKey(event.target.value);
             }}
@@ -284,7 +296,7 @@ export default function DocumentRoomPage() {
               onKeyUp={(event) => sendCursor(event.currentTarget.selectionStart ?? 0)}
               onSelect={(event) => sendCursor(event.currentTarget.selectionStart ?? 0)}
               readOnly={isReadOnly}
-              className="h-[62vh] w-full resize-none rounded-2xl border border-default bg-surface p-4 text-body-sm leading-7 text-foreground"
+              className="border-default bg-surface text-body-sm text-foreground h-[62vh] w-full resize-none rounded-2xl border p-4 leading-7"
               placeholder="여기서부터 실시간 협업이 시작됩니다..."
             />
 

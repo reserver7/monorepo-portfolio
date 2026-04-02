@@ -45,16 +45,9 @@ const createProtectedBoard = async (
 };
 
 test.describe("권한 및 보호 키 플로우", () => {
-  test("문서에서 editor 요청 실패 시 viewer로 강등되고 올바른 키로 복구된다", async ({
-    page,
-    request
-  }) => {
+  test("문서에서 editor 요청 실패 시 viewer로 강등되고 올바른 키로 복구된다", async ({ page, request }) => {
     const editorAccessKey = "docs-correct-key";
-    const documentId = await createProtectedDocument(
-      request,
-      uniqueName("문서-권한-복구"),
-      editorAccessKey
-    );
+    const documentId = await createProtectedDocument(request, uniqueName("문서-권한-복구"), editorAccessKey);
 
     await page.goto(docsUrl);
     await page.evaluate(() => {
@@ -66,7 +59,7 @@ test.describe("권한 및 보호 키 플로우", () => {
     await page.goto(`${docsUrl}/doc/${documentId}`);
 
     const roleBadge = page.getByTestId("document-current-role");
-    const editorKeyInput = page.locator('input[title="편집 키"]');
+    const editorKeyInput = page.getByTestId("document-editor-access-key-input");
     const contentTextarea = page.getByPlaceholder("여기서부터 실시간 협업이 시작됩니다...");
 
     await expect(roleBadge).toHaveText("권한: viewer", { timeout: 15_000 });
@@ -75,8 +68,11 @@ test.describe("권한 및 보호 키 플로우", () => {
     await expect(editorKeyInput).toHaveValue("");
 
     await editorKeyInput.fill(editorAccessKey);
-    await page.locator('button[title="요청 권한"]').click();
-    await page.getByRole("option", { name: "editor 요청" }).click();
+    await page
+      .getByTestId("document-requested-role-select")
+      .getByRole("button", { name: /viewer|editor/i })
+      .click();
+    await page.getByRole("option", { name: "editor (편집 가능)" }).click();
 
     await expect(roleBadge).toHaveText("권한: editor", { timeout: 15_000 });
     await expect(contentTextarea).toBeEditable();
@@ -100,7 +96,7 @@ test.describe("권한 및 보호 키 플로우", () => {
 
     const roleBadge = page.getByTestId("board-current-role");
     const addShapeButton = page.getByRole("button", { name: "도형 추가" });
-    const editorKeyInput = page.locator('input[title="편집 키"]');
+    const editorKeyInput = page.getByTestId("board-editor-access-key-input");
 
     await expect(roleBadge).toHaveText("권한: viewer", { timeout: 15_000 });
     await expect(page.getByText(/보기 전용\(`viewer`\) 세션입니다\./)).toBeVisible();
@@ -108,8 +104,11 @@ test.describe("권한 및 보호 키 플로우", () => {
     await expect(editorKeyInput).toHaveValue("");
 
     await editorKeyInput.fill(editorAccessKey);
-    await page.locator('button[title="요청 권한"]').click();
-    await page.getByRole("option", { name: "editor 요청" }).click();
+    await page
+      .getByTestId("board-requested-role-select")
+      .getByRole("button", { name: /viewer|editor/i })
+      .click();
+    await page.getByRole("option", { name: "editor (편집 가능)" }).click();
 
     await expect(roleBadge).toHaveText("권한: editor", { timeout: 15_000 });
     await expect(addShapeButton).toBeEnabled();
