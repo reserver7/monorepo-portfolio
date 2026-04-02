@@ -18,6 +18,7 @@ type BrowserWindowLike = {
 
 const THEME_STORAGE_KEY = "collab-theme";
 const WINDOW_NAME_THEME_PREFIX = "__collab_theme__:";
+const THEME_QUERY_KEY = "theme";
 
 const normalizePathname = (pathname: string): string => {
   return pathname.startsWith("/") ? pathname : `/${pathname}`;
@@ -54,6 +55,20 @@ const readCurrentTheme = (browserWindow: BrowserWindowLike): "light" | "dark" | 
   return value === "light" || value === "dark" || value === "system" ? value : null;
 };
 
+const withThemeQuery = (
+  browserWindow: BrowserWindowLike,
+  destinationUrl: string
+): string => {
+  const currentTheme = readCurrentTheme(browserWindow);
+  if (!currentTheme) {
+    return destinationUrl;
+  }
+
+  const parsed = new URL(destinationUrl);
+  parsed.searchParams.set(THEME_QUERY_KEY, currentTheme);
+  return parsed.toString();
+};
+
 const writeThemeBridge = (browserWindow: BrowserWindowLike): void => {
   const currentTheme = readCurrentTheme(browserWindow);
   if (!currentTheme) {
@@ -78,20 +93,25 @@ export const navigateToApp = ({ pathname = "/", targetOrigin, localPort }: Navig
   const normalizedPathname = normalizePathname(pathname);
   const normalizedTargetOrigin = normalizeOrigin(targetOrigin);
   const onLocalHost = isLocalHost(browserWindow.location.hostname);
+  let destinationUrl: string | null = null;
 
   if (onLocalHost && localPort) {
-    browserWindow.location.assign(urlFromPort(browserWindow, localPort, normalizedPathname));
+    destinationUrl = urlFromPort(browserWindow, localPort, normalizedPathname);
+  }
+
+  if (!destinationUrl && normalizedTargetOrigin) {
+    destinationUrl = `${normalizedTargetOrigin}${normalizedPathname}`;
+  }
+
+  if (!destinationUrl && localPort) {
+    destinationUrl = urlFromPort(browserWindow, localPort, normalizedPathname);
+  }
+
+  if (!destinationUrl) {
     return;
   }
 
-  if (normalizedTargetOrigin) {
-    browserWindow.location.assign(`${normalizedTargetOrigin}${normalizedPathname}`);
-    return;
-  }
-
-  if (localPort) {
-    browserWindow.location.assign(urlFromPort(browserWindow, localPort, normalizedPathname));
-  }
+  browserWindow.location.assign(withThemeQuery(browserWindow, destinationUrl));
 };
 
 export const navigateToPort = (port: number, pathname = "/"): void => {
