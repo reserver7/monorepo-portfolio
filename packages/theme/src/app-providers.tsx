@@ -6,7 +6,7 @@ import {
   createAppQueryClient,
   type QueryClientConfig
 } from "@repo/react-query";
-import { ErrorBoundary, Toaster, useStableValue } from "@repo/ui";
+import { AlertConfirmProvider, ErrorBoundary, Toaster, useStableValue } from "@repo/ui";
 import type { ToasterProps } from "@repo/ui";
 import { AppThemeProvider } from "./theme-provider";
 import { ThemeToggle } from "./theme-toggle";
@@ -42,6 +42,7 @@ export function AppProviders({
           onReset={onResetError}
         >
           {children}
+          <AlertConfirmProvider />
         </ErrorBoundary>
         {showThemeToggle ? <ThemeToggle /> : null}
         {showToaster ? <Toaster {...toasterOptions} /> : null}

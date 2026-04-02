@@ -6,7 +6,14 @@ type AppTailwindOverride = Omit<Config, "content" | "presets">;
 const sharedContent: NonNullable<Config["content"]> = [
   "./app/**/*.{ts,tsx}",
   "./components/**/*.{ts,tsx}",
+  "./features/**/*.{ts,tsx}",
+  "./hooks/**/*.{ts,tsx}",
+  "./lib/**/*.{ts,tsx}",
+  "./stores/**/*.{ts,tsx}",
+  "./providers/**/*.{ts,tsx}",
+  "./styles/**/*.{ts,tsx}",
   "../../packages/ui/components/**/*.{ts,tsx}",
+  "../../packages/ui/layouts/**/*.{ts,tsx}",
   "../../packages/ui/hooks/**/*.{ts,tsx}",
   "../../packages/ui/styles/**/*.{ts,tsx}",
   "../../packages/ui/index.ts",
@@ -23,4 +30,3 @@ export const createAppTailwindConfig = (override: AppTailwindOverride = {}): Con
     ...override
   };
 };
-
