@@ -8,16 +8,16 @@ const whiteboardUrl = "http://127.0.0.1:3001";
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
-  timeout: 45_000,
+  timeout: 35_000,
   expect: {
-    timeout: 7_000
+    timeout: 5_000
   },
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : 3,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
     baseURL: docsUrl,
-    trace: "retain-on-failure",
+    trace: process.env.CI ? "retain-on-failure" : "off",
     screenshot: "only-on-failure",
     video: "off"
   },

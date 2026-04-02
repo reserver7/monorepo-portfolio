@@ -245,6 +245,7 @@ export default function HomePage() {
             <Input
               control={createForm.control}
               name="editorAccessKey"
+              data-testid="docs-home-editor-access-key-input"
               label={collabFieldCopy.editorAccessKeyLabel}
               type="password"
               placeholder={collabFieldCopy.editorAccessKeyPlaceholder}

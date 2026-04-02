@@ -39,7 +39,7 @@ test.describe("UI 상태 동기화", () => {
     const documentId = await createDocument(request, uniqueName("문서-키-초기화"));
 
     await page.goto(docsUrl);
-    const homeEditorKeyInput = page.locator('input[title="편집 키"]').first();
+    const homeEditorKeyInput = page.getByTestId("docs-home-editor-access-key-input");
     await homeEditorKeyInput.fill("임시-편집-키");
 
     const targetCard = page.getByTestId(`document-card-${documentId}`);
@@ -57,7 +57,7 @@ test.describe("UI 상태 동기화", () => {
     const boardId = await createBoard(request, uniqueName("보드-키-초기화"));
 
     await page.goto(whiteboardUrl);
-    const homeEditorKeyInput = page.locator('input[title="편집 키"]').first();
+    const homeEditorKeyInput = page.getByTestId("whiteboard-home-editor-access-key-input");
     await homeEditorKeyInput.fill("임시-보드-키");
 
     const targetCard = page.getByTestId(`board-card-${boardId}`);
