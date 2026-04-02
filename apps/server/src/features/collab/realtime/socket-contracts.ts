@@ -4,9 +4,9 @@ import {
   type AccessRole,
   type EditorSnapshot,
   type Participant
-} from "@repo/utils/collab/server";
+} from "../../../../../../packages/utils/src/collab/server";
 
-export { socketEventName } from "@repo/utils/collab/server";
+export { socketEventName } from "../../../../../../packages/utils/src/collab/server";
 export type {
   BoardAddShapePayload,
   BoardCursorPayload,
@@ -25,7 +25,7 @@ export type {
   DocumentSavePayload,
   DocumentYjsUpdatePayload,
   SocketEventName
-} from "@repo/utils/collab/server";
+} from "../../../../../../packages/utils/src/collab/server";
 
 const mentionPattern = /@([0-9A-Za-z가-힣._-]{2,24})/g;
 

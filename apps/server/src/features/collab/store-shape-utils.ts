@@ -1,4 +1,4 @@
-import type { ShapeType, WhiteboardShape } from "@repo/utils/collab/server";
+import type { ShapeType, WhiteboardShape } from "../../../../../packages/utils/src/collab/server";
 import { nowIso } from "./store-document-utils";
 
 const normalizeShapeType = (rawType: WhiteboardShape["type"]): ShapeType => {
