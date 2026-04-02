@@ -25,6 +25,9 @@
     "new:app": "bash ./scripts/new-app.sh",
     "test:all": "pnpm turbo run test",
     "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test tests/e2e/create-room-flow.spec.ts tests/e2e/cross-app-navigation.spec.ts --workers=2 --reporter=line",
+    "test:e2e:fast": "playwright test --workers=3 --max-failures=1 --reporter=line",
+    "test:e2e:access": "playwright test tests/e2e/access-control-flow.spec.ts --workers=1 --reporter=line",
     "test:server": "pnpm --filter @repo/server exec jest --config jest.config.cjs --runInBand"
   },
   "devDependencies": {

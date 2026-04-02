@@ -245,6 +245,7 @@ export default function WhiteboardHomePage() {
             <Input
               control={createForm.control}
               name="editorAccessKey"
+              data-testid="whiteboard-home-editor-access-key-input"
               label={collabFieldCopy.editorAccessKeyLabel}
               type="password"
               placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
