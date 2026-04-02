@@ -134,24 +134,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const toDate = watchToDate ?? "";
 
   return (
-    <div className="min-h-screen bg-surface-elevated text-foreground">
+    <div className="bg-surface-elevated text-foreground min-h-screen">
       {mobileOpen ? (
         <Button
           variant="ghost"
-          className="fixed inset-0 z-30 h-auto w-auto rounded-none bg-foreground/30 md:hidden"
+          className="bg-foreground/30 fixed inset-0 z-30 h-auto w-auto rounded-none md:hidden"
           onClick={closeMobile}
           aria-label="사이드바 닫기"
         />
       ) : null}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-default bg-surface transition-all duration-200 md:translate-x-0 ${
+        className={`border-default bg-surface fixed inset-y-0 left-0 z-40 flex flex-col border-r transition-all duration-200 md:translate-x-0 ${
           sidebarCollapsed ? "md:w-[84px]" : "md:w-[252px]"
         } ${mobileOpen ? "translate-x-0" : "-translate-x-full"} w-[252px]`}
       >
-        <div className="flex h-16 items-center justify-between border-b border-default px-3">
+        <div className="border-default flex h-16 items-center justify-between border-b px-3">
           <div className={`${sidebarCollapsed ? "md:hidden" : "block"}`}>
-            <Typography as="p" variant="caption" className="font-semibold uppercase tracking-[0.14em] text-primary">
+            <Typography
+              as="p"
+              variant="caption"
+              className="text-primary font-semibold uppercase tracking-[0.14em]"
+            >
               Operations AI
             </Typography>
             <Typography as="h1" variant="h3" className="text-heading-lg">
@@ -167,7 +171,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className="hidden h-9 w-9 md:inline-flex"
               aria-label="사이드바 접기/펼치기"
             >
-              {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+              {sidebarCollapsed ? (
+                <PanelLeftOpen className="h-4 w-4" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4" />
+              )}
             </Button>
             <Button
               variant="outline"
@@ -190,8 +198,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 onClick={closeMobile}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${
-                  active ? "bg-primary/10 text-primary" : "text-muted hover:bg-surface-elevated hover:text-foreground"
+                className={`focus-visible:ring-primary focus-visible:ring-offset-surface flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                  active
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted hover:bg-surface-elevated hover:text-foreground"
                 }`}
               >
                 <Icon className="h-4 w-4 shrink-0" />
@@ -203,7 +213,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className={`min-h-screen transition-all ${sidebarCollapsed ? "md:ml-[84px]" : "md:ml-[252px]"}`}>
-        <header className="sticky top-0 z-20 border-b border-default bg-surface/95 backdrop-blur">
+        <header className="border-default bg-surface/95 sticky top-0 z-20 border-b backdrop-blur">
           <div className="mx-auto w-full max-w-[1280px] px-4 py-3 md:px-6">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -221,10 +231,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </Typography>
               </div>
 
-              <Link
-                href="/logs"
-                className={cn(buttonVariants({ variant: "primary", size: "md" }), "gap-2")}
-              >
+              <Link href="/logs" className={cn(buttonVariants({ variant: "primary", size: "md" }), "gap-2")}>
                 <UploadCloud className="h-4 w-4" />
                 신규 업로드
               </Link>
@@ -291,7 +298,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   검색
                 </Label>
                 <div className="relative">
-                  <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Search className="text-muted-foreground pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2" />
                   <Input
                     id="filter-query"
                     value={watchSearch}

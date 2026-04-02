@@ -3,13 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useAppForm } from "@repo/forms";
-import {
-  DataTable,
-  DataTableColumnHeader,
-  type DataTableColumnDef,
-  Label,
-  Select
-} from "@repo/ui";
+import { DataTable, DataTableColumnHeader, type DataTableColumnDef, Label, Select } from "@repo/ui";
 import { keepPreviousData, useQuery } from "@repo/react-query";
 import { listIssues, type Issue, type IssueStatus, type Severity } from "@/features/ops/api";
 import { OpsSectionCard, SeverityBadge, StatusBadge } from "@/features/ops";
@@ -83,11 +77,11 @@ export default function IssuesPage() {
           <div className="align-top">
             <Link
               href={`/issues/${row.original.id}`}
-              className="font-semibold text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+              className="text-foreground hover:text-primary focus-visible:ring-primary focus-visible:ring-offset-surface font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             >
               {row.original.title}
             </Link>
-            <p className="mt-1 max-w-[420px] truncate text-xs text-muted">{row.original.summary}</p>
+            <p className="text-muted mt-1 max-w-[420px] truncate text-xs">{row.original.summary}</p>
           </div>
         )
       },

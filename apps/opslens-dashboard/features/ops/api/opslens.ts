@@ -26,24 +26,55 @@ export const toOptionalSearch = (search: string): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
-export const toOptionalStatus = (
-  status: "all" | IssueStatus | undefined
-): IssueStatus | undefined => (status && status !== "all" ? status : undefined);
+export const toOptionalStatus = (status: "all" | IssueStatus | undefined): IssueStatus | undefined =>
+  status && status !== "all" ? status : undefined;
 
-export const toOptionalSeverity = (
-  severity: "all" | Severity | undefined
-): Severity | undefined => (severity && severity !== "all" ? severity : undefined);
+export const toOptionalSeverity = (severity: "all" | Severity | undefined): Severity | undefined =>
+  severity && severity !== "all" ? severity : undefined;
 
 export const opslensQueryKeys = {
   all: ["opslens"] as const,
   dashboard: (filter: OpsFilterParams) =>
-    [...opslensQueryKeys.all, "dashboard", filter.environment, filter.serviceName, filter.search, filter.from, filter.to] as const,
+    [
+      ...opslensQueryKeys.all,
+      "dashboard",
+      filter.environment,
+      filter.serviceName,
+      filter.search,
+      filter.from,
+      filter.to
+    ] as const,
   reportsSummary: (filter: OpsFilterParams) =>
-    [...opslensQueryKeys.all, "reports", "summary", filter.environment, filter.serviceName, filter.search, filter.from, filter.to] as const,
+    [
+      ...opslensQueryKeys.all,
+      "reports",
+      "summary",
+      filter.environment,
+      filter.serviceName,
+      filter.search,
+      filter.from,
+      filter.to
+    ] as const,
   reportsBriefing: (filter: OpsFilterParams) =>
-    [...opslensQueryKeys.all, "reports", "briefing", filter.environment, filter.serviceName, filter.search, filter.from, filter.to] as const,
+    [
+      ...opslensQueryKeys.all,
+      "reports",
+      "briefing",
+      filter.environment,
+      filter.serviceName,
+      filter.search,
+      filter.from,
+      filter.to
+    ] as const,
   reportsIssues: (filter: OpsFilterParams) =>
-    [...opslensQueryKeys.all, "reports", "issues", filter.environment, filter.serviceName, filter.search] as const,
+    [
+      ...opslensQueryKeys.all,
+      "reports",
+      "issues",
+      filter.environment,
+      filter.serviceName,
+      filter.search
+    ] as const,
   issues: (filter: IssueListFilterParams) =>
     [
       ...opslensQueryKeys.all,
@@ -201,7 +232,9 @@ export async function analyzeLogs(input: {
   serviceName: string;
   deploymentVersion?: string;
 }): Promise<{ createdIssues: number; updatedIssues: number; clusters: ErrorCluster[] }> {
-  const data = await graphqlRequest<{ analyzeLogs: { createdIssues: number; updatedIssues: number; clusters: ErrorCluster[] } }>(
+  const data = await graphqlRequest<{
+    analyzeLogs: { createdIssues: number; updatedIssues: number; clusters: ErrorCluster[] };
+  }>(
     `
     mutation AnalyzeLogs($input: AnalyzeLogsInputModel!) {
       analyzeLogs(input: $input) {
@@ -239,7 +272,9 @@ export async function listIssues(filter: {
   page?: number;
   pageSize?: number;
 }): Promise<{ items: Issue[]; totalCount: number; page: number; pageSize: number }> {
-  const data = await graphqlRequest<{ issues: { items: Issue[]; totalCount: number; page: number; pageSize: number } }>(
+  const data = await graphqlRequest<{
+    issues: { items: Issue[]; totalCount: number; page: number; pageSize: number };
+  }>(
     `
     query Issues($filter: IssueFilterInput) {
       issues(filter: $filter) {
@@ -467,7 +502,10 @@ export async function getDeployments(environment?: Environment): Promise<Deploym
   return data.deployments;
 }
 
-export async function getDeploymentImpact(version: string, environment: Environment): Promise<DeploymentImpactReport> {
+export async function getDeploymentImpact(
+  version: string,
+  environment: Environment
+): Promise<DeploymentImpactReport> {
   const data = await graphqlRequest<{ deploymentImpact: DeploymentImpactReport }>(
     `
     query DeploymentImpact($input: DeploymentImpactInput!) {

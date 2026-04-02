@@ -71,7 +71,8 @@ function detectSeverity(message: string, level: string): IssueSeverity {
 function inferAffectedArea(message: string): string {
   const lowered = message.toLowerCase();
   if (lowered.includes("payment") || lowered.includes("checkout")) return "결제/주문";
-  if (lowered.includes("auth") || lowered.includes("token") || lowered.includes("permission")) return "인증/권한";
+  if (lowered.includes("auth") || lowered.includes("token") || lowered.includes("permission"))
+    return "인증/권한";
   if (lowered.includes("api") || lowered.includes("endpoint")) return "API";
   if (lowered.includes("ui") || lowered.includes("render") || lowered.includes("react")) return "프론트 UI";
   return "공통 서비스";
@@ -125,7 +126,9 @@ export function parseLogLines(rawLogs: string): ParsedLogLine[] {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const timestamp = line.match(/\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?/);
+      const timestamp = line.match(
+        /\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?/
+      );
       const occurredAt = timestamp ? new Date(timestamp[0].replace(" ", "T")) : new Date();
       const level = detectLevel(line);
       const endpoint = line.match(/\/(api|v\d)\/[^\s"']+/)?.[0];
@@ -178,7 +181,8 @@ export function clusterLogs(lines: ParsedLogLine[]): ClusteredLogIssue[] {
         suggestedActions,
         affectedArea,
         deploymentCorrelation,
-        reproductionGuide: "동일 API/페이지 요청을 스테이지 환경에서 재현하고 응답 스키마 및 권한 상태를 확인합니다.",
+        reproductionGuide:
+          "동일 API/페이지 요청을 스테이지 환경에서 재현하고 응답 스키마 및 권한 상태를 확인합니다.",
         lines: groupedLines
       };
     })

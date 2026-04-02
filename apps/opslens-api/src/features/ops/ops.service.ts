@@ -1,5 +1,15 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { IssueSeverity, IssueStatus, LogSource, OpsEnvironment, Prisma, type Deployment, type Issue, type IssueComment, type LogEvent } from "@prisma/client";
+import {
+  IssueSeverity,
+  IssueStatus,
+  LogSource,
+  OpsEnvironment,
+  Prisma,
+  type Deployment,
+  type Issue,
+  type IssueComment,
+  type LogEvent
+} from "@prisma/client";
 import { PrismaService } from "../../platform/db/prisma.service.js";
 import { AiService } from "../ai/ai.service.js";
 import {
@@ -45,12 +55,19 @@ export class OpsService {
 
   private toStatus(value?: string): IssueStatus | undefined {
     if (!value) return undefined;
-    if (value === "new" || value === "analyzing" || value === "in_progress" || value === "resolved") return value;
+    if (value === "new" || value === "analyzing" || value === "in_progress" || value === "resolved")
+      return value;
     throw new BadRequestException("status 값이 올바르지 않습니다.");
   }
 
   private toLogSource(value?: string): LogSource {
-    if (value === "server" || value === "client" || value === "api" || value === "console" || value === "sentry") {
+    if (
+      value === "server" ||
+      value === "client" ||
+      value === "api" ||
+      value === "console" ||
+      value === "sentry"
+    ) {
       return value;
     }
     return "server";
@@ -84,7 +101,9 @@ export class OpsService {
     return [];
   }
 
-  private toIssueType(issue: Issue & { deployment: Deployment | null; comments?: IssueComment[]; logs?: LogEvent[] }): IssueType {
+  private toIssueType(
+    issue: Issue & { deployment: Deployment | null; comments?: IssueComment[]; logs?: LogEvent[] }
+  ): IssueType {
     return {
       id: issue.id,
       title: issue.title,
@@ -132,7 +151,9 @@ export class OpsService {
     newAfterDeployCount: number;
   }): Promise<string> {
     const fallback = `오늘 이슈 ${input.todayIssueCount}건, 치명도 critical ${input.criticalCount}건입니다. ${
-      input.topIssueTitle ? `가장 반복된 이슈는 '${input.topIssueTitle}' 입니다.` : "반복 이슈 상위를 우선 확인해 주세요."
+      input.topIssueTitle
+        ? `가장 반복된 이슈는 '${input.topIssueTitle}' 입니다.`
+        : "반복 이슈 상위를 우선 확인해 주세요."
     } 배포 이후 신규 증가 이슈는 ${input.newAfterDeployCount}건입니다.`;
 
     return this.aiService.generateText(
@@ -326,8 +347,10 @@ export class OpsService {
               suggestedActions: issueData.suggestedActions,
               reproductionGuide: issueData.reproductionGuide,
               occurrenceCount: { increment: cluster.count },
-              firstOccurredAt: existing.firstOccurredAt < cluster.firstSeen ? existing.firstOccurredAt : cluster.firstSeen,
-              lastOccurredAt: existing.lastOccurredAt > cluster.lastSeen ? existing.lastOccurredAt : cluster.lastSeen,
+              firstOccurredAt:
+                existing.firstOccurredAt < cluster.firstSeen ? existing.firstOccurredAt : cluster.firstSeen,
+              lastOccurredAt:
+                existing.lastOccurredAt > cluster.lastSeen ? existing.lastOccurredAt : cluster.lastSeen,
               affectedArea: cluster.affectedArea,
               deploymentCorrelation: cluster.deploymentCorrelation,
               deploymentId: deploymentId ?? existing.deploymentId
@@ -563,10 +586,9 @@ export class OpsService {
     increasedIssues.sort((a, b) => b.delta - a.delta);
 
     const topIncreasedIssue = increasedIssues[0];
-    const summary =
-      !topIncreasedIssue
-        ? "배포 전후 24시간 비교에서 유의미한 증가 이슈가 발견되지 않았습니다."
-        : `배포 이후 증가 이슈 ${increasedIssues.length}건이 감지되었고, 가장 큰 증가 이슈는 '${topIncreasedIssue.title}' 입니다.`;
+    const summary = !topIncreasedIssue
+      ? "배포 전후 24시간 비교에서 유의미한 증가 이슈가 발견되지 않았습니다."
+      : `배포 이후 증가 이슈 ${increasedIssues.length}건이 감지되었고, 가장 큰 증가 이슈는 '${topIncreasedIssue.title}' 입니다.`;
 
     return {
       version: deployment.version,

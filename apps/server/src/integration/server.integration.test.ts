@@ -120,9 +120,7 @@ describe("서버 통합 시나리오", () => {
     });
 
     expect(first.status).toBe(201);
-    const firstSession = first.data.session as
-      | { id: string; token: string; trusted: boolean }
-      | undefined;
+    const firstSession = first.data.session as { id: string; token: string; trusted: boolean } | undefined;
     expect(firstSession?.id).toBeTruthy();
     expect(firstSession?.token).toBeTruthy();
     expect(firstSession?.trusted).toBe(false);
@@ -144,9 +142,7 @@ describe("서버 통합 시나리오", () => {
     });
 
     expect(second.status).toBe(201);
-    const secondSession = second.data.session as
-      | { id: string; token: string; trusted: boolean }
-      | undefined;
+    const secondSession = second.data.session as { id: string; token: string; trusted: boolean } | undefined;
     expect(secondSession?.id).toBe(firstSession.id);
     expect(secondSession?.trusted).toBe(true);
   });
@@ -165,11 +161,7 @@ describe("서버 통합 시나리오", () => {
       const deniedPromise = waitForSocketEvent<{
         scope: "document" | "board";
         currentRole: "viewer" | "editor";
-      }>(
-        socket,
-        "permission:denied",
-        (payload) => payload.scope === "document"
-      );
+      }>(socket, "permission:denied", (payload) => payload.scope === "document");
 
       socket.emit("document:join", {
         documentId,
@@ -252,10 +244,8 @@ describe("서버 통합 시나리오", () => {
       const joined = await state;
       expect(joined.role).toBe("editor");
 
-      const errorPromise = waitForSocketEvent<{ message: string }>(
-        socket,
-        "error",
-        (payload) => payload.message.includes("요청 본문이 허용 크기를 초과했습니다.")
+      const errorPromise = waitForSocketEvent<{ message: string }>(socket, "error", (payload) =>
+        payload.message.includes("요청 본문이 허용 크기를 초과했습니다.")
       );
 
       socket.emit("document:update", {
@@ -289,10 +279,8 @@ describe("서버 통합 시나리오", () => {
       const joined = await state;
       expect(joined.role).toBe("editor");
 
-      const errorPromise = waitForSocketEvent<{ message: string }>(
-        socket,
-        "error",
-        (payload) => payload.message.includes("문서 업데이트 데이터가 허용 크기를 초과했습니다.")
+      const errorPromise = waitForSocketEvent<{ message: string }>(socket, "error", (payload) =>
+        payload.message.includes("문서 업데이트 데이터가 허용 크기를 초과했습니다.")
       );
 
       socket.emit("document:yjs:update", {
@@ -325,10 +313,8 @@ describe("서버 통합 시나리오", () => {
       const joined = await state;
       expect(joined.role).toBe("editor");
 
-      const rateLimitErrorPromise = waitForSocketEvent<{ message: string }>(
-        socket,
-        "error",
-        (payload) => payload.message.includes("요청이 너무 많습니다")
+      const rateLimitErrorPromise = waitForSocketEvent<{ message: string }>(socket, "error", (payload) =>
+        payload.message.includes("요청이 너무 많습니다")
       );
 
       socket.emit("document:save", { documentId });

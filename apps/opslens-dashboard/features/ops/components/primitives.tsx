@@ -39,7 +39,7 @@ export function OpsSectionCard({
   contentClassName?: string;
 }) {
   return (
-    <Card variant="default" className={cn("rounded-2xl border-default bg-surface shadow-sm", className)}>
+    <Card variant="default" className={cn("border-default bg-surface rounded-2xl shadow-sm", className)}>
       <CardHeader className="space-y-1 p-6 pb-0">
         <Typography as="h2" variant="h2" className="text-heading-xl leading-tight">
           {title}
@@ -57,13 +57,8 @@ export function OpsSectionCard({
 
 export function OpsInfoItem({ label, value }: { label: string; value: string }) {
   return (
-    <Card variant="muted" className="rounded-xl border-default bg-surface-elevated px-3 py-2.5 text-sm">
-      <Typography
-        as="p"
-        variant="caption"
-        tone="subtle"
-        className="font-semibold uppercase tracking-wide"
-      >
+    <Card variant="muted" className="border-default bg-surface-elevated rounded-xl px-3 py-2.5 text-sm">
+      <Typography as="p" variant="caption" tone="subtle" className="font-semibold uppercase tracking-wide">
         {label}
       </Typography>
       <Typography as="p" variant="bodySm" className="mt-1 font-medium">

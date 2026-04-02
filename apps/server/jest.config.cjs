@@ -17,10 +17,5 @@ module.exports = {
   clearMocks: true,
   restoreMocks: true,
   testPathIgnorePatterns: ["/node_modules/", "/dist/"],
-  collectCoverageFrom: [
-    "src/config/**/*.ts",
-    "src/security/**/*.ts",
-    "src/store.ts",
-    "!src/**/*.test.ts"
-  ]
+  collectCoverageFrom: ["src/config/**/*.ts", "src/security/**/*.ts", "src/store.ts", "!src/**/*.test.ts"]
 };

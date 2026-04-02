@@ -34,7 +34,12 @@ const envSchema = z.object({
   GEMINI_MODEL: z.string().default("gemini-2.0-flash"),
   AI_MAX_RETRIES: z.coerce.number().int().min(0).max(6).default(3),
   AI_RETRY_BASE_DELAY_MS: z.coerce.number().int().min(100).max(10000).default(700),
-  AI_CACHE_TTL_MS: z.coerce.number().int().min(1000).max(60 * 60 * 1000).default(120000)
+  AI_CACHE_TTL_MS: z.coerce
+    .number()
+    .int()
+    .min(1000)
+    .max(60 * 60 * 1000)
+    .default(120000)
 });
 
 export type ServerEnv = z.infer<typeof envSchema>;

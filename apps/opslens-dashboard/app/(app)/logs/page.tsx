@@ -1,15 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import {
-  Button,
-  FormField,
-  Input,
-  Select,
-  Spinner,
-  StateView,
-  Textarea
-} from "@repo/ui";
+import { Button, FormField, Input, Select, Spinner, StateView, Textarea } from "@repo/ui";
 import { useMutation } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
 import { analyzeLogs } from "@/features/ops/api";
@@ -63,8 +55,10 @@ export default function LogsPage() {
 
   return (
     <div className="space-y-6">
-      <OpsSectionCard title="로그 분석" description="서버 로그, 콘솔 에러, Sentry 형태 JSON을 붙여넣으면 자동 그룹핑/요약합니다.">
-
+      <OpsSectionCard
+        title="로그 분석"
+        description="서버 로그, 콘솔 에러, Sentry 형태 JSON을 붙여넣으면 자동 그룹핑/요약합니다."
+      >
         <form className="grid gap-4" onSubmit={form.handleSubmit((values) => analyzeMutation.mutate(values))}>
           <div className="grid gap-3 md:grid-cols-3">
             <FormField label="로그 소스" htmlFor="logs-source" size="sm">
@@ -166,19 +160,19 @@ export default function LogsPage() {
         ) : (
           <div className="space-y-3">
             {clusters.map((cluster) => (
-              <article key={cluster.normalizedMessage} className="rounded-lg border border-default p-3">
+              <article key={cluster.normalizedMessage} className="border-default rounded-lg border p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold text-foreground">{cluster.title}</p>
+                  <p className="text-foreground font-semibold">{cluster.title}</p>
                   <div className="flex items-center gap-2">
                     <SeverityBadge severity={cluster.severity} />
-                    <span className="text-xs text-muted">{formatNumber(cluster.count)}회</span>
+                    <span className="text-muted text-xs">{formatNumber(cluster.count)}회</span>
                   </div>
                 </div>
-                <p className="mt-1 text-xs text-muted">{cluster.normalizedMessage}</p>
-                <p className="mt-2 text-xs text-muted-foreground">
+                <p className="text-muted mt-1 text-xs">{cluster.normalizedMessage}</p>
+                <p className="text-muted-foreground mt-2 text-xs">
                   최초 {formatDateTime(cluster.firstSeen)} · 최근 {formatDateTime(cluster.lastSeen)}
                 </p>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-muted">
+                <ul className="text-muted mt-2 list-disc space-y-1 pl-5 text-xs">
                   {cluster.suggestedActions.map((action) => (
                     <li key={action}>{action}</li>
                   ))}

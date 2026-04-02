@@ -7,7 +7,10 @@ export function OpsDashboardSkeleton() {
     <div className="space-y-6">
       <section className="grid gap-4 md:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <Card key={`dashboard-stat-skeleton-${index}`} className="rounded-2xl border-default bg-surface p-4 shadow-sm">
+          <Card
+            key={`dashboard-stat-skeleton-${index}`}
+            className="border-default bg-surface rounded-2xl p-4 shadow-sm"
+          >
             <CardHeader className="space-y-2 p-0">
               <Skeleton className="h-3 w-20" />
               <Skeleton className="h-9 w-24" />
@@ -16,7 +19,7 @@ export function OpsDashboardSkeleton() {
         ))}
       </section>
 
-      <Card className="rounded-2xl border-default bg-surface p-5 shadow-sm">
+      <Card className="border-default bg-surface rounded-2xl p-5 shadow-sm">
         <CardHeader className="space-y-2 p-0">
           <Skeleton className="h-5 w-44" />
           <Skeleton className="h-4 w-3/5" />
@@ -30,7 +33,10 @@ export function OpsDashboardSkeleton() {
 
       <section className="grid gap-6 lg:grid-cols-2">
         {Array.from({ length: 4 }).map((_, index) => (
-          <Card key={`dashboard-chart-skeleton-${index}`} className="rounded-2xl border-default bg-surface p-5 shadow-sm">
+          <Card
+            key={`dashboard-chart-skeleton-${index}`}
+            className="border-default bg-surface rounded-2xl p-5 shadow-sm"
+          >
             <CardHeader className="space-y-2 p-0">
               <Skeleton className="h-5 w-40" />
             </CardHeader>
@@ -47,7 +53,7 @@ export function OpsDashboardSkeleton() {
 export function OpsIssueDetailSkeleton() {
   return (
     <div className="space-y-6">
-      <Card className="rounded-2xl border-default bg-surface p-5 shadow-sm">
+      <Card className="border-default bg-surface rounded-2xl p-5 shadow-sm">
         <CardHeader className="space-y-3 p-0">
           <Skeleton className="h-8 w-2/3" />
           <Skeleton className="h-4 w-4/5" />
@@ -61,7 +67,10 @@ export function OpsIssueDetailSkeleton() {
 
       <section className="grid gap-6 xl:grid-cols-2">
         {Array.from({ length: 2 }).map((_, index) => (
-          <Card key={`issue-main-skeleton-${index}`} className="rounded-2xl border-default bg-surface p-5 shadow-sm">
+          <Card
+            key={`issue-main-skeleton-${index}`}
+            className="border-default bg-surface rounded-2xl p-5 shadow-sm"
+          >
             <CardHeader className="space-y-2 p-0">
               <Skeleton className="h-5 w-40" />
             </CardHeader>
@@ -82,7 +91,7 @@ export function OpsCardListSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="space-y-2">
       {Array.from({ length: count }).map((_, index) => (
-        <Card key={`ops-list-skeleton-${index}`} className="rounded-lg border-default bg-surface p-3">
+        <Card key={`ops-list-skeleton-${index}`} className="border-default bg-surface rounded-lg p-3">
           <CardContent className="space-y-2 p-0">
             <Skeleton className="h-4 w-3/5" />
             <Skeleton className="h-3 w-2/5" />
