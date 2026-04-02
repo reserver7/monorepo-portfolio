@@ -10,7 +10,7 @@ import type {
   WhiteboardRecord,
   WhiteboardShape,
   WhiteboardSummary
-} from "@repo/utils/collab/server";
+} from "../../../../../packages/utils/src/collab/server";
 import {
   createStoredEditorAccessKey,
   normalizeStoredEditorAccessKey,

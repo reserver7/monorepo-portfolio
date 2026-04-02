@@ -3,7 +3,7 @@ import http from "node:http";
 import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import { Server, Socket } from "socket.io";
-import type { AccessRole, Participant } from "@repo/utils/collab";
+import type { AccessRole, Participant } from "../../../packages/utils/src/collab";
 import { serverEnv } from "./config";
 import {
   createLogger,

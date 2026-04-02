@@ -1,4 +1,4 @@
-import type { AccessRole, Participant } from "@repo/utils/collab/server";
+import type { AccessRole, Participant } from "../../../../../../packages/utils/src/collab/server";
 
 export interface RealtimeSessionState {
   documentParticipants: Map<string, Map<string, Participant>>;
