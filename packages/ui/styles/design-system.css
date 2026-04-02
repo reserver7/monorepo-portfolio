@@ -1,52 +1,52 @@
 :root {
   /* typography tokens */
-  --ds-font-size-heading-xl: 1.875rem;
-  --ds-font-size-heading-lg: 1.5rem;
-  --ds-font-size-heading-md: 1.25rem;
-  --ds-font-size-body-md: 0.9375rem;
-  --ds-font-size-body-sm: 0.875rem;
-  --ds-font-size-caption: 0.8125rem;
-  --ds-line-height-tight: 1.25;
-  --ds-line-height-normal: 1.5;
-  --ds-line-height-relaxed: 1.65;
-  --ds-font-weight-regular: 400;
-  --ds-font-weight-medium: 500;
-  --ds-font-weight-semibold: 600;
-  --ds-font-weight-bold: 700;
+  --font-size-heading-xl: 1.875rem;
+  --font-size-heading-lg: 1.5rem;
+  --font-size-heading-md: 1.25rem;
+  --font-size-body-md: 0.9375rem;
+  --font-size-body-sm: 0.875rem;
+  --font-size-caption: 0.8125rem;
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.65;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
 
   /* semantic tokens (light) */
-  --ds-background: 248 250 252;
-  --ds-foreground: 30 41 59;
-  --ds-surface: 255 255 255;
-  --ds-surface-elevated: 241 245 249;
-  --ds-border: 226 232 240;
-  --ds-muted: 148 163 184;
-  --ds-muted-foreground: 100 116 139;
+  --color-bg-canvas: 248 250 252;
+  --color-fg-default: 30 41 59;
+  --color-bg-surface: 255 255 255;
+  --color-bg-surface-raised: 241 245 249;
+  --color-border-default: 226 232 240;
+  --color-fg-muted: 148 163 184;
+  --color-fg-subtle: 100 116 139;
 
-  --ds-primary: 59 130 246;
-  --ds-primary-hover: 37 99 235;
-  --ds-primary-active: 29 78 216;
-  --ds-primary-foreground: 255 255 255;
+  --color-accent-primary: 59 130 246;
+  --color-accent-primary-hover: 37 99 235;
+  --color-accent-primary-active: 29 78 216;
+  --color-fg-on-accent: 255 255 255;
 
-  --ds-success: 34 197 94;
-  --ds-success-hover: 22 163 74;
-  --ds-success-active: 21 128 61;
-  --ds-success-foreground: 255 255 255;
+  --color-feedback-success: 34 197 94;
+  --color-feedback-success-hover: 22 163 74;
+  --color-feedback-success-active: 21 128 61;
+  --color-fg-on-success: 255 255 255;
 
-  --ds-danger: 239 68 68;
-  --ds-danger-hover: 220 38 38;
-  --ds-danger-active: 185 28 28;
-  --ds-danger-foreground: 255 255 255;
+  --color-feedback-danger: 239 68 68;
+  --color-feedback-danger-hover: 220 38 38;
+  --color-feedback-danger-active: 185 28 28;
+  --color-fg-on-danger: 255 255 255;
 
-  --ds-warning: 234 179 8;
-  --ds-warning-hover: 202 138 4;
-  --ds-warning-active: 161 98 7;
-  --ds-warning-foreground: 15 23 42;
+  --color-feedback-warning: 234 179 8;
+  --color-feedback-warning-hover: 202 138 4;
+  --color-feedback-warning-active: 161 98 7;
+  --color-fg-on-warning: 15 23 42;
 
-  --ds-info: 14 165 233;
-  --ds-info-hover: 2 132 199;
-  --ds-info-active: 3 105 161;
-  --ds-info-foreground: 255 255 255;
+  --color-feedback-info: 14 165 233;
+  --color-feedback-info-hover: 2 132 199;
+  --color-feedback-info-active: 3 105 161;
+  --color-fg-on-info: 255 255 255;
 
   /* palette tokens */
   --BLUE-1000: #1e3a8a;
@@ -150,38 +150,39 @@
 }
 
 .dark {
-  --ds-background: 15 23 42;
-  --ds-foreground: 248 250 252;
-  --ds-surface: 30 41 59;
-  --ds-surface-elevated: 51 65 85;
-  --ds-border: 51 65 85;
-  --ds-muted: 148 163 184;
-  --ds-muted-foreground: 100 116 139;
+  --color-bg-canvas: 15 23 42;
+  --color-fg-default: 248 250 252;
+  --color-bg-surface: 30 41 59;
+  --color-bg-surface-raised: 51 65 85;
+  --color-border-default: 51 65 85;
+  --color-fg-muted: 148 163 184;
+  --color-fg-subtle: 100 116 139;
 
-  --ds-primary: 59 130 246;
-  --ds-primary-hover: 37 99 235;
-  --ds-primary-active: 29 78 216;
-  --ds-primary-foreground: 255 255 255;
+  --color-accent-primary: 59 130 246;
+  --color-accent-primary-hover: 37 99 235;
+  --color-accent-primary-active: 29 78 216;
+  --color-fg-on-accent: 255 255 255;
 
-  --ds-success: 34 197 94;
-  --ds-success-hover: 22 163 74;
-  --ds-success-active: 21 128 61;
-  --ds-success-foreground: 255 255 255;
+  --color-feedback-success: 34 197 94;
+  --color-feedback-success-hover: 22 163 74;
+  --color-feedback-success-active: 21 128 61;
+  --color-fg-on-success: 255 255 255;
 
-  --ds-danger: 239 68 68;
-  --ds-danger-hover: 220 38 38;
-  --ds-danger-active: 185 28 28;
-  --ds-danger-foreground: 255 255 255;
+  --color-feedback-danger: 239 68 68;
+  --color-feedback-danger-hover: 220 38 38;
+  --color-feedback-danger-active: 185 28 28;
+  --color-fg-on-danger: 255 255 255;
 
-  --ds-warning: 234 179 8;
-  --ds-warning-hover: 202 138 4;
-  --ds-warning-active: 161 98 7;
-  --ds-warning-foreground: 15 23 42;
+  --color-feedback-warning: 234 179 8;
+  --color-feedback-warning-hover: 202 138 4;
+  --color-feedback-warning-active: 161 98 7;
+  --color-fg-on-warning: 15 23 42;
 
-  --ds-info: 14 165 233;
-  --ds-info-hover: 2 132 199;
-  --ds-info-active: 3 105 161;
-  --ds-info-foreground: 255 255 255;
+  --color-feedback-info: 14 165 233;
+  --color-feedback-info-hover: 2 132 199;
+  --color-feedback-info-active: 3 105 161;
+  --color-fg-on-info: 255 255 255;
+
 }
 
 :root,
@@ -195,81 +196,81 @@
 
 /* compatibility utility classes used across apps/components */
 .bg-surface {
-  background-color: rgb(var(--ds-surface));
+  background-color: rgb(var(--color-bg-surface));
 }
 
 .bg-surface-elevated {
-  background-color: rgb(var(--ds-surface-elevated));
+  background-color: rgb(var(--color-bg-surface-raised));
 }
 
 .text-foreground {
-  color: rgb(var(--ds-foreground));
+  color: rgb(var(--color-fg-default));
 }
 
 .text-muted {
-  color: rgb(var(--ds-muted));
+  color: rgb(var(--color-fg-muted));
 }
 
 .text-muted-foreground {
-  color: rgb(var(--ds-muted-foreground));
+  color: rgb(var(--color-fg-subtle));
 }
 
 .border-default {
-  border-color: rgb(var(--ds-border));
+  border-color: rgb(var(--color-border-default));
 }
 
 .bg-primary {
-  background-color: rgb(var(--ds-primary));
+  background-color: rgb(var(--color-accent-primary));
 }
 
 .text-primary {
-  color: rgb(var(--ds-primary));
+  color: rgb(var(--color-accent-primary));
 }
 
 .text-primary-foreground {
-  color: rgb(var(--ds-primary-foreground));
+  color: rgb(var(--color-fg-on-accent));
 }
 
 .bg-danger {
-  background-color: rgb(var(--ds-danger));
+  background-color: rgb(var(--color-feedback-danger));
 }
 
 .text-danger {
-  color: rgb(var(--ds-danger));
+  color: rgb(var(--color-feedback-danger));
 }
 
 .text-danger-foreground {
-  color: rgb(var(--ds-danger-foreground));
+  color: rgb(var(--color-fg-on-danger));
 }
 
 .bg-warning {
-  background-color: rgb(var(--ds-warning));
+  background-color: rgb(var(--color-feedback-warning));
 }
 
 .text-warning {
-  color: rgb(var(--ds-warning));
+  color: rgb(var(--color-feedback-warning));
 }
 
 .text-warning-foreground {
-  color: rgb(var(--ds-warning-foreground));
+  color: rgb(var(--color-fg-on-warning));
 }
 
 .bg-info {
-  background-color: rgb(var(--ds-info));
+  background-color: rgb(var(--color-feedback-info));
 }
 
 .text-info {
-  color: rgb(var(--ds-info));
+  color: rgb(var(--color-feedback-info));
 }
 
 .bg-success {
-  background-color: rgb(var(--ds-success));
+  background-color: rgb(var(--color-feedback-success));
 }
 
 .text-success {
-  color: rgb(var(--ds-success));
+  color: rgb(var(--color-feedback-success));
 }
 
 .text-success-foreground {
-  color: rgb(var(--ds-success-foreground));
+  color: rgb(var(--color-fg-on-success));
 }

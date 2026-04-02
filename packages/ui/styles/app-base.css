@@ -1,13 +1,13 @@
 body {
   margin: 0;
   min-height: 100vh;
-  color: rgb(var(--ds-foreground));
-  background-color: rgb(var(--ds-background));
+  color: rgb(var(--color-fg-default));
+  background-color: rgb(var(--color-bg-canvas));
   background-image: linear-gradient(
     180deg,
-    rgb(var(--ds-background)) 0%,
-    rgb(var(--ds-surface-elevated)) 55%,
-    rgb(var(--ds-background)) 100%
+    rgb(var(--color-bg-canvas)) 0%,
+    rgb(var(--color-bg-surface-raised)) 55%,
+    rgb(var(--color-bg-canvas)) 100%
   );
   transition:
     background-color 180ms ease,
@@ -19,8 +19,8 @@ body {
 }
 
 ::selection {
-  background: rgb(var(--ds-primary) / 0.26);
-  color: rgb(var(--ds-foreground));
+  background: rgb(var(--color-accent-primary) / 0.26);
+  color: rgb(var(--color-fg-default));
 }
 
 .texture-grid {
@@ -32,7 +32,7 @@ body {
 }
 
 .board-grid {
-  --board-grid-line: rgb(var(--ds-muted-foreground) / 0.18);
+  --board-grid-line: rgb(var(--color-fg-subtle) / 0.18);
   background-image:
     linear-gradient(to right, var(--board-grid-line) 1px, transparent 1px),
     linear-gradient(to bottom, var(--board-grid-line) 1px, transparent 1px);
@@ -40,7 +40,7 @@ body {
 }
 
 .dark .board-grid {
-  --board-grid-line: rgb(var(--ds-muted-foreground) / 0.28);
+  --board-grid-line: rgb(var(--color-fg-subtle) / 0.28);
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -50,43 +50,43 @@ body {
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: rgb(var(--ds-muted) / 0.45);
+  background: rgb(var(--color-fg-muted) / 0.45);
 }
 
 .text-heading-xl {
-  font-size: var(--ds-font-size-heading-xl);
-  line-height: var(--ds-line-height-tight);
-  font-weight: var(--ds-font-weight-bold);
+  font-size: var(--font-size-heading-xl);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
   letter-spacing: -0.02em;
 }
 
 .text-heading-lg {
-  font-size: var(--ds-font-size-heading-lg);
-  line-height: var(--ds-line-height-tight);
-  font-weight: var(--ds-font-weight-semibold);
+  font-size: var(--font-size-heading-lg);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: -0.01em;
 }
 
 .text-heading-md {
-  font-size: var(--ds-font-size-heading-md);
-  line-height: var(--ds-line-height-tight);
-  font-weight: var(--ds-font-weight-semibold);
+  font-size: var(--font-size-heading-md);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-semibold);
 }
 
 .text-body-md {
-  font-size: var(--ds-font-size-body-md);
-  line-height: var(--ds-line-height-relaxed);
-  font-weight: var(--ds-font-weight-regular);
+  font-size: var(--font-size-body-md);
+  line-height: var(--line-height-relaxed);
+  font-weight: var(--font-weight-regular);
 }
 
 .text-body-sm {
-  font-size: var(--ds-font-size-body-sm);
-  line-height: var(--ds-line-height-normal);
-  font-weight: var(--ds-font-weight-regular);
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-regular);
 }
 
 .text-caption {
-  font-size: var(--ds-font-size-caption);
-  line-height: var(--ds-line-height-normal);
-  font-weight: var(--ds-font-weight-medium);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-medium);
 }

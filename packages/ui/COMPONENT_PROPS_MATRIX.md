@@ -10,7 +10,7 @@ Generated at: 2026-03-30T03:59:52.101Z
 | AlertDialog | `packages/ui/components/alert-dialog.tsx` | `AlertDialogFooterProps` | `cancelText?`, `confirmText?`, `cancelVariant?`, `confirmVariant?`, `cancelDisabled?`, `confirmDisabled?`, `confirmLoading?`, `onCancel?`, `onConfirm?` | - |
 | Avatar | `packages/ui/components/avatar.tsx` | `AvatarProps` | - | - |
 | Badge | `packages/ui/components/badge.tsx` | `BadgeProps` | `variant?`, `size?`, `shape?` | - |
-| Button | `packages/ui/components/button.tsx` | `ButtonProps` | `asChild?`, `loading?`, `loadingLabel?`, `variant?`, `size?` | `asChild=false`, `loading=false`, `variant="default"`, `size="default"` |
+| Button | `packages/ui/components/button/button.tsx` | `ButtonProps` | `asChild?`, `loading?`, `loadingLabel?`, `variant?`, `size?`, `shape?`, `fullWidth?`, `leftIcon?`, `rightIcon?` | `asChild=false`, `loading=false`, `variant="primary"`, `size="md"`, `shape="default"`, `fullWidth=false` |
 | Calendar | `packages/ui/components/calendar.tsx` | `CalendarProps` | - | - |
 | Card | `packages/ui/components/card.tsx` | `CardProps` | `variant?`, `interactive?` | - |
 | Checkbox | `packages/ui/components/checkbox.tsx` | `CheckboxProps` | - | - |
@@ -20,13 +20,13 @@ Generated at: 2026-03-30T03:59:52.101Z
 | DropdownMenu | `packages/ui/components/dropdown-menu.tsx` | `DropdownMenuProps` | - | - |
 | ErrorBoundary | `packages/ui/components/error-boundary.tsx` | `ErrorBoundaryProps` | `fallbackTitle?`, `fallbackDescription?`, `onReset?` | - |
 | FormField | `packages/ui/components/form-field.tsx` | `FormFieldProps` | `label?`, `htmlFor?`, `size?`, `requiredMark?`, `optionalLabel?`, `description?`, `error?`, `className?`, `children` | - |
-| Input | `packages/ui/components/input.tsx` | `InputProps` | `size?`, `variant?`, `state?` | `size="md"`, `variant="default"`, `state="default"`, `type="text"` |
+| Input | `packages/ui/components/input/input.tsx` | `InputProps` | `size?`, `variant?`, `status?`, `state?`, `label?`, `helperText?`, `errorMessage?`, `prefix?`, `suffix?`, `clearable?`, `onClear?`, `containerClassName?`, `labelClassName?`, `helperClassName?` | `size="md"`, `variant="default"`, `status="default"`, `type="text"` |
 | Label | `packages/ui/components/label.tsx` | `LabelProps` | `size?` | `size="md"` |
 | Popover | `packages/ui/components/popover.tsx` | `PopoverProps` | - | `align="center"`, `sideOffset=6` |
 | Progress | `packages/ui/components/progress.tsx` | `ProgressProps` | - | - |
 | RadioGroup | `packages/ui/components/radio-group.tsx` | `RadioGroupProps` | - | - |
 | ScrollArea | `packages/ui/components/scroll-area.tsx` | `ScrollAreaProps` | - | - |
-| Select | `packages/ui/components/select.tsx` | `SelectProps` | - | `size="md"`, `variant="default"`, `state="default"` |
+| Select | `packages/ui/components/select/select.tsx` | `SelectProps` | - | `size="md"`, `variant="default"`, `state="default"` |
 | Separator | `packages/ui/components/separator.tsx` | `SeparatorProps` | - | `orientation="horizontal"`, `decorative=true` |
 | Sheet | `packages/ui/components/sheet.tsx` | `SheetProps` | - | - |
 | Skeleton | `packages/ui/components/skeleton.tsx` | `SkeletonProps` | - | - |
@@ -40,4 +40,3 @@ Generated at: 2026-03-30T03:59:52.101Z
 | Toaster | `packages/ui/components/toaster.tsx` | `ToasterProps` | `position?`, `richColors?`, `closeButton?`, `expand?`, `visibleToasts?`, `offset?`, `mobileOffset?`, `theme?`, `invert?`, `durationMs?`, `errorDurationMs?`, `dedupe?`, `toastOptions?` | - |
 | Tooltip | `packages/ui/components/tooltip.tsx` | `TooltipProps` | - | `sideOffset=4` |
 | Typography | `packages/ui/components/typography.tsx` | `TypographyProps` | `as?`, `variant?`, `tone?` | - |
-

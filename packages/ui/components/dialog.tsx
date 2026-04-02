@@ -54,7 +54,7 @@ export function DialogFooter({
   cancelText = "취소",
   confirmText = "삭제",
   cancelVariant = "outline",
-  confirmVariant = "destructive",
+  confirmVariant = "danger",
   cancelDisabled = false,
   confirmDisabled = false,
   confirmLoading = false,

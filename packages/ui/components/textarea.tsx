@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { Controller } from "react-hook-form";
+import type { RegisterOptions } from "react-hook-form";
 import { cn } from "./cn";
 
 type TextareaSize = "sm" | "md" | "lg";
@@ -11,9 +13,11 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
   size?: TextareaSize;
   variant?: TextareaVariant;
   state?: TextareaState;
+  control?: unknown;
+  rules?: RegisterOptions;
 }
 
-export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+const TextareaBase = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, size = "md", variant = "default", state = "default", ...props }, ref) => {
     const bySize: Record<TextareaSize, string> = {
       sm: "min-h-[84px] text-body-sm",
@@ -46,4 +50,37 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     );
   }
 );
+TextareaBase.displayName = "TextareaBase";
+
+export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>((props, ref) => {
+  const { control, rules, name, onChange, onBlur, ...rest } = props;
+
+  if (control && typeof name === "string" && name.length > 0) {
+    return (
+      <Controller
+        control={control as any}
+        name={name as any}
+        rules={rules}
+        render={({ field }) => (
+          <TextareaBase
+            {...rest}
+            ref={ref}
+            name={field.name}
+            value={field.value == null ? "" : String(field.value)}
+            onChange={(event) => {
+              field.onChange(event.target.value);
+              onChange?.(event);
+            }}
+            onBlur={(event) => {
+              field.onBlur();
+              onBlur?.(event);
+            }}
+          />
+        )}
+      />
+    );
+  }
+
+  return <TextareaBase {...rest} ref={ref} name={name} onChange={onChange} onBlur={onBlur} />;
+});
 Textarea.displayName = "Textarea";

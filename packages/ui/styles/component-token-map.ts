@@ -1,43 +1,43 @@
 export const COMPONENT_TOKEN_MAP = {
   button: {
-    default: ["--ds-primary", "--ds-primary-foreground"],
-    destructive: ["--ds-danger", "--ds-danger-foreground"],
-    success: ["--ds-success", "--ds-success-foreground"],
-    warning: ["--ds-warning", "--ds-warning-foreground"],
-    outline: ["--ds-border", "--ds-surface", "--ds-foreground"]
+    default: ["--color-accent-primary", "--color-fg-on-accent"],
+    destructive: ["--color-feedback-danger", "--color-fg-on-danger"],
+    success: ["--color-feedback-success", "--color-fg-on-success"],
+    warning: ["--color-feedback-warning", "--color-fg-on-warning"],
+    outline: ["--color-border-default", "--color-bg-surface", "--color-fg-default"]
   },
   input: {
-    base: ["--ds-border", "--ds-surface", "--ds-foreground", "--ds-muted"],
-    focus: ["--ds-primary"],
-    error: ["--ds-danger"],
-    success: ["--ds-success"]
+    base: ["--color-border-default", "--color-bg-surface", "--color-fg-default", "--color-fg-muted"],
+    focus: ["--color-accent-primary"],
+    error: ["--color-feedback-danger"],
+    success: ["--color-feedback-success"]
   },
   select: {
-    trigger: ["--ds-border", "--ds-surface", "--ds-foreground", "--ds-muted"],
-    focus: ["--ds-primary"],
-    error: ["--ds-danger"],
-    success: ["--ds-success"]
+    trigger: ["--color-border-default", "--color-bg-surface", "--color-fg-default", "--color-fg-muted"],
+    focus: ["--color-accent-primary"],
+    error: ["--color-feedback-danger"],
+    success: ["--color-feedback-success"]
   },
   textarea: {
-    base: ["--ds-border", "--ds-surface", "--ds-foreground", "--ds-muted"],
-    focus: ["--ds-primary"],
-    error: ["--ds-danger"],
-    success: ["--ds-success"]
+    base: ["--color-border-default", "--color-bg-surface", "--color-fg-default", "--color-fg-muted"],
+    focus: ["--color-accent-primary"],
+    error: ["--color-feedback-danger"],
+    success: ["--color-feedback-success"]
   },
   badge: {
-    default: ["--ds-primary"],
-    success: ["--ds-success"],
-    warning: ["--ds-warning"],
-    danger: ["--ds-danger"],
-    info: ["--ds-info"],
-    outline: ["--ds-border", "--ds-foreground"]
+    default: ["--color-accent-primary"],
+    success: ["--color-feedback-success"],
+    warning: ["--color-feedback-warning"],
+    danger: ["--color-feedback-danger"],
+    info: ["--color-feedback-info"],
+    outline: ["--color-border-default", "--color-fg-default"]
   },
   stateView: {
-    empty: ["--ds-surface-elevated", "--ds-muted"],
-    loading: ["--ds-surface-elevated", "--ds-primary"],
-    error: ["--ds-danger"],
-    warning: ["--ds-warning"],
-    success: ["--ds-success"],
-    info: ["--ds-info"]
+    empty: ["--color-bg-surface-raised", "--color-fg-muted"],
+    loading: ["--color-bg-surface-raised", "--color-accent-primary"],
+    error: ["--color-feedback-danger"],
+    warning: ["--color-feedback-warning"],
+    success: ["--color-feedback-success"],
+    info: ["--color-feedback-info"]
   }
 } as const;
