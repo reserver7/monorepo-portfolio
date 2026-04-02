@@ -4,7 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { RhfField, useAppForm } from "@repo/forms";
+import { useAppForm } from "@repo/forms";
 import { useQuery } from "@repo/react-query";
 import {
   Badge,
@@ -17,13 +17,11 @@ import {
   DialogHeader,
   DialogTitle,
   Input,
+  SplitWorkspaceLayout,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   StateView,
   PRIMITIVE_COLOR_PALETTE,
+  confirm,
   useDisclosure
 } from "@repo/ui";
 import { getBoard, whiteboardQueryKeys } from "@/lib/http";
@@ -321,6 +319,42 @@ export default function WhiteboardRoomPage() {
     [connectorFromShapeId, removeShape, selectedShapeId, shapes]
   );
 
+  const requestRemoveShapeWithConfirm = useCallback(
+    async (shapeId: string) => {
+      const target = shapes.find((shape) => shape.id === shapeId);
+      if (!target) {
+        return;
+      }
+
+      const linkedConnectorCount =
+        target.type === "connector"
+          ? 0
+          : shapes.filter(
+              (shape) =>
+                shape.type === "connector" && (shape.fromShapeId === target.id || shape.toShapeId === target.id)
+            ).length;
+
+      const elementLabel = target.type === "connector" ? "연결선" : target.type === "text" ? "텍스트" : "도형";
+      const shouldDelete = await confirm({
+        title: `${elementLabel}을 삭제할까요?`,
+        description:
+          linkedConnectorCount > 0
+            ? `연결된 연결선 ${linkedConnectorCount}개도 함께 삭제됩니다.`
+            : "삭제된 요소는 복구할 수 없습니다.",
+        confirmText: "삭제",
+        confirmVariant: "danger",
+        cancelText: "취소"
+      });
+
+      if (!shouldDelete) {
+        return;
+      }
+
+      removeShapeWithLinks(shapeId);
+    },
+    [removeShapeWithLinks, shapes]
+  );
+
   const createShapeByActiveTool = (placementPoint?: { x: number; y: number }) => {
     if (isReadOnly) {
       return;
@@ -408,7 +442,7 @@ export default function WhiteboardRoomPage() {
 
       if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault();
-        removeShapeWithLinks(selectedShapeId);
+        void requestRemoveShapeWithConfirm(selectedShapeId);
       }
     };
 
@@ -416,7 +450,7 @@ export default function WhiteboardRoomPage() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isReadOnly, removeShapeWithLinks, selectedShapeId]);
+  }, [isReadOnly, requestRemoveShapeWithConfirm, selectedShapeId]);
 
   if (!boardId) {
     return null;
@@ -456,60 +490,40 @@ export default function WhiteboardRoomPage() {
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px]">
-          <RhfField
+          <Input
+            title={collabFieldCopy.displayNameLabel}
             control={sessionForm.control}
             name="displayName"
-            render={({ field }) => (
-              <Input
-                title={collabFieldCopy.displayNameLabel}
-                value={field.value}
-                onChange={(event) => {
-                  field.onChange(event);
-                  setStoredDisplayName(event.target.value.trim() || createGuestName());
-                }}
-                placeholder={collabFieldCopy.displayNamePlaceholder}
-                size="md"
-              />
-            )}
+            onChange={(event) => {
+              setStoredDisplayName(event.target.value.trim() || createGuestName());
+            }}
+            placeholder={collabFieldCopy.displayNamePlaceholder}
+            size="md"
           />
-          <RhfField
+          <Select
+            options={[
+              { label: collabFieldCopy.requestOptionEditor, value: "editor" },
+              { label: collabFieldCopy.requestOptionViewer, value: "viewer" }
+            ]}
             control={sessionForm.control}
             name="requestedRole"
-            render={({ field }) => (
-              <Select
-                value={field.value}
-                onValueChange={(value) => {
-                  const nextRole = value === "viewer" ? "viewer" : "editor";
-                  field.onChange(nextRole);
-                  setStoredRole(nextRole);
-                }}
-              >
-                <SelectTrigger size="md" title={collabFieldCopy.requestRolePlaceholder}>
-                  <SelectValue placeholder={collabFieldCopy.requestRolePlaceholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="editor">{collabFieldCopy.requestOptionEditor}</SelectItem>
-                  <SelectItem value="viewer">{collabFieldCopy.requestOptionViewer}</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
+            onChange={(value) => {
+              const nextRole = String(value) === "viewer" ? "viewer" : "editor";
+              setStoredRole(nextRole);
+            }}
+            placeholder={collabFieldCopy.requestRolePlaceholder}
+            size="md"
           />
-          <RhfField
+          <Input
+            title={collabFieldCopy.editorAccessKeyLabel}
+            type="password"
             control={sessionForm.control}
             name="editorAccessKey"
-            render={({ field }) => (
-              <Input
-                title={collabFieldCopy.editorAccessKeyLabel}
-                type="password"
-                value={field.value}
-                onChange={(event) => {
-                  field.onChange(event);
-                  setStoredEditorAccessKey(event.target.value);
-                }}
-                placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
-                size="md"
-              />
-            )}
+            onChange={(event) => {
+              setStoredEditorAccessKey(event.target.value);
+            }}
+            placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
+            size="md"
           />
         </div>
       </header>
@@ -535,7 +549,7 @@ export default function WhiteboardRoomPage() {
               {activeTool === "text" ? "텍스트 추가" : "도형 추가"}
             </Button>
             <Button
-              variant="destructive"
+              variant="danger"
               size="md"
               disabled={isReadOnly || !selectedShapeId}
               onClick={() => {
@@ -543,7 +557,7 @@ export default function WhiteboardRoomPage() {
                   return;
                 }
 
-                removeShapeWithLinks(selectedShapeId);
+                void requestRemoveShapeWithConfirm(selectedShapeId);
               }}
             >
               선택 삭제
@@ -559,24 +573,22 @@ export default function WhiteboardRoomPage() {
 
         <div className="mt-3 grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
           <Select
+            options={[
+              { label: "선택 / 이동", value: "select" },
+              { label: "사각형", value: "rect" },
+              { label: "타원", value: "ellipse" },
+              { label: "마름모", value: "diamond" },
+              { label: "텍스트", value: "text" },
+              { label: "연결선", value: "connector" }
+            ]}
             value={activeTool}
-            onValueChange={(value) => {
-              const nextTool = value as WhiteboardTool;
+            onChange={(value) => {
+              const nextTool = String(value) as WhiteboardTool;
               setActiveTool(nextTool);
             }}
-          >
-            <SelectTrigger size="md" title="도구 선택">
-              <SelectValue placeholder="도구 선택" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="select">선택 / 이동</SelectItem>
-              <SelectItem value="rect">사각형</SelectItem>
-              <SelectItem value="ellipse">타원</SelectItem>
-              <SelectItem value="diamond">마름모</SelectItem>
-              <SelectItem value="text">텍스트</SelectItem>
-              <SelectItem value="connector">연결선</SelectItem>
-            </SelectContent>
-          </Select>
+            placeholder="도구 선택"
+            size="md"
+          />
 
           <div className="grid gap-3 sm:grid-cols-2">
             <Card className="px-3 py-2 text-body-sm text-muted">버전 {version}</Card>
@@ -618,21 +630,15 @@ export default function WhiteboardRoomPage() {
             <DialogTitle>텍스트 추가</DialogTitle>
             <DialogDescription>보드에 생성할 텍스트를 입력하세요.</DialogDescription>
           </DialogHeader>
-          <RhfField
+          <Input
+            autoFocus
             control={createTextForm.control}
             name="newTextDraft"
-            render={({ field }) => (
-              <Input
-                autoFocus
-                value={field.value}
-                onChange={field.onChange}
-                placeholder="텍스트를 입력하세요"
-              />
-            )}
+            placeholder="텍스트를 입력하세요"
           />
           <DialogFooter
             confirmText="생성"
-            confirmVariant="default"
+            confirmVariant="primary"
             onCancel={() => {
               closeCreateTextDialog();
               createTextForm.setValue("newTextDraft", "새 텍스트");
@@ -672,21 +678,15 @@ export default function WhiteboardRoomPage() {
             <DialogTitle>텍스트 수정</DialogTitle>
             <DialogDescription>선택한 텍스트 내용을 수정합니다.</DialogDescription>
           </DialogHeader>
-          <RhfField
+          <Input
+            autoFocus
             control={editTextForm.control}
             name="editingTextDraft"
-            render={({ field }) => (
-              <Input
-                autoFocus
-                value={field.value}
-                onChange={field.onChange}
-                placeholder="텍스트를 입력하세요"
-              />
-            )}
+            placeholder="텍스트를 입력하세요"
           />
           <DialogFooter
             confirmText="저장"
-            confirmVariant="default"
+            confirmVariant="primary"
             onCancel={() => {
               setEditingTextShapeId(null);
               editTextForm.setValue("editingTextDraft", "");
@@ -720,131 +720,133 @@ export default function WhiteboardRoomPage() {
         />
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_384px]">
-        <div
-          ref={boardRef}
-          className="board-grid relative h-[72vh] min-h-[520px] rounded-2xl border border-default bg-surface/90"
-          onMouseDown={(event) => {
-            if (event.target === boardRef.current) {
-              if (!isReadOnly && activeTool !== "select" && activeTool !== "connector") {
-                const point = toBoardPoint(event.clientX, event.clientY);
-                createShapeByActiveTool(point);
+      <SplitWorkspaceLayout
+        sidebarWidthClassName="lg:grid-cols-[1fr_384px]"
+        main={
+          <div
+            ref={boardRef}
+            className="board-grid relative h-[72vh] min-h-[520px] rounded-2xl border border-default bg-surface/90"
+            onMouseDown={(event) => {
+              if (event.target === boardRef.current) {
+                if (!isReadOnly && activeTool !== "select" && activeTool !== "connector") {
+                  const point = toBoardPoint(event.clientX, event.clientY);
+                  createShapeByActiveTool(point);
+                  return;
+                }
+
+                setSelectedShapeId(null);
+                setConnectorFromShapeId(null);
+              }
+            }}
+            onMouseMove={(event) => {
+              const point = toBoardPoint(event.clientX, event.clientY);
+              sendCursor(point.x, point.y);
+
+              const connectorResizing = connectorResizeRef.current;
+              if (connectorResizing) {
+                const connector = shapeById.get(connectorResizing.shapeId);
+                if (!connector || connector.type !== "connector") {
+                  connectorResizeRef.current = null;
+                  return;
+                }
+
+                const currentEndpoints = resolveConnectorEndpoints(connector, nodeShapeById);
+                if (!currentEndpoints) {
+                  return;
+                }
+
+                const snappedNode = findNearestNodeCenter(point, nodeShapes);
+                const snappedPoint = snappedNode ? { x: snappedNode.x, y: snappedNode.y } : point;
+
+                const startPoint =
+                  connectorResizing.handle === "start"
+                    ? snappedPoint
+                    : { x: currentEndpoints.startX, y: currentEndpoints.startY };
+                const endPoint =
+                  connectorResizing.handle === "end"
+                    ? snappedPoint
+                    : { x: currentEndpoints.endX, y: currentEndpoints.endY };
+
+                scheduleShapePatch(connector.id, {
+                  fromShapeId:
+                    connectorResizing.handle === "start" ? snappedNode?.shapeId : connector.fromShapeId,
+                  toShapeId: connectorResizing.handle === "end" ? snappedNode?.shapeId : connector.toShapeId,
+                  startX: Math.round(startPoint.x),
+                  startY: Math.round(startPoint.y),
+                  endX: Math.round(endPoint.x),
+                  endY: Math.round(endPoint.y),
+                  x: Math.min(startPoint.x, endPoint.x),
+                  y: Math.min(startPoint.y, endPoint.y),
+                  w: Math.abs(endPoint.x - startPoint.x),
+                  h: Math.abs(endPoint.y - startPoint.y)
+                });
                 return;
               }
 
-              setSelectedShapeId(null);
-              setConnectorFromShapeId(null);
-            }
-          }}
-          onMouseMove={(event) => {
-            const point = toBoardPoint(event.clientX, event.clientY);
-            sendCursor(point.x, point.y);
+              const resizing = resizeRef.current;
+              if (resizing) {
+                const deltaX = point.x - resizing.pointerX;
+                const deltaY = point.y - resizing.pointerY;
 
-            const connectorResizing = connectorResizeRef.current;
-            if (connectorResizing) {
-              const connector = shapeById.get(connectorResizing.shapeId);
-              if (!connector || connector.type !== "connector") {
-                connectorResizeRef.current = null;
-                return;
-              }
+                let nextX = resizing.x;
+                let nextY = resizing.y;
+                let nextW = resizing.w;
+                let nextH = resizing.h;
 
-              const currentEndpoints = resolveConnectorEndpoints(connector, nodeShapeById);
-              if (!currentEndpoints) {
-                return;
-              }
-
-              const snappedNode = findNearestNodeCenter(point, nodeShapes);
-              const snappedPoint = snappedNode ? { x: snappedNode.x, y: snappedNode.y } : point;
-
-              const startPoint =
-                connectorResizing.handle === "start"
-                  ? snappedPoint
-                  : { x: currentEndpoints.startX, y: currentEndpoints.startY };
-              const endPoint =
-                connectorResizing.handle === "end"
-                  ? snappedPoint
-                  : { x: currentEndpoints.endX, y: currentEndpoints.endY };
-
-              scheduleShapePatch(connector.id, {
-                fromShapeId:
-                  connectorResizing.handle === "start" ? snappedNode?.shapeId : connector.fromShapeId,
-                toShapeId: connectorResizing.handle === "end" ? snappedNode?.shapeId : connector.toShapeId,
-                startX: Math.round(startPoint.x),
-                startY: Math.round(startPoint.y),
-                endX: Math.round(endPoint.x),
-                endY: Math.round(endPoint.y),
-                x: Math.min(startPoint.x, endPoint.x),
-                y: Math.min(startPoint.y, endPoint.y),
-                w: Math.abs(endPoint.x - startPoint.x),
-                h: Math.abs(endPoint.y - startPoint.y)
-              });
-              return;
-            }
-
-            const resizing = resizeRef.current;
-            if (resizing) {
-              const deltaX = point.x - resizing.pointerX;
-              const deltaY = point.y - resizing.pointerY;
-
-              let nextX = resizing.x;
-              let nextY = resizing.y;
-              let nextW = resizing.w;
-              let nextH = resizing.h;
-
-              if (resizing.handle.includes("e")) {
-                nextW = resizing.w + deltaX;
-              }
-              if (resizing.handle.includes("s")) {
-                nextH = resizing.h + deltaY;
-              }
-              if (resizing.handle.includes("w")) {
-                nextW = resizing.w - deltaX;
-                nextX = resizing.x + deltaX;
-              }
-              if (resizing.handle.includes("n")) {
-                nextH = resizing.h - deltaY;
-                nextY = resizing.y + deltaY;
-              }
-
-              const minWidth = resizing.shapeType === "text" ? 120 : 36;
-              const minHeight = resizing.shapeType === "text" ? 44 : 36;
-
-              if (nextW < minWidth) {
+                if (resizing.handle.includes("e")) {
+                  nextW = resizing.w + deltaX;
+                }
+                if (resizing.handle.includes("s")) {
+                  nextH = resizing.h + deltaY;
+                }
                 if (resizing.handle.includes("w")) {
-                  nextX -= minWidth - nextW;
+                  nextW = resizing.w - deltaX;
+                  nextX = resizing.x + deltaX;
                 }
-                nextW = minWidth;
-              }
-
-              if (nextH < minHeight) {
                 if (resizing.handle.includes("n")) {
-                  nextY -= minHeight - nextH;
+                  nextH = resizing.h - deltaY;
+                  nextY = resizing.y + deltaY;
                 }
-                nextH = minHeight;
+
+                const minWidth = resizing.shapeType === "text" ? 120 : 36;
+                const minHeight = resizing.shapeType === "text" ? 44 : 36;
+
+                if (nextW < minWidth) {
+                  if (resizing.handle.includes("w")) {
+                    nextX -= minWidth - nextW;
+                  }
+                  nextW = minWidth;
+                }
+
+                if (nextH < minHeight) {
+                  if (resizing.handle.includes("n")) {
+                    nextY -= minHeight - nextH;
+                  }
+                  nextH = minHeight;
+                }
+
+                scheduleShapePatch(resizing.shapeId, {
+                  x: Math.round(nextX),
+                  y: Math.round(nextY),
+                  w: Math.round(nextW),
+                  h: Math.round(nextH)
+                });
+                return;
               }
 
-              scheduleShapePatch(resizing.shapeId, {
-                x: Math.round(nextX),
-                y: Math.round(nextY),
-                w: Math.round(nextW),
-                h: Math.round(nextH)
+              const dragging = dragRef.current;
+              if (!dragging) {
+                return;
+              }
+
+              scheduleShapePatch(dragging.shapeId, {
+                x: Math.round(point.x - dragging.offsetX),
+                y: Math.round(point.y - dragging.offsetY)
               });
-              return;
-            }
-
-            const dragging = dragRef.current;
-            if (!dragging) {
-              return;
-            }
-
-            scheduleShapePatch(dragging.shapeId, {
-              x: Math.round(point.x - dragging.offsetX),
-              y: Math.round(point.y - dragging.offsetY)
-            });
-          }}
-          onMouseUp={clearPointerActions}
-          onMouseLeave={clearPointerActions}
-        >
+            }}
+            onMouseUp={clearPointerActions}
+            onMouseLeave={clearPointerActions}
+          >
           <svg className="pointer-events-none absolute inset-0 z-[12] h-full w-full">
             {connectorShapes.map((connector) => {
               const endpoints = resolveConnectorEndpoints(connector, nodeShapeById);
@@ -923,7 +925,7 @@ export default function WhiteboardRoomPage() {
                         cx={startHandleX}
                         cy={startHandleY}
                         r={6}
-                        fill="rgb(var(--ds-surface))"
+                        fill="rgb(var(--color-bg-surface))"
                         stroke={strokeColor}
                         strokeWidth={2}
                         className="pointer-events-auto cursor-grab"
@@ -937,7 +939,7 @@ export default function WhiteboardRoomPage() {
                         cx={endHandleX}
                         cy={endHandleY}
                         r={6}
-                        fill="rgb(var(--ds-surface))"
+                        fill="rgb(var(--color-bg-surface))"
                         stroke={strokeColor}
                         strokeWidth={2}
                         className="pointer-events-auto cursor-grab"
@@ -1033,7 +1035,7 @@ export default function WhiteboardRoomPage() {
                     onMouseDown={(event) => event.stopPropagation()}
                     onClick={(event) => {
                       event.stopPropagation();
-                      removeShapeWithLinks(shape.id);
+                      void requestRemoveShapeWithConfirm(shape.id);
                     }}
                     className="absolute -right-2 -top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border border-default bg-surface text-[10px] text-muted hover:bg-surface-elevated"
                   >
@@ -1095,18 +1097,20 @@ export default function WhiteboardRoomPage() {
               </div>
             </div>
           ))}
-        </div>
-
-        <BoardSidePanel
-          participants={participants}
-          sessionId={sessionId}
-          activeTool={activeTool}
-          selectedShape={selectedShape}
-          connectorFromShapeId={connectorFromShapeId}
-          historyEntries={boardHistoryEntries}
-          eventLog={eventLog}
-        />
-      </div>
+          </div>
+        }
+        sidebar={
+          <BoardSidePanel
+            participants={participants}
+            sessionId={sessionId}
+            activeTool={activeTool}
+            selectedShape={selectedShape}
+            connectorFromShapeId={connectorFromShapeId}
+            historyEntries={boardHistoryEntries}
+            eventLog={eventLog}
+          />
+        }
+      />
     </main>
   );
 }

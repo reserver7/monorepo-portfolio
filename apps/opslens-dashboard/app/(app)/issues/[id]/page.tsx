@@ -3,16 +3,12 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { RhfField, useAppForm } from "@repo/forms";
+import { useAppForm } from "@repo/forms";
 import {
   Button,
   Input,
   Label,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Spinner,
   StateView,
   Textarea,
@@ -147,43 +143,29 @@ export default function IssueDetailPage() {
             <div className="grid gap-1">
               <Label htmlFor="issue-status">상태 변경</Label>
               <Select
+                options={statusOptions}
                 value={issue.status}
-                onValueChange={(value) => statusMutation.mutate(value as IssueStatus)}
+                onChange={(value) => statusMutation.mutate(String(value) as IssueStatus)}
                 disabled={statusMutation.isPending}
-              >
-                <SelectTrigger id="issue-status" size="md">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                size="md"
+              />
             </div>
 
             <div className="grid gap-1 text-sm">
               <Label htmlFor="issue-assignee">담당자 지정</Label>
               <form className="flex gap-2" onSubmit={assigneeForm.handleSubmit((values) => assigneeMutation.mutate(values))}>
-                <RhfField
+                <Input
+                  id="issue-assignee"
+                  placeholder="예: reserver7"
+                  className="flex-1"
+                  size="md"
                   control={assigneeForm.control}
                   name="assignee"
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      id="issue-assignee"
-                      placeholder="예: reserver7"
-                      className="flex-1"
-                      size="md"
-                    />
-                  )}
                 />
                 <Button
                   type="submit"
                   disabled={assigneeMutation.isPending || assignee.trim().length === 0}
-                  variant="default"
+                  variant="primary"
                   loading={assigneeMutation.isPending ? true : undefined}
                 >
                   저장
@@ -240,30 +222,19 @@ export default function IssueDetailPage() {
             className="mt-3 grid gap-2"
             onSubmit={commentForm.handleSubmit((values) => commentMutation.mutate(values))}
           >
-            <RhfField
+            <Input
+              id="comment-author"
+              placeholder="작성자"
+              size="md"
               control={commentForm.control}
               name="author"
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  id="comment-author"
-                  placeholder="작성자"
-                  size="md"
-                />
-              )}
             />
-            <RhfField
+            <Textarea
+              id="comment-body"
+              rows={4}
+              placeholder="운영 메모/분석 결과를 입력하세요"
               control={commentForm.control}
               name="body"
-              render={({ field }) => (
-                <Textarea
-                  id="comment-body"
-                  value={field.value}
-                  onChange={field.onChange}
-                  rows={4}
-                  placeholder="운영 메모/분석 결과를 입력하세요"
-                />
-              )}
             />
             <Button
               type="submit"

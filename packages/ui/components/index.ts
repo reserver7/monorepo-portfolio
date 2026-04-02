@@ -12,7 +12,8 @@ export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, 
 export { Separator } from "./separator";
 export { Progress } from "./progress";
 export { ScrollArea, ScrollBar } from "./scroll-area";
-export { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "./select";
+export { Select, SelectTrigger, SelectContent, SelectItem, SelectValue, SelectRoot } from "./select";
+export type { SelectProps, SelectOption } from "./select";
 export { Tabs, TabsList, TabsTrigger, TabsContent } from "./tabs";
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "./accordion";
 export {
@@ -89,3 +90,16 @@ export { StatCard, type StatCardProps } from "./stat-card";
 export { chartColorTokens } from "./chart";
 export { Toaster, type ToasterProps } from "./toaster";
 export { ErrorBoundary } from "./error-boundary";
+export {
+  AlertConfirmProvider,
+  alert,
+  confirm,
+  promptConfirm,
+  useAlertConfirm,
+  type AlertOptions,
+  type ConfirmOptions,
+  type PromptConfirmOptions,
+  type AlertInput,
+  type ConfirmInput,
+  type PromptConfirmInput
+} from "./alert-confirm";

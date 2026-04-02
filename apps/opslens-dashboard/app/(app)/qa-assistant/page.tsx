@@ -5,16 +5,12 @@ import {
   FormField,
   Input,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Spinner,
   StateView,
   Textarea
 } from "@repo/ui";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
-import { RhfField, useAppForm } from "@repo/forms";
+import { useAppForm } from "@repo/forms";
 import { generateQaScenario, getRecentQaScenarios } from "@/features/ops/api";
 import { OpsCardListSkeleton, OpsSectionCard } from "@/features/ops";
 import { formatDateTime } from "@/lib/utils";
@@ -113,25 +109,19 @@ export default function QaAssistantPage() {
           </FormField>
 
           <FormField label="요약 대상" htmlFor="qa-audience" size="sm">
-            <RhfField
+            <Select
+              options={[
+                { label: "QA 중심", value: "qa" },
+                { label: "개발자 중심", value: "developer" },
+                { label: "비개발자/PM 중심", value: "pm" }
+              ]}
               control={form.control}
               name="audience"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="qa-audience" size="md">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="qa">QA 중심</SelectItem>
-                    <SelectItem value="developer">개발자 중심</SelectItem>
-                    <SelectItem value="pm">비개발자/PM 중심</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
+              size="md"
             />
           </FormField>
 
-          <Button type="submit" variant="default" className="w-fit" loading={generateMutation.isPending ? true : undefined}>
+          <Button type="submit" variant="primary" className="w-fit" loading={generateMutation.isPending ? true : undefined}>
             QA 시나리오 생성
           </Button>
         </form>

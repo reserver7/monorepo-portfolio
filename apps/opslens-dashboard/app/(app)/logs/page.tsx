@@ -6,16 +6,12 @@ import {
   FormField,
   Input,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Spinner,
   StateView,
   Textarea
 } from "@repo/ui";
 import { useMutation } from "@repo/react-query";
-import { RhfField, useAppForm } from "@repo/forms";
+import { useAppForm } from "@repo/forms";
 import { analyzeLogs } from "@/features/ops/api";
 import { OpsSectionCard, SeverityBadge } from "@/features/ops";
 import { useOpsFilters } from "@/features/ops/stores";
@@ -72,23 +68,17 @@ export default function LogsPage() {
         <form className="grid gap-4" onSubmit={form.handleSubmit((values) => analyzeMutation.mutate(values))}>
           <div className="grid gap-3 md:grid-cols-3">
             <FormField label="로그 소스" htmlFor="logs-source" size="sm">
-              <RhfField
+              <Select
+                options={[
+                  { label: "server", value: "server" },
+                  { label: "client", value: "client" },
+                  { label: "api", value: "api" },
+                  { label: "console", value: "console" },
+                  { label: "sentry", value: "sentry" }
+                ]}
                 control={form.control}
                 name="source"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger id="logs-source" size="md">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="server">server</SelectItem>
-                      <SelectItem value="client">client</SelectItem>
-                      <SelectItem value="api">api</SelectItem>
-                      <SelectItem value="console">console</SelectItem>
-                      <SelectItem value="sentry">sentry</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
+                size="md"
               />
             </FormField>
 
@@ -129,7 +119,7 @@ export default function LogsPage() {
           </FormField>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="submit" variant="default" loading={analyzeMutation.isPending ? true : undefined}>
+            <Button type="submit" variant="primary" loading={analyzeMutation.isPending ? true : undefined}>
               로그 분석 실행
             </Button>
             <Button

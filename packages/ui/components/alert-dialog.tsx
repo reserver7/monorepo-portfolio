@@ -48,7 +48,7 @@ export function AlertDialogFooter({
   cancelText = "취소",
   confirmText = "삭제",
   cancelVariant = "outline",
-  confirmVariant = "destructive",
+  confirmVariant = "danger",
   cancelDisabled = false,
   confirmDisabled = false,
   confirmLoading = false,
@@ -106,7 +106,7 @@ export const AlertDialogDescription = React.forwardRef<
 AlertDialogDescription.displayName = AlertDialogPrimitive.Description.displayName;
 
 export function AlertDialogAction({ className, ...props }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action>) {
-  return <AlertDialogPrimitive.Action className={buttonVariants({ variant: "destructive", className })} {...props} />;
+  return <AlertDialogPrimitive.Action className={buttonVariants({ variant: "danger", className })} {...props} />;
 }
 
 export function AlertDialogCancel({ className, ...props }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Cancel>) {

@@ -56,9 +56,9 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
     <Button
       type="button"
       variant="outline"
-      size="icon"
+      size="md"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className={className ?? "fixed bottom-4 right-4 z-[80] rounded-full shadow-lg"}
+      className={className ?? "fixed bottom-4 right-4 z-[80] h-10 w-10 rounded-full p-0 shadow-lg"}
       aria-label={isDark ? "라이트 모드로 전환" : "다크 모드로 전환"}
       title={isDark ? "라이트 모드로 전환" : "다크 모드로 전환"}
     >

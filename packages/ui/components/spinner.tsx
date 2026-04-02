@@ -61,7 +61,7 @@ export function Spinner({
   const content = (
     <div className={cn("flex items-center gap-2", className)}>
       <Loader2 className={cn("animate-spin", bySize[size], byTone[tone])} />
-      {label ? <span className="text-sm text-muted">{label}</span> : null}
+      {label ? <span className="text-body-sm text-muted">{label}</span> : null}
     </div>
   );
 
@@ -76,7 +76,7 @@ export function Spinner({
     >
       <div className="flex flex-col items-center gap-2">
         <Loader2 className={cn("animate-spin", bySize[size], byTone[tone])} />
-        {label ? <span className="text-sm text-[rgb(var(--ds-primary-foreground))]">{label}</span> : null}
+        {label ? <span className="text-body-sm text-primary-foreground">{label}</span> : null}
       </div>
     </div>
   );

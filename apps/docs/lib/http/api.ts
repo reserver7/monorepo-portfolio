@@ -46,12 +46,14 @@ export const createDocument = async (input: {
 export const deleteDocumentById = async (input: {
   documentId: string;
   editorAccessKey?: string;
+  notifyOnError?: boolean;
 }): Promise<{ ok: true; documentId: string }> => {
   return requestJson<{ ok: true; documentId: string }>(API_BASE_URL, `/api/documents/${input.documentId}`, {
     method: "DELETE",
     body: JSON.stringify({
       editorAccessKey: input.editorAccessKey
     }),
+    notifyOnError: input.notifyOnError,
     successMessage: "문서가 삭제되었습니다."
   });
 };

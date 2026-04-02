@@ -25,6 +25,7 @@ import type {
   SocketErrorPayload
 } from "@repo/utils/collab";
 import { socketEventName } from "@repo/utils/collab";
+import { notifyUiSuccess } from "@repo/react-query";
 import { API_BASE_URL } from "@/lib/http";
 import {
   createGuestName,
@@ -464,6 +465,7 @@ export const useCollaboration = ({
     socket.on(socketEventName.documentCommentDelete, ({ commentId }: DocumentCommentDeleteEventPayload) => {
       removeCommentFromStore(commentId);
       pushEvent("댓글이 삭제되었습니다.");
+      notifyUiSuccess("댓글이 삭제되었습니다.");
     });
 
     socket.on(socketEventName.documentSaved, ({ documentId: incomingDocumentId, updatedAt, version: savedVersion }: DocumentSavedPayload) => {

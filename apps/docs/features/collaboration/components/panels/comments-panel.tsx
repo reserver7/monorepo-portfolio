@@ -1,19 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { RhfField, useAppForm } from "@repo/forms";
+import { useAppForm } from "@repo/forms";
 import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
   Badge,
   Button,
   Card,
   Textarea,
+  confirm,
   Typography
 } from "@repo/ui";
 import { formatExactTime } from "@/lib/collab";
@@ -75,17 +69,11 @@ export const CommentsPanel = ({
       </div>
 
       <div className={`mb-4 ${composerItemClass}`}>
-        <RhfField
+        <Textarea
           control={createForm.control}
           name="draftComment"
-          render={({ field }) => (
-            <Textarea
-              value={field.value}
-              onChange={field.onChange}
-              className="min-h-24 border-default bg-surface text-body-sm leading-6 text-foreground"
-              placeholder="댓글을 입력하세요. 예) @Luke 확인 부탁드립니다"
-            />
-          )}
+          className="min-h-24 border-default bg-surface text-body-sm leading-6 text-foreground"
+          placeholder="댓글을 입력하세요. 예) @Luke 확인 부탁드립니다"
         />
 
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
@@ -146,16 +134,10 @@ export const CommentsPanel = ({
 
                 {isEditing ? (
                   <div className="space-y-2">
-                    <RhfField
+                    <Textarea
                       control={editForm.control}
                       name="editingDraft"
-                      render={({ field }) => (
-                        <Textarea
-                          value={field.value}
-                          onChange={field.onChange}
-                          className="min-h-20 border-default bg-surface text-body-sm leading-6"
-                        />
-                      )}
+                      className="min-h-20 border-default bg-surface text-body-sm leading-6"
                     />
                     <div className="flex items-center justify-end gap-2">
                       <Button
@@ -213,26 +195,27 @@ export const CommentsPanel = ({
                         >
                           수정
                         </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="destructive">
-                              삭제
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>댓글을 삭제할까요?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                삭제된 댓글은 되돌릴 수 없습니다. 정말 삭제하시겠습니까?
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter
-                              onConfirm={() => {
-                                onDeleteComment(comment.id);
-                              }}
-                            />
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          onClick={async () => {
+                            const shouldDelete = await confirm({
+                              title: "댓글을 삭제할까요?",
+                              description: "삭제된 댓글은 되돌릴 수 없습니다. 정말 삭제하시겠습니까?",
+                              confirmText: "삭제",
+                              confirmVariant: "danger",
+                              cancelText: "취소"
+                            });
+
+                            if (!shouldDelete) {
+                              return;
+                            }
+
+                            onDeleteComment(comment.id);
+                          }}
+                        >
+                          삭제
+                        </Button>
                       </div>
                     ) : null}
                   </>

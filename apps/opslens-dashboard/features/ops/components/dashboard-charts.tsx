@@ -19,12 +19,12 @@ import type { DashboardSummary } from "@/features/ops/api";
 
 const tooltipStyle = {
   contentStyle: {
-    backgroundColor: "rgb(var(--ds-surface))",
-    border: "1px solid rgb(var(--ds-border))",
+    backgroundColor: "rgb(var(--color-bg-surface))",
+    border: "1px solid rgb(var(--color-border-default))",
     borderRadius: 12
   },
-  labelStyle: { color: "rgb(var(--ds-foreground))", fontWeight: 600 },
-  itemStyle: { color: "rgb(var(--ds-foreground))" }
+  labelStyle: { color: "rgb(var(--color-fg-default))", fontWeight: 600 },
+  itemStyle: { color: "rgb(var(--color-fg-default))" }
 } as const;
 
 const severityColors: Record<string, string> = chartColorTokens.severity;
@@ -53,9 +53,9 @@ export function ErrorTrendChart({ summary }: { summary: Summary }) {
     <div role="img" aria-label="최근 24시간 에러 추이 선 그래프">
       <ResponsiveContainer width="100%" height={240}>
         <LineChart data={summary.errorTrend24h}>
-          <CartesianGrid stroke="rgb(var(--ds-border) / 0.8)" strokeDasharray="3 3" />
-          <XAxis dataKey="hour" tick={{ fill: "rgb(var(--ds-muted))", fontSize: 12 }} />
-          <YAxis allowDecimals={false} tick={{ fill: "rgb(var(--ds-muted))", fontSize: 12 }} />
+          <CartesianGrid stroke="rgb(var(--color-border-default) / 0.8)" strokeDasharray="3 3" />
+          <XAxis dataKey="hour" tick={{ fill: "rgb(var(--color-fg-muted))", fontSize: 12 }} />
+          <YAxis allowDecimals={false} tick={{ fill: "rgb(var(--color-fg-muted))", fontSize: 12 }} />
           <Tooltip {...tooltipStyle} />
           <Line type="monotone" dataKey="count" stroke={chartColorTokens.trend} strokeWidth={2} dot={false} />
         </LineChart>
@@ -69,9 +69,14 @@ export function TopRepeatedErrorsChart({ summary }: { summary: Summary }) {
     <div role="img" aria-label="반복 에러 상위 5개 막대 그래프">
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={summary.topRepeatedErrors} layout="vertical">
-          <CartesianGrid stroke="rgb(var(--ds-border) / 0.8)" strokeDasharray="3 3" />
-          <XAxis type="number" allowDecimals={false} tick={{ fill: "rgb(var(--ds-muted))", fontSize: 12 }} />
-          <YAxis type="category" dataKey="title" width={140} tick={{ fill: "rgb(var(--ds-muted))", fontSize: 11 }} />
+          <CartesianGrid stroke="rgb(var(--color-border-default) / 0.8)" strokeDasharray="3 3" />
+          <XAxis type="number" allowDecimals={false} tick={{ fill: "rgb(var(--color-fg-muted))", fontSize: 12 }} />
+          <YAxis
+            type="category"
+            dataKey="title"
+            width={140}
+            tick={{ fill: "rgb(var(--color-fg-muted))", fontSize: 11 }}
+          />
           <Tooltip {...tooltipStyle} />
           <Bar dataKey="count" fill={chartColorTokens.bar} />
         </BarChart>
@@ -79,4 +84,3 @@ export function TopRepeatedErrorsChart({ summary }: { summary: Summary }) {
     </div>
   );
 }
-

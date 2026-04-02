@@ -46,7 +46,7 @@ function ErrorFallbackView({ title, description, detail, onRetry }: ErrorFallbac
             </Typography>
 
             <div className="mt-6 flex w-full flex-wrap items-center justify-center gap-2">
-              <Button variant="default" size="md" onClick={onRetry}>
+              <Button variant="primary" size="md" onClick={onRetry}>
                 다시 시도
               </Button>
               <Button

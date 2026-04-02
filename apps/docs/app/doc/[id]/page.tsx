@@ -4,7 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { RhfField, useAppForm } from "@repo/forms";
+import { useAppForm } from "@repo/forms";
 import { useQuery } from "@repo/react-query";
 import {
   Badge,
@@ -12,10 +12,7 @@ import {
   Card,
   Input,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  SplitWorkspaceLayout,
   StateView,
   Textarea,
   Typography
@@ -209,131 +206,115 @@ export default function DocumentRoomPage() {
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px]">
-          <RhfField
+          <Input
+            title={collabFieldCopy.displayNameLabel}
             control={sessionForm.control}
             name="displayName"
-            render={({ field }) => (
-              <Input
-                title={collabFieldCopy.displayNameLabel}
-                value={field.value}
-                onChange={(event) => {
-                  field.onChange(event);
-                  setStoredDisplayName(event.target.value.trim() || createGuestName());
-                }}
-                placeholder={collabFieldCopy.displayNamePlaceholder}
-                size="md"
-              />
-            )}
+            onChange={(event) => {
+              setStoredDisplayName(event.target.value.trim() || createGuestName());
+            }}
+            placeholder={collabFieldCopy.displayNamePlaceholder}
+            size="md"
           />
-          <RhfField
+          <Select
+            options={[
+              { label: collabFieldCopy.requestOptionEditor, value: "editor" },
+              { label: collabFieldCopy.requestOptionViewer, value: "viewer" }
+            ]}
             control={sessionForm.control}
             name="requestedRole"
-            render={({ field }) => (
-              <Select
-                value={field.value}
-                onValueChange={(value) => {
-                  const nextRole = value === "viewer" ? "viewer" : "editor";
-                  field.onChange(nextRole);
-                  setStoredRole(nextRole);
-                }}
-              >
-                <SelectTrigger size="md" title={collabFieldCopy.requestRolePlaceholder}>
-                  <SelectValue placeholder={collabFieldCopy.requestRolePlaceholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="editor">{collabFieldCopy.requestOptionEditor}</SelectItem>
-                  <SelectItem value="viewer">{collabFieldCopy.requestOptionViewer}</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
+            onChange={(value) => {
+              const nextRole = String(value) === "viewer" ? "viewer" : "editor";
+              setStoredRole(nextRole);
+            }}
+            placeholder={collabFieldCopy.requestRolePlaceholder}
+            size="md"
           />
-          <RhfField
+          <Input
+            title={collabFieldCopy.editorAccessKeyLabel}
+            type="password"
             control={sessionForm.control}
             name="editorAccessKey"
-            render={({ field }) => (
-              <Input
-                title={collabFieldCopy.editorAccessKeyLabel}
-                type="password"
-                value={field.value}
-                onChange={(event) => {
-                  field.onChange(event);
-                  setStoredEditorAccessKey(event.target.value);
-                }}
-                placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
-                size="md"
-              />
-            )}
+            onChange={(event) => {
+              setStoredEditorAccessKey(event.target.value);
+            }}
+            placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
+            size="md"
           />
         </div>
       </header>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_392px]">
-        <Card className="p-5 md:p-6">
-          <div className="mb-4 grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
-            <Input
-              value={title}
-              onChange={(event) => updateTitle(event.target.value)}
+      <SplitWorkspaceLayout
+        sidebarWidthClassName="lg:grid-cols-[minmax(0,1fr)_392px]"
+        main={
+          <Card className="p-5 md:p-6">
+            <div className="mb-4 grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
+              <Input
+                value={title}
+                onChange={(event) => updateTitle(event.target.value)}
+                readOnly={isReadOnly}
+                size="md"
+                className="text-base font-semibold"
+                placeholder="문서 제목"
+              />
+              <Badge variant="outline" size="md" className="rounded-xl px-3 py-2">
+                버전 {version}
+              </Badge>
+            </div>
+
+            {conflictMessage ? (
+              <StateView variant="warning" size="sm" align="left" title={conflictMessage} className="mb-4" />
+            ) : null}
+
+            {isReadOnly ? (
+              <StateView
+                variant="info"
+                size="sm"
+                align="left"
+                title="보기 전용(`viewer`) 세션입니다."
+                description="상단에서 `editor 요청`으로 바꾸고 편집 키를 입력하면 재요청됩니다. 문서 편집은 비활성화되어 있으며 댓글 작성은 가능합니다."
+                className="mb-4"
+              />
+            ) : null}
+
+            <Textarea
+              value={content}
+              onChange={(event) => updateContent(event.target.value)}
+              onClick={(event) => sendCursor(event.currentTarget.selectionStart ?? 0)}
+              onKeyUp={(event) => sendCursor(event.currentTarget.selectionStart ?? 0)}
+              onSelect={(event) => sendCursor(event.currentTarget.selectionStart ?? 0)}
               readOnly={isReadOnly}
-              size="md"
-              className="text-base font-semibold"
-              placeholder="문서 제목"
+              className="h-[62vh] w-full resize-none rounded-2xl border border-default bg-surface p-4 text-body-sm leading-7 text-foreground"
+              placeholder="여기서부터 실시간 협업이 시작됩니다..."
             />
-            <Badge variant="outline" size="md" className="rounded-xl px-3 py-2">
-              버전 {version}
-            </Badge>
-          </div>
 
-          {conflictMessage ? (
-            <StateView variant="warning" size="sm" align="left" title={conflictMessage} className="mb-4" />
-          ) : null}
-
-          {isReadOnly ? (
-            <StateView
-              variant="info"
-              size="sm"
-              align="left"
-              title="보기 전용(`viewer`) 세션입니다."
-              description="상단에서 `editor 요청`으로 바꾸고 편집 키를 입력하면 재요청됩니다. 문서 편집은 비활성화되어 있으며 댓글 작성은 가능합니다."
-              className="mb-4"
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+              <Typography as="span" variant="bodySm" tone="subtle">
+                최근 수정:{" "}
+                {updatedAt ? `${formatRelativeTime(updatedAt)} (${formatExactTime(updatedAt)})` : "-"}
+              </Typography>
+              <Typography as="span" variant="bodySm" tone="subtle">
+                동시 접속: {participants.length}명
+              </Typography>
+            </div>
+          </Card>
+        }
+        sidebar={
+          <>
+            <PresencePanel participants={participants} mySessionId={sessionId} />
+            <CommentsPanel
+              comments={comments}
+              participants={participants}
+              mySessionId={sessionId}
+              onSubmitComment={(body, mentions) => addComment(body, mentions)}
+              onUpdateComment={(commentId, body, mentions) => updateComment(commentId, body, mentions)}
+              onDeleteComment={(commentId) => deleteComment(commentId)}
             />
-          ) : null}
-
-          <Textarea
-            value={content}
-            onChange={(event) => updateContent(event.target.value)}
-            onClick={(event) => sendCursor(event.currentTarget.selectionStart ?? 0)}
-            onKeyUp={(event) => sendCursor(event.currentTarget.selectionStart ?? 0)}
-            onSelect={(event) => sendCursor(event.currentTarget.selectionStart ?? 0)}
-            readOnly={isReadOnly}
-            className="h-[62vh] w-full resize-none rounded-2xl border border-default bg-surface p-4 text-body-sm leading-7 text-foreground"
-            placeholder="여기서부터 실시간 협업이 시작됩니다..."
-          />
-
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-            <Typography as="span" variant="bodySm" tone="subtle">
-              최근 수정:{" "}
-              {updatedAt ? `${formatRelativeTime(updatedAt)} (${formatExactTime(updatedAt)})` : "-"}
-            </Typography>
-            <Typography as="span" variant="bodySm" tone="subtle">
-              동시 접속: {participants.length}명
-            </Typography>
-          </div>
-        </Card>
-
-        <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
-          <PresencePanel participants={participants} mySessionId={sessionId} />
-          <CommentsPanel
-            comments={comments}
-            participants={participants}
-            mySessionId={sessionId}
-            onSubmitComment={(body, mentions) => addComment(body, mentions)}
-            onUpdateComment={(commentId, body, mentions) => updateComment(commentId, body, mentions)}
-            onDeleteComment={(commentId) => deleteComment(commentId)}
-          />
-          <HistoryPanel entries={historyEntries} />
-          <ActivityLogPanel logs={eventLog} />
-        </div>
-      </div>
+            <HistoryPanel entries={historyEntries} />
+            <ActivityLogPanel logs={eventLog} />
+          </>
+        }
+      />
 
       {documentQuery.isError ? (
         <StateView

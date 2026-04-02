@@ -44,12 +44,14 @@ export const createBoard = async (input: {
 export const deleteBoardById = async (input: {
   boardId: string;
   editorAccessKey?: string;
+  notifyOnError?: boolean;
 }): Promise<{ ok: true; boardId: string }> => {
   return requestJson<{ ok: true; boardId: string }>(API_BASE_URL, `/api/boards/${input.boardId}`, {
     method: "DELETE",
     body: JSON.stringify({
       editorAccessKey: input.editorAccessKey
     }),
+    notifyOnError: input.notifyOnError,
     successMessage: "화이트보드가 삭제되었습니다."
   });
 };
