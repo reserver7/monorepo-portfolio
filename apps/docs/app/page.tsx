@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { RhfField, useAppForm } from "@repo/forms";
-import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
+import { useAppForm } from "@repo/forms";
+import { notifyUiError, useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { createDocument, deleteDocumentById, docsQueryKeys, listDocuments } from "@/lib/http";
 import { navigateToWhiteboardApp } from "@/lib/navigation";
 import { docsClientEnv } from "@/lib/config";
@@ -21,26 +21,44 @@ import {
   Badge,
   Button,
   Card,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   Input,
   Label,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Skeleton,
   Spinner,
   StateView,
+  confirm,
+  promptConfirm,
   Typography
 } from "@repo/ui";
 
 const EMPTY_TITLE = "(제목 없음)";
+
+const resolveProtectedDeleteFieldError = (error: unknown) => {
+  if (!(error instanceof Error)) {
+    return "삭제 비밀번호를 확인해 주세요.";
+  }
+
+  const message = error.message.trim();
+  if (message.length === 0) {
+    return "삭제 비밀번호를 확인해 주세요.";
+  }
+
+  const normalized = message.toLowerCase();
+  if (
+    normalized.includes("비밀번호") ||
+    normalized.includes("access key") ||
+    normalized.includes("editor") ||
+    normalized.includes("forbidden") ||
+    normalized.includes("unauthorized") ||
+    normalized.includes("403") ||
+    normalized.includes("401")
+  ) {
+    return "삭제 비밀번호가 올바르지 않습니다.";
+  }
+
+  return message;
+};
 
 export default function HomePage() {
   const router = useRouter();
@@ -60,13 +78,6 @@ export default function HomePage() {
     }
   });
 
-  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
-  const deleteForm = useAppForm<{ deleteAccessKeyDraft: string }>({
-    defaultValues: { deleteAccessKeyDraft: "" }
-  });
-  const deleteAccessKeyDraft = deleteForm.watch("deleteAccessKeyDraft");
-  const [deleteErrorMessage, setDeleteErrorMessage] = useState<string | null>(null);
-  const deleteAccessKeyInputRef = useRef<HTMLInputElement | null>(null);
   const shouldPreserveAccessKeyForRoomRef = useRef(false);
 
   const clearMainEditorAccessKey = () => {
@@ -139,41 +150,17 @@ export default function HomePage() {
   });
 
   const deleteDocumentMutation = useMutation({
-    mutationFn: (input: { documentId: string; editorAccessKey?: string }) => deleteDocumentById(input),
+    mutationFn: (input: { documentId: string; editorAccessKey?: string; notifyOnError?: boolean }) =>
+      deleteDocumentById(input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: docsQueryKeys.documents() });
-      setDeleteTargetId(null);
-      deleteForm.setValue("deleteAccessKeyDraft", "");
-      setDeleteErrorMessage(null);
-    },
-    onError: (error) => {
-      setDeleteErrorMessage(error instanceof Error ? error.message : "문서 삭제에 실패했습니다.");
-      deleteForm.setValue("deleteAccessKeyDraft", "");
-      setTimeout(() => {
-        deleteAccessKeyInputRef.current?.focus();
-      }, 0);
     }
   });
 
   const documents = documentsQuery.data ?? [];
-  const deleteTarget = documents.find((document) => document.id === deleteTargetId) ?? null;
   const isActionPending = createDocumentMutation.isPending || deleteDocumentMutation.isPending;
   const protectedDocumentCount = documents.filter((document) => document.isProtected).length;
   const totalCommentCount = documents.reduce((total, document) => total + document.commentCount, 0);
-
-  useEffect(() => {
-    if (!deleteTargetId || !deleteTarget?.isProtected) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      deleteAccessKeyInputRef.current?.focus();
-    }, 0);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [deleteTargetId, deleteTarget?.isProtected]);
 
   const handleCreate = (values: {
     displayName: string;
@@ -222,79 +209,59 @@ export default function HomePage() {
               <Label size="sm" className="mb-2 block">
                 {collabFieldCopy.displayNameLabel}
               </Label>
-              <RhfField
+              <Input
                 control={createForm.control}
                 name="displayName"
-                render={({ field }) => (
-                  <Input
-                    title={collabFieldCopy.displayNameLabel}
-                    value={field.value}
-                    onChange={(event) => {
-                      field.onChange(event.target.value);
-                      setStoredDisplayName(event.target.value.trim() || createGuestName());
-                    }}
-                    placeholder={collabFieldCopy.displayNamePlaceholder}
-                    size="md"
-                  />
-                )}
+                title={collabFieldCopy.displayNameLabel}
+                onChange={(event) => {
+                  setStoredDisplayName(event.target.value.trim() || createGuestName());
+                }}
+                placeholder={collabFieldCopy.displayNamePlaceholder}
+                size="md"
               />
             </div>
             <div>
               <Label size="sm" className="mb-2 block">
                 새 문서 제목
               </Label>
-              <RhfField
+              <Input
                 control={createForm.control}
                 name="draftTitle"
-                render={({ field }) => (
-                  <Input value={field.value} onChange={field.onChange} placeholder="문서 제목" size="md" />
-                )}
+                placeholder="문서 제목"
+                size="md"
               />
             </div>
             <div>
               <Label size="sm" className="mb-2 block">
                 {collabFieldCopy.entryRoleLabel}
               </Label>
-              <RhfField
+              <Select
                 control={createForm.control}
                 name="role"
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={(value) => {
-                      const nextRole = coerceAccessRole(value, docsClientEnv.defaultRole);
-                      field.onChange(nextRole);
-                      setStoredRole(nextRole);
-                    }}
-                  >
-                    <SelectTrigger title={collabFieldCopy.entryRoleLabel} size="md">
-                      <SelectValue placeholder={collabFieldCopy.entryRolePlaceholder} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="editor">{collabFieldCopy.roleOptionEditor}</SelectItem>
-                      <SelectItem value="viewer">{collabFieldCopy.roleOptionViewer}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
+                options={[
+                  { label: collabFieldCopy.roleOptionEditor, value: "editor" },
+                  { label: collabFieldCopy.roleOptionViewer, value: "viewer" }
+                ]}
+                onChange={(value) => {
+                  const nextRole = coerceAccessRole(String(value ?? ""), docsClientEnv.defaultRole);
+                  createForm.setValue("role", nextRole, { shouldDirty: true, shouldTouch: true });
+                  setStoredRole(nextRole);
+                }}
+                placeholder={collabFieldCopy.entryRolePlaceholder}
+                size="md"
               />
             </div>
             <div>
               <Label size="sm" className="mb-2 block">
                 {collabFieldCopy.editorAccessKeyLabel}
               </Label>
-              <RhfField
+              <Input
                 control={createForm.control}
                 name="editorAccessKey"
-                render={({ field }) => (
-                  <Input
-                    title={collabFieldCopy.editorAccessKeyLabel}
-                    type="password"
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
-                    size="md"
-                  />
-                )}
+                title={collabFieldCopy.editorAccessKeyLabel}
+                type="password"
+                placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
+                size="md"
               />
             </div>
           </div>
@@ -441,12 +408,64 @@ export default function HomePage() {
 
                 <div className="mt-4 flex justify-end gap-2">
                   <Button
-                    variant="destructive"
+                    variant="danger"
                     data-testid={`document-delete-${document.id}`}
-                    onClick={() => {
-                      setDeleteTargetId(document.id);
-                      deleteForm.setValue("deleteAccessKeyDraft", "");
-                      setDeleteErrorMessage(null);
+                    onClick={async () => {
+                      if (document.isProtected) {
+                        const accessKey = await promptConfirm({
+                          title: "문서를 삭제할까요?",
+                          description: "이 문서는 편집 키로 보호되어 있습니다. 삭제 비밀번호를 입력해 주세요.",
+                          inputLabel: "삭제 비밀번호",
+                          inputPlaceholder: "삭제 비밀번호",
+                          inputType: "password",
+                          confirmText: "문서 삭제",
+                          confirmVariant: "danger",
+                          cancelText: "취소",
+                          validator: (value) => {
+                            if (value.trim().length === 0) {
+                              return "삭제 비밀번호를 입력해 주세요.";
+                            }
+                            return null;
+                          },
+                          asyncValidator: async (value) => {
+                            try {
+                              await deleteDocumentMutation.mutateAsync({
+                                documentId: document.id,
+                                editorAccessKey: value.trim(),
+                                notifyOnError: false
+                              });
+                              return null;
+                            } catch (error) {
+                              notifyUiError("문서 삭제에 실패했습니다.");
+                              return resolveProtectedDeleteFieldError(error);
+                            }
+                          }
+                        });
+                        if (accessKey === null) {
+                          return;
+                        }
+                        return;
+                      }
+
+                      const shouldDelete = await confirm({
+                        title: "문서를 삭제할까요?",
+                        description: "삭제된 문서는 복구할 수 없습니다.",
+                        confirmText: "문서 삭제",
+                        confirmVariant: "danger",
+                        cancelText: "취소"
+                      });
+
+                      if (!shouldDelete) {
+                        return;
+                      }
+
+                      try {
+                        await deleteDocumentMutation.mutateAsync({
+                          documentId: document.id
+                        });
+                      } catch {
+                        // requestJson에서 토스트를 처리하므로 여기서는 추가 알림을 띄우지 않습니다.
+                      }
                     }}
                   >
                     삭제
@@ -468,82 +487,6 @@ export default function HomePage() {
           </div>
         )}
       </section>
-
-      <Dialog
-        open={Boolean(deleteTargetId)}
-        onOpenChange={(open) => {
-          if (open) {
-            return;
-          }
-
-          setDeleteTargetId(null);
-          deleteForm.setValue("deleteAccessKeyDraft", "");
-          setDeleteErrorMessage(null);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>문서를 삭제할까요?</DialogTitle>
-            <DialogDescription>
-              {deleteTarget?.isProtected
-                ? "이 문서는 편집 키로 보호되어 있습니다. 삭제 비밀번호를 입력해 주세요."
-                : "삭제된 문서는 복구할 수 없습니다."}
-            </DialogDescription>
-          </DialogHeader>
-
-          {deleteTarget?.isProtected ? (
-            <RhfField
-              control={deleteForm.control}
-              name="deleteAccessKeyDraft"
-              render={({ field }) => (
-                <Input
-                  ref={deleteAccessKeyInputRef}
-                  type="password"
-                  value={field.value}
-                  onChange={(event) => {
-                    field.onChange(event);
-                    setDeleteErrorMessage(null);
-                  }}
-                  placeholder="삭제 비밀번호"
-                  size="md"
-                  state={deleteErrorMessage ? "error" : "default"}
-                />
-              )}
-            />
-          ) : null}
-
-          {deleteErrorMessage ? (
-            <Typography as="p" variant="bodySm" tone="danger">
-              {deleteErrorMessage}
-            </Typography>
-          ) : null}
-
-          <DialogFooter
-            onCancel={() => {
-              setDeleteTargetId(null);
-              deleteForm.setValue("deleteAccessKeyDraft", "");
-              setDeleteErrorMessage(null);
-            }}
-            confirmText="문서 삭제"
-            onConfirm={() => {
-              if (!deleteTarget) {
-                return;
-              }
-
-              deleteDocumentMutation.mutate({
-                documentId: deleteTarget.id,
-                editorAccessKey: deleteTarget.isProtected ? deleteAccessKeyDraft.trim() : undefined
-              });
-            }}
-            confirmDisabled={
-              deleteDocumentMutation.isPending ||
-              !deleteTarget ||
-              (deleteTarget.isProtected && deleteAccessKeyDraft.trim().length === 0)
-            }
-            confirmLoading={deleteDocumentMutation.isPending}
-          />
-        </DialogContent>
-      </Dialog>
 
       <Spinner open={isActionPending} fullscreen size="lg" tone="primary" />
     </main>

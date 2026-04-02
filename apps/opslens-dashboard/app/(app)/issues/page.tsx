@@ -2,17 +2,13 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { RhfField, useAppForm } from "@repo/forms";
+import { useAppForm } from "@repo/forms";
 import {
   DataTable,
   DataTableColumnHeader,
   type DataTableColumnDef,
   Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
+  Select
 } from "@repo/ui";
 import { keepPreviousData, useQuery } from "@repo/react-query";
 import { listIssues, type Issue, type IssueStatus, type Severity } from "@/features/ops/api";
@@ -135,57 +131,25 @@ export default function IssuesPage() {
           <div className="flex flex-wrap gap-3">
             <div className="grid gap-1">
               <Label size="sm">상태</Label>
-              <RhfField
+              <Select
+                options={statusOptions}
                 control={filterForm.control}
                 name="status"
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      setPage(1);
-                    }}
-                  >
-                    <SelectTrigger size="md" className="min-w-[140px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                onChange={() => setPage(1)}
+                size="md"
+                className="min-w-[140px]"
               />
             </div>
 
             <div className="grid gap-1">
               <Label size="sm">심각도</Label>
-              <RhfField
+              <Select
+                options={severityOptions}
                 control={filterForm.control}
                 name="severity"
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      setPage(1);
-                    }}
-                  >
-                    <SelectTrigger size="md" className="min-w-[140px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {severityOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                onChange={() => setPage(1)}
+                size="md"
+                className="min-w-[140px]"
               />
             </div>
           </div>

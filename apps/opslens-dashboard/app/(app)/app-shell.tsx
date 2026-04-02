@@ -3,17 +3,13 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { RhfField, useAppForm } from "@repo/forms";
+import { useAppForm } from "@repo/forms";
 import {
   Button,
   DatePicker,
   Input,
   Label,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Typography,
   buttonVariants,
   cn,
@@ -166,7 +162,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-1">
             <Button
               variant="outline"
-              size="icon"
+              size="sm"
               onClick={toggleSidebar}
               className="hidden h-9 w-9 md:inline-flex"
               aria-label="사이드바 접기/펼치기"
@@ -175,7 +171,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Button>
             <Button
               variant="outline"
-              size="icon"
+              size="sm"
               onClick={closeMobile}
               className="inline-flex h-9 w-9 md:hidden"
               aria-label="사이드바 닫기"
@@ -213,7 +209,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
-                  size="icon"
+                  size="sm"
                   onClick={openMobile}
                   className="inline-flex h-9 w-9 md:hidden"
                   aria-label="사이드바 열기"
@@ -227,7 +223,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
               <Link
                 href="/logs"
-                className={cn(buttonVariants({ variant: "default", size: "default" }), "gap-2")}
+                className={cn(buttonVariants({ variant: "primary", size: "md" }), "gap-2")}
               >
                 <UploadCloud className="h-4 w-4" />
                 신규 업로드
@@ -237,43 +233,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
               <div className="grid gap-1">
                 <Label size="sm">환경</Label>
-                <RhfField
+                <Select
+                  options={[
+                    { label: "prod", value: "prod" },
+                    { label: "stage", value: "stage" },
+                    { label: "dev", value: "dev" }
+                  ]}
                   control={filterForm.control}
                   name="environment"
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={(value) => field.onChange(value as "dev" | "stage" | "prod")}>
-                      <SelectTrigger size="md">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="prod">prod</SelectItem>
-                        <SelectItem value="stage">stage</SelectItem>
-                        <SelectItem value="dev">dev</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
+                  size="md"
                 />
               </div>
 
               <div className="grid gap-1">
                 <Label size="sm">서비스</Label>
-                <RhfField
+                <Select
+                  options={[
+                    { label: "all", value: "all" },
+                    { label: "docs", value: "docs" },
+                    { label: "whiteboard", value: "whiteboard" },
+                    { label: "billing", value: "billing" },
+                    { label: "checkout", value: "checkout" }
+                  ]}
                   control={filterForm.control}
                   name="serviceName"
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger size="md">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">all</SelectItem>
-                        <SelectItem value="docs">docs</SelectItem>
-                        <SelectItem value="whiteboard">whiteboard</SelectItem>
-                        <SelectItem value="billing">billing</SelectItem>
-                        <SelectItem value="checkout">checkout</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
+                  searchable
+                  size="md"
                 />
               </div>
 

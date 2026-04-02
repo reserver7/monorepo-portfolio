@@ -90,7 +90,7 @@ export default function ReportsPage() {
           <div className="flex items-center gap-2 text-sm">
             <Button
               type="button"
-              variant={audience === "developer" ? "default" : "outline"}
+              variant={audience === "developer" ? "primary" : "outline"}
               size="sm"
               onClick={() => setAudience("developer")}
             >
@@ -98,7 +98,7 @@ export default function ReportsPage() {
             </Button>
             <Button
               type="button"
-              variant={audience === "stakeholder" ? "default" : "outline"}
+              variant={audience === "stakeholder" ? "primary" : "outline"}
               size="sm"
               onClick={() => setAudience("stakeholder")}
             >

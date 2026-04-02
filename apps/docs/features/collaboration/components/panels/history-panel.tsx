@@ -14,7 +14,6 @@ const actionLabel: Record<HistoryEntry["action"], string> = {
 };
 
 export const HistoryPanel = ({ entries }: HistoryPanelProps) => {
-  const visibleEntries = entries.slice(0, 24);
   const panelItemClass = "rounded-xl border border-default bg-surface px-4 py-3";
 
   return (
@@ -28,13 +27,13 @@ export const HistoryPanel = ({ entries }: HistoryPanelProps) => {
         </Badge>
       </div>
 
-      <div className="max-h-[32rem] space-y-3 overflow-auto pr-1">
+      <div className="max-h-[20rem] space-y-3 overflow-y-auto overscroll-contain pr-1">
         {entries.length === 0 ? (
           <Typography variant="bodySm" tone="subtle">
             아직 기록된 히스토리가 없습니다.
           </Typography>
         ) : (
-          visibleEntries.map((entry) => (
+          entries.map((entry) => (
             <div key={entry.id} className={panelItemClass}>
               <div className="mb-2 flex items-center justify-between gap-2">
                 <Badge variant="info" size="sm">

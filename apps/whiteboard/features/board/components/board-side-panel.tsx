@@ -28,11 +28,10 @@ export const BoardSidePanel = ({
   eventLog
 }: BoardSidePanelProps) => {
   const visibleEventLog = eventLog.slice(0, 100);
-  const visibleHistoryEntries = historyEntries.slice(0, 24);
   const panelItemClass = "rounded-xl border border-default bg-surface px-4 py-3";
 
   return (
-    <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+    <div className="space-y-4">
       <Card className="p-5">
         <div className="mb-4 flex items-center justify-between gap-2">
           <Typography as="h3" variant="body" className="font-semibold">
@@ -128,13 +127,13 @@ export const BoardSidePanel = ({
             최근 {historyEntries.length}건
           </Typography>
         </div>
-        <div className="max-h-80 space-y-3 overflow-auto pr-1">
+        <div className="max-h-[20rem] space-y-3 overflow-y-auto overscroll-contain pr-1">
           {historyEntries.length === 0 ? (
             <Typography variant="bodySm" tone="subtle">
               표시할 변경 이력이 없습니다.
             </Typography>
           ) : (
-            visibleHistoryEntries.map((entry) => (
+            historyEntries.map((entry) => (
               <div key={entry.id} className={panelItemClass}>
                 <div className="flex items-center justify-between gap-2">
                   <Typography as="span" variant="bodySm" className="font-medium">

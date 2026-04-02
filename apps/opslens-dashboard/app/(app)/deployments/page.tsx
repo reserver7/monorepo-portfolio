@@ -81,7 +81,7 @@ export default function DeploymentsPage() {
 
           <Button
             type="submit"
-            variant="default"
+            variant="primary"
             className="w-fit"
             loading={createMutation.isPending ? true : undefined}
           >
