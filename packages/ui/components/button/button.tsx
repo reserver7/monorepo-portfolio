@@ -3,7 +3,12 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "../cn";
-import { BUTTON_DEFAULTS, BUTTON_SHAPE_CLASS, BUTTON_SIZE_CLASS, BUTTON_VARIANT_CLASS } from "./button.constants";
+import {
+  BUTTON_DEFAULTS,
+  BUTTON_SHAPE_CLASS,
+  BUTTON_SIZE_CLASS,
+  BUTTON_VARIANT_CLASS
+} from "./button.constants";
 import { useButtonDisabledState } from "./button.hooks";
 import type { ButtonProps, ButtonVariantsInput } from "./button.types";
 

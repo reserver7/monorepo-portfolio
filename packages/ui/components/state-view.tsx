@@ -54,14 +54,25 @@ export function StateView({
   const Icon = byVariant[variant].icon;
 
   return (
-    <div className={cn("rounded-xl border border-default", byVariant[variant].box, bySize[size], className)}>
-      <div className={cn(byLayout[layout], align === "center" ? "items-center justify-center text-center" : "items-start")}>
+    <div className={cn("border-default rounded-xl border", byVariant[variant].box, bySize[size], className)}>
+      <div
+        className={cn(
+          byLayout[layout],
+          align === "center" ? "items-center justify-center text-center" : "items-start"
+        )}
+      >
         {icon ?? (
-          <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", byVariant[variant].text, variant === "loading" && "animate-spin")} />
+          <Icon
+            className={cn(
+              "mt-0.5 h-4 w-4 shrink-0",
+              byVariant[variant].text,
+              variant === "loading" && "animate-spin"
+            )}
+          />
         )}
         <div>
-          <p className="text-body-sm font-semibold text-foreground">{title}</p>
-          {description ? <p className="mt-1 text-caption text-muted">{description}</p> : null}
+          <p className="text-body-sm text-foreground font-semibold">{title}</p>
+          {description ? <p className="text-caption text-muted mt-1">{description}</p> : null}
           {action ? <div className="mt-2">{action}</div> : null}
         </div>
       </div>

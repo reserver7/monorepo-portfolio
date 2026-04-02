@@ -10,7 +10,11 @@ const outputPath = path.join(repoRoot, "packages/ui/COMPONENT_PROPS_MATRIX.md");
 const skipFiles = new Set(["index.ts", "cn.ts", "chart.ts"]);
 
 function toComponentName(fileName) {
-  return fileName.replace(/\.(tsx|ts)$/, "").split("-").map((part) => part[0].toUpperCase() + part.slice(1)).join("");
+  return fileName
+    .replace(/\.(tsx|ts)$/, "")
+    .split("-")
+    .map((part) => part[0].toUpperCase() + part.slice(1))
+    .join("");
 }
 
 function parseProps(content, fallbackName) {

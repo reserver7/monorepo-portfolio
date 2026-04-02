@@ -12,7 +12,10 @@ const registerInterceptors = (client: AxiosInstance) => {
     config.headers = headers;
     return config as RequestConfigWithAuth;
   });
-  client.interceptors.response.use((response) => response, (error: unknown) => Promise.reject(error));
+  client.interceptors.response.use(
+    (response) => response,
+    (error: unknown) => Promise.reject(error)
+  );
 };
 
 export const createHttpClient = (baseURL: string): AxiosInstance => {

@@ -1,6 +1,6 @@
 export const fileDownloader = (data: BlobPart, filename: string, ext?: string, type?: string) => {
   const blob = new Blob([data], {
-    type: type || "application/octet-stream",
+    type: type || "application/octet-stream"
   });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

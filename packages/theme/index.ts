@@ -13,7 +13,4 @@ export {
   THEME_COOKIE_MAX_AGE_SECONDS
 } from "./src/constants";
 export { AppProviders, type AppProvidersProps } from "./src/app-providers";
-export {
-  createAppProviders,
-  type CreateAppProvidersOptions
-} from "./src/create-app-providers";
+export { createAppProviders, type CreateAppProvidersOptions } from "./src/create-app-providers";

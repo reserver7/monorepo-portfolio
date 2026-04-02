@@ -21,4 +21,3 @@ export function useDisclosure(options: UseDisclosureOptions = {}) {
     onToggle
   };
 }
-

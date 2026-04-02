@@ -31,9 +31,9 @@ export function StatCard({ label, value, helper, tone = "default", size = "md", 
 
   return (
     <div className={cn("rounded-xl border", toneCls[tone], sizeCls[size], className)}>
-      <p className="text-xs font-medium text-muted">{label}</p>
-      <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{value}</p>
-      {helper ? <p className="mt-1 text-xs text-muted">{helper}</p> : null}
+      <p className="text-muted text-xs font-medium">{label}</p>
+      <p className="text-foreground mt-2 text-2xl font-bold tracking-tight">{value}</p>
+      {helper ? <p className="text-muted mt-1 text-xs">{helper}</p> : null}
     </div>
   );
 }

@@ -138,7 +138,7 @@ export const PRIMITIVE_COLOR_PALETTE = {
   PURPLE_400: "#A78BFA",
   PURPLE_300: "#C4B5FD",
   PURPLE_200: "#DDD6FE",
-  PURPLE_100: "#F3E8FF",
+  PURPLE_100: "#F3E8FF"
 } as const;
 
 export const SEMANTIC_HEX_COLORS = {
@@ -161,7 +161,7 @@ export const SEMANTIC_HEX_COLORS = {
 
 export const UI_COLOR_CATALOG = {
   ...SEMANTIC_HEX_COLORS,
-  ...PRIMITIVE_COLOR_PALETTE,
+  ...PRIMITIVE_COLOR_PALETTE
 };
 
 // Legacy aliases for backwards compatibility.

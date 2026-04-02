@@ -3,10 +3,13 @@ import {
   type FieldValues,
   type UseFormProps,
   type UseFormReturn,
-  useForm,
+  useForm
 } from "react-hook-form";
 
-export type AppFormOptions<TFieldValues extends FieldValues> = Omit<UseFormProps<TFieldValues>, "defaultValues"> & {
+export type AppFormOptions<TFieldValues extends FieldValues> = Omit<
+  UseFormProps<TFieldValues>,
+  "defaultValues"
+> & {
   defaultValues?: DefaultValues<TFieldValues>;
 };
 

@@ -27,4 +27,3 @@ export const notifyUiInfo = (message: string, durationMs?: number) =>
 
 export const notifyUiWarning = (message: string, durationMs?: number) =>
   notifyUiAlert({ message, tone: "warning", durationMs });
-

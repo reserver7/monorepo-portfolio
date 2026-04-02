@@ -8,7 +8,9 @@ export type WithSelectors<TStore extends UseBoundStore<StoreApi<object>>> = TSto
   };
 };
 
-export function createSelectors<TStore extends UseBoundStore<StoreApi<object>>>(store: TStore): WithSelectors<TStore> {
+export function createSelectors<TStore extends UseBoundStore<StoreApi<object>>>(
+  store: TStore
+): WithSelectors<TStore> {
   const storeWithSelectors = store as WithSelectors<TStore>;
   storeWithSelectors.use = {} as WithSelectors<TStore>["use"];
 
@@ -20,4 +22,3 @@ export function createSelectors<TStore extends UseBoundStore<StoreApi<object>>>(
 
   return storeWithSelectors;
 }
-

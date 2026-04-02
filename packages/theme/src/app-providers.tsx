@@ -1,11 +1,7 @@
 "use client";
 
 import type { PropsWithChildren } from "react";
-import {
-  QueryClientProvider,
-  createAppQueryClient,
-  type QueryClientConfig
-} from "@repo/react-query";
+import { QueryClientProvider, createAppQueryClient, type QueryClientConfig } from "@repo/react-query";
 import { AlertConfirmProvider, ErrorBoundary, Toaster, useStableValue } from "@repo/ui";
 import type { ToasterProps } from "@repo/ui";
 import { AppThemeProvider } from "./theme-provider";

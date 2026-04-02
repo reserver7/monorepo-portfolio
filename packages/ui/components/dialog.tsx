@@ -14,17 +14,17 @@ export const DialogContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
   <DialogPrimitive.Portal>
-    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-foreground/35 backdrop-blur-[1px]" />
+    <DialogPrimitive.Overlay className="bg-foreground/35 fixed inset-0 z-50 backdrop-blur-[1px]" />
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl border border-default bg-surface p-6 shadow-lg",
+        "border-default bg-surface fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl border p-6 shadow-lg",
         className
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-80 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary">
+      <DialogPrimitive.Close className="focus:ring-primary absolute right-4 top-4 rounded-sm opacity-80 hover:opacity-100 focus:outline-none focus:ring-2">
         <X className="h-4 w-4" />
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
@@ -103,6 +103,6 @@ export const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Description ref={ref} className={cn("text-sm text-muted", className)} {...props} />
+  <DialogPrimitive.Description ref={ref} className={cn("text-muted text-sm", className)} {...props} />
 ));
 DialogDescription.displayName = DialogPrimitive.Description.displayName;

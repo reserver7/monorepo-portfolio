@@ -27,7 +27,9 @@ export function Spinner({
   delayMs
 }: SpinnerProps) {
   const resolvedDelayMs = delayMs ?? (fullscreen ? 300 : 0);
-  const [visible, setVisible] = React.useState(() => (open && resolvedDelayMs === 0) || (open && !fullscreen));
+  const [visible, setVisible] = React.useState(
+    () => (open && resolvedDelayMs === 0) || (open && !fullscreen)
+  );
 
   React.useEffect(() => {
     if (!open) {
@@ -69,7 +71,7 @@ export function Spinner({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/35 backdrop-blur-[1px]"
+      className="bg-foreground/35 fixed inset-0 z-50 flex items-center justify-center backdrop-blur-[1px]"
       role="status"
       aria-live="polite"
       aria-busy="true"

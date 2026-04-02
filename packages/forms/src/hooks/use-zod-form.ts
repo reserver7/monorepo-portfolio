@@ -6,7 +6,10 @@ import { useAppForm } from "./use-app-form";
 
 type SchemaOutput<TSchema extends ZodTypeAny> = TSchema["_output"];
 
-type UseZodFormOptions<TSchema extends ZodTypeAny> = Omit<UseFormProps<SchemaOutput<TSchema>>, "resolver" | "defaultValues"> & {
+type UseZodFormOptions<TSchema extends ZodTypeAny> = Omit<
+  UseFormProps<SchemaOutput<TSchema>>,
+  "resolver" | "defaultValues"
+> & {
   defaultValues?: DefaultValues<SchemaOutput<TSchema>>;
 };
 
@@ -16,6 +19,6 @@ export const useZodForm = <TSchema extends ZodTypeAny>(
 ): UseFormReturn<SchemaOutput<TSchema> & FieldValues> => {
   return useAppForm<SchemaOutput<TSchema> & FieldValues>({
     ...options,
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema)
   });
 };

@@ -6,11 +6,15 @@ import { AppProviders, type AppProvidersProps } from "./app-providers";
 
 type WrapChildren = (children: ReactNode) => ReactNode;
 
-export interface CreateAppProvidersOptions
-  extends Pick<
-    AppProvidersProps,
-    "queryClientConfig" | "fallbackTitle" | "fallbackDescription" | "showThemeToggle" | "showToaster" | "toasterOptions"
-  > {
+export interface CreateAppProvidersOptions extends Pick<
+  AppProvidersProps,
+  | "queryClientConfig"
+  | "fallbackTitle"
+  | "fallbackDescription"
+  | "showThemeToggle"
+  | "showToaster"
+  | "toasterOptions"
+> {
   wrapChildren?: WrapChildren;
 }
 

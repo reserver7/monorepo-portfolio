@@ -1,7 +1,7 @@
 import {
   FormProvider as ReactHookFormProvider,
   type FormProviderProps,
-  useFormContext,
+  useFormContext
 } from "react-hook-form";
 
 export const FormProvider = ReactHookFormProvider;

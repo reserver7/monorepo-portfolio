@@ -35,7 +35,7 @@ export interface DataTableProps<T> {
 }
 
 export function DataTableColumnHeader({ title }: { column?: { id: string }; title: string }) {
-  return <span className="text-xs font-semibold text-muted">{title}</span>;
+  return <span className="text-muted text-xs font-semibold">{title}</span>;
 }
 
 export function DataTable<T>({
@@ -58,13 +58,13 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   if (isLoading) {
     return (
-      <div className="space-y-3 rounded-xl border border-default bg-surface p-4">
+      <div className="border-default bg-surface space-y-3 rounded-xl border p-4">
         <div className="grid gap-2">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
         </div>
-        <p className="text-xs text-muted">{loadingMessage}</p>
+        <p className="text-muted text-xs">{loadingMessage}</p>
       </div>
     );
   }
@@ -79,7 +79,7 @@ export function DataTable<T>({
 
   return (
     <div className="space-y-3">
-      <div className="overflow-x-auto rounded-xl border border-default bg-surface">
+      <div className="border-default bg-surface overflow-x-auto rounded-xl border">
         <Table
           className={cn("min-w-full text-sm", tableClassName)}
           density={tableDensity}
@@ -102,15 +102,23 @@ export function DataTable<T>({
             {data.map((row, rowIndex) => {
               const key = getRowId ? getRowId(row, rowIndex) : String(rowIndex);
               return (
-                <TableRow key={key} className={cn("last:border-none", striped && rowIndex % 2 === 1 && "bg-surface-elevated/30")}>
+                <TableRow
+                  key={key}
+                  className={cn(
+                    "last:border-none",
+                    striped && rowIndex % 2 === 1 && "bg-surface-elevated/30"
+                  )}
+                >
                   {columns.map((column, colIndex) => {
                     const id = column.id ?? String(column.accessorKey ?? colIndex);
-                    const rawValue = column.accessorKey ? (row as Record<string, unknown>)[String(column.accessorKey)] : undefined;
+                    const rawValue = column.accessorKey
+                      ? (row as Record<string, unknown>)[String(column.accessorKey)]
+                      : undefined;
                     const rendered = column.cell
                       ? column.cell({ row: { original: row }, getValue: () => rawValue })
                       : (rawValue as React.ReactNode);
                     return (
-                      <TableCell key={`${key}-${id}`} className="px-3 align-top text-foreground">
+                      <TableCell key={`${key}-${id}`} className="text-foreground px-3 align-top">
                         {rendered ?? "-"}
                       </TableCell>
                     );
@@ -124,12 +132,17 @@ export function DataTable<T>({
 
       {onPageChange ? (
         <div className="flex items-center justify-between gap-2">
-          <p className="text-xs text-muted">
+          <p className="text-muted text-xs">
             페이지 {page} / {totalPages}
             {typeof totalCount === "number" ? ` · 총 ${totalCount}건` : ""}
           </p>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => onPageChange(Math.max(1, page - 1))} disabled={page <= 1}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(Math.max(1, page - 1))}
+              disabled={page <= 1}
+            >
               <ChevronLeft className="h-4 w-4" />
               이전
             </Button>

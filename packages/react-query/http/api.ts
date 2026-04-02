@@ -47,8 +47,8 @@ const onError = (error: AxiosError<BaseResponseProps<unknown>>) => {
 export const api = axios.create({
   baseURL: `/`,
   headers: {
-    "Content-Type": "application/json",
-  },
+    "Content-Type": "application/json"
+  }
 });
 
 api.interceptors.response.use(onSuccess, onError);

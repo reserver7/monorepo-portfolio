@@ -34,7 +34,13 @@ export interface TypographyProps extends React.HTMLAttributes<HTMLElement> {
   tone?: Tone;
 }
 
-export function Typography({ as = "p", variant = "body", tone = "default", className, ...props }: TypographyProps) {
+export function Typography({
+  as = "p",
+  variant = "body",
+  tone = "default",
+  className,
+  ...props
+}: TypographyProps) {
   const Comp = as as React.ElementType;
   return <Comp className={cn(variantClassMap[variant], toneClassMap[tone], className)} {...props} />;
 }

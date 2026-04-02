@@ -45,7 +45,9 @@ const normalizeOptionalString = (value: string | null): string | null => {
   return trimmed && trimmed.length > 0 ? trimmed : null;
 };
 
-export function createSessionStorage(config: SessionStorageWithSnapshotConfig): SharedSessionStorageWithSnapshot;
+export function createSessionStorage(
+  config: SessionStorageWithSnapshotConfig
+): SharedSessionStorageWithSnapshot;
 export function createSessionStorage(config: SessionStorageConfig): SharedSessionStorage;
 export function createSessionStorage(
   config: SessionStorageConfig | SessionStorageWithSnapshotConfig

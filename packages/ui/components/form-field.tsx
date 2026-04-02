@@ -32,15 +32,19 @@ export function FormField({
   return (
     <div className={cn("grid gap-1.5", className)}>
       {label ? (
-        <Label htmlFor={htmlFor} size={size === "lg" ? "md" : "sm"} className="inline-flex items-center gap-1">
+        <Label
+          htmlFor={htmlFor}
+          size={size === "lg" ? "md" : "sm"}
+          className="inline-flex items-center gap-1"
+        >
           <span>{label}</span>
           {requiredMark ? <span className="text-danger">*</span> : null}
           {!requiredMark && optionalLabel ? <span className="text-muted">({optionalLabel})</span> : null}
         </Label>
       ) : null}
       {children}
-      {description ? <p className="text-xs text-muted">{description}</p> : null}
-      {error ? <p className="text-xs text-danger">{error}</p> : null}
+      {description ? <p className="text-muted text-xs">{description}</p> : null}
+      {error ? <p className="text-danger text-xs">{error}</p> : null}
     </div>
   );
 }
