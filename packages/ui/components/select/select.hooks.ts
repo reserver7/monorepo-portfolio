@@ -86,7 +86,8 @@ export const usePopoverTriggerWidth = (triggerRef: React.RefObject<HTMLElement |
     }
 
     const updateWidth = () => {
-      setTriggerWidth(target.offsetWidth);
+      const nextWidth = target.offsetWidth;
+      setTriggerWidth((prevWidth) => (prevWidth === nextWidth ? prevWidth : nextWidth));
     };
 
     updateWidth();
