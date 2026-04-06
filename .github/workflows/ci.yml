@@ -38,6 +38,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify Storybook Auto Stories Are Up To Date
+        run: |
+          pnpm storybook:gen
+          git diff --exit-code -- packages/ui/stories/components/generated
+
+      - name: Verify Storybook Coverage
+        run: pnpm storybook:check
+
       - name: Lint
         run: pnpm turbo run lint
 
