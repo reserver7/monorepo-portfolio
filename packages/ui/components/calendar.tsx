@@ -14,28 +14,28 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
       showOutsideDays={showOutsideDays}
       className={cn("p-3", className)}
       classNames={{
-        months: "flex flex-col sm:flex-row gap-4",
-        month: "space-y-4",
-        caption: "flex justify-center pt-1 relative items-center",
-        caption_label: "text-sm font-medium",
-        nav: "space-x-1 flex items-center",
+        months: "flex flex-col gap-4",
+        month: "space-y-3",
+        caption: "relative flex items-center justify-center pt-1",
+        caption_label: "text-body-md font-semibold",
+        nav: "flex items-center gap-1",
         nav_button: cn(
-          buttonVariants({ variant: "outline", size: "md" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+          buttonVariants({ variant: "ghost", size: "sm" }),
+          "h-8 w-8 rounded-md p-0 text-muted hover:text-foreground"
         ),
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
-        table: "w-full border-collapse space-y-1",
-        head_row: "flex",
-        head_cell: "text-muted rounded-md w-9 font-normal text-[0.8rem]",
-        row: "flex w-full mt-2",
-        cell: "h-9 w-9 text-center text-sm p-0 relative",
-        day: cn(buttonVariants({ variant: "ghost" }), "h-9 w-9 p-0 font-normal"),
-        day_selected: "bg-primary text-primary-foreground hover:bg-primary",
-        day_today: "bg-surface-elevated text-foreground",
+        table: "w-full border-collapse",
+        head_row: "flex w-full",
+        head_cell: "text-muted w-9 text-center text-caption font-medium",
+        row: "mt-1 flex w-full",
+        cell: "relative h-9 w-9 p-0 text-center text-sm",
+        day: "h-9 w-9 rounded-md border border-transparent p-0 text-body-sm font-medium text-foreground transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+        day_selected: "bg-primary text-primary-foreground hover:bg-primary/95",
+        day_today: "border-default bg-surface-elevated text-foreground",
         day_outside: "text-muted opacity-50",
         day_disabled: "text-muted opacity-50",
-        day_range_middle: "aria-selected:bg-surface-elevated aria-selected:text-foreground",
+        day_range_middle: "aria-selected:bg-primary/15 aria-selected:text-foreground",
         day_hidden: "invisible",
         ...classNames
       }}

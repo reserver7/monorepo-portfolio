@@ -1,0 +1,8 @@
+{
+  "extends": "@repo/configs/typescript/react-library.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [".storybook/**/*"],
+  "exclude": ["dist", "build", "node_modules", "storybook-static"]
+}

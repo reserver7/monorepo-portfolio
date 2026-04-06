@@ -14,3 +14,5 @@ test-results
 *.log
 .DS_Store
 apps/server/data/state.json
+apps/server/data/state.json.tmp-*
+storybook-static

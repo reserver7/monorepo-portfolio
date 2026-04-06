@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import { Controller } from "react-hook-form";
+import { X } from "lucide-react";
 import { useComposedRefs, useControlledValue } from "../../hooks";
 import { cn } from "../cn";
+import { buildFieldDescribedBy, FieldSupportText, RequiredMark } from "../field/field-utils";
 import { Label } from "../label";
 import {
   clearInputValue,
@@ -23,6 +25,8 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
       containerClassName,
       labelClassName,
       helperClassName,
+      showCount = false,
+      countFormatter,
       size = INPUT_DEFAULTS.size,
       variant = INPUT_DEFAULTS.variant,
       status,
@@ -41,6 +45,7 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
       type = "text",
       value,
       defaultValue,
+      maxLength,
       onChange,
       onBlur,
       name,
@@ -68,9 +73,22 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
     const supportMessage = errorMessage ?? helperText;
     const hasDecorator = Boolean(prefix || suffix || clearable);
     const shouldWrapField = Boolean(
-      label || supportMessage || hasDecorator || containerClassName || labelClassName || helperClassName
+      label || required || supportMessage || hasDecorator || containerClassName || labelClassName || helperClassName
     );
     const showClearButton = clearable && currentValue.length > 0 && !disabled && !readOnly;
+    const currentLength = currentValue.length;
+    const shouldShowCount = showCount;
+    const countText = countFormatter
+      ? countFormatter(currentLength, maxLength)
+      : typeof maxLength === "number"
+        ? `${currentLength}/${maxLength}`
+        : String(currentLength);
+    const supportTextId = resolvedId ? `${resolvedId}-support` : undefined;
+    const countTextId = resolvedId ? `${resolvedId}-count` : undefined;
+    const ariaDescribedBy = buildFieldDescribedBy(
+      supportMessage ? supportTextId : undefined,
+      shouldShowCount ? countTextId : undefined
+    );
 
     const handleChange = React.useCallback(
       (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,6 +127,9 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
         onChange={handleChange}
         onBlur={onBlur}
         name={name}
+        maxLength={maxLength}
+        aria-invalid={activeStatus === "error" ? true : undefined}
+        aria-describedby={ariaDescribedBy}
         className={cn(
           "text-foreground placeholder:text-muted w-full outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50",
           hasDecorator
@@ -138,6 +159,8 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
             <span>{label}</span>
             {required ? <span className="text-danger">*</span> : null}
           </Label>
+        ) : required ? (
+          <RequiredMark />
         ) : null}
 
         {hasDecorator ? (
@@ -163,9 +186,7 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
                 aria-label="입력값 비우기"
                 className="text-muted hover:bg-surface-elevated hover:text-foreground inline-flex h-5 w-5 shrink-0 items-center justify-center rounded transition-colors"
               >
-                <span aria-hidden className="text-caption leading-none">
-                  ×
-                </span>
+                <X aria-hidden className="h-3.5 w-3.5" />
               </button>
             ) : null}
             {suffix ? <span className="text-muted flex shrink-0 items-center">{suffix}</span> : null}
@@ -174,9 +195,15 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
           inputElement
         )}
 
-        {supportMessage ? (
-          <p className={cn("text-caption", errorMessage ? "text-danger" : "text-muted", helperClassName)}>
-            {supportMessage}
+        <FieldSupportText
+          id={supportTextId}
+          message={supportMessage}
+          error={Boolean(errorMessage)}
+          className={helperClassName}
+        />
+        {shouldShowCount ? (
+          <p id={countTextId} className="text-caption text-muted justify-self-end">
+            {countText}
           </p>
         ) : null}
       </div>

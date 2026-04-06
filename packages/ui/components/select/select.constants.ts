@@ -9,9 +9,9 @@ export const SELECT_DEFAULTS = {
   state: "default",
   searchable: false,
   multiple: false,
-  clearable: false,
   loading: false,
-  maxVisibleItems: 8
+  maxVisibleItems: 8,
+  maxTagCount: 2
 } satisfies {
   placeholder: string;
   emptyMessage: string;
@@ -21,9 +21,9 @@ export const SELECT_DEFAULTS = {
   state: SelectTriggerState;
   searchable: boolean;
   multiple: boolean;
-  clearable: boolean;
   loading: boolean;
   maxVisibleItems: number;
+  maxTagCount: number;
 };
 
 export const SELECT_ROW_HEIGHT_PX = 36;
@@ -34,6 +34,10 @@ export const SELECT_TRIGGER_BASE_CLASS =
 export const SELECT_CONTENT_BASE_CLASS =
   "z-50 max-h-80 min-w-[var(--radix-select-trigger-width)] w-[var(--radix-select-trigger-width)] overflow-hidden rounded-md border border-default bg-surface shadow-md";
 
+export const SELECT_POPOVER_CONTENT_BASE_CLASS = "border-default bg-surface z-50 rounded-md border p-2 shadow-md";
+
+export const SELECT_SCROLL_LIST_CLASS = "space-y-1 overflow-auto p-1";
+
 export const SELECT_SIZE_CLASS: Record<SelectTriggerSize, string> = {
   sm: "h-9 text-body-sm",
   md: "h-10 text-body-md",
@@ -43,7 +47,7 @@ export const SELECT_SIZE_CLASS: Record<SelectTriggerSize, string> = {
 export const SELECT_VARIANT_CLASS: Record<SelectTriggerVariant, string> = {
   default: "border-default bg-surface shadow-sm hover:border-primary/30",
   filled: "border-transparent bg-surface-elevated hover:border-default",
-  ghost: "border-transparent bg-transparent"
+  ghost: "border-primary/25 bg-primary/6 shadow-none hover:border-primary/35 hover:bg-primary/10"
 };
 
 export const SELECT_STATE_CLASS: Record<SelectTriggerState, string> = {

@@ -22,7 +22,7 @@ export const INPUT_VARIANT_CLASS: Record<InputVariant, string> = {
   default: "border-default bg-surface shadow-sm hover:border-primary/30",
   outline: "border-default bg-surface hover:border-primary/30",
   filled: "border-transparent bg-surface-elevated hover:border-default",
-  ghost: "border-transparent bg-transparent"
+  ghost: "border-primary/25 bg-primary/6 shadow-none hover:border-primary/35 hover:bg-primary/10"
 };
 
 export const INPUT_STATUS_CLASS: Record<InputStatus, string> = {

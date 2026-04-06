@@ -14,7 +14,7 @@ export function Card({ className, variant = "default", interactive = false, ...p
     default: "border-default bg-surface shadow-sm",
     elevated: "border-default bg-surface-elevated shadow-md",
     muted: "border-default bg-surface-elevated shadow-sm",
-    ghost: "border-transparent bg-transparent shadow-none"
+    ghost: "border-primary/20 bg-primary/6 shadow-none"
   };
   const interactiveClassName = interactive ? "transition-all hover:-translate-y-0.5 hover:shadow-md" : "";
 

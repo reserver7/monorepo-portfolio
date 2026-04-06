@@ -20,6 +20,8 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
   containerClassName?: string;
   labelClassName?: string;
   helperClassName?: string;
+  showCount?: boolean;
+  countFormatter?: (currentLength: number, maxLength?: number) => React.ReactNode;
   control?: unknown;
   rules?: RegisterOptions;
 }
