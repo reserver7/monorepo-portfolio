@@ -1,5 +1,11 @@
 export { Radio, RadioGroup, RadioGroupItem } from "./radio-group";
-export type { RadioGroupItemProps, RadioGroupProps, RadioGroupSize, RadioOption } from "./radio-group.types";
+export type {
+  RadioGroupItemProps,
+  RadioGroupOrientation,
+  RadioGroupProps,
+  RadioGroupSize,
+  RadioOption
+} from "./radio-group.types";
 export {
   RADIO_GROUP_DEFAULTS,
   RADIO_GROUP_INDICATOR_SIZE_CLASS,

@@ -5,6 +5,7 @@ import * as PopoverPrimitive from "@radix-ui/react-popover";
 import * as SelectPrimitive from "@radix-ui/react-select";
 import { Controller } from "react-hook-form";
 import { Check, ChevronDown } from "lucide-react";
+import { useControlledValue } from "../../hooks";
 import { cn } from "../cn";
 import {
   SELECT_CONTENT_BASE_CLASS,
@@ -13,17 +14,17 @@ import {
   SELECT_ROW_HEIGHT_PX,
   SELECT_SCROLL_LIST_CLASS,
   SELECT_SIZE_CLASS,
-  SELECT_STATE_CLASS,
+  SELECT_STATUS_CLASS,
   SELECT_TRIGGER_BASE_CLASS,
   SELECT_VARIANT_CLASS
 } from "./select.constants";
 import {
-  resolveSelectViewportHeight,
-  toSelectKey,
   useFilteredSelectOptions,
+  useKeyedSelectOptions,
   usePopoverTriggerWidth,
   useSelectOptionMaps
 } from "./select.hooks";
+import { resolveSelectViewportHeight, toSelectKey } from "./select.utils";
 import type {
   SelectContentProps,
   SelectItemProps,
@@ -45,7 +46,7 @@ export const SelectTrigger = React.forwardRef<
       children,
       size = SELECT_DEFAULTS.size,
       variant = SELECT_DEFAULTS.variant,
-      state = SELECT_DEFAULTS.state,
+      status = SELECT_DEFAULTS.status,
       ...props
     },
     ref
@@ -57,7 +58,7 @@ export const SelectTrigger = React.forwardRef<
           SELECT_TRIGGER_BASE_CLASS,
           SELECT_SIZE_CLASS[size],
           SELECT_VARIANT_CLASS[variant],
-          SELECT_STATE_CLASS[state],
+          SELECT_STATUS_CLASS[status],
           className
         )}
         {...props}
@@ -120,51 +121,72 @@ function SelectSingle<T = SelectPrimitiveValue>({
   emptyMessage = SELECT_DEFAULTS.emptyMessage,
   size = SELECT_DEFAULTS.size,
   variant = SELECT_DEFAULTS.variant,
-  state = SELECT_DEFAULTS.state,
-  status,
+  status = SELECT_DEFAULTS.status,
   errorMessage,
   className,
   contentClassName,
   maxVisibleItems = SELECT_DEFAULTS.maxVisibleItems
 }: SelectProps<T>) {
-  const activeState = status ?? (errorMessage ? "error" : state);
+  const activeStatus = errorMessage ? "error" : status;
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const searchInputRef = React.useRef<HTMLInputElement | null>(null);
   const triggerRef = React.useRef<HTMLButtonElement | null>(null);
   const triggerWidth = usePopoverTriggerWidth(triggerRef, open);
+  const keyedOptions = useKeyedSelectOptions(options);
   const { optionByKey } = useSelectOptionMaps(options);
-  const [internalValue, setInternalValue] = React.useState<string>("");
-  const isControlled = value !== undefined;
-
-  const selectedValueString = React.useMemo(() => {
-    if (value == null || Array.isArray(value)) {
+  const controlledSingleValue = React.useMemo(() => {
+    if (Array.isArray(value) || value === undefined) {
+      return undefined;
+    }
+    if (value === null) {
       return "";
     }
     return toSelectKey(value);
   }, [value]);
-  const selectedKey = isControlled ? selectedValueString : internalValue;
+  const [selectedKey, setSelectedKey] = useControlledValue<string>({
+    value: controlledSingleValue,
+    defaultValue: ""
+  });
   const filteredOptions = useFilteredSelectOptions(options, query, searchable);
+  const filteredKeyedOptions = useKeyedSelectOptions(filteredOptions);
   const selectedOptionLabel = selectedKey ? optionByKey.get(selectedKey)?.label : null;
   const viewportStyle = React.useMemo(
     () => ({ maxHeight: resolveSelectViewportHeight(maxVisibleItems, SELECT_ROW_HEIGHT_PX) }),
     [maxVisibleItems]
   );
   const isDisabled = Boolean(disabled || loading);
+  const triggerClassName = React.useMemo(
+    () =>
+      cn(
+        SELECT_TRIGGER_BASE_CLASS,
+        SELECT_SIZE_CLASS[size],
+        SELECT_VARIANT_CLASS[variant],
+        SELECT_STATUS_CLASS[activeStatus],
+        className
+      ),
+    [activeStatus, className, size, variant]
+  );
+  const popoverContentStyle = React.useMemo(() => ({ width: triggerWidth || undefined }), [triggerWidth]);
 
   const handleOpenChange = React.useCallback((nextOpen: boolean) => {
     setOpen(nextOpen);
   }, []);
 
+  const handleSearchableOpenChange = React.useCallback((nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      setQuery("");
+    }
+  }, []);
+
   const handleValueChange = React.useCallback(
     (nextValueString: string) => {
       const selectedOption = optionByKey.get(nextValueString);
-      if (!isControlled) {
-        setInternalValue(nextValueString);
-      }
+      setSelectedKey(nextValueString);
       onChange?.(selectedOption ? selectedOption.value : (nextValueString as unknown as T));
     },
-    [isControlled, onChange, optionByKey]
+    [onChange, optionByKey, setSelectedKey]
   );
 
   React.useEffect(() => {
@@ -179,25 +201,14 @@ function SelectSingle<T = SelectPrimitiveValue>({
     return (
       <PopoverPrimitive.Root
         open={open}
-        onOpenChange={(nextOpen) => {
-          setOpen(nextOpen);
-          if (!nextOpen) {
-            setQuery("");
-          }
-        }}
+        onOpenChange={handleSearchableOpenChange}
       >
         <PopoverPrimitive.Trigger asChild>
           <button
             ref={triggerRef}
             type="button"
             disabled={isDisabled}
-            className={cn(
-              SELECT_TRIGGER_BASE_CLASS,
-              SELECT_SIZE_CLASS[size],
-              SELECT_VARIANT_CLASS[variant],
-              SELECT_STATE_CLASS[activeState],
-              className
-            )}
+            className={triggerClassName}
           >
             {open ? (
               <input
@@ -221,7 +232,7 @@ function SelectSingle<T = SelectPrimitiveValue>({
             align="start"
             sideOffset={0}
             className={cn(SELECT_POPOVER_CONTENT_BASE_CLASS, contentClassName)}
-            style={{ width: triggerWidth || undefined }}
+            style={popoverContentStyle}
           >
             {loading ? (
               <div className="text-body-sm text-muted px-2 py-2">불러오는 중...</div>
@@ -229,8 +240,7 @@ function SelectSingle<T = SelectPrimitiveValue>({
               <div className="text-body-sm text-muted px-2 py-2">{emptyMessage}</div>
             ) : (
               <div className={SELECT_SCROLL_LIST_CLASS} style={viewportStyle}>
-                {filteredOptions.map((option) => {
-                  const key = toSelectKey(option.value);
+                {filteredKeyedOptions.map(({ key, option }) => {
                   const checked = key === selectedKey;
                   return (
                     <button
@@ -267,7 +277,7 @@ function SelectSingle<T = SelectPrimitiveValue>({
       disabled={isDisabled}
       onOpenChange={handleOpenChange}
     >
-      <SelectTrigger size={size} variant={variant} state={activeState} className={className}>
+      <SelectTrigger size={size} variant={variant} status={activeStatus} className={className}>
         <span className="flex min-w-0 flex-1 items-center gap-1">
           <SelectValue placeholder={placeholder} />
         </span>
@@ -280,8 +290,8 @@ function SelectSingle<T = SelectPrimitiveValue>({
             className={SELECT_SCROLL_LIST_CLASS}
             style={{ maxHeight: resolveSelectViewportHeight(maxVisibleItems, SELECT_ROW_HEIGHT_PX) }}
           >
-            {options.map((option) => (
-              <SelectItem key={toSelectKey(option.value)} value={toSelectKey(option.value)} disabled={option.disabled}>
+            {keyedOptions.map(({ key, option }) => (
+              <SelectItem key={key} value={key} disabled={option.disabled}>
                 {option.label}
               </SelectItem>
             ))}
@@ -303,40 +313,50 @@ function SelectMultiple<T = SelectPrimitiveValue>({
   emptyMessage = SELECT_DEFAULTS.emptyMessage,
   size = SELECT_DEFAULTS.size,
   variant = SELECT_DEFAULTS.variant,
-  state = SELECT_DEFAULTS.state,
-  status,
+  status = SELECT_DEFAULTS.status,
   errorMessage,
   className,
   contentClassName,
   maxVisibleItems = SELECT_DEFAULTS.maxVisibleItems,
   maxTagCount = SELECT_DEFAULTS.maxTagCount
 }: SelectProps<T>) {
-  const activeState = status ?? (errorMessage ? "error" : state);
+  const activeStatus = errorMessage ? "error" : status;
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const searchInputRef = React.useRef<HTMLInputElement | null>(null);
-  const [internalValues, setInternalValues] = React.useState<T[]>([]);
-  const isControlled = value !== undefined;
   const triggerRef = React.useRef<HTMLButtonElement | null>(null);
   const triggerWidth = usePopoverTriggerWidth(triggerRef, open);
+  const keyedOptions = useKeyedSelectOptions(options);
   const { labelByKey } = useSelectOptionMaps(options);
-
-  const selectedValues = React.useMemo(() => {
-    if (isControlled) {
-      return Array.isArray(value) ? value : [];
+  const controlledMultipleValue = React.useMemo(() => {
+    if (value === undefined) {
+      return undefined;
     }
-    return internalValues;
-  }, [internalValues, isControlled, value]);
+    return Array.isArray(value) ? value : [];
+  }, [value]);
+  const [selectedValues, setSelectedValues] = useControlledValue<T[]>({
+    value: controlledMultipleValue,
+    defaultValue: []
+  });
+  const selectedValuesByKey = React.useMemo(() => {
+    const map = new Map<string, T>();
+    for (const item of selectedValues) {
+      map.set(toSelectKey(item), item);
+    }
+    return map;
+  }, [selectedValues]);
   const selectedKeys = React.useMemo(() => selectedValues.map((item) => toSelectKey(item)), [selectedValues]);
   const selectedValueSet = React.useMemo(() => new Set(selectedKeys), [selectedKeys]);
-  const selectableOptions = React.useMemo(() => options.filter((option) => !option.disabled), [options]);
-  const selectableKeys = React.useMemo(() => selectableOptions.map((option) => toSelectKey(option.value)), [selectableOptions]);
+  const selectableOptions = React.useMemo(() => keyedOptions.filter(({ option }) => !option.disabled), [keyedOptions]);
+  const selectableKeys = React.useMemo(() => selectableOptions.map(({ key }) => key), [selectableOptions]);
+  const allSelectableValues = React.useMemo(() => selectableOptions.map(({ option }) => option.value as T), [selectableOptions]);
   const selectedSelectableCount = React.useMemo(
-    () => selectableKeys.filter((key) => selectedValueSet.has(key)).length,
+    () => selectableKeys.reduce((count, key) => count + (selectedValueSet.has(key) ? 1 : 0), 0),
     [selectableKeys, selectedValueSet]
   );
   const isAllSelected = selectableKeys.length > 0 && selectedSelectableCount === selectableKeys.length;
   const filteredOptions = useFilteredSelectOptions(options, query, searchable);
+  const filteredKeyedOptions = useKeyedSelectOptions(filteredOptions);
   const visibleTagKeys = React.useMemo(
     () => selectedKeys.slice(0, Math.max(0, maxTagCount)),
     [maxTagCount, selectedKeys]
@@ -348,6 +368,19 @@ function SelectMultiple<T = SelectPrimitiveValue>({
     [maxVisibleItems]
   );
   const isDisabled = Boolean(disabled || loading);
+  const triggerClassName = React.useMemo(
+    () =>
+      cn(
+        SELECT_TRIGGER_BASE_CLASS,
+        SELECT_SIZE_CLASS[size],
+        SELECT_VARIANT_CLASS[variant],
+        SELECT_STATUS_CLASS[activeStatus],
+        "min-h-10 h-auto py-1.5",
+        className
+      ),
+    [activeStatus, className, size, variant]
+  );
+  const popoverContentStyle = React.useMemo(() => ({ width: triggerWidth || undefined }), [triggerWidth]);
 
   const handleQueryChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(event.target.value);
@@ -356,23 +389,23 @@ function SelectMultiple<T = SelectPrimitiveValue>({
   const toggleValue = React.useCallback(
     (nextValue: T) => {
       const key = toSelectKey(nextValue);
-      const next = selectedValues.some((item) => toSelectKey(item) === key)
-        ? selectedValues.filter((item) => toSelectKey(item) !== key)
-        : [...selectedValues, nextValue];
-      if (!isControlled) {
-        setInternalValues(next);
+      const nextMap = new Map(selectedValuesByKey);
+      if (nextMap.has(key)) {
+        nextMap.delete(key);
+      } else {
+        nextMap.set(key, nextValue);
       }
+      const next = Array.from(nextMap.values());
+      setSelectedValues(next);
       onChange?.(next as T[]);
     },
-    [isControlled, onChange, selectedValues]
+    [onChange, selectedValuesByKey, setSelectedValues]
   );
 
   const handleClear = React.useCallback(() => {
-    if (!isControlled) {
-      setInternalValues([]);
-    }
+    setSelectedValues([]);
     onChange?.([]);
-  }, [isControlled, onChange]);
+  }, [onChange, setSelectedValues]);
 
   const handleToggleAll = React.useCallback(() => {
     if (isAllSelected) {
@@ -380,12 +413,9 @@ function SelectMultiple<T = SelectPrimitiveValue>({
       return;
     }
 
-    const allValues = selectableOptions.map((option) => option.value as T);
-    if (!isControlled) {
-      setInternalValues(allValues);
-    }
-    onChange?.(allValues);
-  }, [handleClear, isAllSelected, isControlled, onChange, selectableOptions]);
+    setSelectedValues(allSelectableValues);
+    onChange?.(allSelectableValues);
+  }, [allSelectableValues, handleClear, isAllSelected, onChange, setSelectedValues]);
 
   React.useEffect(() => {
     if (!shouldShowSearchInput) return;
@@ -411,14 +441,7 @@ function SelectMultiple<T = SelectPrimitiveValue>({
           ref={triggerRef}
           type="button"
           disabled={isDisabled}
-          className={cn(
-            SELECT_TRIGGER_BASE_CLASS,
-            SELECT_SIZE_CLASS[size],
-            SELECT_VARIANT_CLASS[variant],
-            SELECT_STATE_CLASS[activeState],
-            "min-h-10 h-auto py-1.5",
-            className
-          )}
+          className={triggerClassName}
         >
           {shouldShowSearchInput ? (
             <input
@@ -458,7 +481,7 @@ function SelectMultiple<T = SelectPrimitiveValue>({
           align="start"
           sideOffset={0}
           className={cn(SELECT_POPOVER_CONTENT_BASE_CLASS, contentClassName)}
-          style={{ width: triggerWidth || undefined }}
+          style={popoverContentStyle}
         >
           <button
             type="button"
@@ -475,11 +498,11 @@ function SelectMultiple<T = SelectPrimitiveValue>({
             <div className="text-body-sm text-muted px-2 py-2">{emptyMessage}</div>
           ) : (
             <div className={SELECT_SCROLL_LIST_CLASS} style={viewportStyle}>
-              {filteredOptions.map((option) => {
-                const checked = selectedValueSet.has(toSelectKey(option.value));
+              {filteredKeyedOptions.map(({ key, option }) => {
+                const checked = selectedValueSet.has(key);
                 return (
                   <button
-                    key={toSelectKey(option.value)}
+                    key={key}
                     type="button"
                     disabled={option.disabled}
                     className={cn(

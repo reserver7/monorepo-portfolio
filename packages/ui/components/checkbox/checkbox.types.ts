@@ -3,6 +3,7 @@ import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import type { RegisterOptions } from "react-hook-form";
 
 export type CheckboxSize = "sm" | "md";
+export type CheckboxOrientation = "horizontal" | "vertical";
 
 export interface CheckboxProps
   extends Omit<React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>, "checked" | "defaultChecked" | "onCheckedChange"> {
@@ -11,6 +12,7 @@ export interface CheckboxProps
   onCheckedChange?: (checked: boolean) => void;
   indeterminate?: boolean;
   size?: CheckboxSize;
+  orientation?: CheckboxOrientation;
   label?: React.ReactNode;
   helperText?: React.ReactNode;
   errorMessage?: React.ReactNode;

@@ -1,8 +1,5 @@
 import * as React from "react";
-import type { CheckedState } from "@radix-ui/react-checkbox";
 import type { CheckboxGroupState } from "./checkbox.types";
-
-export const toBooleanChecked = (value: CheckedState): boolean => value === true;
 
 export function useCheckboxGroup<T>(items: T[], selected: T[], onChange: (next: T[]) => void): CheckboxGroupState<T> {
   const selectedSet = React.useMemo(() => new Set(selected), [selected]);

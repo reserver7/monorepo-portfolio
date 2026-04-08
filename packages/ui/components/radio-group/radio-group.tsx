@@ -40,6 +40,7 @@ function RadioGroupBase(
     defaultValue,
     onValueChange,
     size = RADIO_GROUP_DEFAULTS.size,
+    orientation = RADIO_GROUP_DEFAULTS.orientation,
     helperText,
     errorMessage,
     required,
@@ -56,20 +57,9 @@ function RadioGroupBase(
   const resolvedName = props.name ?? `radio-group-${generatedName}`;
   const supportText = errorMessage ?? helperText ?? (required ? "필수 선택 항목입니다." : undefined);
   const itemTopOffset = size === "md" ? "mt-[2px]" : "mt-px";
-
-  const groupNode = (
-    <RadioGroupPrimitive.Root
-      ref={ref}
-      className={cn("grid gap-2.5", className)}
-      value={value}
-      defaultValue={defaultValue}
-      onValueChange={onValueChange}
-      name={resolvedName}
-      required={required}
-      disabled={disabled}
-      {...props}
-    >
-      {options?.map((option) => {
+  const optionNodes = React.useMemo(
+    () =>
+      options?.map((option) => {
         const optionId = `${resolvedName}-${option.value}`;
         return (
           <div key={option.value} className={cn("flex items-start gap-2.5", optionClassName)}>
@@ -85,7 +75,26 @@ function RadioGroupBase(
             </Label>
           </div>
         );
-      })}
+      }) ?? [],
+    [disabled, errorMessage, itemTopOffset, optionClassName, optionLabelClassName, options, resolvedName, size]
+  );
+
+  const groupNode = (
+    <RadioGroupPrimitive.Root
+      ref={ref}
+      className={cn(
+        orientation === "horizontal" ? "flex flex-wrap items-start gap-x-4 gap-y-2.5" : "grid gap-2.5",
+        className
+      )}
+      value={value}
+      defaultValue={defaultValue}
+      onValueChange={onValueChange}
+      name={resolvedName}
+      required={required}
+      disabled={disabled}
+      {...props}
+    >
+      {optionNodes}
     </RadioGroupPrimitive.Root>
   );
 
@@ -107,7 +116,7 @@ function RadioGroupBase(
 const RadioGroupBaseWithRef = React.forwardRef(RadioGroupBase);
 RadioGroupBaseWithRef.displayName = "RadioGroupBase";
 
-export const RadioGroup = React.forwardRef<React.ElementRef<typeof RadioGroupPrimitive.Root>, RadioGroupProps>(
+const RadioGroupComponent = React.forwardRef<React.ElementRef<typeof RadioGroupPrimitive.Root>, RadioGroupProps>(
   (props, ref) => {
     const { control, rules, name, onValueChange, value, defaultValue, required, ...rest } = props;
     const mergedRules = React.useMemo<RadioGroupProps["rules"]>(() => {
@@ -152,6 +161,9 @@ export const RadioGroup = React.forwardRef<React.ElementRef<typeof RadioGroupPri
     );
   }
 );
+RadioGroupComponent.displayName = "RadioGroup";
+
+export const RadioGroup = React.memo(RadioGroupComponent);
 RadioGroup.displayName = "RadioGroup";
 
 export { Radio, RadioGroupItem };

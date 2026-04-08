@@ -16,13 +16,29 @@ export function useControlledValue<T>({
   const [uncontrolledValue, setUncontrolledValue] = React.useState<T>(defaultValue);
   const isControlled = value !== undefined;
   const currentValue = isControlled ? (value as T) : uncontrolledValue;
+  const isControlledRef = React.useRef(isControlled);
+  const currentValueRef = React.useRef(currentValue);
+  const onChangeRef = React.useRef(onChange);
+
+  React.useEffect(() => {
+    isControlledRef.current = isControlled;
+  }, [isControlled]);
+
+  React.useEffect(() => {
+    currentValueRef.current = currentValue;
+  }, [currentValue]);
+
+  React.useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   const setValue = React.useCallback(
     (next: T | ((prev: T) => T)) => {
-      if (isControlled) {
-        const resolvedValue = typeof next === "function" ? (next as (prev: T) => T)(currentValue) : next;
-        if (!Object.is(currentValue, resolvedValue)) {
-          onChange?.(resolvedValue);
+      if (isControlledRef.current) {
+        const baseValue = currentValueRef.current;
+        const resolvedValue = typeof next === "function" ? (next as (prev: T) => T)(baseValue) : next;
+        if (!Object.is(baseValue, resolvedValue)) {
+          onChangeRef.current?.(resolvedValue);
         }
         return;
       }
@@ -30,12 +46,12 @@ export function useControlledValue<T>({
       setUncontrolledValue((prev) => {
         const resolvedValue = typeof next === "function" ? (next as (prev: T) => T)(prev) : next;
         if (!Object.is(prev, resolvedValue)) {
-          onChange?.(resolvedValue);
+          onChangeRef.current?.(resolvedValue);
         }
         return resolvedValue;
       });
     },
-    [currentValue, isControlled, onChange]
+    []
   );
 
   return [currentValue, setValue, isControlled];

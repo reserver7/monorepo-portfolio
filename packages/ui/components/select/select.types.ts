@@ -4,8 +4,7 @@ import type { RegisterOptions } from "react-hook-form";
 
 export type SelectTriggerSize = "sm" | "md" | "lg";
 export type SelectTriggerVariant = "default" | "filled" | "ghost";
-export type SelectTriggerState = "default" | "error" | "success";
-export type SelectTriggerStatus = SelectTriggerState;
+export type SelectTriggerStatus = "default" | "error" | "success";
 
 export type SelectPrimitiveValue = string | number;
 
@@ -35,7 +34,6 @@ export interface SelectProps<T = SelectPrimitiveValue> {
   emptyMessage?: string;
   size?: SelectTriggerSize;
   variant?: SelectTriggerVariant;
-  state?: SelectTriggerState;
   status?: SelectTriggerStatus;
   className?: string;
   containerClassName?: string;
@@ -50,7 +48,7 @@ export interface SelectProps<T = SelectPrimitiveValue> {
 export interface SelectTriggerProps extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> {
   size?: SelectTriggerSize;
   variant?: SelectTriggerVariant;
-  state?: SelectTriggerState;
+  status?: SelectTriggerStatus;
 }
 
 export type SelectContentProps = React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>;

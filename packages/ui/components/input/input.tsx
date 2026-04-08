@@ -15,7 +15,7 @@ import {
   INPUT_STATUS_CLASS,
   INPUT_VARIANT_CLASS
 } from "./input.constants";
-import { resolveInputStatus } from "./input.hooks";
+import { resolveInputStatus } from "./input.utils";
 import type { InputProps } from "./input.types";
 
 const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
@@ -30,7 +30,6 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
       size = INPUT_DEFAULTS.size,
       variant = INPUT_DEFAULTS.variant,
       status,
-      state,
       label,
       helperText,
       errorMessage,
@@ -69,7 +68,7 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
         ? String(defaultValue)
         : undefined;
 
-    const activeStatus = resolveInputStatus(status, state, Boolean(errorMessage));
+    const activeStatus = resolveInputStatus(status, Boolean(errorMessage));
     const supportMessage = errorMessage ?? helperText;
     const hasDecorator = Boolean(prefix || suffix || clearable);
     const shouldWrapField = Boolean(
@@ -212,7 +211,7 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
 );
 InputBase.displayName = "InputBase";
 
-export const Input = React.forwardRef<HTMLInputElement, InputProps>((props, ref) => {
+const InputComponent = React.forwardRef<HTMLInputElement, InputProps>((props, ref) => {
   const { control, rules, name, onChange, onBlur, ...rest } = props;
 
   if (control && typeof name === "string" && name.length > 0) {
@@ -243,4 +242,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>((props, ref)
 
   return <InputBase {...rest} ref={ref} name={name} onChange={onChange} onBlur={onBlur} />;
 });
+InputComponent.displayName = "Input";
+
+export const Input = React.memo(InputComponent);
 Input.displayName = "Input";

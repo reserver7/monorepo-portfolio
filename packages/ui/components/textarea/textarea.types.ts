@@ -3,14 +3,13 @@ import type { RegisterOptions } from "react-hook-form";
 
 export type TextareaSize = "sm" | "md" | "lg";
 export type TextareaVariant = "default" | "filled" | "ghost";
-export type TextareaState = "default" | "error" | "success";
+export type TextareaStatus = "default" | "error" | "success";
 export type TextareaResize = "none" | "vertical" | "horizontal" | "both";
 
 export interface TextareaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "size"> {
   size?: TextareaSize;
   variant?: TextareaVariant;
-  state?: TextareaState;
-  status?: TextareaState;
+  status?: TextareaStatus;
   resize?: TextareaResize;
   label?: React.ReactNode;
   helperText?: React.ReactNode;

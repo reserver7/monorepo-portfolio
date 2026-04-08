@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Controller } from "react-hook-form";
+import { useControlledValue } from "../../hooks";
 import { cn } from "../cn";
 import { buildFieldDescribedBy, FieldSupportText, RequiredMark } from "../field/field-utils";
 import { Label } from "../label";
@@ -12,7 +13,7 @@ import {
   TEXTAREA_STATUS_CLASS,
   TEXTAREA_VARIANT_CLASS
 } from "./textarea.constants";
-import { resolveTextareaStatus } from "./textarea.hooks";
+import { resolveTextareaStatus } from "./textarea.utils";
 import type { TextareaProps } from "./textarea.types";
 
 const TextareaBase = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
@@ -25,7 +26,6 @@ const TextareaBase = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       size = TEXTAREA_DEFAULTS.size,
       variant = TEXTAREA_DEFAULTS.variant,
       status,
-      state,
       resize = TEXTAREA_DEFAULTS.resize,
       label,
       helperText,
@@ -45,11 +45,18 @@ const TextareaBase = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ) => {
     const generatedId = React.useId();
     const resolvedId = id ?? (label ? `textarea-${generatedId}` : undefined);
-    const activeStatus = resolveTextareaStatus(status, state, Boolean(errorMessage));
+    const activeStatus = resolveTextareaStatus(status, Boolean(errorMessage));
     const supportMessage = errorMessage ?? helperText;
-    const [innerValue, setInnerValue] = React.useState(defaultValue != null ? String(defaultValue) : "");
-    const isControlled = value !== undefined;
-    const currentValue = isControlled ? String(value ?? "") : innerValue;
+    const [currentValue, setCurrentValue, isControlled] = useControlledValue<string>({
+      value: value != null ? String(value) : undefined,
+      defaultValue: defaultValue != null ? String(defaultValue) : ""
+    });
+    const controlledValue = isControlled ? currentValue : undefined;
+    const uncontrolledDefaultValue = isControlled
+      ? undefined
+      : defaultValue != null
+        ? String(defaultValue)
+        : undefined;
     const currentLength = currentValue.length;
     const shouldShowCount = showCount;
     const countText = countFormatter
@@ -67,11 +74,11 @@ const TextareaBase = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     const handleChange = React.useCallback(
       (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         if (!isControlled) {
-          setInnerValue(event.target.value);
+          setCurrentValue(event.target.value);
         }
         onChange?.(event);
       },
-      [isControlled, onChange]
+      [isControlled, onChange, setCurrentValue]
     );
 
     return (
@@ -93,8 +100,8 @@ const TextareaBase = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={resolvedId}
           required={required}
-          value={isControlled ? currentValue : undefined}
-          defaultValue={isControlled ? undefined : defaultValue}
+          value={controlledValue}
+          defaultValue={uncontrolledDefaultValue}
           onChange={handleChange}
           rows={rows}
           maxLength={maxLength}
@@ -128,7 +135,7 @@ const TextareaBase = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 );
 TextareaBase.displayName = "TextareaBase";
 
-export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>((props, ref) => {
+const TextareaComponent = React.forwardRef<HTMLTextAreaElement, TextareaProps>((props, ref) => {
   const { control, rules, name, onChange, onBlur, required, ...rest } = props;
   const mergedRules = React.useMemo(() => {
     if (!required || rules?.required) return rules;
@@ -164,4 +171,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>((pr
 
   return <TextareaBase {...rest} ref={ref} name={name} required={required} onChange={onChange} onBlur={onBlur} />;
 });
+TextareaComponent.displayName = "Textarea";
+
+export const Textarea = React.memo(TextareaComponent);
 Textarea.displayName = "Textarea";

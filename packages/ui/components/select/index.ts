@@ -7,7 +7,7 @@ export type {
   SelectProps,
   SelectTriggerProps,
   SelectTriggerSize,
-  SelectTriggerState,
+  SelectTriggerStatus,
   SelectTriggerVariant
 } from "./select.types";
 export {
@@ -15,7 +15,16 @@ export {
   SELECT_DEFAULTS,
   SELECT_ROW_HEIGHT_PX,
   SELECT_SIZE_CLASS,
-  SELECT_STATE_CLASS,
+  SELECT_STATUS_CLASS,
   SELECT_TRIGGER_BASE_CLASS,
   SELECT_VARIANT_CLASS
 } from "./select.constants";
+export { useFilteredSelectOptions, usePopoverTriggerWidth, useSelectOptionMaps } from "./select.hooks";
+export {
+  toSelectKey,
+  normalizeSelectKeyword,
+  getSelectOptionLabelText,
+  filterSelectOptions,
+  resolveSelectViewportHeight,
+  buildMultiSelectLabel
+} from "./select.utils";
