@@ -1,61 +1,50 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { ErrorBoundary } from "../../../../index";
+import { Button, ErrorBoundary } from "../../../../index";
 
-const isRenderableNode = (value: unknown): boolean => {
-  if (value == null) return true;
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return true;
-  if (React.isValidElement(value)) return true;
-  if (Array.isArray(value)) return value.every(isRenderableNode);
-  return false;
+type ErrorBoundaryStoryArgs = {
+  fallbackTitle: string;
+  fallbackDescription: string;
+  fullScreen: boolean;
+  showRetryButton: boolean;
+  showRefreshButton: boolean;
+  showHomeButton: boolean;
 };
 
-const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknown> => {
-  const next = { ...args };
-  for (const key of ["children","leftIcon","rightIcon","prefix","suffix","label","helperText","errorMessage","title","description","helper"]) {
-    if (!isRenderableNode(next[key])) delete next[key];
+function CrashPanel() {
+  const [shouldCrash, setShouldCrash] = React.useState(false);
+  if (shouldCrash) {
+    throw new Error("스토리북 오류 시뮬레이션");
   }
-  return next;
-};
+  return (
+    <Button variant="danger" onClick={() => setShouldCrash(true)}>
+      오류 발생시키기
+    </Button>
+  );
+}
 
-const meta: Meta<typeof ErrorBoundary> = {
-  title: "Components/Generated/Feedback/ErrorBoundary",
+const meta: Meta<ErrorBoundaryStoryArgs> = {
+  title: "Components/ErrorBoundary",
   component: ErrorBoundary,
   tags: ["autodocs"],
-  parameters: {
-    layout: "padded",
-    controls: { expanded: true, exclude: [
-  "className",
-  "containerClassName",
-  "labelClassName",
-  "helperClassName",
-  "optionClassName",
-  "optionLabelClassName",
-  "optionDescriptionClassName",
-  "style",
-  "id",
-  "name",
-  /^on[A-Z].*/,
-  /.*ClassName$/
-] }
-  },
-  argTypes: {
-    children: { control: false },
-    asChild: { control: false },
-    leftIcon: { control: false },
-    rightIcon: { control: false }
-  },
+  parameters: { layout: "padded", controls: { expanded: true } },
+  args: {
+    fallbackTitle: "문제가 발생했습니다.",
+    fallbackDescription: "잠시 후 다시 시도해주세요.",
+    fullScreen: false,
+    showRetryButton: true,
+    showRefreshButton: true,
+    showHomeButton: true
+  }
 };
 
 export default meta;
-type Story = StoryObj<typeof ErrorBoundary>;
+type Story = StoryObj<ErrorBoundaryStoryArgs>;
 
 export const Playground: Story = {
   render: (args) => (
-    <div className="max-w-lg rounded-xl border border-default bg-surface p-4">
-      <ErrorBoundary
-        {...sanitizeStoryArgs(args as Record<string, unknown>)}
-     />
-    </div>
+    <ErrorBoundary {...args}>
+      <CrashPanel />
+    </ErrorBoundary>
   )
 };

@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Input } from "../../../../index";
+import { Separator } from "../../../../index";
 
 const isRenderableNode = (value: unknown): boolean => {
   if (value == null) return true;
@@ -18,9 +18,9 @@ const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknow
   return next;
 };
 
-const meta: Meta<typeof Input> = {
-  title: "Components/Input",
-  component: Input,
+const meta: Meta<typeof Separator> = {
+  title: "Components/Separator",
+  component: Separator,
   tags: ["autodocs"],
   parameters: {
     layout: "padded",
@@ -39,21 +39,19 @@ const meta: Meta<typeof Input> = {
 ] }
   },
   args: {
-    size: "md",
-    variant: "default",
-    status: "default",
-    clearable: false,
-    label: "",
-    placeholder: "값을 입력하세요",
-    required: false,
-    disabled: false,
-    readOnly: false
+    color: "default",
+    inset: "none",
+    thickness: "sm",
+    lineStyle: "solid",
+    orientation: "horizontal",
+    decorative: true
   },
   argTypes: {
-    variant: {control:"select",options:["default","outline","filled","ghost"],table:{defaultValue:{summary:"default"}}},
-    size: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"md"}}},
-    status: {control:"select",options:["default","error","success"],table:{defaultValue:{summary:"default"}}},
-    clearable: {control:"boolean",table:{defaultValue:{summary:false}}},
+    color: {control:"select",options:["default","subtle","strong","primary"],table:{defaultValue:{summary:"default"}}},
+    inset: {control:"select",options:["none","sm","md"],table:{defaultValue:{summary:"none"}}},
+    lineStyle: {control:"select",options:["solid","dashed","dotted"],table:{defaultValue:{summary:"solid"}}},
+    thickness: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"sm"}}},
+    decorative: {control:"boolean",table:{defaultValue:{summary:true}}},
     children: {control:false,table:{disable:true}},
     asChild: {control:false,table:{disable:true}},
     leftIcon: {control:false,table:{disable:true}},
@@ -83,11 +81,11 @@ const meta: Meta<typeof Input> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof Input>;
+type Story = StoryObj<typeof Separator>;
 
 export const Playground: Story = {
   render: (args) => (
-    <Input
+    <Separator
       {...sanitizeStoryArgs(args as Record<string, unknown>)}
    />
   )

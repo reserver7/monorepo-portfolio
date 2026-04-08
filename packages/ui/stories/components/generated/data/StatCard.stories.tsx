@@ -19,7 +19,7 @@ const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknow
 };
 
 const meta: Meta<typeof StatCard> = {
-  title: "Components/Generated/Data/StatCard",
+  title: "Components/StatCard",
   component: StatCard,
   tags: ["autodocs"],
   parameters: {
@@ -34,27 +34,46 @@ const meta: Meta<typeof StatCard> = {
   "optionDescriptionClassName",
   "style",
   "id",
-  "name",
   /^on[A-Z].*/,
   /.*ClassName$/
 ] }
   },
   args: {
+    color: "default",
+    size: "md",
     label: "지표",
     value: "128",
-    helper: "전일 대비 +12%",
-    tone: "default",
-    size: "md"
+    helper: "전일 대비 +12%"
   },
   argTypes: {
-    size: { control: "select", options: ["sm","md","lg"], table: { defaultValue: { summary: "md" } } },
-    tone: { control: "select", options: ["default","primary","warning","danger"], table: { defaultValue: { summary: "default" } } },
-    label: { control: "text", table: { defaultValue: { summary: "지표" } } },
-    helper: { control: "text", table: { defaultValue: { summary: "전일 대비 +12%" } } },
-    children: { control: false },
-    asChild: { control: false },
-    leftIcon: { control: false },
-    rightIcon: { control: false }
+    color: {control:"select",options:["default","primary","danger","warning"],table:{defaultValue:{summary:"default"}}},
+    size: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"md"}}},
+    label: {control:"text",table:{defaultValue:{summary:"지표"}}},
+    children: {control:false,table:{disable:true}},
+    asChild: {control:false,table:{disable:true}},
+    leftIcon: {control:false,table:{disable:true}},
+    rightIcon: {control:false,table:{disable:true}},
+    options: {control:false,table:{}},
+    value: {control:false,table:{}},
+    defaultValue: {control:false,table:{}},
+    checked: {control:false,table:{}},
+    defaultChecked: {control:false,table:{}},
+    open: {control:false,table:{}},
+    defaultOpen: {control:false,table:{}},
+    onChange: {control:false,table:{}},
+    onCheckedChange: {control:false,table:{}},
+    onOpenChange: {control:false,table:{}},
+    prefix: {table:{disable:true}},
+    suffix: {table:{disable:true}},
+    className: {table:{disable:true}},
+    containerClassName: {table:{disable:true}},
+    labelClassName: {table:{disable:true}},
+    helperClassName: {table:{disable:true}},
+    optionClassName: {table:{disable:true}},
+    optionLabelClassName: {table:{disable:true}},
+    optionDescriptionClassName: {table:{disable:true}},
+    style: {table:{disable:true}},
+    id: {table:{disable:true}}
   },
 };
 
@@ -63,68 +82,8 @@ type Story = StoryObj<typeof StatCard>;
 
 export const Playground: Story = {
   render: (args) => (
-    <div className="max-w-lg rounded-xl border border-default bg-surface p-4">
-      <StatCard
-        {...sanitizeStoryArgs(args as Record<string, unknown>)}
-     />
-    </div>
-  )
-};
-
-const OPTION_MATRIX = {
-  "tone": [
-    "default",
-    "primary",
-    "warning",
-    "danger"
-  ]
-} as const;
-
-const sanitizeMatrixArgs = (args: Record<string, unknown>) => {
-  const next = sanitizeStoryArgs(args);
-  delete next.children;
-  delete next.leftIcon;
-  delete next.rightIcon;
-  return next;
-};
-
-export const OptionMatrix: Story = {
-  render: (args) => (
-    <div className="space-y-4">
-      <section className="rounded-xl border border-default bg-surface p-4">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-body-md text-foreground font-semibold">옵션 매트릭스</h3>
-          <span className="text-caption text-muted rounded-full border border-default bg-surface-elevated px-2 py-0.5">
-            StatCard
-          </span>
-        </div>
-        <div className="space-y-4">
-          {Object.entries(OPTION_MATRIX).map(([propName, values]) => (
-            <article key={propName} className="rounded-lg border border-default bg-surface-elevated p-3">
-              <div className="mb-3 flex items-center justify-between">
-                <h4 className="text-body-sm text-foreground font-medium">{propName}</h4>
-                <span className="text-caption text-muted">{values.length} options</span>
-              </div>
-              <div className="grid items-start gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                {(values as readonly unknown[]).map((value) => (
-                  <div key={`${propName}-${String(value)}`} className="rounded-md border border-default bg-surface p-3">
-                    <div className="text-caption text-muted mb-2">{String(value)}</div>
-                    <div className="min-h-10">
-                      <StatCard
-                        {...sanitizeMatrixArgs(args as Record<string, unknown>)}
-                        {...({ [propName]: value } as Record<string, unknown>)}
-                       />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </article>
-          ))}
-          <div className="text-caption text-muted">
-            Playground controls와 함께 사용해서 옵션 조합을 추가 검증하세요.
-          </div>
-        </div>
-      </section>
-    </div>
+    <StatCard
+      {...sanitizeStoryArgs(args as Record<string, unknown>)}
+   />
   )
 };

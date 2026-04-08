@@ -48,13 +48,9 @@ const preview: Preview = {
     },
     options: {
       storySort: {
-        order: [
-          "Foundations",
-          ["Colors", ["Primitive Palette", "Semantic Tokens"], "Typography Tokens"],
-          "Components",
-          ["Generated", ["Actions", "Forms Primitives", "Overlays", "Feedback", "Data", "Navigation", "Layout", "Misc"]],
-          "Patterns"
-        ]
+        order: ["Foundations", "*"],
+        method: "alphabetical",
+        locales: "ko-KR"
       }
     }
   }

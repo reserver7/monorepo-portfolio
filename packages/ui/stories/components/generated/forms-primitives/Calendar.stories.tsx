@@ -19,7 +19,7 @@ const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknow
 };
 
 const meta: Meta<typeof Calendar> = {
-  title: "Components/Generated/Forms Primitives/Calendar",
+  title: "Components/Calendar",
   component: Calendar,
   tags: ["autodocs"],
   parameters: {
@@ -34,16 +34,59 @@ const meta: Meta<typeof Calendar> = {
   "optionDescriptionClassName",
   "style",
   "id",
-  "name",
   /^on[A-Z].*/,
   /.*ClassName$/
 ] }
   },
+  args: {
+    showOutsideDays: false,
+    numberOfMonths: 1,
+    fixedWeeks: false,
+    pagedNavigation: true,
+    size: "md",
+    density: "comfortable",
+    variant: "default",
+    disablePast: false,
+    disableFuture: false,
+    disableWeekends: false,
+    withMonthYearPicker: false,
+    mode: "single"
+  },
   argTypes: {
-    children: { control: false },
-    asChild: { control: false },
-    leftIcon: { control: false },
-    rightIcon: { control: false }
+    variant: {control:"select",options:["default","elevated"],table:{defaultValue:{summary:"default"}}},
+    size: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"md"}}},
+    density: {control:"select",options:["comfortable","compact"],table:{defaultValue:{summary:"comfortable"}}},
+    mode: {control:"select",options:["single","multiple","range"],table:{}},
+    disablePast: {control:"boolean",table:{defaultValue:{summary:false}}},
+    disableFuture: {control:"boolean",table:{defaultValue:{summary:false}}},
+    disableWeekends: {control:"boolean",table:{defaultValue:{summary:false}}},
+    withMonthYearPicker: {control:"boolean",table:{defaultValue:{summary:false}}},
+    numberOfMonths: {control:{type:"number"},table:{defaultValue:{summary:1}}},
+    children: {control:false,table:{disable:true}},
+    asChild: {control:false,table:{disable:true}},
+    leftIcon: {control:false,table:{disable:true}},
+    rightIcon: {control:false,table:{disable:true}},
+    options: {control:false,table:{}},
+    value: {control:false,table:{}},
+    defaultValue: {control:false,table:{}},
+    checked: {control:false,table:{}},
+    defaultChecked: {control:false,table:{}},
+    open: {control:false,table:{}},
+    defaultOpen: {control:false,table:{}},
+    onChange: {control:false,table:{}},
+    onCheckedChange: {control:false,table:{}},
+    onOpenChange: {control:false,table:{}},
+    prefix: {table:{disable:true}},
+    suffix: {table:{disable:true}},
+    className: {table:{disable:true}},
+    containerClassName: {table:{disable:true}},
+    labelClassName: {table:{disable:true}},
+    helperClassName: {table:{disable:true}},
+    optionClassName: {table:{disable:true}},
+    optionLabelClassName: {table:{disable:true}},
+    optionDescriptionClassName: {table:{disable:true}},
+    style: {table:{disable:true}},
+    id: {table:{disable:true}}
   },
 };
 
@@ -52,10 +95,8 @@ type Story = StoryObj<typeof Calendar>;
 
 export const Playground: Story = {
   render: (args) => (
-    <div className="max-w-lg rounded-xl border border-default bg-surface p-4">
-      <Calendar
-        {...sanitizeStoryArgs(args as Record<string, unknown>)}
-     />
-    </div>
+    <Calendar
+      {...sanitizeStoryArgs(args as Record<string, unknown>)}
+   />
   )
 };

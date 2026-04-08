@@ -1,61 +1,52 @@
-import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Accordion } from "../../../../index";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../../../../index";
 
-const isRenderableNode = (value: unknown): boolean => {
-  if (value == null) return true;
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return true;
-  if (React.isValidElement(value)) return true;
-  if (Array.isArray(value)) return value.every(isRenderableNode);
-  return false;
+type AccordionStoryArgs = {
+  type: "single" | "multiple";
+  collapsible: boolean;
+  size: "sm" | "md" | "lg";
+  variant: "default" | "separated" | "contained";
 };
 
-const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknown> => {
-  const next = { ...args };
-  for (const key of ["children","leftIcon","rightIcon","prefix","suffix","label","helperText","errorMessage","title","description","helper"]) {
-    if (!isRenderableNode(next[key])) delete next[key];
-  }
-  return next;
-};
-
-const meta: Meta<typeof Accordion> = {
-  title: "Components/Generated/Navigation/Accordion",
-  component: Accordion,
+const meta: Meta<AccordionStoryArgs> = {
+  title: "Components/Accordion",
   tags: ["autodocs"],
-  parameters: {
-    layout: "padded",
-    controls: { expanded: true, exclude: [
-  "className",
-  "containerClassName",
-  "labelClassName",
-  "helperClassName",
-  "optionClassName",
-  "optionLabelClassName",
-  "optionDescriptionClassName",
-  "style",
-  "id",
-  "name",
-  /^on[A-Z].*/,
-  /.*ClassName$/
-] }
+  parameters: { layout: "padded", controls: { expanded: true } },
+  args: {
+    type: "single",
+    collapsible: true,
+    size: "md",
+    variant: "separated"
   },
   argTypes: {
-    children: { control: false },
-    asChild: { control: false },
-    leftIcon: { control: false },
-    rightIcon: { control: false }
-  },
+    type: { control: "inline-radio", options: ["single", "multiple"] },
+    collapsible: { control: "boolean" },
+    size: { control: "inline-radio", options: ["sm", "md", "lg"] },
+    variant: { control: "inline-radio", options: ["default", "separated", "contained"] }
+  }
 };
 
 export default meta;
-type Story = StoryObj<typeof Accordion>;
+type Story = StoryObj<AccordionStoryArgs>;
 
 export const Playground: Story = {
-  render: (args) => (
-    <div className="max-w-lg rounded-xl border border-default bg-surface p-4">
-      <Accordion
-        {...sanitizeStoryArgs(args as Record<string, unknown>)}
-     />
-    </div>
-  )
+  render: (args) => {
+    const rootProps =
+      args.type === "single"
+        ? { type: "single" as const, collapsible: args.collapsible, defaultValue: "item-1" }
+        : { type: "multiple" as const, defaultValue: ["item-1"] };
+
+    return (
+      <Accordion {...rootProps} size={args.size} variant={args.variant}>
+        <AccordionItem value="item-1">
+          <AccordionTrigger>문서 권한 안내</AccordionTrigger>
+          <AccordionContent>viewer는 읽기 전용, editor는 수정이 가능합니다.</AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-2">
+          <AccordionTrigger>실시간 동기화</AccordionTrigger>
+          <AccordionContent>변경 사항은 자동 저장되며 사용자 간 동기화됩니다.</AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    );
+  }
 };

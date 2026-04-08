@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Input } from "../../../../index";
+import { Box } from "../../../../index";
 
 const isRenderableNode = (value: unknown): boolean => {
   if (value == null) return true;
@@ -18,9 +18,9 @@ const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknow
   return next;
 };
 
-const meta: Meta<typeof Input> = {
-  title: "Components/Input",
-  component: Input,
+const meta: Meta<typeof Box> = {
+  title: "Components/Box",
+  component: Box,
   tags: ["autodocs"],
   parameters: {
     layout: "padded",
@@ -39,21 +39,23 @@ const meta: Meta<typeof Input> = {
 ] }
   },
   args: {
-    size: "md",
-    variant: "default",
-    status: "default",
-    clearable: false,
-    label: "",
-    placeholder: "값을 입력하세요",
-    required: false,
-    disabled: false,
-    readOnly: false
+    variant: "surface",
+    padding: "md",
+    radius: "lg",
+    shadow: "none",
+    border: true,
+    fullWidth: false,
+    fullHeight: false,
+    children: "Box"
   },
   argTypes: {
-    variant: {control:"select",options:["default","outline","filled","ghost"],table:{defaultValue:{summary:"default"}}},
-    size: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"md"}}},
-    status: {control:"select",options:["default","error","success"],table:{defaultValue:{summary:"default"}}},
-    clearable: {control:"boolean",table:{defaultValue:{summary:false}}},
+    variant: {control:"select",options:["plain","surface","elevated","muted"],table:{defaultValue:{summary:"plain"}}},
+    padding: {control:"select",options:["none","xs","sm","md","lg","xl"],table:{defaultValue:{summary:"none"}}},
+    radius: {control:"select",options:["none","sm","md","lg","xl","full"],table:{defaultValue:{summary:"none"}}},
+    shadow: {control:"select",options:["none","sm","md","lg"],table:{defaultValue:{summary:"none"}}},
+    border: {control:"boolean",table:{defaultValue:{summary:true}}},
+    fullWidth: {control:"boolean",table:{defaultValue:{summary:false}}},
+    fullHeight: {control:"boolean",table:{defaultValue:{summary:false}}},
     children: {control:false,table:{disable:true}},
     asChild: {control:false,table:{disable:true}},
     leftIcon: {control:false,table:{disable:true}},
@@ -83,12 +85,14 @@ const meta: Meta<typeof Input> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof Input>;
+type Story = StoryObj<typeof Box>;
 
 export const Playground: Story = {
   render: (args) => (
-    <Input
+    <Box
       {...sanitizeStoryArgs(args as Record<string, unknown>)}
-   />
+  >
+    Box
+  </Box>
   )
 };

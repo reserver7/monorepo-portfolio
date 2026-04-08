@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Input } from "../../../../index";
+import { Pagination } from "../../../../index";
 
 const isRenderableNode = (value: unknown): boolean => {
   if (value == null) return true;
@@ -18,9 +18,9 @@ const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknow
   return next;
 };
 
-const meta: Meta<typeof Input> = {
-  title: "Components/Input",
-  component: Input,
+const meta: Meta<typeof Pagination> = {
+  title: "Components/Pagination",
+  component: Pagination,
   tags: ["autodocs"],
   parameters: {
     layout: "padded",
@@ -39,21 +39,52 @@ const meta: Meta<typeof Input> = {
 ] }
   },
   args: {
-    size: "md",
-    variant: "default",
-    status: "default",
-    clearable: false,
-    label: "",
-    placeholder: "값을 입력하세요",
-    required: false,
+    defaultPage: 4,
+    totalPages: 12,
+    totalItems: undefined,
+    defaultPageSize: 10,
+    pageSizeOptions: [10,20,50,100],
+    siblingCount: 1,
+    boundaryCount: 1,
+    showFirstLast: true,
+    showPrevNext: true,
+    showTotal: false,
+    showPageInfo: false,
+    showPageSizeSelector: false,
+    showQuickJumper: false,
+    hideOnSinglePage: false,
+    simple: false,
+    pageSizeLabel: "페이지당",
+    pageSizeSuffix: "개",
+    quickJumperPlaceholder: "페이지",
+    quickJumperGoLabel: "이동",
     disabled: false,
-    readOnly: false
+    size: "md",
+    variant: "outline",
+    itemStyle: "minimal",
+    fullWidth: false
   },
   argTypes: {
-    variant: {control:"select",options:["default","outline","filled","ghost"],table:{defaultValue:{summary:"default"}}},
+    variant: {control:"select",options:["default","outline","ghost"],table:{defaultValue:{summary:"outline"}}},
     size: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"md"}}},
-    status: {control:"select",options:["default","error","success"],table:{defaultValue:{summary:"default"}}},
-    clearable: {control:"boolean",table:{defaultValue:{summary:false}}},
+    itemStyle: {control:"select",options:["button","minimal"],table:{defaultValue:{summary:"minimal"}}},
+    pageSizeLabel: {control:"text",table:{defaultValue:{summary:"페이지당"}}},
+    quickJumperPlaceholder: {control:"text",table:{defaultValue:{summary:"페이지"}}},
+    quickJumperGoLabel: {control:"text",table:{defaultValue:{summary:"이동"}}},
+    showFirstLast: {control:"boolean",table:{defaultValue:{summary:true}}},
+    showPrevNext: {control:"boolean",table:{defaultValue:{summary:true}}},
+    showPageInfo: {control:"boolean",table:{defaultValue:{summary:false}}},
+    showPageSizeSelector: {control:"boolean",table:{defaultValue:{summary:false}}},
+    showQuickJumper: {control:"boolean",table:{defaultValue:{summary:false}}},
+    hideOnSinglePage: {control:"boolean",table:{defaultValue:{summary:false}}},
+    simple: {control:"boolean",table:{defaultValue:{summary:false}}},
+    disabled: {control:"boolean",table:{defaultValue:{summary:false}}},
+    fullWidth: {control:"boolean",table:{defaultValue:{summary:false}}},
+    defaultPage: {control:{type:"number"},table:{defaultValue:{summary:4}}},
+    totalPages: {control:{type:"number"},table:{defaultValue:{summary:12}}},
+    defaultPageSize: {control:{type:"number"},table:{defaultValue:{summary:10}}},
+    siblingCount: {control:{type:"number"},table:{defaultValue:{summary:1}}},
+    boundaryCount: {control:{type:"number"},table:{defaultValue:{summary:1}}},
     children: {control:false,table:{disable:true}},
     asChild: {control:false,table:{disable:true}},
     leftIcon: {control:false,table:{disable:true}},
@@ -83,11 +114,11 @@ const meta: Meta<typeof Input> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof Input>;
+type Story = StoryObj<typeof Pagination>;
 
 export const Playground: Story = {
   render: (args) => (
-    <Input
+    <Pagination
       {...sanitizeStoryArgs(args as Record<string, unknown>)}
    />
   )

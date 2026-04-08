@@ -1,61 +1,40 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Avatar } from "../../../../index";
+import { UserRound } from "lucide-react";
+import { Avatar, AvatarFallback } from "../../../../index";
 
-const isRenderableNode = (value: unknown): boolean => {
-  if (value == null) return true;
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return true;
-  if (React.isValidElement(value)) return true;
-  if (Array.isArray(value)) return value.every(isRenderableNode);
-  return false;
+type AvatarStoryArgs = {
+  name: string;
+  size: "xs" | "sm" | "md" | "lg" | "xl";
+  shape: "circle" | "rounded" | "square";
+  color: "default" | "primary" | "success" | "warning" | "danger";
+  showStatus: boolean;
+  status: "online" | "offline" | "away" | "busy";
 };
 
-const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknown> => {
-  const next = { ...args };
-  for (const key of ["children","leftIcon","rightIcon","prefix","suffix","label","helperText","errorMessage","title","description","helper"]) {
-    if (!isRenderableNode(next[key])) delete next[key];
-  }
-  return next;
-};
-
-const meta: Meta<typeof Avatar> = {
-  title: "Components/Generated/Data/Avatar",
-  component: Avatar,
+const meta: Meta<AvatarStoryArgs> = {
+  title: "Components/Avatar",
   tags: ["autodocs"],
-  parameters: {
-    layout: "padded",
-    controls: { expanded: true, exclude: [
-  "className",
-  "containerClassName",
-  "labelClassName",
-  "helperClassName",
-  "optionClassName",
-  "optionLabelClassName",
-  "optionDescriptionClassName",
-  "style",
-  "id",
-  "name",
-  /^on[A-Z].*/,
-  /.*ClassName$/
-] }
-  },
-  argTypes: {
-    children: { control: false },
-    asChild: { control: false },
-    leftIcon: { control: false },
-    rightIcon: { control: false }
-  },
+  parameters: { layout: "padded", controls: { expanded: true } },
+  args: {
+    name: "게스트-923",
+    size: "md",
+    shape: "circle",
+    color: "default",
+    showStatus: true,
+    status: "online"
+  }
 };
 
 export default meta;
-type Story = StoryObj<typeof Avatar>;
+type Story = StoryObj<AvatarStoryArgs>;
 
 export const Playground: Story = {
   render: (args) => (
-    <div className="max-w-lg rounded-xl border border-default bg-surface p-4">
-      <Avatar
-        {...sanitizeStoryArgs(args as Record<string, unknown>)}
-     />
-    </div>
+    <Avatar {...args}>
+      <AvatarFallback color={args.color}>
+        <UserRound className="h-[60%] w-[60%]" />
+      </AvatarFallback>
+    </Avatar>
   )
 };

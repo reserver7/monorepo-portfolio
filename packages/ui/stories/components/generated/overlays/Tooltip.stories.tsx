@@ -1,61 +1,51 @@
-import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Tooltip } from "../../../../index";
+import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../../index";
 
-const isRenderableNode = (value: unknown): boolean => {
-  if (value == null) return true;
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return true;
-  if (React.isValidElement(value)) return true;
-  if (Array.isArray(value)) return value.every(isRenderableNode);
-  return false;
+type TooltipStoryArgs = {
+  size: "sm" | "md" | "lg";
+  color: "default" | "inverse" | "primary";
+  withArrow: boolean;
+  placement: "top" | "right" | "bottom" | "left";
+  alignment: "start" | "center" | "end";
+  offset: number;
 };
 
-const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknown> => {
-  const next = { ...args };
-  for (const key of ["children","leftIcon","rightIcon","prefix","suffix","label","helperText","errorMessage","title","description","helper"]) {
-    if (!isRenderableNode(next[key])) delete next[key];
-  }
-  return next;
-};
-
-const meta: Meta<typeof Tooltip> = {
-  title: "Components/Generated/Overlays/Tooltip",
-  component: Tooltip,
+const meta: Meta<TooltipStoryArgs> = {
+  title: "Components/Tooltip",
   tags: ["autodocs"],
-  parameters: {
-    layout: "padded",
-    controls: { expanded: true, exclude: [
-  "className",
-  "containerClassName",
-  "labelClassName",
-  "helperClassName",
-  "optionClassName",
-  "optionLabelClassName",
-  "optionDescriptionClassName",
-  "style",
-  "id",
-  "name",
-  /^on[A-Z].*/,
-  /.*ClassName$/
-] }
-  },
+  parameters: { layout: "centered", controls: { expanded: true } },
+  args: { size: "md", color: "inverse", withArrow: true, placement: "top", alignment: "center", offset: 8 },
   argTypes: {
-    children: { control: false },
-    asChild: { control: false },
-    leftIcon: { control: false },
-    rightIcon: { control: false }
-  },
+    size: { control: "inline-radio", options: ["sm", "md", "lg"] },
+    color: { control: "inline-radio", options: ["default", "inverse", "primary"] },
+    withArrow: { control: "boolean" },
+    placement: { control: "inline-radio", options: ["top", "right", "bottom", "left"] },
+    alignment: { control: "inline-radio", options: ["start", "center", "end"] },
+    offset: { control: { type: "number", min: 0, max: 24, step: 1 } }
+  }
 };
 
 export default meta;
-type Story = StoryObj<typeof Tooltip>;
+type Story = StoryObj<TooltipStoryArgs>;
 
 export const Playground: Story = {
   render: (args) => (
-    <div className="max-w-lg rounded-xl border border-default bg-surface p-4">
-      <Tooltip
-        {...sanitizeStoryArgs(args as Record<string, unknown>)}
-     />
-    </div>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline">툴팁 확인</Button>
+        </TooltipTrigger>
+        <TooltipContent
+          size={args.size}
+          color={args.color}
+          withArrow={args.withArrow}
+          placement={args.placement}
+          alignment={args.alignment}
+          offset={args.offset}
+        >
+          보호 키를 입력하면 editor 권한을 요청합니다.
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 };

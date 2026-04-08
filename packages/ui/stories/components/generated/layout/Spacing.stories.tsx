@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Input } from "../../../../index";
+import { Spacing } from "../../../../index";
 
 const isRenderableNode = (value: unknown): boolean => {
   if (value == null) return true;
@@ -18,9 +18,9 @@ const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknow
   return next;
 };
 
-const meta: Meta<typeof Input> = {
-  title: "Components/Input",
-  component: Input,
+const meta: Meta<typeof Spacing> = {
+  title: "Components/Spacing",
+  component: Spacing,
   tags: ["autodocs"],
   parameters: {
     layout: "padded",
@@ -40,20 +40,14 @@ const meta: Meta<typeof Input> = {
   },
   args: {
     size: "md",
-    variant: "default",
-    status: "default",
-    clearable: false,
-    label: "",
-    placeholder: "값을 입력하세요",
-    required: false,
-    disabled: false,
-    readOnly: false
+    axis: "vertical",
+    responsive: false,
+    className: "rounded-sm bg-primary/25"
   },
   argTypes: {
-    variant: {control:"select",options:["default","outline","filled","ghost"],table:{defaultValue:{summary:"default"}}},
-    size: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"md"}}},
-    status: {control:"select",options:["default","error","success"],table:{defaultValue:{summary:"default"}}},
-    clearable: {control:"boolean",table:{defaultValue:{summary:false}}},
+    size: {control:"select",options:["2xs","xs","sm","md","lg","xl","2xl"],table:{defaultValue:{summary:"md"}}},
+    axis: {control:"select",options:["vertical","horizontal","both"],table:{defaultValue:{summary:"vertical"}}},
+    responsive: {control:"boolean",table:{defaultValue:{summary:false}}},
     children: {control:false,table:{disable:true}},
     asChild: {control:false,table:{disable:true}},
     leftIcon: {control:false,table:{disable:true}},
@@ -83,11 +77,11 @@ const meta: Meta<typeof Input> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof Input>;
+type Story = StoryObj<typeof Spacing>;
 
 export const Playground: Story = {
   render: (args) => (
-    <Input
+    <Spacing
       {...sanitizeStoryArgs(args as Record<string, unknown>)}
    />
   )

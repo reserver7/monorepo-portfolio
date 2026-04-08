@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Input } from "../../../../index";
+import { Flex } from "../../../../index";
 
 const isRenderableNode = (value: unknown): boolean => {
   if (value == null) return true;
@@ -18,9 +18,9 @@ const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknow
   return next;
 };
 
-const meta: Meta<typeof Input> = {
-  title: "Components/Input",
-  component: Input,
+const meta: Meta<typeof Flex> = {
+  title: "Components/Flex",
+  component: Flex,
   tags: ["autodocs"],
   parameters: {
     layout: "padded",
@@ -39,21 +39,23 @@ const meta: Meta<typeof Input> = {
 ] }
   },
   args: {
-    size: "md",
-    variant: "default",
-    status: "default",
-    clearable: false,
-    label: "",
-    placeholder: "값을 입력하세요",
-    required: false,
-    disabled: false,
-    readOnly: false
+    direction: "row",
+    align: "center",
+    justify: "start",
+    wrap: "wrap",
+    gap: "sm",
+    inline: false,
+    fullWidth: false,
+    children: "<div className=\"rounded-md border border-default bg-surface-elevated px-3 py-1.5 text-body-sm\">Item A</div>\n    <div className=\"rounded-md border border-default bg-surface-elevated px-3 py-1.5 text-body-sm\">Item B</div>\n    <div className=\"rounded-md border border-default bg-surface-elevated px-3 py-1.5 text-body-sm\">Item C</div>"
   },
   argTypes: {
-    variant: {control:"select",options:["default","outline","filled","ghost"],table:{defaultValue:{summary:"default"}}},
-    size: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"md"}}},
-    status: {control:"select",options:["default","error","success"],table:{defaultValue:{summary:"default"}}},
-    clearable: {control:"boolean",table:{defaultValue:{summary:false}}},
+    align: {control:"select",options:["start","center","end","stretch","baseline"],table:{defaultValue:{summary:"stretch"}}},
+    direction: {control:"select",options:["row","row-reverse","col","col-reverse"],table:{defaultValue:{summary:"row"}}},
+    gap: {control:"select",options:["none","xs","sm","md","lg","xl"],table:{defaultValue:{summary:"none"}}},
+    justify: {control:"select",options:["start","center","end","between","around","evenly"],table:{defaultValue:{summary:"start"}}},
+    wrap: {control:"select",options:["nowrap","wrap","wrap-reverse"],table:{defaultValue:{summary:"nowrap"}}},
+    inline: {control:"boolean",table:{defaultValue:{summary:false}}},
+    fullWidth: {control:"boolean",table:{defaultValue:{summary:false}}},
     children: {control:false,table:{disable:true}},
     asChild: {control:false,table:{disable:true}},
     leftIcon: {control:false,table:{disable:true}},
@@ -83,12 +85,16 @@ const meta: Meta<typeof Input> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof Input>;
+type Story = StoryObj<typeof Flex>;
 
 export const Playground: Story = {
   render: (args) => (
-    <Input
+    <Flex
       {...sanitizeStoryArgs(args as Record<string, unknown>)}
-   />
+  >
+    <div className="rounded-md border border-default bg-surface-elevated px-3 py-1.5 text-body-sm">Item A</div>
+    <div className="rounded-md border border-default bg-surface-elevated px-3 py-1.5 text-body-sm">Item B</div>
+    <div className="rounded-md border border-default bg-surface-elevated px-3 py-1.5 text-body-sm">Item C</div>
+  </Flex>
   )
 };

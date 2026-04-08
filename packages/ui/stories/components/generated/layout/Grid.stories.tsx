@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Input } from "../../../../index";
+import { Grid } from "../../../../index";
 
 const isRenderableNode = (value: unknown): boolean => {
   if (value == null) return true;
@@ -18,9 +18,9 @@ const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknow
   return next;
 };
 
-const meta: Meta<typeof Input> = {
-  title: "Components/Input",
-  component: Input,
+const meta: Meta<typeof Grid> = {
+  title: "Components/Grid",
+  component: Grid,
   tags: ["autodocs"],
   parameters: {
     layout: "padded",
@@ -39,21 +39,29 @@ const meta: Meta<typeof Input> = {
 ] }
   },
   args: {
-    size: "md",
-    variant: "default",
-    status: "default",
-    clearable: false,
-    label: "",
-    placeholder: "값을 입력하세요",
-    required: false,
-    disabled: false,
-    readOnly: false
+    columns: 2,
+    gap: "sm",
+    rowGap: "none",
+    columnGap: "none",
+    align: "stretch",
+    justify: "start",
+    autoFit: false,
+    minColumnWidth: "md",
+    dense: false,
+    fullWidth: false,
+    children: "<div className=\"rounded-md border border-default bg-surface-elevated p-3 text-body-sm\">Card 1</div>\n    <div className=\"rounded-md border border-default bg-surface-elevated p-3 text-body-sm\">Card 2</div>\n    <div className=\"rounded-md border border-default bg-surface-elevated p-3 text-body-sm\">Card 3</div>\n    <div className=\"rounded-md border border-default bg-surface-elevated p-3 text-body-sm\">Card 4</div>"
   },
   argTypes: {
-    variant: {control:"select",options:["default","outline","filled","ghost"],table:{defaultValue:{summary:"default"}}},
-    size: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"md"}}},
-    status: {control:"select",options:["default","error","success"],table:{defaultValue:{summary:"default"}}},
-    clearable: {control:"boolean",table:{defaultValue:{summary:false}}},
+    align: {control:"select",options:["start","center","end","stretch"],table:{defaultValue:{summary:"stretch"}}},
+    columnGap: {control:"select",options:["none","xs","sm","md","lg","xl"],table:{defaultValue:{summary:"none"}}},
+    columns: {control:"select",options:[1,2,3,4,5,6,8,10,12],table:{defaultValue:{summary:1}}},
+    gap: {control:"select",options:["none","xs","sm","md","lg","xl"],table:{defaultValue:{summary:"none"}}},
+    justify: {control:"select",options:["start","center","end","between"],table:{defaultValue:{summary:"start"}}},
+    minColumnWidth: {control:"select",options:["xs","sm","md","lg","xl"],table:{defaultValue:{summary:"md"}}},
+    rowGap: {control:"select",options:["none","xs","sm","md","lg","xl"],table:{defaultValue:{summary:"none"}}},
+    autoFit: {control:"boolean",table:{defaultValue:{summary:false}}},
+    dense: {control:"boolean",table:{defaultValue:{summary:false}}},
+    fullWidth: {control:"boolean",table:{defaultValue:{summary:false}}},
     children: {control:false,table:{disable:true}},
     asChild: {control:false,table:{disable:true}},
     leftIcon: {control:false,table:{disable:true}},
@@ -83,12 +91,17 @@ const meta: Meta<typeof Input> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof Input>;
+type Story = StoryObj<typeof Grid>;
 
 export const Playground: Story = {
   render: (args) => (
-    <Input
+    <Grid
       {...sanitizeStoryArgs(args as Record<string, unknown>)}
-   />
+  >
+    <div className="rounded-md border border-default bg-surface-elevated p-3 text-body-sm">Card 1</div>
+    <div className="rounded-md border border-default bg-surface-elevated p-3 text-body-sm">Card 2</div>
+    <div className="rounded-md border border-default bg-surface-elevated p-3 text-body-sm">Card 3</div>
+    <div className="rounded-md border border-default bg-surface-elevated p-3 text-body-sm">Card 4</div>
+  </Grid>
   )
 };

@@ -1,61 +1,113 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { DropdownMenu } from "../../../../index";
+import { FileText, Pencil, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuShortcut,
+  Button
+} from "../../../../index";
 
-const isRenderableNode = (value: unknown): boolean => {
-  if (value == null) return true;
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return true;
-  if (React.isValidElement(value)) return true;
-  if (Array.isArray(value)) return value.every(isRenderableNode);
-  return false;
+type DropdownMenuStoryArgs = {
+  triggerText: string;
+  sideOffset: number;
+  contentSize: "sm" | "md" | "lg";
+  itemSize: "sm" | "md" | "lg";
+  showDangerItem: boolean;
+  keepOpenOnSelect: boolean;
+  showLabel: boolean;
 };
 
-const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknown> => {
-  const next = { ...args };
-  for (const key of ["children","leftIcon","rightIcon","prefix","suffix","label","helperText","errorMessage","title","description","helper"]) {
-    if (!isRenderableNode(next[key])) delete next[key];
-  }
-  return next;
-};
-
-const meta: Meta<typeof DropdownMenu> = {
-  title: "Components/Generated/Overlays/DropdownMenu",
-  component: DropdownMenu,
+const meta: Meta<DropdownMenuStoryArgs> = {
+  title: "Components/DropdownMenu",
   tags: ["autodocs"],
-  parameters: {
-    layout: "padded",
-    controls: { expanded: true, exclude: [
-  "className",
-  "containerClassName",
-  "labelClassName",
-  "helperClassName",
-  "optionClassName",
-  "optionLabelClassName",
-  "optionDescriptionClassName",
-  "style",
-  "id",
-  "name",
-  /^on[A-Z].*/,
-  /.*ClassName$/
-] }
+  parameters: { layout: "centered", controls: { expanded: true } },
+  args: {
+    triggerText: "메뉴 열기",
+    sideOffset: 4,
+    contentSize: "md",
+    itemSize: "md",
+    showDangerItem: true,
+    keepOpenOnSelect: false,
+    showLabel: true
   },
   argTypes: {
-    children: { control: false },
-    asChild: { control: false },
-    leftIcon: { control: false },
-    rightIcon: { control: false }
-  },
+    triggerText: { control: "text" },
+    sideOffset: { control: { type: "number", min: 0, max: 24, step: 1 } },
+    contentSize: { control: "inline-radio", options: ["sm", "md", "lg"] },
+    itemSize: { control: "inline-radio", options: ["sm", "md", "lg"] },
+    showDangerItem: { control: "boolean" },
+    keepOpenOnSelect: { control: "boolean" },
+    showLabel: { control: "boolean" }
+  }
 };
 
 export default meta;
-type Story = StoryObj<typeof DropdownMenu>;
+type Story = StoryObj<DropdownMenuStoryArgs>;
 
 export const Playground: Story = {
-  render: (args) => (
-    <div className="max-w-lg rounded-xl border border-default bg-surface p-4">
-      <DropdownMenu
-        {...sanitizeStoryArgs(args as Record<string, unknown>)}
-     />
-    </div>
-  )
+  render: (args) => {
+    const [favorite, setFavorite] = React.useState(true);
+    const [role, setRole] = React.useState("viewer");
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline">{args.triggerText}</Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent sideOffset={args.sideOffset} size={args.contentSize}>
+          {args.showLabel ? <DropdownMenuLabel size={args.itemSize}>문서 작업</DropdownMenuLabel> : null}
+          <DropdownMenuItem
+            size={args.itemSize}
+            keepOpenOnSelect={args.keepOpenOnSelect}
+            leftSlot={<FileText className="h-4 w-4" />}
+            rightSlot={<DropdownMenuShortcut>Cmd+D</DropdownMenuShortcut>}
+          >
+            복제
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            size={args.itemSize}
+            keepOpenOnSelect={args.keepOpenOnSelect}
+            leftSlot={<Pencil className="h-4 w-4" />}
+            rightSlot={<DropdownMenuShortcut>Cmd+R</DropdownMenuShortcut>}
+          >
+            이름 변경
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuCheckboxItem
+            checked={favorite}
+            size={args.itemSize}
+            keepOpenOnSelect={args.keepOpenOnSelect}
+            onCheckedChange={(checked) => setFavorite(Boolean(checked))}
+          >
+            즐겨찾기 고정
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuRadioGroup value={role} onValueChange={setRole}>
+            <DropdownMenuRadioItem value="viewer" size={args.itemSize} keepOpenOnSelect={args.keepOpenOnSelect}>
+              viewer
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="editor" size={args.itemSize} keepOpenOnSelect={args.keepOpenOnSelect}>
+              editor
+            </DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+          {args.showDangerItem ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem color="danger" size={args.itemSize} leftSlot={<Trash2 className="h-4 w-4" />}>
+                삭제
+              </DropdownMenuItem>
+            </>
+          ) : null}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
 };
