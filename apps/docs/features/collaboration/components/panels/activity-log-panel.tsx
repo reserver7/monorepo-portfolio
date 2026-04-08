@@ -14,19 +14,19 @@ export const ActivityLogPanel = ({ logs }: ActivityLogPanelProps) => {
         <Typography as="h3" variant="body" className="font-semibold">
           실시간 이벤트 로그
         </Typography>
-        <Typography as="span" variant="caption" tone="subtle">
+        <Typography as="span" variant="caption" color="subtle">
           최근 {logs.length}개
         </Typography>
       </div>
       <div className="max-h-72 space-y-3 overflow-auto pr-1">
         {logs.length === 0 ? (
-          <Typography variant="bodySm" tone="subtle">
+          <Typography variant="bodySm" color="subtle">
             이벤트가 발생하면 여기에 표시됩니다.
           </Typography>
         ) : (
           visibleLogs.map((log, index) => (
             <div key={`${index}-${log}`} className={panelItemClass}>
-              <Typography variant="bodySm" tone="muted" className="font-mono leading-6">
+              <Typography variant="bodySm" color="muted" className="font-mono leading-6">
                 {log}
               </Typography>
             </div>

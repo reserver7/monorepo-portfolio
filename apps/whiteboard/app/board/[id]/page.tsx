@@ -10,12 +10,12 @@ import {
   Badge,
   Button,
   Card,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Modal,
+  ModalContent,
+  ModalDescription,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
   Input,
   Label,
   SplitWorkspaceLayout,
@@ -626,7 +626,7 @@ export default function WhiteboardRoomPage() {
         />
       ) : null}
 
-      <Dialog
+      <Modal
         open={isCreateTextDialogOpen}
         onOpenChange={(open) => {
           setIsCreateTextDialogOpen(open);
@@ -636,18 +636,18 @@ export default function WhiteboardRoomPage() {
           }
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>텍스트 추가</DialogTitle>
-            <DialogDescription>보드에 생성할 텍스트를 입력하세요.</DialogDescription>
-          </DialogHeader>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>텍스트 추가</ModalTitle>
+            <ModalDescription>보드에 생성할 텍스트를 입력하세요.</ModalDescription>
+          </ModalHeader>
           <Input
             autoFocus
             control={createTextForm.control}
             name="newTextDraft"
             placeholder="텍스트를 입력하세요"
           />
-          <DialogFooter
+          <ModalFooter
             confirmText="생성"
             confirmVariant="primary"
             onCancel={() => {
@@ -672,10 +672,10 @@ export default function WhiteboardRoomPage() {
             }}
             confirmDisabled={!newTextDraft.trim()}
           />
-        </DialogContent>
-      </Dialog>
+        </ModalContent>
+      </Modal>
 
-      <Dialog
+      <Modal
         open={Boolean(editingTextShapeId)}
         onOpenChange={(open) => {
           if (!open) {
@@ -684,18 +684,18 @@ export default function WhiteboardRoomPage() {
           }
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>텍스트 수정</DialogTitle>
-            <DialogDescription>선택한 텍스트 내용을 수정합니다.</DialogDescription>
-          </DialogHeader>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>텍스트 수정</ModalTitle>
+            <ModalDescription>선택한 텍스트 내용을 수정합니다.</ModalDescription>
+          </ModalHeader>
           <Input
             autoFocus
             control={editTextForm.control}
             name="editingTextDraft"
             placeholder="텍스트를 입력하세요"
           />
-          <DialogFooter
+          <ModalFooter
             confirmText="저장"
             confirmVariant="primary"
             onCancel={() => {
@@ -714,8 +714,8 @@ export default function WhiteboardRoomPage() {
             }}
             confirmDisabled={!editingTextDraft.trim() || !editingTextShapeId}
           />
-        </DialogContent>
-      </Dialog>
+        </ModalContent>
+      </Modal>
 
       {conflictMessage ? (
         <StateView variant="warning" size="sm" align="left" className="mb-4" title={conflictMessage} />

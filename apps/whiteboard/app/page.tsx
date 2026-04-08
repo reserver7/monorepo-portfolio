@@ -200,7 +200,7 @@ export default function WhiteboardHomePage() {
           <Typography as="h1" variant="h1">
             실시간 화이트보드 협업
           </Typography>
-          <Typography as="p" variant="body" tone="muted" className="mt-3 max-w-2xl">
+          <Typography as="p" variant="body" color="muted" className="mt-3 max-w-2xl">
             도형 추가, 텍스트 입력, 드래그 이동, 참여자 커서 공유, undo/redo를 실시간 동기화로 제공합니다.
           </Typography>
 
@@ -267,12 +267,12 @@ export default function WhiteboardHomePage() {
           <Typography as="h2" variant="h3">
             협업 보드 현황
           </Typography>
-          <Typography as="p" variant="bodySm" tone="muted" className="mt-2">
+          <Typography as="p" variant="bodySm" color="muted" className="mt-2">
             보드 생성/보호/도형 규모를 한눈에 확인하고 필요한 보드로 빠르게 이동하세요.
           </Typography>
           <div className="mt-5 grid grid-cols-3 gap-2">
             <Card className="p-3 text-center">
-              <Typography as="p" variant="caption" tone="subtle">
+              <Typography as="p" variant="caption" color="subtle">
                 보드
               </Typography>
               <Typography as="p" variant="h3" className="mt-1">
@@ -280,7 +280,7 @@ export default function WhiteboardHomePage() {
               </Typography>
             </Card>
             <Card className="p-3 text-center">
-              <Typography as="p" variant="caption" tone="subtle">
+              <Typography as="p" variant="caption" color="subtle">
                 보호됨
               </Typography>
               <Typography as="p" variant="h3" className="mt-1">
@@ -288,7 +288,7 @@ export default function WhiteboardHomePage() {
               </Typography>
             </Card>
             <Card className="p-3 text-center">
-              <Typography as="p" variant="caption" tone="subtle">
+              <Typography as="p" variant="caption" color="subtle">
                 도형
               </Typography>
               <Typography as="p" variant="h3" className="mt-1">
@@ -297,16 +297,16 @@ export default function WhiteboardHomePage() {
             </Card>
           </div>
           <div className="border-default bg-surface mt-5 space-y-2 rounded-xl border p-3.5">
-            <Typography as="p" variant="label" tone="subtle">
+            <Typography as="p" variant="label" color="subtle">
               사용 가이드
             </Typography>
-            <Typography as="p" variant="bodySm" tone="muted">
+            <Typography as="p" variant="bodySm" color="muted">
               1) 보드 제목/권한을 설정하고 보드를 생성합니다.
             </Typography>
-            <Typography as="p" variant="bodySm" tone="muted">
+            <Typography as="p" variant="bodySm" color="muted">
               2) 편집 키를 입력하면 보드 입장 시 기본으로 사용됩니다.
             </Typography>
-            <Typography as="p" variant="bodySm" tone="muted">
+            <Typography as="p" variant="bodySm" color="muted">
               3) 삭제는 보드 카드에서 즉시 처리할 수 있습니다.
             </Typography>
           </div>
@@ -318,7 +318,7 @@ export default function WhiteboardHomePage() {
           <Typography as="h2" variant="h2" className="text-heading-xl">
             보드 목록
           </Typography>
-          <Typography as="span" variant="bodySm" tone="subtle">
+          <Typography as="span" variant="bodySm" color="subtle">
             자동 새로고침: 5초
           </Typography>
         </div>
@@ -377,10 +377,10 @@ export default function WhiteboardHomePage() {
                 </div>
 
                 <div className="mt-4 space-y-1">
-                  <Typography as="p" variant="bodySm" tone="subtle">
+                  <Typography as="p" variant="bodySm" color="subtle">
                     최근 수정: {formatRelativeTime(board.updatedAt)}
                   </Typography>
-                  <Typography as="p" variant="bodySm" tone="subtle">
+                  <Typography as="p" variant="bodySm" color="subtle">
                     수정 일시: {formatExactTime(board.updatedAt)}
                   </Typography>
                 </div>
@@ -468,7 +468,7 @@ export default function WhiteboardHomePage() {
         )}
       </section>
 
-      <Spinner open={isActionPending} fullscreen size="lg" tone="primary" />
+      <Spinner open={isActionPending} fullscreen size="lg" color="primary" />
     </main>
   );
 }

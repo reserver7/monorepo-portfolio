@@ -183,7 +183,7 @@ export default function LogsPage() {
         )}
       </OpsSectionCard>
 
-      <Spinner open={analyzeMutation.isPending} fullscreen size="lg" tone="primary" />
+      <Spinner open={analyzeMutation.isPending} fullscreen size="lg" color="primary" />
     </div>
   );
 }

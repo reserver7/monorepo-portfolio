@@ -191,7 +191,7 @@ export default function DeploymentsPage() {
         </OpsSectionCard>
       </section>
 
-      <Spinner open={createMutation.isPending} fullscreen size="lg" tone="primary" />
+      <Spinner open={createMutation.isPending} fullscreen size="lg" color="primary" />
     </div>
   );
 }

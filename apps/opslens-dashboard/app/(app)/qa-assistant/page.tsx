@@ -155,7 +155,7 @@ export default function QaAssistantPage() {
         )}
       </OpsSectionCard>
 
-      <Spinner open={generateMutation.isPending} fullscreen size="lg" tone="primary" />
+      <Spinner open={generateMutation.isPending} fullscreen size="lg" color="primary" />
     </div>
   );
 }

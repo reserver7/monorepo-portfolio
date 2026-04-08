@@ -45,7 +45,7 @@ export function OpsSectionCard({
           {title}
         </Typography>
         {description ? (
-          <Typography variant="bodySm" tone="muted" className="leading-6">
+          <Typography variant="bodySm" color="muted" className="leading-6">
             {description}
           </Typography>
         ) : null}
@@ -58,7 +58,7 @@ export function OpsSectionCard({
 export function OpsInfoItem({ label, value }: { label: string; value: string }) {
   return (
     <Card variant="muted" className="border-default bg-surface-elevated rounded-xl px-3 py-2.5 text-sm">
-      <Typography as="p" variant="caption" tone="subtle" className="font-semibold uppercase tracking-wide">
+      <Typography as="p" variant="caption" color="subtle" className="font-semibold uppercase tracking-wide">
         {label}
       </Typography>
       <Typography as="p" variant="bodySm" className="mt-1 font-medium">

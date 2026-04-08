@@ -22,7 +22,7 @@ export const PresencePanel = ({ participants, mySessionId }: PresencePanelProps)
 
       <div className="space-y-3">
         {participants.length === 0 ? (
-          <Typography variant="bodySm" tone="subtle">
+          <Typography variant="bodySm" color="subtle">
             아직 접속한 참여자가 없습니다.
           </Typography>
         ) : (
@@ -53,7 +53,7 @@ export const PresencePanel = ({ participants, mySessionId }: PresencePanelProps)
                 </div>
 
                 <div className="mt-1.5 flex items-center justify-end">
-                  <Typography as="span" variant="caption" tone="subtle" className="tabular-nums">
+                  <Typography as="span" variant="caption" color="subtle" className="tabular-nums">
                     cursor {participant.cursorIndex}
                   </Typography>
                 </div>

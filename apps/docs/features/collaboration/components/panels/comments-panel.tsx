@@ -70,7 +70,7 @@ export const CommentsPanel = ({
         />
 
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          <Typography variant="caption" tone="subtle" className="mr-1">
+          <Typography variant="caption" color="subtle" className="mr-1">
             멘션:
           </Typography>
           {mentionCandidates.length > 0 ? (
@@ -80,7 +80,7 @@ export const CommentsPanel = ({
               </Badge>
             ))
           ) : (
-            <Typography variant="caption" tone="subtle">
+            <Typography variant="caption" color="subtle">
               없음
             </Typography>
           )}
@@ -105,7 +105,7 @@ export const CommentsPanel = ({
 
       <div className="max-h-[32rem] space-y-3 overflow-auto pr-1">
         {comments.length === 0 ? (
-          <Typography variant="bodySm" tone="subtle">
+          <Typography variant="bodySm" color="subtle">
             아직 등록된 댓글이 없습니다.
           </Typography>
         ) : (
@@ -120,7 +120,7 @@ export const CommentsPanel = ({
                     {comment.authorName}
                     {isMine ? " (나)" : ""}
                   </Typography>
-                  <Typography as="p" variant="caption" tone="subtle">
+                  <Typography as="p" variant="caption" color="subtle">
                     {formatExactTime(comment.updatedAt)}
                   </Typography>
                 </div>
@@ -162,7 +162,7 @@ export const CommentsPanel = ({
                   </div>
                 ) : (
                   <>
-                    <Typography as="p" variant="bodySm" tone="muted" className="leading-6">
+                    <Typography as="p" variant="bodySm" color="muted" className="leading-6">
                       {comment.body}
                     </Typography>
 
