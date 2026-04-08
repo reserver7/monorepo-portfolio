@@ -19,7 +19,7 @@ const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknow
 };
 
 const meta: Meta<typeof StateView> = {
-  title: "Components/Generated/Feedback/StateView",
+  title: "Components/StateView",
   component: StateView,
   tags: ["autodocs"],
   parameters: {
@@ -34,26 +34,50 @@ const meta: Meta<typeof StateView> = {
   "optionDescriptionClassName",
   "style",
   "id",
-  "name",
   /^on[A-Z].*/,
   /.*ClassName$/
 ] }
   },
   args: {
-    title: "상태 제목",
-    description: "상태 설명",
     variant: "info",
-    size: "md"
+    size: "md",
+    align: "center",
+    layout: "inline",
+    title: "상태 제목",
+    description: "상태 설명"
   },
   argTypes: {
-    variant: { control: "select", options: ["info","success","warning","error","empty","loading"], table: { defaultValue: { summary: "info" } } },
-    size: { control: "select", options: ["sm","md","lg"], table: { defaultValue: { summary: "md" } } },
-    title: { control: "text", table: { defaultValue: { summary: "상태 제목" } } },
-    description: { control: "text", table: { defaultValue: { summary: "상태 설명" } } },
-    children: { control: false },
-    asChild: { control: false },
-    leftIcon: { control: false },
-    rightIcon: { control: false }
+    variant: {control:"select",options:["empty","error","warning","info","success","loading"],table:{defaultValue:{summary:"info"}}},
+    size: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"md"}}},
+    align: {control:"select",options:["left","center"],table:{defaultValue:{summary:"center"}}},
+    layout: {control:"select",options:["inline","stacked"],table:{defaultValue:{summary:"inline"}}},
+    title: {control:"text",table:{defaultValue:{summary:"상태 제목"}}},
+    description: {control:"text",table:{defaultValue:{summary:"상태 설명"}}},
+    children: {control:false,table:{disable:true}},
+    asChild: {control:false,table:{disable:true}},
+    leftIcon: {control:false,table:{disable:true}},
+    rightIcon: {control:false,table:{disable:true}},
+    options: {control:false,table:{}},
+    value: {control:false,table:{}},
+    defaultValue: {control:false,table:{}},
+    checked: {control:false,table:{}},
+    defaultChecked: {control:false,table:{}},
+    open: {control:false,table:{}},
+    defaultOpen: {control:false,table:{}},
+    onChange: {control:false,table:{}},
+    onCheckedChange: {control:false,table:{}},
+    onOpenChange: {control:false,table:{}},
+    prefix: {table:{disable:true}},
+    suffix: {table:{disable:true}},
+    className: {table:{disable:true}},
+    containerClassName: {table:{disable:true}},
+    labelClassName: {table:{disable:true}},
+    helperClassName: {table:{disable:true}},
+    optionClassName: {table:{disable:true}},
+    optionLabelClassName: {table:{disable:true}},
+    optionDescriptionClassName: {table:{disable:true}},
+    style: {table:{disable:true}},
+    id: {table:{disable:true}}
   },
 };
 
@@ -62,70 +86,8 @@ type Story = StoryObj<typeof StateView>;
 
 export const Playground: Story = {
   render: (args) => (
-    <div className="max-w-lg rounded-xl border border-default bg-surface p-4">
-      <StateView
-        {...sanitizeStoryArgs(args as Record<string, unknown>)}
-     />
-    </div>
-  )
-};
-
-const OPTION_MATRIX = {
-  "variant": [
-    "info",
-    "success",
-    "warning",
-    "error",
-    "empty",
-    "loading"
-  ]
-} as const;
-
-const sanitizeMatrixArgs = (args: Record<string, unknown>) => {
-  const next = sanitizeStoryArgs(args);
-  delete next.children;
-  delete next.leftIcon;
-  delete next.rightIcon;
-  return next;
-};
-
-export const OptionMatrix: Story = {
-  render: (args) => (
-    <div className="space-y-4">
-      <section className="rounded-xl border border-default bg-surface p-4">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-body-md text-foreground font-semibold">옵션 매트릭스</h3>
-          <span className="text-caption text-muted rounded-full border border-default bg-surface-elevated px-2 py-0.5">
-            StateView
-          </span>
-        </div>
-        <div className="space-y-4">
-          {Object.entries(OPTION_MATRIX).map(([propName, values]) => (
-            <article key={propName} className="rounded-lg border border-default bg-surface-elevated p-3">
-              <div className="mb-3 flex items-center justify-between">
-                <h4 className="text-body-sm text-foreground font-medium">{propName}</h4>
-                <span className="text-caption text-muted">{values.length} options</span>
-              </div>
-              <div className="grid items-start gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                {(values as readonly unknown[]).map((value) => (
-                  <div key={`${propName}-${String(value)}`} className="rounded-md border border-default bg-surface p-3">
-                    <div className="text-caption text-muted mb-2">{String(value)}</div>
-                    <div className="min-h-10">
-                      <StateView
-                        {...sanitizeMatrixArgs(args as Record<string, unknown>)}
-                        {...({ [propName]: value } as Record<string, unknown>)}
-                       />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </article>
-          ))}
-          <div className="text-caption text-muted">
-            Playground controls와 함께 사용해서 옵션 조합을 추가 검증하세요.
-          </div>
-        </div>
-      </section>
-    </div>
+    <StateView
+      {...sanitizeStoryArgs(args as Record<string, unknown>)}
+   />
   )
 };

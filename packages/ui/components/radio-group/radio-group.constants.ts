@@ -1,9 +1,11 @@
-import type { RadioGroupSize } from "./radio-group.types";
+import type { RadioGroupOrientation, RadioGroupSize } from "./radio-group.types";
 
 export const RADIO_GROUP_DEFAULTS = {
-  size: "sm"
+  size: "sm",
+  orientation: "vertical"
 } satisfies {
   size: RadioGroupSize;
+  orientation: RadioGroupOrientation;
 };
 
 export const RADIO_GROUP_SIZE_CLASS: Record<RadioGroupSize, string> = {

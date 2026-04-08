@@ -1,61 +1,54 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Popover } from "../../../../index";
+import { Button, Popover, PopoverContent, PopoverTrigger, Select } from "../../../../index";
 
-const isRenderableNode = (value: unknown): boolean => {
-  if (value == null) return true;
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return true;
-  if (React.isValidElement(value)) return true;
-  if (Array.isArray(value)) return value.every(isRenderableNode);
-  return false;
+type PopoverStoryArgs = {
+  triggerText: string;
+  side: "top" | "right" | "bottom" | "left";
+  align: "start" | "center" | "end";
+  sideOffset: number;
 };
 
-const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknown> => {
-  const next = { ...args };
-  for (const key of ["children","leftIcon","rightIcon","prefix","suffix","label","helperText","errorMessage","title","description","helper"]) {
-    if (!isRenderableNode(next[key])) delete next[key];
-  }
-  return next;
-};
-
-const meta: Meta<typeof Popover> = {
-  title: "Components/Generated/Overlays/Popover",
-  component: Popover,
+const meta: Meta<PopoverStoryArgs> = {
+  title: "Components/Popover",
   tags: ["autodocs"],
-  parameters: {
-    layout: "padded",
-    controls: { expanded: true, exclude: [
-  "className",
-  "containerClassName",
-  "labelClassName",
-  "helperClassName",
-  "optionClassName",
-  "optionLabelClassName",
-  "optionDescriptionClassName",
-  "style",
-  "id",
-  "name",
-  /^on[A-Z].*/,
-  /.*ClassName$/
-] }
+  parameters: { layout: "centered", controls: { expanded: true } },
+  args: {
+    triggerText: "필터 열기",
+    side: "bottom",
+    align: "center",
+    sideOffset: 8
   },
   argTypes: {
-    children: { control: false },
-    asChild: { control: false },
-    leftIcon: { control: false },
-    rightIcon: { control: false }
-  },
+    triggerText: { control: "text" },
+    side: { control: "inline-radio", options: ["top", "right", "bottom", "left"] },
+    align: { control: "inline-radio", options: ["start", "center", "end"] },
+    sideOffset: { control: { type: "number", min: 0, max: 24, step: 1 } }
+  }
 };
 
 export default meta;
-type Story = StoryObj<typeof Popover>;
+type Story = StoryObj<PopoverStoryArgs>;
 
 export const Playground: Story = {
   render: (args) => (
-    <div className="max-w-lg rounded-xl border border-default bg-surface p-4">
-      <Popover
-        {...sanitizeStoryArgs(args as Record<string, unknown>)}
-     />
-    </div>
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline">{args.triggerText}</Button>
+      </PopoverTrigger>
+      <PopoverContent side={args.side} align={args.align} sideOffset={args.sideOffset}>
+        <div className="space-y-3">
+          <h4 className="text-body-sm font-semibold">권한 필터</h4>
+          <Select
+            value="viewer"
+            options={[
+              { label: "viewer", value: "viewer" },
+              { label: "editor", value: "editor" },
+              { label: "admin", value: "admin" }
+            ]}
+          />
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 };

@@ -19,7 +19,7 @@ const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknow
 };
 
 const meta: Meta<typeof Label> = {
-  title: "Components/Generated/Forms Primitives/Label",
+  title: "Components/Label",
   component: Label,
   tags: ["autodocs"],
   parameters: {
@@ -34,19 +34,45 @@ const meta: Meta<typeof Label> = {
   "optionDescriptionClassName",
   "style",
   "id",
-  "name",
   /^on[A-Z].*/,
   /.*ClassName$/
 ] }
   },
   args: {
+    size: "md",
+    color: "default",
+    required: false,
     children: "Label"
   },
   argTypes: {
-    children: { control: false },
-    asChild: { control: false },
-    leftIcon: { control: false },
-    rightIcon: { control: false }
+    color: {control:"select",options:["default","muted","danger"],table:{defaultValue:{summary:"default"}}},
+    size: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"md"}}},
+    required: {control:"boolean",table:{defaultValue:{summary:false}}},
+    children: {control:false,table:{disable:true}},
+    asChild: {control:false,table:{disable:true}},
+    leftIcon: {control:false,table:{disable:true}},
+    rightIcon: {control:false,table:{disable:true}},
+    options: {control:false,table:{}},
+    value: {control:false,table:{}},
+    defaultValue: {control:false,table:{}},
+    checked: {control:false,table:{}},
+    defaultChecked: {control:false,table:{}},
+    open: {control:false,table:{}},
+    defaultOpen: {control:false,table:{}},
+    onChange: {control:false,table:{}},
+    onCheckedChange: {control:false,table:{}},
+    onOpenChange: {control:false,table:{}},
+    prefix: {table:{disable:true}},
+    suffix: {table:{disable:true}},
+    className: {table:{disable:true}},
+    containerClassName: {table:{disable:true}},
+    labelClassName: {table:{disable:true}},
+    helperClassName: {table:{disable:true}},
+    optionClassName: {table:{disable:true}},
+    optionLabelClassName: {table:{disable:true}},
+    optionDescriptionClassName: {table:{disable:true}},
+    style: {table:{disable:true}},
+    id: {table:{disable:true}}
   },
 };
 
@@ -55,12 +81,10 @@ type Story = StoryObj<typeof Label>;
 
 export const Playground: Story = {
   render: (args) => (
-    <div className="max-w-lg rounded-xl border border-default bg-surface p-4">
-      <Label
-        {...sanitizeStoryArgs(args as Record<string, unknown>)}
-    >
+    <Label
+      {...sanitizeStoryArgs(args as Record<string, unknown>)}
+  >
     Label
   </Label>
-    </div>
   )
 };

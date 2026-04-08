@@ -1,11 +1,13 @@
-import type { CheckboxSize } from "./checkbox.types";
+import type { CheckboxOrientation, CheckboxSize } from "./checkbox.types";
 
 export const CHECKBOX_DEFAULTS = {
   size: "sm",
-  indeterminate: false
+  indeterminate: false,
+  orientation: "horizontal"
 } satisfies {
   size: CheckboxSize;
   indeterminate: boolean;
+  orientation: CheckboxOrientation;
 };
 
 export const CHECKBOX_SIZE_CLASS: Record<CheckboxSize, string> = {

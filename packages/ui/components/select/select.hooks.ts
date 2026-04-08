@@ -1,18 +1,21 @@
 import * as React from "react";
 import type { SelectOption } from "./select.types";
+import { filterSelectOptions, getSelectOptionLabelText, toSelectKey } from "./select.utils";
 
-export const toSelectKey = (value: unknown) => String(value);
+export type KeyedSelectOption<T> = {
+  key: string;
+  option: SelectOption<T>;
+};
 
-export const normalizeSelectKeyword = (input: string) => input.trim().toLowerCase();
-
-export const getSelectOptionLabelText = (label: React.ReactNode): string => {
-  if (typeof label === "string") {
-    return label;
-  }
-  if (typeof label === "number") {
-    return String(label);
-  }
-  return "";
+export const useKeyedSelectOptions = <T>(options: Array<SelectOption<T>>): Array<KeyedSelectOption<T>> => {
+  return React.useMemo(
+    () =>
+      options.map((option) => ({
+        key: toSelectKey(option.value),
+        option
+      })),
+    [options]
+  );
 };
 
 export const useSelectOptionMaps = <T>(options: Array<SelectOption<T>>) => {
@@ -30,19 +33,6 @@ export const useSelectOptionMaps = <T>(options: Array<SelectOption<T>>) => {
   }, [options]);
 };
 
-export const filterSelectOptions = <T>(options: Array<SelectOption<T>>, query: string) => {
-  const normalizedQuery = normalizeSelectKeyword(query);
-  if (!normalizedQuery) {
-    return options;
-  }
-
-  return options.filter((option) => {
-    const label = normalizeSelectKeyword(getSelectOptionLabelText(option.label));
-    const keywords = normalizeSelectKeyword(option.keywords ?? "");
-    return label.includes(normalizedQuery) || keywords.includes(normalizedQuery);
-  });
-};
-
 export const useFilteredSelectOptions = <T>(
   options: Array<SelectOption<T>>,
   query: string,
@@ -57,23 +47,6 @@ export const useFilteredSelectOptions = <T>(
 
     return filterSelectOptions(options, deferredQuery);
   }, [deferredQuery, options, searchable]);
-};
-
-export const resolveSelectViewportHeight = (maxVisibleItems: number, rowHeightPx: number) => {
-  return `${maxVisibleItems * rowHeightPx}px`;
-};
-
-export const buildMultiSelectLabel = (
-  selectedKeys: string[],
-  labelByKey: Map<string, string>,
-  placeholder: string
-) => {
-  if (selectedKeys.length === 0) {
-    return placeholder;
-  }
-
-  const labels = selectedKeys.map((key) => labelByKey.get(key) ?? "").filter(Boolean);
-  return labels.length > 0 ? labels.join(", ") : `${selectedKeys.length}개 선택`;
 };
 
 export const usePopoverTriggerWidth = (triggerRef: React.RefObject<HTMLElement | null>, open: boolean) => {

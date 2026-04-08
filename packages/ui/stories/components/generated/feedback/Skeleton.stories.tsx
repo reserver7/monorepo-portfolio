@@ -1,61 +1,61 @@
-import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { Skeleton } from "../../../../index";
 
-const isRenderableNode = (value: unknown): boolean => {
-  if (value == null) return true;
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return true;
-  if (React.isValidElement(value)) return true;
-  if (Array.isArray(value)) return value.every(isRenderableNode);
-  return false;
+type SkeletonStoryArgs = {
+  variant: "rectangular" | "rounded" | "circular" | "text";
+  size: "xs" | "sm" | "md" | "lg";
+  color: "default" | "muted" | "subtle";
+  animation: "pulse" | "none";
+  speed: "slow" | "normal" | "fast";
+  lines: number;
+  lastLineWidth: string;
+  fullWidth: boolean;
 };
 
-const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknown> => {
-  const next = { ...args };
-  for (const key of ["children","leftIcon","rightIcon","prefix","suffix","label","helperText","errorMessage","title","description","helper"]) {
-    if (!isRenderableNode(next[key])) delete next[key];
-  }
-  return next;
-};
-
-const meta: Meta<typeof Skeleton> = {
-  title: "Components/Generated/Feedback/Skeleton",
-  component: Skeleton,
+const meta: Meta<SkeletonStoryArgs> = {
+  title: "Components/Skeleton",
   tags: ["autodocs"],
-  parameters: {
-    layout: "padded",
-    controls: { expanded: true, exclude: [
-  "className",
-  "containerClassName",
-  "labelClassName",
-  "helperClassName",
-  "optionClassName",
-  "optionLabelClassName",
-  "optionDescriptionClassName",
-  "style",
-  "id",
-  "name",
-  /^on[A-Z].*/,
-  /.*ClassName$/
-] }
+  parameters: { layout: "padded", controls: { expanded: true } },
+  args: {
+    variant: "text",
+    size: "md",
+    color: "default",
+    animation: "pulse",
+    speed: "normal",
+    lines: 3,
+    lastLineWidth: "60%",
+    fullWidth: true
   },
   argTypes: {
-    children: { control: false },
-    asChild: { control: false },
-    leftIcon: { control: false },
-    rightIcon: { control: false }
-  },
+    variant: { control: "inline-radio", options: ["text", "rounded", "rectangular", "circular"] },
+    size: { control: "inline-radio", options: ["xs", "sm", "md", "lg"] },
+    color: { control: "inline-radio", options: ["default", "muted", "subtle"] },
+    animation: { control: "inline-radio", options: ["pulse", "none"] },
+    speed: { control: "inline-radio", options: ["slow", "normal", "fast"] },
+    lines: { control: { type: "number", min: 1, max: 8, step: 1 } },
+    lastLineWidth: { control: "text" },
+    fullWidth: { control: "boolean" }
+  }
 };
 
 export default meta;
-type Story = StoryObj<typeof Skeleton>;
+type Story = StoryObj<SkeletonStoryArgs>;
 
 export const Playground: Story = {
   render: (args) => (
-    <div className="max-w-lg rounded-xl border border-default bg-surface p-4">
+    <div className="max-w-xl space-y-3">
       <Skeleton
-        {...sanitizeStoryArgs(args as Record<string, unknown>)}
-     />
+        variant={args.variant}
+        size={args.size}
+        color={args.color}
+        animation={args.animation}
+        speed={args.speed}
+        lines={args.lines}
+        lastLineWidth={args.lastLineWidth}
+        fullWidth={args.fullWidth}
+      />
     </div>
   )
 };
+
+

@@ -107,7 +107,7 @@ export default function IssueDetailPage() {
             <Typography as="h2" variant="h2" className="text-heading-xl">
               {issue.title}
             </Typography>
-            <Typography as="p" variant="bodySm" tone="muted" className="mt-2">
+            <Typography as="p" variant="bodySm" color="muted" className="mt-2">
               {issue.summary}
             </Typography>
           </div>
@@ -265,7 +265,7 @@ export default function IssueDetailPage() {
         open={statusMutation.isPending || assigneeMutation.isPending || commentMutation.isPending}
         fullscreen
         size="lg"
-        tone="primary"
+        color="primary"
       />
     </div>
   );

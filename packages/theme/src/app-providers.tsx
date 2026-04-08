@@ -2,8 +2,8 @@
 
 import type { PropsWithChildren } from "react";
 import { QueryClientProvider, createAppQueryClient, type QueryClientConfig } from "@repo/react-query";
-import { AlertConfirmProvider, ErrorBoundary, Toaster, useStableValue } from "@repo/ui";
-import type { ToasterProps } from "@repo/ui";
+import { AlertConfirmProvider, ErrorBoundary, Toast, useStableValue } from "@repo/ui";
+import type { ToastProps } from "@repo/ui";
 import { AppThemeProvider } from "./theme-provider";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -14,7 +14,7 @@ export interface AppProvidersProps extends PropsWithChildren {
   onResetError?: () => void;
   showThemeToggle?: boolean;
   showToaster?: boolean;
-  toasterOptions?: ToasterProps;
+  toasterOptions?: ToastProps;
 }
 
 export function AppProviders({
@@ -41,7 +41,7 @@ export function AppProviders({
           <AlertConfirmProvider />
         </ErrorBoundary>
         {showThemeToggle ? <ThemeToggle /> : null}
-        {showToaster ? <Toaster {...toasterOptions} /> : null}
+        {showToaster ? <Toast {...toasterOptions} /> : null}
       </QueryClientProvider>
     </AppThemeProvider>
   );

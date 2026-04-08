@@ -1,61 +1,33 @@
-import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { ScrollArea } from "../../../../index";
 
-const isRenderableNode = (value: unknown): boolean => {
-  if (value == null) return true;
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return true;
-  if (React.isValidElement(value)) return true;
-  if (Array.isArray(value)) return value.every(isRenderableNode);
-  return false;
+type ScrollAreaStoryArgs = {
+  scrollBarSize: "sm" | "md" | "lg";
 };
 
-const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknown> => {
-  const next = { ...args };
-  for (const key of ["children","leftIcon","rightIcon","prefix","suffix","label","helperText","errorMessage","title","description","helper"]) {
-    if (!isRenderableNode(next[key])) delete next[key];
-  }
-  return next;
-};
-
-const meta: Meta<typeof ScrollArea> = {
-  title: "Components/Generated/Layout/ScrollArea",
-  component: ScrollArea,
+const meta: Meta<ScrollAreaStoryArgs> = {
+  title: "Components/ScrollArea",
   tags: ["autodocs"],
-  parameters: {
-    layout: "padded",
-    controls: { expanded: true, exclude: [
-  "className",
-  "containerClassName",
-  "labelClassName",
-  "helperClassName",
-  "optionClassName",
-  "optionLabelClassName",
-  "optionDescriptionClassName",
-  "style",
-  "id",
-  "name",
-  /^on[A-Z].*/,
-  /.*ClassName$/
-] }
-  },
+  parameters: { layout: "padded", controls: { expanded: true } },
+  args: { scrollBarSize: "md" },
   argTypes: {
-    children: { control: false },
-    asChild: { control: false },
-    leftIcon: { control: false },
-    rightIcon: { control: false }
-  },
+    scrollBarSize: { control: "inline-radio", options: ["sm", "md", "lg"] }
+  }
 };
 
 export default meta;
-type Story = StoryObj<typeof ScrollArea>;
+type Story = StoryObj<ScrollAreaStoryArgs>;
 
 export const Playground: Story = {
   render: (args) => (
-    <div className="max-w-lg rounded-xl border border-default bg-surface p-4">
-      <ScrollArea
-        {...sanitizeStoryArgs(args as Record<string, unknown>)}
-     />
-    </div>
+    <ScrollArea className="h-64 w-full rounded-xl border border-default bg-surface p-3" scrollBarSize={args.scrollBarSize}>
+      <div className="space-y-2 pr-2">
+        {Array.from({ length: 24 }).map((_, index) => (
+          <p key={index} className="text-body-sm text-foreground">
+            변경 이력 #{index + 1} - CRDT state synchronized
+          </p>
+        ))}
+      </div>
+    </ScrollArea>
   )
 };

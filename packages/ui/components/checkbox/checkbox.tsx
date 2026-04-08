@@ -13,7 +13,7 @@ import {
   CHECKBOX_ICON_SIZE_CLASS,
   CHECKBOX_SIZE_CLASS
 } from "./checkbox.constants";
-import { toBooleanChecked } from "./checkbox.hooks";
+import { toBooleanChecked } from "./checkbox.utils";
 import type { CheckboxProps } from "./checkbox.types";
 
 function CheckboxBase(
@@ -24,6 +24,7 @@ function CheckboxBase(
     defaultChecked,
     onCheckedChange,
     indeterminate = CHECKBOX_DEFAULTS.indeterminate,
+    orientation = CHECKBOX_DEFAULTS.orientation,
     label,
     helperText,
     errorMessage,
@@ -42,8 +43,22 @@ function CheckboxBase(
   const resolvedId = id ?? `checkbox-${generatedId}`;
   const supportText = errorMessage ?? helperText ?? (required && !label ? "필수 체크 항목입니다." : undefined);
   const hasWrapper = Boolean(required || label || supportText || containerClassName || labelClassName || helperClassName);
+  const handleCheckedChange = React.useCallback(
+    (next: CheckboxPrimitive.CheckedState) => {
+      onCheckedChange?.(toBooleanChecked(next));
+    },
+    [onCheckedChange]
+  );
 
-  const icon = indeterminate ? <Minus className={CHECKBOX_ICON_SIZE_CLASS[size]} /> : <Check className={CHECKBOX_ICON_SIZE_CLASS[size]} />;
+  const icon = React.useMemo(
+    () =>
+      indeterminate ? (
+        <Minus className={CHECKBOX_ICON_SIZE_CLASS[size]} />
+      ) : (
+        <Check className={CHECKBOX_ICON_SIZE_CLASS[size]} />
+      ),
+    [indeterminate, size]
+  );
 
   const checkboxNode = (
     <CheckboxPrimitive.Root
@@ -54,7 +69,7 @@ function CheckboxBase(
       disabled={disabled}
       checked={indeterminate ? "indeterminate" : checked}
       defaultChecked={indeterminate ? undefined : defaultChecked}
-      onCheckedChange={(next) => onCheckedChange?.(toBooleanChecked(next))}
+      onCheckedChange={handleCheckedChange}
       aria-checked={indeterminate ? "mixed" : undefined}
       className={cn(
         CHECKBOX_BASE_CLASS,
@@ -75,7 +90,7 @@ function CheckboxBase(
 
   return (
     <div className={cn("grid gap-1", containerClassName)}>
-      <div className="flex items-center gap-2">
+      <div className={cn("gap-2", orientation === "vertical" ? "flex flex-col items-start" : "flex items-center")}>
         {checkboxNode}
         {label ? (
           <Label htmlFor={resolvedId} size="sm" className={cn("cursor-pointer leading-5", labelClassName)}>
@@ -94,7 +109,7 @@ function CheckboxBase(
       <FieldSupportText
         message={supportText}
         error={Boolean(errorMessage)}
-        className={cn(size === "md" ? "pl-7" : "pl-6", helperClassName)}
+        className={cn(orientation === "horizontal" ? (size === "md" ? "pl-7" : "pl-6") : null, helperClassName)}
       />
     </div>
   );
@@ -103,7 +118,7 @@ function CheckboxBase(
 const CheckboxBaseWithRef = React.forwardRef(CheckboxBase);
 CheckboxBaseWithRef.displayName = "CheckboxBase";
 
-export const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimitive.Root>, CheckboxProps>((props, ref) => {
+const CheckboxComponent = React.forwardRef<React.ElementRef<typeof CheckboxPrimitive.Root>, CheckboxProps>((props, ref) => {
   const { control, rules, name, onCheckedChange, checked, defaultChecked, required, ...rest } = props;
   const mergedRules = React.useMemo<CheckboxProps["rules"]>(() => {
     if (!required || rules?.required) return rules;
@@ -146,4 +161,7 @@ export const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimiti
     />
   );
 });
+CheckboxComponent.displayName = "Checkbox";
+
+export const Checkbox = React.memo(CheckboxComponent);
 Checkbox.displayName = "Checkbox";

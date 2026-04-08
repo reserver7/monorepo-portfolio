@@ -9,7 +9,6 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
   size?: InputSize;
   variant?: InputVariant;
   status?: InputStatus;
-  state?: InputStatus;
   label?: React.ReactNode;
   helperText?: React.ReactNode;
   errorMessage?: React.ReactNode;

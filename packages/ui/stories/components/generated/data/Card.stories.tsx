@@ -19,7 +19,7 @@ const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknow
 };
 
 const meta: Meta<typeof Card> = {
-  title: "Components/Generated/Data/Card",
+  title: "Components/Card",
   component: Card,
   tags: ["autodocs"],
   parameters: {
@@ -34,20 +34,49 @@ const meta: Meta<typeof Card> = {
   "optionDescriptionClassName",
   "style",
   "id",
-  "name",
   /^on[A-Z].*/,
   /.*ClassName$/
 ] }
   },
   args: {
-    variant: "default"
+    variant: "default",
+    interactive: false,
+    padding: "md",
+    radius: "xl",
+    bordered: true,
+    children: "Card content"
   },
   argTypes: {
-    variant: { control: "select", options: ["default","elevated","muted","ghost"], table: { defaultValue: { summary: "default" } } },
-    children: { control: false },
-    asChild: { control: false },
-    leftIcon: { control: false },
-    rightIcon: { control: false }
+    variant: {control:"select",options:["default","elevated","muted","ghost"],table:{defaultValue:{summary:"default"}}},
+    padding: {control:"select",options:["none","sm","md","lg"],table:{defaultValue:{summary:"md"}}},
+    radius: {control:"select",options:["md","lg","xl"],table:{defaultValue:{summary:"xl"}}},
+    interactive: {control:"boolean",table:{defaultValue:{summary:false}}},
+    bordered: {control:"boolean",table:{defaultValue:{summary:true}}},
+    children: {control:false,table:{disable:true}},
+    asChild: {control:false,table:{disable:true}},
+    leftIcon: {control:false,table:{disable:true}},
+    rightIcon: {control:false,table:{disable:true}},
+    options: {control:false,table:{}},
+    value: {control:false,table:{}},
+    defaultValue: {control:false,table:{}},
+    checked: {control:false,table:{}},
+    defaultChecked: {control:false,table:{}},
+    open: {control:false,table:{}},
+    defaultOpen: {control:false,table:{}},
+    onChange: {control:false,table:{}},
+    onCheckedChange: {control:false,table:{}},
+    onOpenChange: {control:false,table:{}},
+    prefix: {table:{disable:true}},
+    suffix: {table:{disable:true}},
+    className: {table:{disable:true}},
+    containerClassName: {table:{disable:true}},
+    labelClassName: {table:{disable:true}},
+    helperClassName: {table:{disable:true}},
+    optionClassName: {table:{disable:true}},
+    optionLabelClassName: {table:{disable:true}},
+    optionDescriptionClassName: {table:{disable:true}},
+    style: {table:{disable:true}},
+    id: {table:{disable:true}}
   },
 };
 
@@ -56,68 +85,10 @@ type Story = StoryObj<typeof Card>;
 
 export const Playground: Story = {
   render: (args) => (
-    <div className="max-w-lg rounded-xl border border-default bg-surface p-4">
-      <Card
-        {...sanitizeStoryArgs(args as Record<string, unknown>)}
-     />
-    </div>
-  )
-};
-
-const OPTION_MATRIX = {
-  "variant": [
-    "default",
-    "elevated",
-    "muted",
-    "ghost"
-  ]
-} as const;
-
-const sanitizeMatrixArgs = (args: Record<string, unknown>) => {
-  const next = sanitizeStoryArgs(args);
-  delete next.children;
-  delete next.leftIcon;
-  delete next.rightIcon;
-  return next;
-};
-
-export const OptionMatrix: Story = {
-  render: (args) => (
-    <div className="space-y-4">
-      <section className="rounded-xl border border-default bg-surface p-4">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-body-md text-foreground font-semibold">옵션 매트릭스</h3>
-          <span className="text-caption text-muted rounded-full border border-default bg-surface-elevated px-2 py-0.5">
-            Card
-          </span>
-        </div>
-        <div className="space-y-4">
-          {Object.entries(OPTION_MATRIX).map(([propName, values]) => (
-            <article key={propName} className="rounded-lg border border-default bg-surface-elevated p-3">
-              <div className="mb-3 flex items-center justify-between">
-                <h4 className="text-body-sm text-foreground font-medium">{propName}</h4>
-                <span className="text-caption text-muted">{values.length} options</span>
-              </div>
-              <div className="grid items-start gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                {(values as readonly unknown[]).map((value) => (
-                  <div key={`${propName}-${String(value)}`} className="rounded-md border border-default bg-surface p-3">
-                    <div className="text-caption text-muted mb-2">{String(value)}</div>
-                    <div className="min-h-10">
-                      <Card
-                        {...sanitizeMatrixArgs(args as Record<string, unknown>)}
-                        {...({ [propName]: value } as Record<string, unknown>)}
-                       />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </article>
-          ))}
-          <div className="text-caption text-muted">
-            Playground controls와 함께 사용해서 옵션 조합을 추가 검증하세요.
-          </div>
-        </div>
-      </section>
-    </div>
+    <Card
+      {...sanitizeStoryArgs(args as Record<string, unknown>)}
+  >
+    Card content
+  </Card>
   )
 };

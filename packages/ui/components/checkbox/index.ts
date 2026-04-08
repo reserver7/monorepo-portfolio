@@ -1,6 +1,7 @@
 export { Checkbox } from "./checkbox";
-export { useCheckboxGroup, toBooleanChecked } from "./checkbox.hooks";
-export type { CheckboxGroupState, CheckboxProps, CheckboxSize } from "./checkbox.types";
+export { useCheckboxGroup } from "./checkbox.hooks";
+export { toBooleanChecked } from "./checkbox.utils";
+export type { CheckboxGroupState, CheckboxOrientation, CheckboxProps, CheckboxSize } from "./checkbox.types";
 export {
   CHECKBOX_BASE_CLASS,
   CHECKBOX_DEFAULTS,

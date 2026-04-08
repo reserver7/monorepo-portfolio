@@ -1,4 +1,4 @@
-import type { SelectTriggerSize, SelectTriggerState, SelectTriggerVariant } from "./select.types";
+import type { SelectTriggerSize, SelectTriggerStatus, SelectTriggerVariant } from "./select.types";
 
 export const SELECT_DEFAULTS = {
   placeholder: "선택하세요",
@@ -6,7 +6,7 @@ export const SELECT_DEFAULTS = {
   searchPlaceholder: "검색",
   size: "md",
   variant: "default",
-  state: "default",
+  status: "default",
   searchable: false,
   multiple: false,
   loading: false,
@@ -18,7 +18,7 @@ export const SELECT_DEFAULTS = {
   searchPlaceholder: string;
   size: SelectTriggerSize;
   variant: SelectTriggerVariant;
-  state: SelectTriggerState;
+  status: SelectTriggerStatus;
   searchable: boolean;
   multiple: boolean;
   loading: boolean;
@@ -50,7 +50,7 @@ export const SELECT_VARIANT_CLASS: Record<SelectTriggerVariant, string> = {
   ghost: "border-primary/25 bg-primary/6 shadow-none hover:border-primary/35 hover:bg-primary/10"
 };
 
-export const SELECT_STATE_CLASS: Record<SelectTriggerState, string> = {
+export const SELECT_STATUS_CLASS: Record<SelectTriggerStatus, string> = {
   default: "focus:border-primary focus:ring-primary/20",
   error: "border-danger/40 focus:border-danger focus:ring-danger/20",
   success: "border-success/40 focus:border-success focus:ring-success/20"

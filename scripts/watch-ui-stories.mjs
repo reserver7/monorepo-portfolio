@@ -11,6 +11,8 @@ const WATCH_ROOTS = [
 
 const POLL_INTERVAL_MS = 1200;
 let isGenerating = false;
+let hasQueuedGeneration = false;
+let isTicking = false;
 let lastSignature = "";
 
 const collectFiles = async (targetPath) => {
@@ -63,32 +65,46 @@ const buildSignature = async () => {
 };
 
 const runGenerate = async () => {
-  if (isGenerating) return;
+  if (isGenerating) {
+    hasQueuedGeneration = true;
+    return;
+  }
   isGenerating = true;
 
-  await new Promise((resolve, reject) => {
-    const child = spawn("node", ["./scripts/generate-ui-stories.mjs"], {
-      cwd: ROOT,
-      stdio: "inherit"
-    });
+  do {
+    hasQueuedGeneration = false;
 
-    child.on("exit", (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`[storybook:watch] story gen failed with code ${code}`));
+    await new Promise((resolve, reject) => {
+      const child = spawn("node", ["./scripts/generate-ui-stories.mjs"], {
+        cwd: ROOT,
+        stdio: "inherit"
+      });
+
+      child.on("exit", (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`[storybook:watch] story gen failed with code ${code}`));
+      });
+      child.on("error", reject);
+    }).catch((error) => {
+      console.error(String(error));
     });
-    child.on("error", reject);
-  }).catch((error) => {
-    console.error(String(error));
-  });
+  } while (hasQueuedGeneration);
 
   isGenerating = false;
 };
 
 const tick = async () => {
-  const signature = await buildSignature();
-  if (signature === lastSignature) return;
-  lastSignature = signature;
-  await runGenerate();
+  if (isTicking) return;
+  isTicking = true;
+
+  try {
+    const signature = await buildSignature();
+    if (signature === lastSignature) return;
+    lastSignature = signature;
+    await runGenerate();
+  } finally {
+    isTicking = false;
+  }
 };
 
 const start = async () => {
@@ -103,4 +119,3 @@ start().catch((error) => {
   console.error("[storybook:watch] failed:", error);
   process.exit(1);
 });
-

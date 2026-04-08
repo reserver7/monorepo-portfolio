@@ -7,7 +7,7 @@ import { cn } from "../cn";
 import { FieldSupportText } from "../field/field-utils";
 import { Label } from "../label";
 import { SWITCH_COLOR_CLASS, SWITCH_DEFAULTS, SWITCH_SIZE_CLASS } from "./switch.constants";
-import { mergeSwitchRules } from "./switch.hooks";
+import { mergeSwitchRules } from "./switch.utils";
 import type { SwitchFieldProps, SwitchProps } from "./switch.types";
 
 const SwitchBase = React.forwardRef<React.ElementRef<typeof SwitchPrimitives.Root>, SwitchProps>(
@@ -48,7 +48,8 @@ const SwitchBase = React.forwardRef<React.ElementRef<typeof SwitchPrimitives.Roo
 );
 SwitchBase.displayName = "SwitchBase";
 
-export const Switch = SwitchBase;
+export const Switch = React.memo(SwitchBase);
+Switch.displayName = "Switch";
 
 function SwitchFieldBase(
   {
@@ -106,7 +107,7 @@ function SwitchFieldBase(
 const SwitchFieldBaseWithRef = React.forwardRef(SwitchFieldBase);
 SwitchFieldBaseWithRef.displayName = "SwitchFieldBase";
 
-export const SwitchField = React.forwardRef<React.ElementRef<typeof SwitchPrimitives.Root>, SwitchFieldProps>(
+const SwitchFieldComponent = React.forwardRef<React.ElementRef<typeof SwitchPrimitives.Root>, SwitchFieldProps>(
   (props, ref) => {
     const { control, rules, name, required, onCheckedChange, checked, defaultChecked, ...rest } = props;
     const mergedRules = React.useMemo(() => mergeSwitchRules(required, rules), [required, rules]);
@@ -148,4 +149,7 @@ export const SwitchField = React.forwardRef<React.ElementRef<typeof SwitchPrimit
     );
   }
 );
+SwitchFieldComponent.displayName = "SwitchField";
+
+export const SwitchField = React.memo(SwitchFieldComponent);
 SwitchField.displayName = "SwitchField";

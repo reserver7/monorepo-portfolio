@@ -301,11 +301,11 @@ export default function DocumentRoomPage() {
             />
 
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-              <Typography as="span" variant="bodySm" tone="subtle">
+              <Typography as="span" variant="bodySm" color="subtle">
                 최근 수정:{" "}
                 {updatedAt ? `${formatRelativeTime(updatedAt)} (${formatExactTime(updatedAt)})` : "-"}
               </Typography>
-              <Typography as="span" variant="bodySm" tone="subtle">
+              <Typography as="span" variant="bodySm" color="subtle">
                 동시 접속: {participants.length}명
               </Typography>
             </div>

@@ -7,3 +7,4 @@ export {
   INPUT_STATUS_CLASS,
   INPUT_VARIANT_CLASS
 } from "./input.constants";
+export { resolveInputStatus } from "./input.utils";

@@ -1,61 +1,38 @@
-import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Tabs } from "../../../../index";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../../index";
 
-const isRenderableNode = (value: unknown): boolean => {
-  if (value == null) return true;
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return true;
-  if (React.isValidElement(value)) return true;
-  if (Array.isArray(value)) return value.every(isRenderableNode);
-  return false;
+type TabsStoryArgs = {
+  size: "sm" | "md" | "lg";
+  variant: "pill" | "underline";
+  fullWidth: boolean;
 };
 
-const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknown> => {
-  const next = { ...args };
-  for (const key of ["children","leftIcon","rightIcon","prefix","suffix","label","helperText","errorMessage","title","description","helper"]) {
-    if (!isRenderableNode(next[key])) delete next[key];
-  }
-  return next;
-};
-
-const meta: Meta<typeof Tabs> = {
-  title: "Components/Generated/Navigation/Tabs",
-  component: Tabs,
+const meta: Meta<TabsStoryArgs> = {
+  title: "Components/Tabs",
   tags: ["autodocs"],
-  parameters: {
-    layout: "padded",
-    controls: { expanded: true, exclude: [
-  "className",
-  "containerClassName",
-  "labelClassName",
-  "helperClassName",
-  "optionClassName",
-  "optionLabelClassName",
-  "optionDescriptionClassName",
-  "style",
-  "id",
-  "name",
-  /^on[A-Z].*/,
-  /.*ClassName$/
-] }
-  },
+  parameters: { layout: "padded", controls: { expanded: true } },
+  args: { size: "md", variant: "pill", fullWidth: false },
   argTypes: {
-    children: { control: false },
-    asChild: { control: false },
-    leftIcon: { control: false },
-    rightIcon: { control: false }
-  },
+    size: { control: "inline-radio", options: ["sm", "md", "lg"] },
+    variant: { control: "inline-radio", options: ["pill", "underline"] },
+    fullWidth: { control: "boolean" }
+  }
 };
 
 export default meta;
-type Story = StoryObj<typeof Tabs>;
+type Story = StoryObj<TabsStoryArgs>;
 
 export const Playground: Story = {
   render: (args) => (
-    <div className="max-w-lg rounded-xl border border-default bg-surface p-4">
-      <Tabs
-        {...sanitizeStoryArgs(args as Record<string, unknown>)}
-     />
-    </div>
+    <Tabs defaultValue="activity" className="w-full">
+      <TabsList size={args.size} variant={args.variant} fullWidth={args.fullWidth}>
+        <TabsTrigger value="activity" size={args.size} variant={args.variant}>활동</TabsTrigger>
+        <TabsTrigger value="comments" size={args.size} variant={args.variant}>댓글</TabsTrigger>
+        <TabsTrigger value="history" size={args.size} variant={args.variant}>이력</TabsTrigger>
+      </TabsList>
+      <TabsContent value="activity">실시간 이벤트 로그를 확인하세요.</TabsContent>
+      <TabsContent value="comments">댓글/멘션 패널입니다.</TabsContent>
+      <TabsContent value="history">문서 변경 이력 패널입니다.</TabsContent>
+    </Tabs>
   )
 };

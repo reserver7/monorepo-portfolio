@@ -58,19 +58,19 @@ export default function DashboardPage() {
           value={formatNumber(
             summary.severityDistribution.find((item) => item.severity === "critical")?.count ?? 0
           )}
-          tone="danger"
+          color="danger"
           size="lg"
         />
         <StatCard
           label="반복 에러 TOP 수"
           value={formatNumber(summary.topRepeatedErrors.length)}
-          tone="warning"
+          color="warning"
           size="lg"
         />
         <StatCard
           label="배포 후 신규 에러"
           value={formatNumber(summary.newAfterLatestDeployment.length)}
-          tone="primary"
+          color="primary"
           size="lg"
         />
       </section>

@@ -7,11 +7,9 @@ export type FieldStatus = "default" | "error" | "success";
 
 export const resolveFieldStatus = (
   status?: FieldStatus,
-  state?: FieldStatus,
   hasErrorMessage?: boolean
 ): FieldStatus => {
   if (status) return status;
-  if (state) return state;
   return hasErrorMessage ? "error" : "default";
 };
 
@@ -20,7 +18,7 @@ export const buildFieldDescribedBy = (...ids: Array<string | undefined | false>)
   return tokens.length > 0 ? tokens.join(" ") : undefined;
 };
 
-export function RequiredMark({
+export const RequiredMark = React.memo(function RequiredMark({
   align = "end",
   className
 }: {
@@ -35,9 +33,10 @@ export function RequiredMark({
       <span className="sr-only">필수 입력 항목</span>
     </div>
   );
-}
+});
+RequiredMark.displayName = "RequiredMark";
 
-export function FieldSupportText({
+export const FieldSupportText = React.memo(function FieldSupportText({
   id,
   message,
   error,
@@ -55,4 +54,5 @@ export function FieldSupportText({
       {message}
     </p>
   );
-}
+});
+FieldSupportText.displayName = "FieldSupportText";

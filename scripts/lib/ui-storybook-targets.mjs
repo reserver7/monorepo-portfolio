@@ -54,6 +54,7 @@ export const shouldSkipExport = (name) => {
   if (!name) return true;
   if (name === "Input") return false;
   if (name === "RadioGroup") return false;
+  if (name === "Separator") return false;
   if (EXCLUDED_EXPORTS.has(name)) return true;
   if (EXCLUDED_EXACT.has(name)) return true;
   if (!/^[A-Z]/.test(name)) return true;

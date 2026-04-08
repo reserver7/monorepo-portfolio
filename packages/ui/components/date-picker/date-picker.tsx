@@ -4,13 +4,13 @@ import * as React from "react";
 import { Controller } from "react-hook-form";
 import type { DateRange } from "react-day-picker";
 import { CalendarDays, X } from "lucide-react";
-import { useComposedRefs } from "../../hooks";
+import { useComposedRefs, useControlledValue } from "../../hooks";
 import { cn } from "../cn";
 import { Button } from "../button";
 import { Calendar } from "../calendar";
 import { FieldSupportText, RequiredMark } from "../field/field-utils";
 import { INPUT_DEFAULTS, INPUT_SIZE_CLASS, INPUT_STATUS_CLASS, INPUT_VARIANT_CLASS } from "../input/input.constants";
-import { resolveInputStatus } from "../input/input.hooks";
+import { resolveInputStatus } from "../input/input.utils";
 import { Label } from "../label";
 import { Popover, PopoverContent, PopoverTrigger } from "../popover";
 import { DATE_PICKER_DEFAULTS } from "./date-picker.constants";
@@ -20,7 +20,7 @@ import {
   parseDateValue,
   toDateInputValue,
   toDateRangeValue
-} from "./date-picker.hooks";
+} from "./date-picker.utils";
 import type { DatePickerFieldProps, DatePickerProps, DateRangeStringValue } from "./date-picker.types";
 
 const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
@@ -69,20 +69,16 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
     const minDateValue = React.useMemo(() => parseDateValue(minDate), [minDate]);
     const maxDateValue = React.useMemo(() => parseDateValue(maxDate), [maxDate]);
 
-    const controlledSingleValue = React.useMemo(() => toDateInputValue(value), [value]);
-    const [internalSingleValue, setInternalSingleValue] = React.useState<string | undefined>(() =>
-      toDateInputValue(defaultValue)
-    );
-    const isSingleControlled = value !== undefined;
-    const currentSingleValue = isSingleControlled ? controlledSingleValue : internalSingleValue;
+    const [currentSingleValue, setCurrentSingleValue] = useControlledValue<string | undefined>({
+      value: toDateInputValue(value),
+      defaultValue: toDateInputValue(defaultValue)
+    });
     const selectedDate = React.useMemo(() => parseDateValue(currentSingleValue), [currentSingleValue]);
 
-    const controlledRangeValue = React.useMemo(() => toDateRangeValue(range), [range]);
-    const [internalRangeValue, setInternalRangeValue] = React.useState<DateRangeStringValue>(() =>
-      toDateRangeValue(defaultRange)
-    );
-    const isRangeControlled = range !== undefined;
-    const currentRangeValue = isRangeControlled ? controlledRangeValue : internalRangeValue;
+    const [currentRangeValue, setCurrentRangeValue] = useControlledValue<DateRangeStringValue>({
+      value: range === undefined ? undefined : toDateRangeValue(range),
+      defaultValue: toDateRangeValue(defaultRange)
+    });
 
     const selectedRange = React.useMemo<DateRange | undefined>(() => {
       if (!isRangeMode) return undefined;
@@ -91,17 +87,17 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
       if (!from && !to) return undefined;
       return { from, to };
     }, [currentRangeValue.from, currentRangeValue.to, isRangeMode]);
+    const selectedRangeFrom = selectedRange?.from;
+    const selectedRangeTo = selectedRange?.to;
 
-    const activeStatus = resolveInputStatus(status, state, Boolean(errorMessage));
+    const activeStatus = resolveInputStatus(status ?? state, Boolean(errorMessage));
     const generatedId = React.useId();
     const resolvedId = id ?? `date-picker-${generatedId}`;
     const supportText = errorMessage ?? helperText;
 
     const emitSingleChange = React.useCallback(
       (nextValue: string) => {
-        if (!isSingleControlled) {
-          setInternalSingleValue(nextValue || undefined);
-        }
+        setCurrentSingleValue(nextValue || undefined);
         onValueChange?.(nextValue);
 
         if (onChange) {
@@ -112,14 +108,12 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
           onChange(syntheticEvent);
         }
       },
-      [id, isSingleControlled, name, onChange, onValueChange, resolvedId]
+      [name, onChange, onValueChange, resolvedId, setCurrentSingleValue]
     );
 
     const emitRangeChange = React.useCallback(
       (nextRange: DateRangeStringValue) => {
-        if (!isRangeControlled) {
-          setInternalRangeValue(nextRange);
-        }
+        setCurrentRangeValue(nextRange);
         onRangeChange?.(nextRange);
 
         if (onChange) {
@@ -138,7 +132,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
           onChange(syntheticEvent);
         }
       },
-      [id, isRangeControlled, name, onChange, onRangeChange, resolvedId]
+      [name, onChange, onRangeChange, resolvedId, setCurrentRangeValue]
     );
 
     const handleSingleSelect = React.useCallback(
@@ -176,27 +170,51 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
 
     const triggerLabel = React.useMemo(() => {
       if (isRangeMode) {
-        const from = parseDateValue(currentRangeValue.from);
-        const to = parseDateValue(currentRangeValue.to);
-        if (from && to) {
-          return `${formatDateText(from, locale)} ~ ${formatDateText(to, locale)}`;
+        if (selectedRangeFrom && selectedRangeTo) {
+          return `${formatDateText(selectedRangeFrom, locale)} ~ ${formatDateText(selectedRangeTo, locale)}`;
         }
-        if (from) {
-          return `${formatDateText(from, locale)} ~`;
+        if (selectedRangeFrom) {
+          return `${formatDateText(selectedRangeFrom, locale)} ~`;
         }
         return DATE_PICKER_DEFAULTS.rangePlaceholder;
       }
 
       return selectedDate ? formatDateText(selectedDate, locale) : placeholder;
-    }, [currentRangeValue.from, currentRangeValue.to, isRangeMode, locale, placeholder, selectedDate]);
+    }, [isRangeMode, locale, placeholder, selectedDate, selectedRangeFrom, selectedRangeTo]);
+
+    const handleOpenChange = React.useCallback(
+      (nextOpen: boolean) => {
+        if (readOnly || disabled) {
+          setIsOpen(false);
+          return;
+        }
+        setIsOpen(nextOpen);
+      },
+      [disabled, readOnly]
+    );
 
     const showClearButton =
       clearable &&
       !disabled &&
       !readOnly &&
-      (isRangeMode ? Boolean(currentRangeValue.from || currentRangeValue.to) : Boolean(selectedDate));
+      (isRangeMode ? Boolean(selectedRangeFrom || selectedRangeTo) : Boolean(selectedDate));
 
     const shouldRenderCalendar = isOpen && !disabled && !readOnly;
+    const triggerClassName = React.useMemo(
+      () =>
+        cn(
+          "h-10 w-full justify-between px-3 py-0 font-normal leading-none",
+          INPUT_SIZE_CLASS[size],
+          INPUT_VARIANT_CLASS[variant],
+          INPUT_STATUS_CLASS[activeStatus],
+          triggerLabel !== placeholder && triggerLabel !== DATE_PICKER_DEFAULTS.rangePlaceholder
+            ? "text-foreground"
+            : "text-muted",
+          readOnly ? "cursor-default bg-surface text-muted hover:bg-surface active:bg-surface" : null,
+          className
+        ),
+      [activeStatus, className, placeholder, readOnly, size, triggerLabel, variant]
+    );
 
     return (
       <div className={cn("grid gap-1.5", containerClassName)}>
@@ -215,13 +233,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
 
         <Popover
           open={isOpen}
-          onOpenChange={(nextOpen) => {
-            if (readOnly || disabled) {
-              setIsOpen(false);
-              return;
-            }
-            setIsOpen(nextOpen);
-          }}
+          onOpenChange={handleOpenChange}
         >
           <PopoverTrigger asChild>
             <Button
@@ -232,17 +244,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
               onBlur={(event) => {
                 onBlur?.(event as unknown as React.FocusEvent<HTMLInputElement>);
               }}
-              className={cn(
-                "h-10 w-full justify-between px-3 py-0 font-normal leading-none",
-                INPUT_SIZE_CLASS[size],
-                INPUT_VARIANT_CLASS[variant],
-                INPUT_STATUS_CLASS[activeStatus],
-                triggerLabel !== placeholder && triggerLabel !== DATE_PICKER_DEFAULTS.rangePlaceholder
-                  ? "text-foreground"
-                  : "text-muted",
-                readOnly ? "cursor-default bg-surface text-muted hover:bg-surface active:bg-surface" : null,
-                className
-              )}
+              className={triggerClassName}
             >
               <span className="truncate text-left">{triggerLabel}</span>
               <span className="flex shrink-0 items-center gap-1">
@@ -285,7 +287,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
               <Calendar
                 mode="single"
                 selected={selectedDate}
-                onSelect={handleSingleSelect}
+                onSelect={handleSingleSelect as (value: unknown) => void}
                 disabled={disabled || readOnly}
                 fromDate={minDateValue}
                 toDate={maxDateValue}
@@ -326,7 +328,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
 );
 DatePickerBase.displayName = "DatePickerBase";
 
-export const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, ref) => {
+const DatePickerComponent = React.forwardRef<HTMLInputElement, DatePickerProps>((props, ref) => {
   const { control, rules, name, mode = DATE_PICKER_DEFAULTS.mode, onValueChange, onRangeChange, onBlur, ...rest } = props;
 
   if (control && typeof name === "string" && name.length > 0) {
@@ -344,7 +346,7 @@ export const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((p
                 mode="range"
                 name={field.name}
                 range={(field.value as DateRangeStringValue | undefined) ?? {}}
-                onRangeChange={(nextRange) => {
+                onRangeChange={(nextRange: DateRangeStringValue) => {
                   field.onChange(nextRange);
                   onRangeChange?.(nextRange);
                 }}
@@ -390,6 +392,9 @@ export const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((p
     />
   );
 });
+DatePickerComponent.displayName = "DatePicker";
+
+export const DatePicker = React.memo(DatePickerComponent);
 DatePicker.displayName = "DatePicker";
 
 export const DatePickerField = React.forwardRef<HTMLInputElement, DatePickerFieldProps>(

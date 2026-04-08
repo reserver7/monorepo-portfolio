@@ -29,7 +29,7 @@ export const HistoryPanel = ({ entries }: HistoryPanelProps) => {
 
       <div className="max-h-[20rem] space-y-3 overflow-y-auto overscroll-contain pr-1">
         {entries.length === 0 ? (
-          <Typography variant="bodySm" tone="subtle">
+          <Typography variant="bodySm" color="subtle">
             아직 기록된 히스토리가 없습니다.
           </Typography>
         ) : (
@@ -39,14 +39,14 @@ export const HistoryPanel = ({ entries }: HistoryPanelProps) => {
                 <Badge variant="info" size="sm">
                   {actionLabel[entry.action]}
                 </Badge>
-                <Typography as="span" variant="caption" tone="subtle">
+                <Typography as="span" variant="caption" color="subtle">
                   {formatExactTime(entry.at)}
                 </Typography>
               </div>
-              <Typography variant="bodySm" tone="muted" className="leading-6">
+              <Typography variant="bodySm" color="muted" className="leading-6">
                 {entry.summary}
               </Typography>
-              <Typography variant="bodySm" tone="subtle" className="mt-1">
+              <Typography variant="bodySm" color="subtle" className="mt-1">
                 by {entry.actor}
               </Typography>
             </div>

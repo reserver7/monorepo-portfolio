@@ -200,7 +200,7 @@ export default function HomePage() {
           <Typography as="h1" variant="h1" className="leading-tight">
             실시간 협업 문서 서비스
           </Typography>
-          <Typography as="p" variant="body" tone="muted" className="mt-3 max-w-3xl">
+          <Typography as="p" variant="body" color="muted" className="mt-3 max-w-3xl">
             여러 사용자가 동시에 접속해 문서를 함께 편집하고, 변경 사항이 즉시 동기화됩니다.
           </Typography>
 
@@ -267,12 +267,12 @@ export default function HomePage() {
           <Typography as="h2" variant="h3">
             워크스페이스 개요
           </Typography>
-          <Typography as="p" variant="bodySm" tone="muted" className="mt-2">
+          <Typography as="p" variant="bodySm" color="muted" className="mt-2">
             문서와 권한 상태를 확인하고, 필요한 문서로 바로 진입하세요.
           </Typography>
           <div className="mt-5 grid grid-cols-3 gap-2">
             <Card className="p-3 text-center">
-              <Typography as="p" variant="caption" tone="subtle">
+              <Typography as="p" variant="caption" color="subtle">
                 문서
               </Typography>
               <Typography as="p" variant="h3" className="mt-1">
@@ -280,7 +280,7 @@ export default function HomePage() {
               </Typography>
             </Card>
             <Card className="p-3 text-center">
-              <Typography as="p" variant="caption" tone="subtle">
+              <Typography as="p" variant="caption" color="subtle">
                 보호됨
               </Typography>
               <Typography as="p" variant="h3" className="mt-1">
@@ -288,7 +288,7 @@ export default function HomePage() {
               </Typography>
             </Card>
             <Card className="p-3 text-center">
-              <Typography as="p" variant="caption" tone="subtle">
+              <Typography as="p" variant="caption" color="subtle">
                 댓글
               </Typography>
               <Typography as="p" variant="h3" className="mt-1">
@@ -297,16 +297,16 @@ export default function HomePage() {
             </Card>
           </div>
           <div className="border-default bg-surface mt-5 space-y-2 rounded-xl border p-3.5">
-            <Typography as="p" variant="label" tone="subtle">
+            <Typography as="p" variant="label" color="subtle">
               사용 가이드
             </Typography>
-            <Typography as="p" variant="bodySm" tone="muted">
+            <Typography as="p" variant="bodySm" color="muted">
               1) 이름/권한을 설정하고 문서를 생성합니다.
             </Typography>
-            <Typography as="p" variant="bodySm" tone="muted">
+            <Typography as="p" variant="bodySm" color="muted">
               2) 편집 키를 입력하면 문서 진입 시 기본으로 재사용됩니다.
             </Typography>
-            <Typography as="p" variant="bodySm" tone="muted">
+            <Typography as="p" variant="bodySm" color="muted">
               3) 삭제가 필요한 경우 문서 카드에서 즉시 처리합니다.
             </Typography>
           </div>
@@ -318,7 +318,7 @@ export default function HomePage() {
           <Typography as="h2" variant="h2" className="text-heading-xl">
             문서 목록
           </Typography>
-          <Typography as="span" variant="bodySm" tone="subtle">
+          <Typography as="span" variant="bodySm" color="subtle">
             자동 새로고침: 5초
           </Typography>
         </div>
@@ -383,10 +383,10 @@ export default function HomePage() {
                 </div>
 
                 <div className="mt-4 space-y-1">
-                  <Typography as="p" variant="bodySm" tone="subtle">
+                  <Typography as="p" variant="bodySm" color="subtle">
                     최근 수정: {formatRelativeTime(document.updatedAt)}
                   </Typography>
-                  <Typography as="p" variant="bodySm" tone="subtle">
+                  <Typography as="p" variant="bodySm" color="subtle">
                     수정 일시: {formatExactTime(document.updatedAt)}
                   </Typography>
                 </div>
@@ -474,7 +474,7 @@ export default function HomePage() {
         )}
       </section>
 
-      <Spinner open={isActionPending} fullscreen size="lg" tone="primary" />
+      <Spinner open={isActionPending} fullscreen size="lg" color="primary" />
     </main>
   );
 }

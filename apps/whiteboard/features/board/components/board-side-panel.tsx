@@ -43,7 +43,7 @@ export const BoardSidePanel = ({
         </div>
         <div className="space-y-3">
           {participants.length === 0 ? (
-            <Typography variant="bodySm" tone="subtle">
+            <Typography variant="bodySm" color="subtle">
               아직 접속한 참여자가 없습니다.
             </Typography>
           ) : (
@@ -75,7 +75,7 @@ export const BoardSidePanel = ({
                   </div>
 
                   <div className="mt-1.5 flex items-center justify-end">
-                    <Typography as="span" variant="caption" tone="subtle" className="tabular-nums">
+                    <Typography as="span" variant="caption" color="subtle" className="tabular-nums">
                       커서: {cursorX}, {cursorY}
                     </Typography>
                   </div>
@@ -92,7 +92,7 @@ export const BoardSidePanel = ({
         </Typography>
         <div className="space-y-3">
           <div className={panelItemClass}>
-            <Typography variant="caption" tone="subtle">
+            <Typography variant="caption" color="subtle">
               선택 도구
             </Typography>
             <Typography variant="bodySm" className="mt-0.5 font-medium">
@@ -100,7 +100,7 @@ export const BoardSidePanel = ({
             </Typography>
           </div>
           <div className={panelItemClass}>
-            <Typography variant="caption" tone="subtle">
+            <Typography variant="caption" color="subtle">
               선택 요소
             </Typography>
             <Typography variant="bodySm" className="mt-0.5 font-medium">
@@ -108,7 +108,7 @@ export const BoardSidePanel = ({
             </Typography>
           </div>
           <div className={panelItemClass}>
-            <Typography variant="caption" tone="subtle">
+            <Typography variant="caption" color="subtle">
               연결 시작점
             </Typography>
             <Typography variant="bodySm" className="mt-0.5 font-medium">
@@ -123,13 +123,13 @@ export const BoardSidePanel = ({
           <Typography as="h3" variant="body" className="font-semibold">
             변경 이력
           </Typography>
-          <Typography as="span" variant="caption" tone="subtle">
+          <Typography as="span" variant="caption" color="subtle">
             최근 {historyEntries.length}건
           </Typography>
         </div>
         <div className="max-h-[20rem] space-y-3 overflow-y-auto overscroll-contain pr-1">
           {historyEntries.length === 0 ? (
-            <Typography variant="bodySm" tone="subtle">
+            <Typography variant="bodySm" color="subtle">
               표시할 변경 이력이 없습니다.
             </Typography>
           ) : (
@@ -139,11 +139,11 @@ export const BoardSidePanel = ({
                   <Typography as="span" variant="bodySm" className="font-medium">
                     {entry.shapeType}
                   </Typography>
-                  <Typography as="span" variant="caption" tone="subtle">
+                  <Typography as="span" variant="caption" color="subtle">
                     {new Date(entry.updatedAt).toLocaleString("ko-KR")}
                   </Typography>
                 </div>
-                <Typography variant="caption" tone="subtle" className="mt-1">
+                <Typography variant="caption" color="subtle" className="mt-1">
                   by {entry.actor}
                 </Typography>
               </div>
@@ -157,19 +157,19 @@ export const BoardSidePanel = ({
           <Typography as="h3" variant="body" className="font-semibold">
             실시간 이벤트
           </Typography>
-          <Typography as="span" variant="caption" tone="subtle">
+          <Typography as="span" variant="caption" color="subtle">
             최근 {eventLog.length}개
           </Typography>
         </div>
         <div className="max-h-80 space-y-3 overflow-auto pr-1">
           {eventLog.length === 0 ? (
-            <Typography variant="bodySm" tone="subtle">
+            <Typography variant="bodySm" color="subtle">
               이벤트가 발생하면 여기에 표시됩니다.
             </Typography>
           ) : (
             visibleEventLog.map((log, index) => (
               <div key={`${index}-${log}`} className={panelItemClass}>
-                <Typography variant="bodySm" tone="muted" className="font-mono leading-6">
+                <Typography variant="bodySm" color="muted" className="font-mono leading-6">
                   {log}
                 </Typography>
               </div>
