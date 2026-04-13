@@ -5,14 +5,14 @@ export const CARD_DEFAULTS = {
   interactive: false,
   padding: "md",
   radius: "xl",
-  bordered: true
+  bordered: false
 } as const;
 
 export const CARD_VARIANT_CLASS: Record<CardVariant, string> = {
-  default: "border-default bg-surface shadow-sm",
-  elevated: "border-default bg-surface-elevated shadow-md",
-  muted: "border-default bg-surface-elevated shadow-sm",
-  ghost: "border-primary/20 bg-primary/6 shadow-none"
+  default: "bg-surface shadow-none",
+  elevated: "bg-surface-elevated shadow-[var(--shadow-card)]",
+  muted: "bg-surface-elevated shadow-none",
+  ghost: "bg-transparent shadow-none"
 };
 
 export const CARD_PADDING_CLASS: Record<CardPadding, string> = {
@@ -23,9 +23,9 @@ export const CARD_PADDING_CLASS: Record<CardPadding, string> = {
 };
 
 export const CARD_RADIUS_CLASS: Record<CardRadius, string> = {
-  md: "rounded-md",
-  lg: "rounded-lg",
-  xl: "rounded-xl"
+  md: "rounded-[var(--radius-md)]",
+  lg: "rounded-[var(--radius-lg)]",
+  xl: "rounded-[var(--radius-xl)]"
 };
 
 export const CARD_SECTION_PADDING_CLASS: Record<CardPadding, string> = {

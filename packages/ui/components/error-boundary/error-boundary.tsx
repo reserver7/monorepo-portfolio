@@ -33,7 +33,7 @@ function ErrorFallbackView({
           fullScreen ? "min-h-[calc(100vh-4rem)]" : "min-h-[360px]"
         )}
       >
-        <Card className="border-default bg-surface w-full rounded-2xl border p-6 shadow-sm md:p-8">
+        <Card className="border-default bg-surface w-full rounded-[var(--radius-xl)] border p-6 shadow-card md:p-8">
           <div className="mx-auto flex max-w-xl flex-col items-center text-center">
             <div className="bg-danger/10 text-danger mb-4 flex h-12 w-12 items-center justify-center rounded-full">
               <AlertCircle className="h-6 w-6" />
@@ -79,7 +79,7 @@ function ErrorFallbackView({
             </div>
 
             {shouldShowErrorDetail(showDetailInDev) && detail ? (
-              <details className="border-default bg-surface-elevated mt-6 w-full rounded-xl border p-3 text-left">
+              <details className="border-default bg-surface-elevated mt-6 w-full rounded-[var(--radius-xl)] border p-3 text-left">
                 <summary className="text-body-sm text-foreground cursor-pointer font-semibold">
                   개발용 오류 상세
                 </summary>

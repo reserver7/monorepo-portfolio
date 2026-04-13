@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { X } from "lucide-react";
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
 import { BADGE_DEFAULTS, BADGE_DOT_SIZE_CLASS } from "./badge.constants";
 import { getBadgeRootClassName } from "./badge.utils";
@@ -30,6 +31,7 @@ const BadgeComponent = React.forwardRef<HTMLSpanElement, BadgeProps>(
     },
     ref
   ) => {
+    const resolvedSize = resolveOption(size, BADGE_DOT_SIZE_CLASS, BADGE_DEFAULTS.size);
     const [dismissed, setDismissed] = React.useState(false);
     const hasRemoveAction = removable;
 
@@ -58,7 +60,7 @@ const BadgeComponent = React.forwardRef<HTMLSpanElement, BadgeProps>(
             aria-hidden
             className={cn(
               "shrink-0 rounded-full bg-current",
-              BADGE_DOT_SIZE_CLASS[size],
+              BADGE_DOT_SIZE_CLASS[resolvedSize],
               pulse ? "animate-pulse" : null
             )}
           />

@@ -48,7 +48,6 @@ const meta: Meta<typeof Progress> = {
     label: "64%"
   },
   argTypes: {
-    color: {control:"select",options:["primary","success","warning","danger","info"],table:{defaultValue:{summary:"primary"}}},
     size: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"md"}}},
     label: {control:"text",table:{defaultValue:{summary:"64%"}}},
     striped: {control:"boolean",table:{defaultValue:{summary:false}}},

@@ -1,4 +1,4 @@
-import type { ProgressColor, ProgressSize } from "./progress.types";
+import type { ProgressSize } from "./progress.types";
 
 export const PROGRESS_DEFAULTS = {
   size: "md",
@@ -14,10 +14,10 @@ export const PROGRESS_SIZE_CLASS: Record<ProgressSize, string> = {
   lg: "h-3"
 };
 
-export const PROGRESS_COLOR_CLASS: Record<ProgressColor, string> = {
+export const PROGRESS_COLOR_CLASS = {
   primary: "bg-primary",
   success: "bg-success",
   warning: "bg-warning",
   danger: "bg-danger",
   info: "bg-info"
-};
+} as const;

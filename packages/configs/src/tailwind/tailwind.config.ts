@@ -114,7 +114,21 @@ const colors = {
 };
 
 const extend = {
-  colors
+  colors,
+  fontFamily: {
+    body: ['"Pretendard"', '"Noto Sans KR"', '"Segoe UI"', '"Malgun Gothic"', "sans-serif"],
+    display: ['"Pretendard"', '"Noto Sans KR"', '"Segoe UI"', '"Malgun Gothic"', "sans-serif"]
+  },
+  borderRadius: {
+    sm: "var(--radius-sm)",
+    md: "var(--radius-md)",
+    lg: "var(--radius-lg)",
+    xl: "var(--radius-xl)",
+    full: "var(--radius-pill)"
+  },
+  boxShadow: {
+    card: "var(--shadow-card)"
+  }
 };
 
 const theme = {

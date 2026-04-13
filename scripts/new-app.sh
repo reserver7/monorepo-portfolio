@@ -269,4 +269,6 @@ echo "- pnpm dev:${APP_NAME}"
 if [[ -n "$DEV_ALIAS" ]]; then
   echo "- pnpm run ${DEV_ALIAS}"
 fi
+echo "- cp apps/${APP_NAME}/.env.local.example apps/${APP_NAME}/.env.local"
+echo "- pnpm --filter @repo/${APP_NAME} typecheck"
 echo

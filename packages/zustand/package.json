@@ -2,10 +2,10 @@
   "name": "@repo/zustand",
   "private": true,
   "version": "0.0.0",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
-    ".": "./index.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings=0",

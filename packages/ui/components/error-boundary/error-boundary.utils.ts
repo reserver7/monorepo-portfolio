@@ -1,5 +1,11 @@
-export const shouldShowErrorDetail = (showDetailInDev: boolean) =>
-  showDetailInDev && process.env.NODE_ENV !== "production";
+const isDevelopmentRuntime = () => {
+  if (typeof process === "undefined" || !process.env) {
+    return false;
+  }
+  return process.env.NODE_ENV !== "production";
+};
+
+export const shouldShowErrorDetail = (showDetailInDev: boolean) => showDetailInDev && isDevelopmentRuntime();
 
 const isStorybookPreviewFrame = () => {
   if (typeof window === "undefined") return false;

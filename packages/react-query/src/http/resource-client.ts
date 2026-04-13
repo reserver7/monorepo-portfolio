@@ -1,4 +1,4 @@
-import { requestJson } from "./request-json";
+import { requestJson, type RequestJsonInit } from "./request-json";
 
 type ResourceCreatePayload = {
   title: string;
@@ -9,6 +9,11 @@ type ResourceCreatePayload = {
 type ResourceDeletePayload = {
   editorAccessKey?: string;
 };
+
+type ResourceRequestOptions = Pick<
+  RequestJsonInit,
+  "headers" | "params" | "signal" | "successMessage" | "errorMessage" | "notifyOnSuccess" | "notifyOnError"
+>;
 
 const normalizePath = (path: string) => path.replace(/\/+$/, "");
 
@@ -37,16 +42,21 @@ export const createResourceClient = <
       return payload[keys.list] ?? [];
     },
 
-    create: async (input: ResourceCreatePayload): Promise<Record<TItemKey, TRecord>> => {
+    create: async (
+      input: ResourceCreatePayload,
+      options?: ResourceRequestOptions
+    ): Promise<Record<TItemKey, TRecord>> => {
       return requestJson<Record<TItemKey, TRecord>>(apiBaseUrl, basePath, {
         method: "POST",
-        body: JSON.stringify(input)
+        body: JSON.stringify(input),
+        ...options
       });
     },
 
     deleteById: async (
       resourceId: string,
-      input?: ResourceDeletePayload
+      input?: ResourceDeletePayload,
+      options?: ResourceRequestOptions
     ): Promise<{ ok: true } & Record<TDeleteIdKey, string>> => {
       return requestJson<{ ok: true } & Record<TDeleteIdKey, string>>(
         apiBaseUrl,
@@ -55,7 +65,8 @@ export const createResourceClient = <
           method: "DELETE",
           body: JSON.stringify({
             editorAccessKey: input?.editorAccessKey
-          })
+          }),
+          ...options
         }
       );
     },

@@ -3,6 +3,8 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { Toaster as SonnerToaster, toast as sonnerToast } from "sonner";
+import { resolveUiColorValue } from "../../styles/color-token";
+import { cn } from "../cn";
 import { TOAST_DEFAULTS, UI_ALERT_EVENT_NAME } from "./toast.constants";
 import type { ToastInput, ToastPayload, ToastProps } from "./toast.types";
 
@@ -62,6 +64,8 @@ export function Toast({
   durationMs = TOAST_DEFAULTS.durationMs,
   errorDurationMs = TOAST_DEFAULTS.errorDurationMs,
   dedupe = TOAST_DEFAULTS.dedupe,
+  className,
+  style,
   offset,
   mobileOffset,
   theme,
@@ -97,6 +101,19 @@ export function Toast({
       }
 
       const showToast = () => {
+        const tokenColorValue = resolveUiColorValue(color);
+        if (tokenColorValue && !["success", "error", "info", "warning"].includes(color)) {
+          return sonnerToast(detail.message, {
+            id,
+            duration: resolvedDurationMs,
+            closeButton: false,
+            style: {
+              borderColor: `color-mix(in srgb, ${tokenColorValue} 35%, transparent)`,
+              background: `color-mix(in srgb, ${tokenColorValue} 10%, var(--color-surface, #fff))`,
+              color: "var(--color-foreground, #1d1d1f)"
+            }
+          });
+        }
         if (color === "success") {
           return sonnerToast.success(detail.message, { id, duration: resolvedDurationMs, closeButton: false });
         }
@@ -142,13 +159,13 @@ export function Toast({
       mobileOffset={mobileOffset}
       theme={theme}
       invert={invert}
-      className="!fixed !z-[9999]"
-      style={TOASTER_PORTAL_STYLE}
+      className={cn("!fixed !z-[9999]", className)}
+      style={{ ...TOASTER_PORTAL_STYLE, ...(style ?? {}) }}
       toastOptions={{
         ...toastOptions,
         classNames: {
           toast:
-            "relative justify-center rounded-lg border border-default bg-surface px-4 py-3 text-center text-foreground shadow-md [&_[data-content]]:mx-auto [&_[data-content]]:w-full [&_[data-description]]:text-center [&_[data-title]]:text-center",
+            "relative justify-center rounded-[var(--radius-lg)] border border-default bg-surface px-4 py-3 text-center text-foreground shadow-card [&_[data-content]]:mx-auto [&_[data-content]]:w-full [&_[data-description]]:text-center [&_[data-title]]:text-center",
           description: "text-muted text-center",
           ...toastOptions?.classNames
         }

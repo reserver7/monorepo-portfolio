@@ -1,9 +1,9 @@
-import type { AvatarColor, AvatarShape, AvatarSize, AvatarStatus } from "./avatar.types";
+import type { AvatarShape, AvatarSize, AvatarStatus } from "./avatar.types";
 
 export const AVATAR_DEFAULTS = {
   size: "md" as AvatarSize,
   shape: "circle" as AvatarShape,
-  color: "default" as AvatarColor,
+  color: "default" as const,
   showStatus: false,
   bordered: false,
   interactive: false,
@@ -20,17 +20,17 @@ export const AVATAR_SIZE_CLASS: Record<AvatarSize, string> = {
 
 export const AVATAR_SHAPE_CLASS: Record<AvatarShape, string> = {
   circle: "rounded-full",
-  rounded: "rounded-lg",
+  rounded: "rounded-[var(--radius-lg)]",
   square: "rounded-none"
 };
 
-export const AVATAR_FALLBACK_COLOR_CLASS: Record<AvatarColor, string> = {
+export const AVATAR_FALLBACK_COLOR_CLASS = {
   default: "bg-surface-elevated text-foreground",
   primary: "bg-primary/15 text-primary",
   success: "bg-success/15 text-success",
   warning: "bg-warning/15 text-warning",
   danger: "bg-danger/15 text-danger"
-};
+} as const;
 
 export const AVATAR_STATUS_COLOR_CLASS: Record<AvatarStatus, string> = {
   online: "bg-success",

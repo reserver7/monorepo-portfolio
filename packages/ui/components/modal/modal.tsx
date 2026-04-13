@@ -4,6 +4,7 @@ import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { Button } from "../button";
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
 import {
   MODAL_CONTENT_DEFAULTS,
@@ -40,12 +41,15 @@ export const ModalContent = React.forwardRef<React.ElementRef<typeof DialogPrimi
   ) => {
     const allowEscapeClose = closeOnEscape ?? !preventEscapeClose;
     const allowOutsideClose = closeOnOutsideClick ?? !preventOutsideClose;
+    const resolvedSize = resolveOption(size, MODAL_CONTENT_SIZE_CLASS, MODAL_CONTENT_DEFAULTS.size);
+    const resolvedIntent = resolveOption(intent, MODAL_CONTENT_INTENT_CLASS, MODAL_CONTENT_DEFAULTS.intent);
+    const resolvedScrollBehavior = resolveOption(scrollBehavior, { inside: true, outside: true }, MODAL_CONTENT_DEFAULTS.scrollBehavior);
 
     return (
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay
           className={cn(
-            "bg-foreground/35 fixed inset-0 z-50 backdrop-blur-[1px] transition-opacity duration-200 data-[state=closed]:opacity-0 data-[state=open]:opacity-100",
+            "fixed inset-0 z-50 bg-black/55 backdrop-blur-[10px] backdrop-saturate-150 transition-opacity duration-200 data-[state=closed]:opacity-0 data-[state=open]:opacity-100",
             overlayClassName
           )}
         />
@@ -64,11 +68,11 @@ export const ModalContent = React.forwardRef<React.ElementRef<typeof DialogPrimi
           onPointerDownOutside?.(event);
         }}
         className={cn(
-          "border-default bg-surface fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-xl border p-6 shadow-lg",
-          scrollBehavior === "inside" &&
+          "border-default bg-surface fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-xl)] border p-6 shadow-[var(--shadow-card)]",
+          resolvedScrollBehavior === "inside" &&
             "max-h-[calc(100vh-2rem)] overflow-hidden [&_[data-modal-body]]:max-h-[calc(100vh-14rem)] [&_[data-modal-body]]:overflow-y-auto",
-          MODAL_CONTENT_SIZE_CLASS[size],
-          MODAL_CONTENT_INTENT_CLASS[intent],
+          MODAL_CONTENT_SIZE_CLASS[resolvedSize],
+          MODAL_CONTENT_INTENT_CLASS[resolvedIntent],
           className
         )}
         {...props}
@@ -77,7 +81,7 @@ export const ModalContent = React.forwardRef<React.ElementRef<typeof DialogPrimi
         {!hideCloseButton ? (
           <DialogPrimitive.Close
             aria-label={closeAriaLabel}
-            className="text-muted focus:ring-primary absolute right-4 top-4 rounded-sm opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2"
+            className="text-muted focus:ring-primary absolute right-4 top-4 rounded-[var(--radius-sm)] opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2"
           >
             <X className="h-4 w-4" />
           </DialogPrimitive.Close>
@@ -115,16 +119,17 @@ export function ModalFooter({
   ...props
 }: ModalFooterProps) {
   const withBuiltInActions = useBuiltInModalActions(onCancel, onConfirm);
+  const resolvedAlign = resolveOption(align, { start: true, center: true, end: true, between: true }, MODAL_FOOTER_DEFAULTS.align);
   const footerAlignClass = React.useMemo(
     () =>
-      align === "start"
+      resolvedAlign === "start"
         ? "sm:justify-start"
-        : align === "center"
+        : resolvedAlign === "center"
           ? "sm:justify-center"
-          : align === "between"
+          : resolvedAlign === "between"
             ? "sm:justify-between"
             : "sm:justify-end",
-    [align]
+    [resolvedAlign]
   );
   const actionWidthClass = React.useMemo(() => (fullWidthActions ? "w-full sm:w-auto" : ""), [fullWidthActions]);
 
@@ -190,7 +195,7 @@ export const ModalTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Title ref={ref} className={cn("text-lg font-semibold", className)} {...props} />
+  <DialogPrimitive.Title ref={ref} className={cn("text-title", className)} {...props} />
 ));
 ModalTitle.displayName = DialogPrimitive.Title.displayName;
 
@@ -198,7 +203,7 @@ export const ModalDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Description ref={ref} className={cn("text-muted text-sm", className)} {...props} />
+  <DialogPrimitive.Description ref={ref} className={cn("text-body-sm text-muted", className)} {...props} />
 ));
 ModalDescription.displayName = DialogPrimitive.Description.displayName;
 

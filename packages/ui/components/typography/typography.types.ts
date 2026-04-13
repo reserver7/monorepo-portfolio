@@ -1,7 +1,23 @@
 import type * as React from "react";
+import type { PrimitiveColorToken, SemanticColorToken } from "../../styles/color-token";
 
-export type TypographyVariant = "h1" | "h2" | "h3" | "title" | "body" | "bodySm" | "caption" | "label";
-export type TypographyColor = "default" | "muted" | "subtle" | "primary" | "success" | "warning" | "danger" | "info";
+export type TypographyVariant =
+  | "headingXl"
+  | "headingLg"
+  | "headingMd"
+  | "title"
+  | "bodyMd"
+  | "bodySm"
+  | "caption"
+  | "micro"
+  | "label"
+  | "h1"
+  | "h2"
+  | "h3"
+  | "body";
+
+type TypographySemanticColor = "default" | SemanticColorToken;
+export type TypographyColor = TypographySemanticColor | PrimitiveColorToken;
 
 export interface TypographyProps extends React.HTMLAttributes<HTMLElement> {
   as?: keyof React.JSX.IntrinsicElements;

@@ -19,11 +19,13 @@ export const TABS_TRIGGER_SIZE_CLASS: Record<TabsSize, string> = {
 };
 
 export const TABS_LIST_VARIANT_CLASS: Record<TabsVariant, string> = {
-  pill: "bg-surface-elevated rounded-md p-1",
+  pill: "bg-surface-elevated border border-default rounded-[var(--radius-md)] p-1",
   underline: "bg-transparent rounded-none border-b border-default p-0"
 };
 
 export const TABS_TRIGGER_VARIANT_CLASS: Record<TabsVariant, string> = {
-  pill: "rounded-sm data-[state=active]:bg-surface data-[state=active]:text-foreground",
-  underline: "rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground"
+  pill:
+    "text-muted rounded-[var(--radius-sm)] hover:bg-surface hover:text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none",
+  underline:
+    "text-muted rounded-none border-b-2 border-transparent hover:border-default hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold"
 };

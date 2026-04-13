@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreHorizontal } from "lucide-react";
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
 import { Button } from "../button";
 import { PAGINATION_DEFAULTS, PAGINATION_SIZE_MAP, PAGINATION_VARIANT_MAP } from "./pagination.constants";
@@ -109,11 +110,13 @@ const PaginationBase = React.forwardRef(function PaginationBase(
       [boundaryCount, currentPage, safeTotalPages, siblingCount]
     );
 
-    const buttonSize = PAGINATION_SIZE_MAP[size];
-    const buttonVariant = PAGINATION_VARIANT_MAP[variant];
-    const paginationCellClass = size === "sm" ? "h-8 min-w-8 px-2 text-body-xs" : size === "lg" ? "h-10 min-w-10 px-3 text-body-md" : "h-9 min-w-9 px-2.5 text-body-sm";
-    const paginationIconButtonClass = size === "sm" ? "h-8 w-8 p-0" : size === "lg" ? "h-10 w-10 p-0" : "h-9 w-9 p-0";
-    const paginationLabelClass = size === "sm" ? "h-8 min-w-20 text-body-xs" : size === "lg" ? "h-10 min-w-24 text-body-md" : "h-9 min-w-20 text-body-sm";
+    const resolvedSize = resolveOption(size, PAGINATION_SIZE_MAP, PAGINATION_DEFAULTS.size);
+    const resolvedVariant = resolveOption(variant, PAGINATION_VARIANT_MAP, PAGINATION_DEFAULTS.variant);
+    const buttonSize = PAGINATION_SIZE_MAP[resolvedSize];
+    const buttonVariant = PAGINATION_VARIANT_MAP[resolvedVariant];
+    const paginationCellClass = resolvedSize === "sm" ? "h-8 min-w-8 px-2 text-body-xs" : resolvedSize === "lg" ? "h-10 min-w-10 px-3 text-body-md" : "h-9 min-w-9 px-2.5 text-body-sm";
+    const paginationIconButtonClass = resolvedSize === "sm" ? "h-8 w-8 p-0" : resolvedSize === "lg" ? "h-10 w-10 p-0" : "h-9 w-9 p-0";
+    const paginationLabelClass = resolvedSize === "sm" ? "h-8 min-w-20 text-body-xs" : resolvedSize === "lg" ? "h-10 min-w-24 text-body-md" : "h-9 min-w-20 text-body-sm";
     const digitWidth = Math.max(2, String(safeTotalPages).length);
     const pageCellWidth = `calc(${digitWidth}ch + 1.25rem)`;
     const stableNumericStyle = React.useMemo(() => ({ fontVariantNumeric: "tabular-nums" as const }), []);
@@ -183,10 +186,10 @@ const PaginationBase = React.forwardRef(function PaginationBase(
             type="button"
             key={value}
             className={cn(
-              "inline-flex items-center justify-center rounded-md px-2 font-medium transition-colors",
+              "inline-flex items-center justify-center rounded-[var(--radius-md)] px-2 font-medium transition-colors",
               paginationCellClass,
               value === currentPage
-                ? "bg-surface-elevated text-foreground"
+                ? "ring-primary/35 bg-primary/12 text-primary ring-1 font-semibold"
                 : "text-muted hover:bg-surface-elevated hover:text-foreground"
             )}
             style={stableCellStyle}
@@ -247,7 +250,7 @@ const PaginationBase = React.forwardRef(function PaginationBase(
           {simple ? (
             <span
               className={cn(
-                "inline-flex items-center justify-center rounded-md border border-default bg-surface px-3 font-medium text-foreground",
+                "inline-flex items-center justify-center rounded-[var(--radius-md)] border border-default bg-surface px-3 font-medium text-foreground",
                 paginationLabelClass
               )}
               style={stableLabelStyle}
@@ -301,7 +304,7 @@ const PaginationBase = React.forwardRef(function PaginationBase(
               <label className="inline-flex items-center gap-1">
                 <span>{pageSizeLabel}</span>
                 <select
-                  className="h-8 rounded-md border border-default bg-surface px-2 text-body-sm text-foreground"
+                  className="h-8 rounded-[var(--radius-md)] border border-default bg-surface px-2 text-body-sm text-foreground"
                   value={resolvedPageSize}
                   disabled={disabled}
                   onChange={(event) => changePageSize(Number(event.target.value))}
@@ -318,7 +321,7 @@ const PaginationBase = React.forwardRef(function PaginationBase(
             {showQuickJumper ? (
               <div className="inline-flex items-center gap-1">
                 <input
-                  className="h-8 w-16 rounded-md border border-default bg-surface px-2 text-body-sm text-foreground"
+                  className="h-8 w-16 rounded-[var(--radius-md)] border border-default bg-surface px-2 text-body-sm text-foreground"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={quickJumpValue}

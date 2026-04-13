@@ -46,7 +46,6 @@ const meta: Meta<typeof StatCard> = {
     helper: "전일 대비 +12%"
   },
   argTypes: {
-    color: {control:"select",options:["default","primary","danger","warning"],table:{defaultValue:{summary:"default"}}},
     size: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"md"}}},
     label: {control:"text",table:{defaultValue:{summary:"지표"}}},
     children: {control:false,table:{disable:true}},

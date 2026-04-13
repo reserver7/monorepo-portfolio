@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Controller } from "react-hook-form";
 import { useControlledValue } from "../../hooks";
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
 import { buildFieldDescribedBy, FieldSupportText, RequiredMark } from "../field/field-utils";
 import { Label } from "../label";
@@ -46,6 +47,10 @@ const TextareaBase = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     const generatedId = React.useId();
     const resolvedId = id ?? (label ? `textarea-${generatedId}` : undefined);
     const activeStatus = resolveTextareaStatus(status, Boolean(errorMessage));
+    const resolvedSize = resolveOption(size, TEXTAREA_SIZE_CLASS, TEXTAREA_DEFAULTS.size);
+    const resolvedVariant = resolveOption(variant, TEXTAREA_VARIANT_CLASS, TEXTAREA_DEFAULTS.variant);
+    const resolvedStatus = resolveOption(activeStatus, TEXTAREA_STATUS_CLASS, TEXTAREA_DEFAULTS.status);
+    const resolvedResize = resolveOption(resize, TEXTAREA_RESIZE_CLASS, TEXTAREA_DEFAULTS.resize);
     const supportMessage = errorMessage ?? helperText;
     const [currentValue, setCurrentValue, isControlled] = useControlledValue<string>({
       value: value != null ? String(value) : undefined,
@@ -108,11 +113,11 @@ const TextareaBase = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           aria-invalid={activeStatus === "error" ? true : undefined}
           aria-describedby={describedByIds}
           className={cn(
-            "text-foreground placeholder:text-muted w-full rounded-md border px-3 py-2 outline-none ring-0 transition-colors focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50",
-            TEXTAREA_SIZE_CLASS[size],
-            TEXTAREA_VARIANT_CLASS[variant],
-            TEXTAREA_STATUS_CLASS[activeStatus],
-            TEXTAREA_RESIZE_CLASS[resize],
+            "text-foreground placeholder:text-muted w-full rounded-[var(--radius-md)] border px-3 py-2 outline-none ring-0 transition-colors focus:ring-1 disabled:cursor-not-allowed disabled:opacity-50",
+            TEXTAREA_SIZE_CLASS[resolvedSize],
+            TEXTAREA_VARIANT_CLASS[resolvedVariant],
+            TEXTAREA_STATUS_CLASS[resolvedStatus],
+            TEXTAREA_RESIZE_CLASS[resolvedResize],
             className
           )}
           {...props}

@@ -4,6 +4,7 @@ import * as React from "react";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import { Controller } from "react-hook-form";
 import { Check, Minus } from "lucide-react";
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
 import { FieldSupportText } from "../field/field-utils";
 import { Label } from "../label";
@@ -43,6 +44,7 @@ function CheckboxBase(
   const resolvedId = id ?? `checkbox-${generatedId}`;
   const supportText = errorMessage ?? helperText ?? (required && !label ? "필수 체크 항목입니다." : undefined);
   const hasWrapper = Boolean(required || label || supportText || containerClassName || labelClassName || helperClassName);
+  const resolvedSize = resolveOption(size, CHECKBOX_SIZE_CLASS, CHECKBOX_DEFAULTS.size);
   const handleCheckedChange = React.useCallback(
     (next: CheckboxPrimitive.CheckedState) => {
       onCheckedChange?.(toBooleanChecked(next));
@@ -53,11 +55,11 @@ function CheckboxBase(
   const icon = React.useMemo(
     () =>
       indeterminate ? (
-        <Minus className={CHECKBOX_ICON_SIZE_CLASS[size]} />
+        <Minus className={CHECKBOX_ICON_SIZE_CLASS[resolvedSize]} />
       ) : (
-        <Check className={CHECKBOX_ICON_SIZE_CLASS[size]} />
+        <Check className={CHECKBOX_ICON_SIZE_CLASS[resolvedSize]} />
       ),
-    [indeterminate, size]
+    [indeterminate, resolvedSize]
   );
 
   const checkboxNode = (
@@ -73,7 +75,7 @@ function CheckboxBase(
       aria-checked={indeterminate ? "mixed" : undefined}
       className={cn(
         CHECKBOX_BASE_CLASS,
-        CHECKBOX_SIZE_CLASS[size],
+        CHECKBOX_SIZE_CLASS[resolvedSize],
         "shadow-none ring-offset-surface",
         errorMessage ? "border-danger/50 focus-visible:ring-danger/20" : null,
         className
@@ -109,7 +111,7 @@ function CheckboxBase(
       <FieldSupportText
         message={supportText}
         error={Boolean(errorMessage)}
-        className={cn(orientation === "horizontal" ? (size === "md" ? "pl-7" : "pl-6") : null, helperClassName)}
+        className={cn(orientation === "horizontal" ? (resolvedSize === "md" ? "pl-7" : "pl-6") : null, helperClassName)}
       />
     </div>
   );

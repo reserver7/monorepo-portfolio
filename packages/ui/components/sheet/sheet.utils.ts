@@ -11,7 +11,14 @@ export function getSheetContentClassName({
   const isHorizontal = !isVertical;
 
   return [
-    "bg-surface border-default fixed z-50 flex gap-4 border p-6 shadow-lg",
+    "bg-surface border-default fixed z-50 flex gap-4 border p-6 shadow-[var(--shadow-card)]",
+    resolvedSide === "left"
+      ? "rounded-r-[var(--radius-xl)]"
+      : resolvedSide === "right"
+        ? "rounded-l-[var(--radius-xl)]"
+        : resolvedSide === "top"
+          ? "rounded-b-[var(--radius-xl)]"
+          : "rounded-t-[var(--radius-xl)]",
     "flex-col",
     SHEET_SIDE_CLASS[resolvedSide],
     isVertical ? SHEET_SIZE_CLASS[size ?? SHEET_DEFAULTS.size] : "",

@@ -3,13 +3,17 @@
 import { QueryClient, QueryClientProvider, type QueryClientConfig } from "@tanstack/react-query";
 // import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ReactQueryStreamedHydration } from "@tanstack/react-query-next-experimental";
+import { queryRetryDelay, shouldRetryQuery } from "./query-retry-policy";
 
 const QUERY_CLIENT_DEFAULT_CONFIG: QueryClientConfig = {
   defaultOptions: {
     queries: {
       staleTime: 5 * 1000,
-      retry: 0,
-      refetchOnWindowFocus: false
+      gcTime: 5 * 60 * 1000,
+      retry: shouldRetryQuery,
+      retryDelay: queryRetryDelay,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true
     }
   }
 };

@@ -31,7 +31,7 @@ export const DROPDOWN_MENU_LABEL_SIZE_CLASS: Record<DropdownMenuLabelSize, strin
   lg: "px-3 py-2 text-body-sm font-semibold"
 };
 
-export const DROPDOWN_MENU_ITEM_COLOR_CLASS: Record<DropdownMenuItemColor, string> = {
+export const DROPDOWN_MENU_ITEM_COLOR_CLASS = {
   default: "text-foreground focus:bg-surface-elevated data-[state=open]:bg-surface-elevated",
   danger: "text-danger focus:bg-danger/10 data-[state=open]:bg-danger/10"
-};
+} as const;

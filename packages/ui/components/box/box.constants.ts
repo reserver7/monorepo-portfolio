@@ -28,17 +28,16 @@ export const BOX_PADDING_CLASS: Record<BoxPadding, string> = {
 
 export const BOX_RADIUS_CLASS: Record<BoxRadius, string> = {
   none: "",
-  sm: "rounded-sm",
-  md: "rounded-md",
-  lg: "rounded-lg",
-  xl: "rounded-xl",
+  sm: "rounded-[var(--radius-sm)]",
+  md: "rounded-[var(--radius-md)]",
+  lg: "rounded-[var(--radius-lg)]",
+  xl: "rounded-[var(--radius-xl)]",
   full: "rounded-full"
 };
 
 export const BOX_SHADOW_CLASS: Record<BoxShadow, string> = {
   none: "",
-  sm: "shadow-sm",
-  md: "shadow-md",
-  lg: "shadow-lg"
+  sm: "shadow-card",
+  md: "shadow-card",
+  lg: "shadow-card"
 };
-

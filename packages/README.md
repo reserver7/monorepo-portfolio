@@ -18,6 +18,16 @@
 - `@repo/utils`
 - `@repo/configs`
 
+## 브랜드 디자인시스템 적용 범위
+
+- 직접 적용(완료): `@repo/ui`
+  - 브랜드 스타일 토큰(색상/타이포/반경/그림자)과 컴포넌트 스타일을 직접 관리
+- 연동 적용(완료): `@repo/configs`, `@repo/theme`
+  - `@repo/configs`는 Tailwind/Global CSS 경로를 통해 UI 토큰을 앱에 주입
+  - `@repo/theme`는 light/dark 테마 상태와 동기화 정책을 담당
+- 비시각 패키지(대상 아님, 구조 정리 완료): `@repo/react-query`, `@repo/forms`, `@repo/zustand`, `@repo/utils`, `@repo/eslint-config`
+  - 데이터/상태/유틸/설정 패키지로, 시각 스타일 대신 API/구조 일관성이 적용 대상
+
 ## 점검 명령
 
 ```bash
@@ -33,3 +43,10 @@ pnpm --filter @repo/utils typecheck
 
 - 루트 가이드: [`../README.md`](../README.md)
 - UI 패키지: [`./ui/README.md`](./ui/README.md)
+- React Query 패키지: [`./react-query/README.md`](./react-query/README.md)
+- Zustand 패키지: [`./zustand/README.md`](./zustand/README.md)
+- Utils 패키지: [`./utils/README.md`](./utils/README.md)
+- Forms 패키지: [`./forms/README.md`](./forms/README.md)
+- Theme 패키지: [`./theme/README.md`](./theme/README.md)
+- Configs 패키지: [`./configs/README.md`](./configs/README.md)
+- ESLint Config 패키지: [`./eslint-config/README.md`](./eslint-config/README.md)

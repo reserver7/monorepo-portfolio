@@ -45,7 +45,6 @@ const meta: Meta<typeof Spinner> = {
     color: "default"
   },
   argTypes: {
-    color: {control:"select",options:["default","primary","danger","success","warning"],table:{defaultValue:{summary:"default"}}},
     size: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"md"}}},
     label: {control:"text",table:{}},
     fullscreen: {control:"boolean",table:{defaultValue:{summary:false}}},

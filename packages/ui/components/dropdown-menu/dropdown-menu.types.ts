@@ -1,10 +1,11 @@
 import type * as React from "react";
 import type * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
+import type { UiColorToken } from "../../styles/color-token";
 
 export type DropdownMenuContentSize = "sm" | "md" | "lg";
 export type DropdownMenuItemSize = "sm" | "md" | "lg";
 export type DropdownMenuLabelSize = "sm" | "md" | "lg";
-export type DropdownMenuItemColor = "default" | "danger";
+export type DropdownMenuItemColor = "default" | "danger" | UiColorToken;
 
 export interface DropdownMenuContentProps extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> {
   size?: DropdownMenuContentSize;

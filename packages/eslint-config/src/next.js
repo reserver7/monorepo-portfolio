@@ -1,9 +1,14 @@
 import nextPlugin from "@next/eslint-plugin-next";
-import { createWorkspaceEslintConfig } from "./base.js";
+import { createWorkspaceEslintConfigWithOptions } from "./base.js";
 
-export const createNextAppEslintConfig = (appDir = process.cwd()) => {
+export const createNextAppEslintConfig = (appDir = process.cwd(), options = {}) => {
+  const workspaceConfig = createWorkspaceEslintConfigWithOptions({
+    noExplicitAny: options.noExplicitAny ?? "off",
+    additionalIgnores: options.additionalIgnores ?? []
+  });
+
   return [
-    ...createWorkspaceEslintConfig(),
+    ...workspaceConfig,
     {
       files: ["**/*.{js,mjs,cjs,jsx,ts,tsx,mts,cts}"],
       plugins: {

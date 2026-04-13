@@ -2,7 +2,10 @@
   "name": "@repo/configs",
   "private": true,
   "version": "0.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
+    ".": "./src/index.ts",
     "./global.css": "./src/tailwind/global.css",
     "./next/create-config": "./src/next/create-next-config.mjs",
     "./postcss.config": "./src/tailwind/postcss.config.js",

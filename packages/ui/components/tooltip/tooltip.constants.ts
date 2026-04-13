@@ -1,4 +1,4 @@
-import type { TooltipAlignment, TooltipColor, TooltipPlacement, TooltipSize } from "./tooltip.types";
+import type { TooltipAlignment, TooltipPlacement, TooltipSize } from "./tooltip.types";
 
 export const TOOLTIP_DEFAULTS = {
   placement: "top" as TooltipPlacement,
@@ -15,14 +15,14 @@ export const TOOLTIP_SIZE_CLASS: Record<TooltipSize, string> = {
   lg: "px-3.5 py-2 text-body-sm"
 };
 
-export const TOOLTIP_COLOR_CLASS: Record<TooltipColor, string> = {
+export const TOOLTIP_COLOR_CLASS = {
   default: "bg-surface-elevated text-foreground border border-default",
   inverse: "bg-foreground text-surface",
   primary: "bg-primary text-primary-foreground"
-};
+} as const;
 
-export const TOOLTIP_ARROW_CLASS: Record<TooltipColor, string> = {
+export const TOOLTIP_ARROW_CLASS = {
   default: "fill-surface-elevated",
   inverse: "fill-foreground",
   primary: "fill-primary"
-};
+} as const;

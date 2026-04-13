@@ -21,6 +21,7 @@ export const ACCORDION_CONTENT_INNER_SIZE_CLASS: Record<AccordionSize, string> =
 
 export const ACCORDION_ITEM_VARIANT_CLASS: Record<AccordionVariant, string> = {
   default: "border-default border-b",
-  separated: "border-default mb-2 overflow-hidden rounded-lg border last:mb-0",
-  contained: "border-default border-x border-t first:rounded-t-lg last:rounded-b-lg last:border-b"
+  separated: "border-default mb-2 overflow-hidden rounded-[var(--radius-lg)] border last:mb-0",
+  contained:
+    "border-default border-x border-t first:rounded-t-[var(--radius-lg)] last:rounded-b-[var(--radius-lg)] last:border-b"
 };

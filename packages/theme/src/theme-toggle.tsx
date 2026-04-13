@@ -4,13 +4,20 @@ import { useEffect } from "react";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
 import { Button, useMounted } from "@repo/ui";
-import { THEME_COOKIE_KEY, THEME_COOKIE_MAX_AGE_SECONDS } from "./constants";
+import { buildThemeCookie, normalizeTheme } from "./theme.utils";
 
 export interface ThemeToggleProps {
   className?: string;
 }
 
-const THEME_COOKIE_DOMAIN = process.env.NEXT_PUBLIC_THEME_COOKIE_DOMAIN?.trim() || "";
+const readThemeCookieDomain = () => {
+  if (typeof process === "undefined" || !process.env) {
+    return "";
+  }
+  return process.env.NEXT_PUBLIC_THEME_COOKIE_DOMAIN?.trim() || "";
+};
+
+const THEME_COOKIE_DOMAIN = readThemeCookieDomain();
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
   const { theme, resolvedTheme, setTheme } = useTheme();
@@ -21,29 +28,15 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
       return;
     }
 
-    const normalizedTheme =
-      theme === "light" || theme === "dark" || theme === "system" ? theme : resolvedTheme;
+    const normalizedTheme = normalizeTheme(theme) ?? normalizeTheme(resolvedTheme);
 
-    if (normalizedTheme !== "light" && normalizedTheme !== "dark" && normalizedTheme !== "system") {
+    if (!normalizedTheme) {
       return;
     }
-
-    const cookieParts = [
-      `${THEME_COOKIE_KEY}=${encodeURIComponent(normalizedTheme)}`,
-      "path=/",
-      `max-age=${THEME_COOKIE_MAX_AGE_SECONDS}`,
-      "samesite=lax"
-    ];
-    const isLocalHost =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1" ||
-      window.location.hostname === "::1";
-
-    if (THEME_COOKIE_DOMAIN && !isLocalHost) {
-      cookieParts.push(`domain=${THEME_COOKIE_DOMAIN}`);
-    }
-
-    document.cookie = cookieParts.join("; ");
+    document.cookie = buildThemeCookie(normalizedTheme, {
+      domain: THEME_COOKIE_DOMAIN,
+      currentHostname: window.location.hostname
+    });
   }, [mounted, resolvedTheme, theme]);
 
   if (!mounted) {

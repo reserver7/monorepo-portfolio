@@ -2,13 +2,17 @@
   "name": "@repo/react-query",
   "version": "0.0.0",
   "license": "MIT",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
-    ".": "./index.ts",
-    "./boundaries": "./boundaries.tsx",
-    "./http": "./http/index.ts",
-    "./providers": "./providers.tsx"
+    ".": "./src/index.ts",
+    "./boundaries": "./src/boundaries.tsx",
+    "./http": "./src/http/index.ts",
+    "./providers": "./src/providers.tsx",
+    "./query-keys": "./src/query-keys.ts",
+    "./query-invalidation": "./src/query-invalidation.ts",
+    "./query-retry-policy": "./src/query-retry-policy.ts",
+    "./use-infinite-resource-query": "./src/use-infinite-resource-query.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings=0",

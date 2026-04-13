@@ -13,6 +13,7 @@ export interface StateViewProps {
   title: string;
   description?: string;
   className?: string;
+  style?: React.CSSProperties;
   action?: React.ReactNode;
   icon?: React.ReactNode;
 }

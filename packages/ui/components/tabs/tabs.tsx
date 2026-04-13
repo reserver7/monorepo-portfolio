@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
 import {
   TABS_DEFAULTS,
@@ -24,19 +25,23 @@ const TabsListComponent = React.forwardRef<React.ElementRef<typeof TabsPrimitive
       ...props
     },
     ref
-  ) => (
-    <TabsPrimitive.List
-      ref={ref}
-      className={cn(
-        "inline-flex items-center justify-center",
-        TABS_LIST_SIZE_CLASS[size],
-        TABS_LIST_VARIANT_CLASS[variant],
-        fullWidth && "w-full justify-stretch",
-        className
-      )}
-      {...props}
-    />
-  )
+  ) => {
+    const resolvedSize = resolveOption(size, TABS_LIST_SIZE_CLASS, TABS_DEFAULTS.size);
+    const resolvedVariant = resolveOption(variant, TABS_LIST_VARIANT_CLASS, TABS_DEFAULTS.variant);
+    return (
+      <TabsPrimitive.List
+        ref={ref}
+        className={cn(
+          "inline-flex items-center justify-center",
+          TABS_LIST_SIZE_CLASS[resolvedSize],
+          TABS_LIST_VARIANT_CLASS[resolvedVariant],
+          fullWidth && "w-full justify-stretch",
+          className
+        )}
+        {...props}
+      />
+    );
+  }
 );
 TabsListComponent.displayName = TabsPrimitive.List.displayName;
 
@@ -44,18 +49,22 @@ const TabsList = React.memo(TabsListComponent);
 TabsList.displayName = TabsPrimitive.List.displayName;
 
 const TabsTriggerComponent = React.forwardRef<React.ElementRef<typeof TabsPrimitive.Trigger>, TabsTriggerProps>(
-  ({ className, size = TABS_DEFAULTS.size, variant = TABS_DEFAULTS.variant, ...props }, ref) => (
-    <TabsPrimitive.Trigger
-      ref={ref}
-      className={cn(
-        "ring-offset-surface focus-visible:ring-primary inline-flex items-center justify-center whitespace-nowrap font-medium transition-all focus-visible:outline-none focus-visible:ring-2",
-        TABS_TRIGGER_SIZE_CLASS[size],
-        TABS_TRIGGER_VARIANT_CLASS[variant],
-        className
-      )}
-      {...props}
-    />
-  )
+  ({ className, size = TABS_DEFAULTS.size, variant = TABS_DEFAULTS.variant, ...props }, ref) => {
+    const resolvedSize = resolveOption(size, TABS_TRIGGER_SIZE_CLASS, TABS_DEFAULTS.size);
+    const resolvedVariant = resolveOption(variant, TABS_TRIGGER_VARIANT_CLASS, TABS_DEFAULTS.variant);
+    return (
+      <TabsPrimitive.Trigger
+        ref={ref}
+        className={cn(
+          "ring-offset-surface focus-visible:ring-primary inline-flex items-center justify-center whitespace-nowrap font-medium transition-all focus-visible:outline-none focus-visible:ring-2",
+          TABS_TRIGGER_SIZE_CLASS[resolvedSize],
+          TABS_TRIGGER_VARIANT_CLASS[resolvedVariant],
+          className
+        )}
+        {...props}
+      />
+    );
+  }
 );
 TabsTriggerComponent.displayName = TabsPrimitive.Trigger.displayName;
 

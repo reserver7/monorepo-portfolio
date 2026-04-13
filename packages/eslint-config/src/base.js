@@ -15,8 +15,15 @@ const DEFAULT_IGNORES = [
 ];
 
 export const createWorkspaceEslintConfig = () => {
+  return createWorkspaceEslintConfigWithOptions();
+};
+
+export const createWorkspaceEslintConfigWithOptions = (options = {}) => {
+  const noExplicitAnyRule = options.noExplicitAny ?? "off";
+  const additionalIgnores = options.additionalIgnores ?? [];
+
   return [
-    { ignores: DEFAULT_IGNORES },
+    { ignores: [...DEFAULT_IGNORES, ...additionalIgnores] },
     js.configs.recommended,
     ...tseslint.configs.recommended,
     {
@@ -32,7 +39,7 @@ export const createWorkspaceEslintConfig = () => {
     {
       files: ["**/*.{ts,tsx,mts,cts}"],
       rules: {
-        "@typescript-eslint/no-explicit-any": "off"
+        "@typescript-eslint/no-explicit-any": noExplicitAnyRule
       }
     },
     prettier

@@ -6,6 +6,7 @@ import * as SelectPrimitive from "@radix-ui/react-select";
 import { Controller } from "react-hook-form";
 import { Check, ChevronDown } from "lucide-react";
 import { useControlledValue } from "../../hooks";
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
 import {
   SELECT_CONTENT_BASE_CLASS,
@@ -51,14 +52,17 @@ export const SelectTrigger = React.forwardRef<
     },
     ref
   ) => {
+    const resolvedSize = resolveOption(size, SELECT_SIZE_CLASS, SELECT_DEFAULTS.size);
+    const resolvedVariant = resolveOption(variant, SELECT_VARIANT_CLASS, SELECT_DEFAULTS.variant);
+    const resolvedStatus = resolveOption(status, SELECT_STATUS_CLASS, SELECT_DEFAULTS.status);
     return (
       <SelectPrimitive.Trigger
         ref={ref}
         className={cn(
           SELECT_TRIGGER_BASE_CLASS,
-          SELECT_SIZE_CLASS[size],
-          SELECT_VARIANT_CLASS[variant],
-          SELECT_STATUS_CLASS[status],
+          SELECT_SIZE_CLASS[resolvedSize],
+          SELECT_VARIANT_CLASS[resolvedVariant],
+          SELECT_STATUS_CLASS[resolvedStatus],
           className
         )}
         {...props}
@@ -96,7 +100,7 @@ export const SelectItem = React.forwardRef<React.ElementRef<typeof SelectPrimiti
     <SelectPrimitive.Item
       ref={ref}
       className={cn(
-        "text-body-sm data-[highlighted]:bg-surface-elevated data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary relative flex h-9 w-full cursor-default select-none items-center justify-between gap-2 rounded-md px-3 leading-none outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "text-body-sm data-[highlighted]:bg-surface-elevated data-[state=checked]:bg-primary/10 data-[state=checked]:text-primary data-[state=checked]:data-[highlighted]:bg-primary/15 relative flex h-9 w-full cursor-default select-none items-center justify-between gap-2 rounded-[var(--radius-md)] px-3 leading-none outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className
       )}
       {...props}
@@ -124,10 +128,15 @@ function SelectSingle<T = SelectPrimitiveValue>({
   status = SELECT_DEFAULTS.status,
   errorMessage,
   className,
+  style,
   contentClassName,
+  contentStyle,
   maxVisibleItems = SELECT_DEFAULTS.maxVisibleItems
 }: SelectProps<T>) {
-  const activeStatus = errorMessage ? "error" : status;
+  const rawStatus = errorMessage ? "error" : status;
+  const resolvedSize = resolveOption(size, SELECT_SIZE_CLASS, SELECT_DEFAULTS.size);
+  const resolvedVariant = resolveOption(variant, SELECT_VARIANT_CLASS, SELECT_DEFAULTS.variant);
+  const activeStatus = resolveOption(rawStatus, SELECT_STATUS_CLASS, SELECT_DEFAULTS.status);
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const searchInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -160,14 +169,17 @@ function SelectSingle<T = SelectPrimitiveValue>({
     () =>
       cn(
         SELECT_TRIGGER_BASE_CLASS,
-        SELECT_SIZE_CLASS[size],
-        SELECT_VARIANT_CLASS[variant],
+        SELECT_SIZE_CLASS[resolvedSize],
+        SELECT_VARIANT_CLASS[resolvedVariant],
         SELECT_STATUS_CLASS[activeStatus],
         className
       ),
-    [activeStatus, className, size, variant]
+    [activeStatus, className, resolvedSize, resolvedVariant]
   );
-  const popoverContentStyle = React.useMemo(() => ({ width: triggerWidth || undefined }), [triggerWidth]);
+  const popoverContentStyle = React.useMemo(
+    () => ({ width: triggerWidth || undefined, ...(contentStyle ?? {}) }),
+    [contentStyle, triggerWidth]
+  );
 
   const handleOpenChange = React.useCallback((nextOpen: boolean) => {
     setOpen(nextOpen);
@@ -209,6 +221,7 @@ function SelectSingle<T = SelectPrimitiveValue>({
             type="button"
             disabled={isDisabled}
             className={triggerClassName}
+            style={style}
           >
             {open ? (
               <input
@@ -248,8 +261,10 @@ function SelectSingle<T = SelectPrimitiveValue>({
                       type="button"
                       disabled={option.disabled}
                       className={cn(
-                        "text-body-sm data-[highlighted]:bg-surface-elevated relative flex h-9 w-full items-center justify-between gap-2 rounded-md px-3 text-left disabled:cursor-not-allowed disabled:opacity-50",
-                        checked ? "bg-primary/10 text-primary" : "text-foreground hover:bg-surface-elevated"
+                        "text-body-sm data-[highlighted]:bg-surface-elevated relative flex h-9 w-full items-center justify-between gap-2 rounded-[var(--radius-md)] px-3 text-left disabled:cursor-not-allowed disabled:opacity-50",
+                        checked
+                          ? "bg-primary/10 text-primary hover:bg-primary/15 active:bg-primary/20"
+                          : "text-foreground hover:bg-surface-elevated"
                       )}
                       onClick={() => {
                         handleValueChange(key);
@@ -277,12 +292,12 @@ function SelectSingle<T = SelectPrimitiveValue>({
       disabled={isDisabled}
       onOpenChange={handleOpenChange}
     >
-      <SelectTrigger size={size} variant={variant} status={activeStatus} className={className}>
+      <SelectTrigger size={resolvedSize} variant={resolvedVariant} status={activeStatus} className={className} style={style}>
         <span className="flex min-w-0 flex-1 items-center gap-1">
           <SelectValue placeholder={placeholder} />
         </span>
       </SelectTrigger>
-      <SelectContent className={contentClassName}>
+      <SelectContent className={contentClassName} style={contentStyle}>
         {loading ? (
           <div className="text-body-sm text-muted px-2 py-2">불러오는 중...</div>
         ) : (
@@ -316,11 +331,16 @@ function SelectMultiple<T = SelectPrimitiveValue>({
   status = SELECT_DEFAULTS.status,
   errorMessage,
   className,
+  style,
   contentClassName,
+  contentStyle,
   maxVisibleItems = SELECT_DEFAULTS.maxVisibleItems,
   maxTagCount = SELECT_DEFAULTS.maxTagCount
 }: SelectProps<T>) {
-  const activeStatus = errorMessage ? "error" : status;
+  const rawStatus = errorMessage ? "error" : status;
+  const resolvedSize = resolveOption(size, SELECT_SIZE_CLASS, SELECT_DEFAULTS.size);
+  const resolvedVariant = resolveOption(variant, SELECT_VARIANT_CLASS, SELECT_DEFAULTS.variant);
+  const activeStatus = resolveOption(rawStatus, SELECT_STATUS_CLASS, SELECT_DEFAULTS.status);
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const searchInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -372,15 +392,18 @@ function SelectMultiple<T = SelectPrimitiveValue>({
     () =>
       cn(
         SELECT_TRIGGER_BASE_CLASS,
-        SELECT_SIZE_CLASS[size],
-        SELECT_VARIANT_CLASS[variant],
+        SELECT_SIZE_CLASS[resolvedSize],
+        SELECT_VARIANT_CLASS[resolvedVariant],
         SELECT_STATUS_CLASS[activeStatus],
         "min-h-10 h-auto py-1.5",
         className
       ),
-    [activeStatus, className, size, variant]
+    [activeStatus, className, resolvedSize, resolvedVariant]
   );
-  const popoverContentStyle = React.useMemo(() => ({ width: triggerWidth || undefined }), [triggerWidth]);
+  const popoverContentStyle = React.useMemo(
+    () => ({ width: triggerWidth || undefined, ...(contentStyle ?? {}) }),
+    [contentStyle, triggerWidth]
+  );
 
   const handleQueryChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(event.target.value);
@@ -442,6 +465,7 @@ function SelectMultiple<T = SelectPrimitiveValue>({
           type="button"
           disabled={isDisabled}
           className={triggerClassName}
+          style={style}
         >
           {shouldShowSearchInput ? (
             <input
@@ -461,13 +485,13 @@ function SelectMultiple<T = SelectPrimitiveValue>({
               {visibleTagKeys.map((key) => (
                 <span
                   key={key}
-                  className="bg-primary/10 text-primary inline-flex max-w-[9rem] shrink-0 items-center rounded-md px-2.5 py-0.5 text-[11px] font-medium"
+                  className="bg-primary/10 text-primary inline-flex max-w-[9rem] shrink-0 items-center rounded-[var(--radius-sm)] px-2.5 py-0.5 text-[11px] font-medium"
                 >
                   <span className="truncate">{labelByKey.get(key) ?? key}</span>
                 </span>
               ))}
               {hiddenTagCount > 0 ? (
-                <span className="bg-surface-elevated text-muted inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-[11px] font-medium">
+                <span className="bg-surface-elevated text-muted inline-flex shrink-0 items-center rounded-[var(--radius-sm)] px-2 py-0.5 text-[11px] font-medium">
                   +{hiddenTagCount}
                 </span>
               ) : null}
@@ -485,7 +509,7 @@ function SelectMultiple<T = SelectPrimitiveValue>({
         >
           <button
             type="button"
-            className="text-body-sm text-muted hover:bg-surface-elevated hover:text-foreground mb-1 flex h-8 w-full items-center justify-between gap-2 rounded-md px-3"
+            className="text-body-sm text-muted hover:bg-surface-elevated hover:text-foreground mb-1 flex h-8 w-full items-center justify-between gap-2 rounded-[var(--radius-md)] px-3"
             onClick={handleToggleAll}
           >
             <span>{isAllSelected ? "전체 해제" : "전체 선택"}</span>
@@ -506,14 +530,16 @@ function SelectMultiple<T = SelectPrimitiveValue>({
                     type="button"
                     disabled={option.disabled}
                     className={cn(
-                      "text-body-sm text-foreground hover:bg-surface-elevated flex h-9 w-full items-center gap-2 rounded-md px-3 text-left disabled:cursor-not-allowed disabled:opacity-50",
-                      checked ? "bg-primary/10 text-primary" : null
+                      "text-body-sm flex h-9 w-full items-center gap-2 rounded-[var(--radius-md)] px-3 text-left disabled:cursor-not-allowed disabled:opacity-50",
+                      checked
+                        ? "bg-primary/10 text-primary hover:bg-primary/15 active:bg-primary/20"
+                        : "text-foreground hover:bg-surface-elevated"
                     )}
                     onClick={() => toggleValue(option.value)}
                   >
                     <span
                       className={cn(
-                        "border-default bg-surface flex h-4 w-4 items-center justify-center rounded border",
+                        "border-default bg-surface flex h-4 w-4 items-center justify-center rounded-[var(--radius-sm)] border",
                         checked ? "border-primary/40 bg-primary/10" : null
                       )}
                     >

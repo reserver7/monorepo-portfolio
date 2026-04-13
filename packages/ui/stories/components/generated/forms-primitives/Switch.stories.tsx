@@ -45,7 +45,6 @@ const meta: Meta<typeof Switch> = {
     defaultChecked: true
   },
   argTypes: {
-    color: {control:"select",options:["primary","success","warning","danger"],table:{defaultValue:{summary:"primary"}}},
     size: {control:"select",options:["sm","md"],table:{defaultValue:{summary:"sm"}}},
     loading: {control:"boolean",table:{defaultValue:{summary:false}}},
     children: {control:false,table:{disable:true}},

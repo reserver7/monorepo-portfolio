@@ -2,7 +2,9 @@
 
 import * as React from "react";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
+import { resolveUiColorValue } from "../../styles/color-token";
 import {
   AVATAR_DEFAULTS,
   AVATAR_FALLBACK_COLOR_CLASS,
@@ -25,17 +27,35 @@ AvatarImage.displayName = AvatarPrimitive.Image.displayName;
 export const AvatarFallback = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Fallback>,
   AvatarFallbackProps
->(({ className, color = AVATAR_DEFAULTS.color, ...props }, ref) => (
-  <AvatarPrimitive.Fallback
-    ref={ref}
-    className={cn(
-      "flex h-full w-full items-center justify-center font-medium uppercase",
-      AVATAR_FALLBACK_COLOR_CLASS[color],
-      className
-    )}
-    {...props}
-  />
-));
+>(({ className, style, color = AVATAR_DEFAULTS.color, ...props }, ref) => {
+  type AvatarFallbackPresetColor = keyof typeof AVATAR_FALLBACK_COLOR_CLASS;
+  const hasPresetColor = Object.prototype.hasOwnProperty.call(AVATAR_FALLBACK_COLOR_CLASS, color);
+  const resolvedColor: AvatarFallbackPresetColor = hasPresetColor
+    ? (color as AvatarFallbackPresetColor)
+    : AVATAR_DEFAULTS.color;
+  const tokenColorValue = hasPresetColor ? undefined : resolveUiColorValue(color);
+
+  return (
+    <AvatarPrimitive.Fallback
+      ref={ref}
+      className={cn(
+        "flex h-full w-full items-center justify-center font-medium uppercase",
+        AVATAR_FALLBACK_COLOR_CLASS[resolvedColor],
+        className
+      )}
+      style={
+        tokenColorValue
+          ? {
+              ...(style ?? {}),
+              backgroundColor: `color-mix(in srgb, ${tokenColorValue} 14%, transparent)`,
+              color: tokenColorValue
+            }
+          : style
+      }
+      {...props}
+    />
+  );
+});
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;
 
 export const AvatarStatusIndicator = React.memo(function AvatarStatusIndicator({
@@ -44,12 +64,14 @@ export const AvatarStatusIndicator = React.memo(function AvatarStatusIndicator({
   size = AVATAR_DEFAULTS.size,
   ...props
 }: AvatarStatusIndicatorProps) {
+  const resolvedStatus = resolveOption(status, AVATAR_STATUS_COLOR_CLASS, AVATAR_DEFAULTS.status);
+  const resolvedSize = resolveOption(size, AVATAR_STATUS_SIZE_CLASS, AVATAR_DEFAULTS.size);
   return (
     <span
       className={cn(
         "absolute bottom-0 right-0 rounded-full ring-2 ring-surface",
-        AVATAR_STATUS_SIZE_CLASS[size],
-        AVATAR_STATUS_COLOR_CLASS[status],
+        AVATAR_STATUS_SIZE_CLASS[resolvedSize],
+        AVATAR_STATUS_COLOR_CLASS[resolvedStatus],
         className
       )}
       {...props}
@@ -79,6 +101,9 @@ const AvatarComponent = React.forwardRef<React.ElementRef<typeof AvatarPrimitive
     },
     ref
   ) => {
+    const resolvedSize = resolveOption(size, AVATAR_SIZE_CLASS, AVATAR_DEFAULTS.size);
+    const resolvedShape = resolveOption(shape, AVATAR_SHAPE_CLASS, AVATAR_DEFAULTS.shape);
+    const resolvedStatus = resolveOption(status, AVATAR_STATUS_COLOR_CLASS, AVATAR_DEFAULTS.status);
     const shouldRenderComposedChildren = React.Children.count(children) > 0;
 
     return (
@@ -86,8 +111,8 @@ const AvatarComponent = React.forwardRef<React.ElementRef<typeof AvatarPrimitive
         ref={ref}
         className={cn(
           "relative inline-flex shrink-0 overflow-hidden",
-          AVATAR_SIZE_CLASS[size],
-          AVATAR_SHAPE_CLASS[shape],
+          AVATAR_SIZE_CLASS[resolvedSize],
+          AVATAR_SHAPE_CLASS[resolvedShape],
           bordered ? "ring-1 ring-border" : null,
           interactive ? "cursor-pointer transition hover:brightness-95 active:brightness-90" : null,
           className
@@ -104,7 +129,7 @@ const AvatarComponent = React.forwardRef<React.ElementRef<typeof AvatarPrimitive
             </AvatarFallback>
           </>
         )}
-        {showStatus ? <AvatarStatusIndicator status={status} size={size} /> : null}
+        {showStatus ? <AvatarStatusIndicator status={resolvedStatus} size={resolvedSize} /> : null}
       </AvatarPrimitive.Root>
     );
   }

@@ -3,9 +3,11 @@
 import * as React from "react";
 import * as SwitchPrimitives from "@radix-ui/react-switch";
 import { Controller } from "react-hook-form";
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
 import { FieldSupportText } from "../field/field-utils";
 import { Label } from "../label";
+import { resolveUiColorValue } from "../../styles/color-token";
 import { SWITCH_COLOR_CLASS, SWITCH_DEFAULTS, SWITCH_SIZE_CLASS } from "./switch.constants";
 import { mergeSwitchRules } from "./switch.utils";
 import type { SwitchFieldProps, SwitchProps } from "./switch.types";
@@ -22,29 +24,51 @@ const SwitchBase = React.forwardRef<React.ElementRef<typeof SwitchPrimitives.Roo
       ...props
     },
     ref
-  ) => (
-    <SwitchPrimitives.Root
-      className={cn(
-        "bg-surface-elevated ring-offset-surface peer inline-flex shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50",
-        SWITCH_SIZE_CLASS[size].root,
-        SWITCH_COLOR_CLASS[color],
-        className
-      )}
-      disabled={disabled || loading}
-      onCheckedChange={onCheckedChange}
-      data-loading={loading ? "true" : undefined}
-      {...props}
-      ref={ref}
-    >
-      <SwitchPrimitives.Thumb
+  ) => {
+    const resolvedSize = resolveOption(size, SWITCH_SIZE_CLASS, SWITCH_DEFAULTS.size);
+    const hasPresetColor = Object.prototype.hasOwnProperty.call(SWITCH_COLOR_CLASS, color);
+    const resolvedColor = hasPresetColor
+      ? resolveOption(
+          color as keyof typeof SWITCH_COLOR_CLASS,
+          SWITCH_COLOR_CLASS,
+          SWITCH_DEFAULTS.color
+        )
+      : SWITCH_DEFAULTS.color;
+    const tokenColorValue = hasPresetColor ? undefined : resolveUiColorValue(color);
+    const rootStyle = tokenColorValue
+      ? ({
+          "--switch-focus": `color-mix(in srgb, ${tokenColorValue} 30%, transparent)`,
+          "--switch-checked-bg": tokenColorValue
+        } as React.CSSProperties)
+      : undefined;
+
+    return (
+      <SwitchPrimitives.Root
         className={cn(
-          "pointer-events-none block rounded-full bg-white shadow transition-transform data-[state=unchecked]:translate-x-0",
-          SWITCH_SIZE_CLASS[size].thumb,
-          SWITCH_SIZE_CLASS[size].checked
+          "bg-surface-elevated ring-offset-surface peer inline-flex shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50",
+          SWITCH_SIZE_CLASS[resolvedSize].root,
+          SWITCH_COLOR_CLASS[resolvedColor],
+          tokenColorValue &&
+            "focus-visible:ring-[var(--switch-focus)] data-[state=checked]:bg-[var(--switch-checked-bg)]",
+          className
         )}
-      />
-    </SwitchPrimitives.Root>
-  )
+        style={rootStyle}
+        disabled={disabled || loading}
+        onCheckedChange={onCheckedChange}
+        data-loading={loading ? "true" : undefined}
+        {...props}
+        ref={ref}
+      >
+        <SwitchPrimitives.Thumb
+          className={cn(
+            "pointer-events-none block rounded-full bg-surface shadow-card transition-transform data-[state=unchecked]:translate-x-0",
+            SWITCH_SIZE_CLASS[resolvedSize].thumb,
+            SWITCH_SIZE_CLASS[resolvedSize].checked
+          )}
+        />
+      </SwitchPrimitives.Root>
+    );
+  }
 );
 SwitchBase.displayName = "SwitchBase";
 

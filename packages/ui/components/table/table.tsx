@@ -1,4 +1,5 @@
 import * as React from "react";
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
 import { TABLE_DEFAULTS, TABLE_DENSITY_CLASS } from "./table.constants";
 import type { TableProps } from "./table.types";
@@ -16,28 +17,31 @@ const Table = React.forwardRef<HTMLTableElement, TableProps>(
       ...props
     },
     ref
-  ) => (
-    <div ref={containerRef} className={cn("relative w-full overflow-auto", containerClassName)}>
-      <table
-        ref={ref}
-        className={cn(
-          "w-full caption-bottom text-sm",
-          stickyHeader && "[&_thead]:sticky [&_thead]:top-0 [&_thead]:z-[1]",
-          TABLE_DENSITY_CLASS[density],
-          striped && "[&_tbody_tr:nth-child(even)]:bg-surface-elevated/40",
-          !hoverable && "[&_tr]:hover:bg-transparent",
-          className
-        )}
-        {...props}
-      />
-    </div>
-  )
+  ) => {
+    const resolvedDensity = resolveOption(density, TABLE_DENSITY_CLASS, TABLE_DEFAULTS.density);
+    return (
+      <div ref={containerRef} className={cn("relative w-full overflow-auto", containerClassName)}>
+        <table
+          ref={ref}
+          className={cn(
+            "w-full caption-bottom text-sm",
+            stickyHeader && "[&_thead]:sticky [&_thead]:top-0 [&_thead]:z-[1]",
+            TABLE_DENSITY_CLASS[resolvedDensity],
+            striped && "[&_tbody_tr:nth-child(even)]:bg-surface-elevated/40",
+            !hoverable && "[&_tr]:hover:bg-transparent",
+            className
+          )}
+          {...props}
+        />
+      </div>
+    );
+  }
 );
 Table.displayName = "Table";
 
 const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
   ({ className, ...props }, ref) => (
-    <thead ref={ref} className={cn("border-default border-b", className)} {...props} />
+    <thead ref={ref} className={cn("border-default bg-surface-elevated border-b", className)} {...props} />
   )
 );
 TableHeader.displayName = "TableHeader";
@@ -64,7 +68,10 @@ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTML
   ({ className, ...props }, ref) => (
     <tr
       ref={ref}
-      className={cn("border-default hover:bg-surface-elevated/40 border-b transition-colors", className)}
+      className={cn(
+        "border-default hover:bg-surface-elevated/40 aria-selected:bg-primary/10 aria-selected:hover:bg-primary/20 border-b",
+        className
+      )}
       {...props}
     />
   )
@@ -75,7 +82,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
   ({ className, ...props }, ref) => (
     <th
       ref={ref}
-      className={cn("text-muted h-10 px-2 text-left align-middle font-medium", className)}
+      className={cn("text-foreground h-10 px-2 text-left align-middle font-semibold", className)}
       {...props}
     />
   )

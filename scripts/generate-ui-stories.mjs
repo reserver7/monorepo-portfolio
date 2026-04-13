@@ -1104,7 +1104,7 @@ const createPlaceholderStorySection = (exportName, title, componentName, descrip
 export const ${exportName}: Story = {
   parameters: { controls: { disable: true } },
   render: () => (
-    <section className="space-y-3 rounded-xl border border-default bg-surface p-4">
+    <section className="space-y-3 rounded-[var(--radius-xl)] border border-default bg-surface p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-body-md text-foreground font-semibold">${title}</h3>
         <span className="text-caption text-muted rounded-full border border-default bg-surface-elevated px-2 py-0.5">
@@ -1153,14 +1153,14 @@ const toOptionMatrixStory = (componentName, options = {}) => {
 export const OptionMatrix: Story = {
   parameters: { controls: { disable: true } },
   render: (args) => (
-    <section className="space-y-3 rounded-xl border border-default bg-surface p-4">
+    <section className="space-y-3 rounded-[var(--radius-xl)] border border-default bg-surface p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-body-md text-foreground font-semibold">옵션 매트릭스</h3>
         <span className="text-caption text-muted rounded-full border border-default bg-surface-elevated px-2 py-0.5">
           ${componentName}
         </span>
       </div>
-      <div className="rounded-md border border-default bg-surface p-3">
+      <div className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
         <div className="text-caption text-muted mb-2">기본 구성</div>
         <div className="min-h-10">
           <${componentName}
@@ -1190,7 +1190,7 @@ ${sanitizeArgsConst}
 export const OptionMatrix: Story = {
   render: (args) => (
     <div className="space-y-4">
-      <section className="rounded-xl border border-default bg-surface p-4">
+      <section className="rounded-[var(--radius-xl)] border border-default bg-surface p-4">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-body-md text-foreground font-semibold">옵션 매트릭스</h3>
           <span className="text-caption text-muted rounded-full border border-default bg-surface-elevated px-2 py-0.5">
@@ -1199,14 +1199,14 @@ export const OptionMatrix: Story = {
         </div>
         <div className="space-y-4">
           {Object.entries(OPTION_MATRIX).map(([propName, values]) => (
-            <article key={propName} className="rounded-lg border border-default bg-surface-elevated p-3">
+            <article key={propName} className="rounded-[var(--radius-lg)] border border-default bg-surface-elevated p-3">
               <div className="mb-3 flex items-center justify-between">
                 <h4 className="text-body-sm text-foreground font-medium">{propName}</h4>
                 <span className="text-caption text-muted">{values.length} options</span>
               </div>
               <div className="grid items-start gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 {(values as readonly unknown[]).map((value) => (
-                  <div key={\`\${propName}-\${String(value)}\`} className="rounded-md border border-default bg-surface p-3">
+                  <div key={\`\${propName}-\${String(value)}\`} className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
                     <div className="text-caption text-muted mb-2">{String(value)}</div>
                     <div className="min-h-10">
                       <${componentName}
@@ -1274,7 +1274,7 @@ const toStatesStory = (componentName, options = {}) => {
 
   const fallbackOptionEntry = sortOptionEntries(optionsByProp).find(([, values]) => Array.isArray(values) && values.length > 1);
   const fallbackStateScenario = fallbackOptionEntry
-    ? `          <div className="rounded-md border border-default bg-surface p-3">
+    ? `          <div className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
             <div className="text-caption text-muted mb-2">${toStateLabel(fallbackOptionEntry[0])} ${String(
               fallbackOptionEntry[1][1]
             )}</div>
@@ -1286,7 +1286,7 @@ const toStatesStory = (componentName, options = {}) => {
     : "";
 
   const scenarioItems = [
-    `          <div className="rounded-md border border-default bg-surface p-3">
+    `          <div className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
             <div className="text-caption text-muted mb-2">기본</div>
             <${componentName}
               {...sanitizeStoryArgs(args as Record<string, unknown>)}
@@ -1296,7 +1296,7 @@ const toStatesStory = (componentName, options = {}) => {
       const title = toStateLabel(prop);
       const overrideArgs = COMPONENT_STATE_OVERRIDE_ARGS[componentName]?.[prop] ?? null;
       const overrideSpread = overrideArgs ? `\n              {...${JSON.stringify(overrideArgs)} as Record<string, unknown>}` : "";
-      return `          <div className="rounded-md border border-default bg-surface p-3">
+      return `          <div className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
             <div className="text-caption text-muted mb-2">${title}</div>
             <${componentName}
               {...sanitizeStoryArgs(args as Record<string, unknown>)}
@@ -1312,7 +1312,7 @@ const toStatesStory = (componentName, options = {}) => {
 export const States: Story = {
   parameters: { controls: { disable: true } },
   render: (args) => (
-    <section className="space-y-3 rounded-xl border border-default bg-surface p-4">
+    <section className="space-y-3 rounded-[var(--radius-xl)] border border-default bg-surface p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-body-md text-foreground font-semibold">상태</h3>
         <span className="text-caption text-muted rounded-full border border-default bg-surface-elevated px-2 py-0.5">
@@ -1362,7 +1362,7 @@ const toExamplesStory = (componentName, options = {}) => {
 export const Examples: Story = {
   parameters: { controls: { disable: true } },
   render: (args) => (
-    <section className="space-y-3 rounded-xl border border-default bg-surface p-4">
+    <section className="space-y-3 rounded-[var(--radius-xl)] border border-default bg-surface p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-body-md text-foreground font-semibold">사용 예시</h3>
         <span className="text-caption text-muted rounded-full border border-default bg-surface-elevated px-2 py-0.5">
@@ -1370,7 +1370,7 @@ export const Examples: Story = {
         </span>
       </div>
       <div className="grid items-start gap-2 sm:grid-cols-2">
-        <div className="rounded-md border border-default bg-surface p-3">
+        <div className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
           <div className="text-caption text-muted mb-2">기본 사용</div>
           <div className="min-h-10">
             <${componentName}
@@ -1378,7 +1378,7 @@ export const Examples: Story = {
             ${jsxElementClose}
           </div>
         </div>
-        <div className="rounded-md border border-default bg-surface p-3">
+        <div className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
           <div className="text-caption text-muted mb-1">${secondaryTitle}</div>
           <div className="text-caption text-muted mb-2">${secondaryDesc}</div>
           <div className="min-h-10">
@@ -1484,7 +1484,7 @@ export const ${exportName}: Story = {
     } as typeof args;
 
     return (
-      <section className="space-y-3 rounded-xl border border-default bg-surface p-4">
+      <section className="space-y-3 rounded-[var(--radius-xl)] border border-default bg-surface p-4">
         <div className="flex items-center justify-between">
           <h3 className="text-body-md text-foreground font-semibold">${title}</h3>
           <span className="text-caption text-muted rounded-full border border-default bg-surface-elevated px-2 py-0.5">
@@ -1492,7 +1492,7 @@ export const ${exportName}: Story = {
           </span>
         </div>
         <p className="text-body-sm text-muted">${description}</p>
-        <div className="rounded-md border border-default bg-surface p-3">
+        <div className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
           {${rendererName}.render ? ${rendererName}.render(nextArgs) : null}
         </div>
       </section>
@@ -1833,7 +1833,7 @@ export const Playground: Story = {
             </section>
             <section className="space-y-2">
               <h4 className="text-body-sm text-foreground font-semibold">최근 변경 이력</h4>
-              <div className="border-default bg-surface-elevated max-h-40 space-y-2 overflow-y-auto rounded-md border p-3">
+              <div className="border-default bg-surface-elevated max-h-40 space-y-2 overflow-y-auto rounded-[var(--radius-md)] border p-3">
                 {[
                   "권한이 editor로 변경되었습니다.",
                   "보호 키 정책이 업데이트되었습니다.",
@@ -2014,7 +2014,7 @@ type Story = StoryObj<ScrollAreaStoryArgs>;
 
 export const Playground: Story = {
   render: (args) => (
-    <ScrollArea className="h-64 w-full rounded-xl border border-default bg-surface p-3" scrollBarSize={args.scrollBarSize}>
+    <ScrollArea className="h-64 w-full rounded-[var(--radius-xl)] border border-default bg-surface p-3" scrollBarSize={args.scrollBarSize}>
       <div className="space-y-2 pr-2">
         {Array.from({ length: 24 }).map((_, index) => (
           <p key={index} className="text-body-sm text-foreground">
@@ -2182,11 +2182,11 @@ export const CommonPatterns: Story = {
   parameters: { controls: { disable: true } },
   render: () => (
     <div className="grid gap-4 md:grid-cols-2">
-      <section className="space-y-2 rounded-xl border border-default bg-surface p-4">
+      <section className="space-y-2 rounded-[var(--radius-xl)] border border-default bg-surface p-4">
         <h4 className="text-body-sm font-semibold">텍스트 블록</h4>
         <Skeleton variant="text" lines={4} lastLineWidth="45%" />
       </section>
-      <section className="space-y-3 rounded-xl border border-default bg-surface p-4">
+      <section className="space-y-3 rounded-[var(--radius-xl)] border border-default bg-surface p-4">
         <h4 className="text-body-sm font-semibold">아바타 + 텍스트</h4>
         <div className="flex items-center gap-3">
           <Skeleton variant="circular" size="lg" />
@@ -2196,12 +2196,12 @@ export const CommonPatterns: Story = {
           </div>
         </div>
       </section>
-      <section className="space-y-3 rounded-xl border border-default bg-surface p-4">
+      <section className="space-y-3 rounded-[var(--radius-xl)] border border-default bg-surface p-4">
         <h4 className="text-body-sm font-semibold">카드 프리뷰</h4>
         <Skeleton variant="rounded" size="lg" className="h-28" />
         <Skeleton variant="text" lines={2} />
       </section>
-      <section className="space-y-2 rounded-xl border border-default bg-surface p-4">
+      <section className="space-y-2 rounded-[var(--radius-xl)] border border-default bg-surface p-4">
         <h4 className="text-body-sm font-semibold">테이블 행</h4>
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, index) => (
@@ -2556,6 +2556,87 @@ export const Playground: Story = {
 };
 `;
 
+const createCardStorySource = () => `import type { Meta, StoryObj } from "@storybook/react";
+import { Badge, Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../../../index";
+
+type CardStoryArgs = {
+  variant: "default" | "elevated" | "muted" | "ghost";
+  padding: "none" | "sm" | "md" | "lg";
+  radius: "md" | "lg" | "xl";
+  bordered: boolean;
+  interactive: boolean;
+  showBadge: boolean;
+  showFooterAction: boolean;
+};
+
+const meta: Meta<CardStoryArgs> = {
+  title: "Components/Card",
+  component: Card,
+  tags: ["autodocs"],
+  parameters: {
+    layout: "padded",
+    controls: { expanded: true, exclude: ["className", "style", "children", "id", /^on[A-Z].*/] }
+  },
+  args: {
+    variant: "elevated",
+    padding: "md",
+    radius: "xl",
+    bordered: true,
+    interactive: false,
+    showBadge: true,
+    showFooterAction: true
+  },
+  argTypes: {
+    variant: { control: "inline-radio", options: ["default", "elevated", "muted", "ghost"] },
+    padding: { control: "inline-radio", options: ["none", "sm", "md", "lg"] },
+    radius: { control: "inline-radio", options: ["md", "lg", "xl"] },
+    bordered: { control: "boolean" },
+    interactive: { control: "boolean" },
+    showBadge: { control: "boolean" },
+    showFooterAction: { control: "boolean" }
+  }
+};
+
+export default meta;
+type Story = StoryObj<CardStoryArgs>;
+
+export const Playground: Story = {
+  render: (args) => (
+    <div className="max-w-xl">
+      <Card
+        variant={args.variant}
+        padding={args.padding}
+        radius={args.radius}
+        bordered={args.bordered}
+        interactive={args.interactive}
+      >
+        <CardHeader padding="none">
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle>협업 문서 카드</CardTitle>
+            {args.showBadge ? <Badge variant="info">live</Badge> : null}
+          </div>
+          <CardDescription>권한, 상태, 메타 데이터를 묶어 표현하는 기본 카드 패턴입니다.</CardDescription>
+        </CardHeader>
+        <CardContent padding="none">
+          <div className="text-body-sm text-muted space-y-1">
+            <p>최근 수정: 2분 전</p>
+            <p>동시 접속: 3명</p>
+          </div>
+        </CardContent>
+        <CardFooter padding="none" className="mt-4 justify-end gap-2">
+          {args.showFooterAction ? (
+            <>
+              <Button size="sm" variant="outline">닫기</Button>
+              <Button size="sm" variant="primary">열기</Button>
+            </>
+          ) : null}
+        </CardFooter>
+      </Card>
+    </div>
+  )
+};
+`;
+
 const createDataTableStorySource = () => `import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { Badge, Button, DataTable, DataTableColumnHeader } from "../../../../index";
@@ -2803,7 +2884,7 @@ export const Playground: Story = {
               value={String(query.filters.keyword ?? "")}
               onChange={(event) => setFilters({ ...query.filters, keyword: event.currentTarget.value })}
               placeholder="키워드 검색"
-              className="border-default h-9 w-[220px] rounded-md border bg-surface px-3 text-sm"
+              className="border-default h-9 w-[220px] rounded-[var(--radius-md)] border bg-surface px-3 text-sm"
             />
             <Button size="sm" variant="outline" onClick={resetFilters}>
               초기화
@@ -2818,6 +2899,7 @@ export const Playground: Story = {
 `;
 
 const QUALITY_STORY_OVERRIDES = {
+  Card: createCardStorySource,
   AlertConfirm: createAlertConfirmStorySource,
   Modal: createModalStorySource,
   DropdownMenu: createDropdownMenuStorySource,

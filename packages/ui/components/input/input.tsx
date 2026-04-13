@@ -4,6 +4,7 @@ import * as React from "react";
 import { Controller } from "react-hook-form";
 import { X } from "lucide-react";
 import { useComposedRefs, useControlledValue } from "../../hooks";
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
 import { buildFieldDescribedBy, FieldSupportText, RequiredMark } from "../field/field-utils";
 import { Label } from "../label";
@@ -69,6 +70,9 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
         : undefined;
 
     const activeStatus = resolveInputStatus(status, Boolean(errorMessage));
+    const resolvedSize = resolveOption(size, INPUT_SIZE_CLASS, INPUT_DEFAULTS.size);
+    const resolvedVariant = resolveOption(variant, INPUT_VARIANT_CLASS, INPUT_DEFAULTS.variant);
+    const resolvedStatus = resolveOption(activeStatus, INPUT_STATUS_CLASS, INPUT_DEFAULTS.status);
     const supportMessage = errorMessage ?? helperText;
     const hasDecorator = Boolean(prefix || suffix || clearable);
     const shouldWrapField = Boolean(
@@ -133,10 +137,10 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
           "text-foreground placeholder:text-muted w-full outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50",
           hasDecorator
             ? "h-auto min-w-0 flex-1 border-0 bg-transparent p-0 focus:ring-0"
-            : "rounded-md border px-3 py-2 ring-0 focus:ring-2",
-          !hasDecorator && INPUT_SIZE_CLASS[size],
-          !hasDecorator && INPUT_VARIANT_CLASS[variant],
-          !hasDecorator && INPUT_STATUS_CLASS[activeStatus],
+            : "rounded-[var(--radius-md)] border px-3 py-2 ring-0 focus:ring-1",
+          !hasDecorator && INPUT_SIZE_CLASS[resolvedSize],
+          !hasDecorator && INPUT_VARIANT_CLASS[resolvedVariant],
+          !hasDecorator && INPUT_STATUS_CLASS[resolvedStatus],
           className
         )}
         {...props}
@@ -165,10 +169,10 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
         {hasDecorator ? (
           <div
             className={cn(
-              "flex w-full items-center gap-2 rounded-md border px-3 transition-colors focus-within:ring-2",
-              INPUT_SIZE_CLASS[size],
-              INPUT_VARIANT_CLASS[variant],
-              INPUT_DECORATED_STATUS_CLASS[activeStatus],
+              "flex w-full items-center gap-2 rounded-[var(--radius-md)] border px-3 transition-colors focus-within:ring-1",
+              INPUT_SIZE_CLASS[resolvedSize],
+              INPUT_VARIANT_CLASS[resolvedVariant],
+              INPUT_DECORATED_STATUS_CLASS[resolvedStatus],
               disabled ? "cursor-not-allowed opacity-50" : null
             )}
           >
@@ -183,7 +187,7 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
                 onClick={handleClear}
                 tabIndex={-1}
                 aria-label="입력값 비우기"
-                className="text-muted hover:bg-surface-elevated hover:text-foreground inline-flex h-5 w-5 shrink-0 items-center justify-center rounded transition-colors"
+                className="text-muted hover:bg-surface-elevated hover:text-foreground inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[var(--radius-round)] transition-colors"
               >
                 <X aria-hidden className="h-3.5 w-3.5" />
               </button>

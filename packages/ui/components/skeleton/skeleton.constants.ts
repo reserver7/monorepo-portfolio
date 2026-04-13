@@ -1,7 +1,6 @@
 import type {
   SkeletonAnimation,
   SkeletonAnimationSpeed,
-  SkeletonColor,
   SkeletonSize,
   SkeletonVariant
 } from "./skeleton.types";
@@ -20,16 +19,16 @@ export const SKELETON_DEFAULTS = {
 
 export const SKELETON_VARIANT_CLASS: Record<SkeletonVariant, string> = {
   rectangular: "rounded-none",
-  rounded: "rounded-md",
+  rounded: "rounded-[var(--radius-md)]",
   circular: "rounded-full",
-  text: "rounded-sm"
+  text: "rounded-[var(--radius-sm)]"
 };
 
-export const SKELETON_COLOR_CLASS: Record<SkeletonColor, string> = {
+export const SKELETON_COLOR_CLASS = {
   default: "bg-surface-elevated",
   muted: "bg-surface-elevated/70",
   subtle: "bg-surface-elevated/50"
-};
+} as const;
 
 export const SKELETON_ANIMATION_CLASS: Record<SkeletonAnimation, string> = {
   pulse: "animate-pulse",

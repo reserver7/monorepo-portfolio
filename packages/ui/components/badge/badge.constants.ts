@@ -31,8 +31,8 @@ export const BADGE_SIZE_CLASS: Record<BadgeSize, string> = {
 
 export const BADGE_SHAPE_CLASS: Record<BadgeShape, string> = {
   pill: "rounded-full",
-  rounded: "rounded-md",
-  square: "rounded-sm"
+  rounded: "rounded-[var(--radius-md)]",
+  square: "rounded-[var(--radius-sm)]"
 };
 
 export const BADGE_DOT_SIZE_CLASS: Record<BadgeSize, string> = {

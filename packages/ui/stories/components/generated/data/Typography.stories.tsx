@@ -40,13 +40,12 @@ const meta: Meta<typeof Typography> = {
   },
   args: {
     as: "p",
-    variant: "body",
+    variant: "bodyMd",
     color: "default",
     children: "Typography"
   },
   argTypes: {
-    variant: {control:"select",options:["h1","h2","h3","title","body","bodySm","caption","label"],table:{defaultValue:{summary:"body"}}},
-    color: {control:"select",options:["default","muted","subtle","primary","success","warning","danger","info"],table:{defaultValue:{summary:"default"}}},
+    variant: {control:"select",options:["headingXl","headingLg","headingMd","title","bodyMd","bodySm","caption","micro","label","h1","h2","h3","body"],table:{defaultValue:{summary:"bodyMd"}}},
     children: {control:false,table:{disable:true}},
     asChild: {control:false,table:{disable:true}},
     leftIcon: {control:false,table:{disable:true}},
