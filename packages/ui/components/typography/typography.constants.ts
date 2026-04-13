@@ -1,4 +1,4 @@
-import type { TypographyColor, TypographyVariant } from "./typography.types";
+import type { TypographyVariant } from "./typography.types";
 import { PRIMITIVE_COLOR_HUES, PRIMITIVE_COLOR_SCALES, SEMANTIC_COLOR_TOKEN_KEYS } from "../../styles/color-token";
 
 export const TYPOGRAPHY_DEFAULTS = {
