@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAppForm } from "@repo/forms";
 import { invalidateQueryKeys, notifyUiError, useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { createDocument, deleteDocumentById, docsQueryKeys, listDocuments } from "@/features/docs/documents/api";
-import { navigateToWhiteboardApp } from "@/lib/navigation";
+import { getWhiteboardPath } from "@/lib/navigation";
 import { docsClientEnv } from "@/lib/config";
 import {
   createGuestName,
@@ -223,7 +223,7 @@ export default function HomePage() {
             label: "화이트보드로 이동",
             onClick: () => {
               clearMainEditorAccessKey();
-              navigateToWhiteboardApp("/");
+              router.push(getWhiteboardPath("/"));
             }
           }
         ]}

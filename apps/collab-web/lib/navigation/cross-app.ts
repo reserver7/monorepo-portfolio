@@ -1,24 +1,15 @@
-import { navigateToApp } from "@repo/utils/collab";
-
 const DEFAULT_DOCS_BASE_PATH = "/docs";
 const DEFAULT_WHITEBOARD_BASE_PATH = "/whiteboard";
-const docsBasePath = DEFAULT_DOCS_BASE_PATH;
-const whiteboardBasePath = DEFAULT_WHITEBOARD_BASE_PATH;
 
-export const navigateToDocsApp = (pathname = "/") => {
-  const normalizedPathname = pathname === "/" ? docsBasePath : `${docsBasePath}${pathname}`;
-  navigateToApp({
-    pathname: normalizedPathname,
-    localPort: 3000,
-    targetOrigin: docsBasePath
-  });
+const normalizePath = (basePath: string, pathname = "/"): string => {
+  if (pathname === "/") {
+    return basePath;
+  }
+
+  const normalizedPathname = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  return `${basePath}${normalizedPathname}`;
 };
 
-export const navigateToWhiteboardApp = (pathname = "/") => {
-  const normalizedPathname = pathname === "/" ? whiteboardBasePath : `${whiteboardBasePath}${pathname}`;
-  navigateToApp({
-    pathname: normalizedPathname,
-    localPort: 3000,
-    targetOrigin: whiteboardBasePath
-  });
-};
+export const getDocsPath = (pathname = "/") => normalizePath(DEFAULT_DOCS_BASE_PATH, pathname);
+
+export const getWhiteboardPath = (pathname = "/") => normalizePath(DEFAULT_WHITEBOARD_BASE_PATH, pathname);

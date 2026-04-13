@@ -21,6 +21,16 @@ pnpm --filter @repo/collab-web typecheck
 - Local: <http://localhost:3000>
 - Domain: <https://monorepo-portfolio-collab-web.vercel.app>
 
+## 운영 배포 메모
+
+- Vercel Project Name: `monorepo-portfolio-collab-web`
+- Vercel Root Directory: `apps/collab-web`
+- 필수 환경변수:
+  - `NEXT_PUBLIC_API_URL`
+  - `NEXT_PUBLIC_APP_URL`
+  - `NEXT_PUBLIC_DEFAULT_DOC_ROLE`
+  - `NEXT_PUBLIC_DEFAULT_BOARD_ROLE`
+
 ## 의존성
 
 - `@repo/ui`, `@repo/theme`, `@repo/forms`, `@repo/react-query`, `@repo/utils`, `@repo/zustand`

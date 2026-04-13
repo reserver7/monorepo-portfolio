@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useAppForm } from "@repo/forms";
 import { useQuery } from "@repo/react-query";
 import {
@@ -75,6 +75,7 @@ const toolLabel: Record<WhiteboardTool, string> = {
 };
 
 export default function WhiteboardRoomPage() {
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const boardId = Array.isArray(params.id) ? params.id[0] : params.id;
 
@@ -464,10 +465,7 @@ export default function WhiteboardRoomPage() {
   }
 
   const goHome = () => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    window.location.assign("/whiteboard");
+    router.push("/whiteboard");
   };
 
   return (

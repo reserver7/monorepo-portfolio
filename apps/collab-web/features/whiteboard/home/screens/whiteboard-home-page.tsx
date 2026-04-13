@@ -31,7 +31,7 @@ import {
   setStoredDisplayName,
   setStoredRole
 } from "@/features/whiteboard/collaboration/model";
-import { navigateToDocsApp } from "@/lib/navigation";
+import { getDocsPath } from "@/lib/navigation";
 import { formatExactTime, formatRelativeTime } from "@/features/whiteboard/collaboration/model";
 import { coerceAccessRole, collabFieldCopy } from "@repo/utils/collab";
 
@@ -223,7 +223,7 @@ export default function WhiteboardHomePage() {
             label: "문서로 이동",
             onClick: () => {
               clearMainEditorAccessKey();
-              navigateToDocsApp("/");
+              router.push(getDocsPath("/"));
             }
           }
         ]}
