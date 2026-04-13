@@ -1,5 +1,5 @@
 import type { TypographyColor, TypographyVariant } from "./typography.types";
-import { PRIMITIVE_COLOR_HUES, PRIMITIVE_COLOR_SCALES } from "../../styles/color-token";
+import { PRIMITIVE_COLOR_HUES, PRIMITIVE_COLOR_SCALES, SEMANTIC_COLOR_TOKEN_KEYS } from "../../styles/color-token";
 
 export const TYPOGRAPHY_DEFAULTS = {
   as: "p",
@@ -23,22 +23,22 @@ export const TYPOGRAPHY_VARIANTS = [
   "body"
 ] as const;
 
-const TYPOGRAPHY_SEMANTIC_COLOR_CLASS_MAP = {
+const typographyGeneratedSemanticColorClassMap = Object.fromEntries(
+  SEMANTIC_COLOR_TOKEN_KEYS.map((token) => [token, `text-${token}`])
+) as Record<string, string>;
+
+const TYPOGRAPHY_SEMANTIC_COLOR_CLASS_MAP: Record<string, string> = {
+  ...typographyGeneratedSemanticColorClassMap,
   default: "text-foreground",
-  primary: "text-primary",
-  success: "text-success",
-  warning: "text-warning",
-  danger: "text-danger",
-  info: "text-info",
-  foreground: "text-foreground",
-  muted: "text-muted",
-  subtle: "text-muted-foreground",
-  surface: "text-surface",
-  surfaceElevated: "text-surface-elevated",
-  border: "text-border",
-  white: "text-white",
-  black: "text-black"
-} as const satisfies Record<string, string>;
+  text: "text-foreground",
+  primaryText: "text-primary-foreground",
+  linkDark: "text-link-dark",
+  successText: "text-success-foreground",
+  warningText: "text-warning-foreground",
+  dangerText: "text-danger-foreground",
+  infoText: "text-info-foreground",
+  subtle: "text-muted-foreground"
+};
 
 const typographyPrimitiveColorClassMap = Object.fromEntries(
   PRIMITIVE_COLOR_HUES.flatMap((hue) => PRIMITIVE_COLOR_SCALES.map((scale) => [`${hue}${scale}`, `text-${hue}-${scale}`]))
@@ -65,7 +65,7 @@ export const TYPOGRAPHY_VARIANT_CLASS_MAP: Record<TypographyVariant, string> = {
   body: "text-body-md"
 };
 
-export const TYPOGRAPHY_COLOR_CLASS_MAP: Record<TypographyColor, string> = {
-  ...(TYPOGRAPHY_SEMANTIC_COLOR_CLASS_MAP as Record<TypographyColor, string>),
-  ...(typographyPrimitiveColorClassMap as Record<TypographyColor, string>)
+export const TYPOGRAPHY_COLOR_CLASS_MAP: Record<string, string> = {
+  ...TYPOGRAPHY_SEMANTIC_COLOR_CLASS_MAP,
+  ...typographyPrimitiveColorClassMap
 };
