@@ -37,6 +37,20 @@ pnpm dev:collab
 pnpm dev:opslens
 ```
 
+## 신규 앱 생성
+
+```bash
+pnpm new:app
+```
+
+- `templates/next-app` 기반으로 `apps/<name>` 생성
+- 루트 스크립트 자동 추가:
+  - `dev:<name>`
+  - `build:<name>`
+  - `lint:<name>`
+  - `typecheck:<name>`
+- 생성 템플릿은 공통 설정/런타임(`@repo/configs`, `@repo/theme`, `@repo/react-query`)이 기본 연결됩니다.
+
 ## 자주 쓰는 명령
 
 ```bash

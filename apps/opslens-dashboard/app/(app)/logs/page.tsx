@@ -7,7 +7,7 @@ import { useAppForm } from "@repo/forms";
 import { analyzeLogs } from "@/features/ops/api";
 import { OpsSectionCard, SeverityBadge } from "@/features/ops";
 import { useOpsFilters } from "@/features/ops/stores";
-import { formatDateTime, formatNumber } from "@/lib/utils";
+import { formatDateTime, formatNumber } from "@repo/utils";
 
 type FormValues = {
   source: "server" | "client" | "api" | "console" | "sentry";
@@ -107,7 +107,7 @@ export default function LogsPage() {
                   message: "로그를 10자 이상 입력하세요."
                 }
               })}
-              className="font-mono text-xs"
+              className="font-mono text-caption"
               placeholder="2026-03-25T10:14:11Z ERROR Cannot read properties of undefined at ..."
             />
           </FormField>
@@ -165,14 +165,14 @@ export default function LogsPage() {
                   <p className="text-foreground font-semibold">{cluster.title}</p>
                   <div className="flex items-center gap-2">
                     <SeverityBadge severity={cluster.severity} />
-                    <span className="text-muted text-xs">{formatNumber(cluster.count)}회</span>
+                    <span className="text-muted text-caption">{formatNumber(cluster.count)}회</span>
                   </div>
                 </div>
-                <p className="text-muted mt-1 text-xs">{cluster.normalizedMessage}</p>
-                <p className="text-muted-foreground mt-2 text-xs">
+                <p className="text-muted mt-1 text-caption">{cluster.normalizedMessage}</p>
+                <p className="text-muted-foreground mt-2 text-caption">
                   최초 {formatDateTime(cluster.firstSeen)} · 최근 {formatDateTime(cluster.lastSeen)}
                 </p>
-                <ul className="text-muted mt-2 list-disc space-y-1 pl-5 text-xs">
+                <ul className="text-muted mt-2 list-disc space-y-1 pl-5 text-caption">
                   {cluster.suggestedActions.map((action) => (
                     <li key={action}>{action}</li>
                   ))}

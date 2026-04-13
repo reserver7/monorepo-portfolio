@@ -43,7 +43,7 @@ export default function SettingsPage() {
         title="환경 변수 예시"
         description="프론트/백엔드 배포 시 아래 키를 기준으로 설정하세요."
       >
-        <Textarea readOnly value={envPreview} rows={10} className="bg-surface-elevated font-mono text-xs" />
+        <Textarea readOnly value={envPreview} rows={10} className="bg-surface-elevated font-mono text-caption" />
       </OpsSectionCard>
 
       <OpsSectionCard title="운영 확장 TODO">

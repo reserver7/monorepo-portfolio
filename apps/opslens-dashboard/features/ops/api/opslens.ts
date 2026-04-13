@@ -1,4 +1,6 @@
-import { graphqlRequest } from "./graphql-client";
+import { createQueryKeys, graphqlRequest } from "@repo/react-query";
+
+const OPSLENS_API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4100/graphql";
 
 export type Severity = "critical" | "high" | "medium" | "low";
 export type IssueStatus = "new" | "analyzing" | "in_progress" | "resolved";
@@ -32,21 +34,21 @@ export const toOptionalStatus = (status: "all" | IssueStatus | undefined): Issue
 export const toOptionalSeverity = (severity: "all" | Severity | undefined): Severity | undefined =>
   severity && severity !== "all" ? severity : undefined;
 
+const opslensKeysBase = createQueryKeys("opslens");
+
 export const opslensQueryKeys = {
-  all: ["opslens"] as const,
+  all: opslensKeysBase.all,
   dashboard: (filter: OpsFilterParams) =>
-    [
-      ...opslensQueryKeys.all,
+    opslensKeysBase.custom(
       "dashboard",
       filter.environment,
       filter.serviceName,
       filter.search,
       filter.from,
       filter.to
-    ] as const,
+    ),
   reportsSummary: (filter: OpsFilterParams) =>
-    [
-      ...opslensQueryKeys.all,
+    opslensKeysBase.custom(
       "reports",
       "summary",
       filter.environment,
@@ -54,10 +56,9 @@ export const opslensQueryKeys = {
       filter.search,
       filter.from,
       filter.to
-    ] as const,
+    ),
   reportsBriefing: (filter: OpsFilterParams) =>
-    [
-      ...opslensQueryKeys.all,
+    opslensKeysBase.custom(
       "reports",
       "briefing",
       filter.environment,
@@ -65,19 +66,17 @@ export const opslensQueryKeys = {
       filter.search,
       filter.from,
       filter.to
-    ] as const,
+    ),
   reportsIssues: (filter: OpsFilterParams) =>
-    [
-      ...opslensQueryKeys.all,
+    opslensKeysBase.custom(
       "reports",
       "issues",
       filter.environment,
       filter.serviceName,
       filter.search
-    ] as const,
+    ),
   issues: (filter: IssueListFilterParams) =>
-    [
-      ...opslensQueryKeys.all,
+    opslensKeysBase.custom(
       "issues",
       filter.environment,
       filter.serviceName,
@@ -85,12 +84,12 @@ export const opslensQueryKeys = {
       filter.status,
       filter.severity,
       filter.page
-    ] as const,
-  issueDetail: (issueId: string) => [...opslensQueryKeys.all, "issue-detail", issueId] as const,
-  deployments: (environment: Environment) => [...opslensQueryKeys.all, "deployments", environment] as const,
+    ),
+  issueDetail: (issueId: string) => opslensKeysBase.custom("issue-detail", issueId),
+  deployments: (environment: Environment) => opslensKeysBase.custom("deployments", environment),
   deploymentImpact: (environment: Environment, version?: string) =>
-    [...opslensQueryKeys.all, "deployment-impact", environment, version] as const,
-  qaScenarios: () => [...opslensQueryKeys.all, "qa-scenarios"] as const
+    opslensKeysBase.custom("deployment-impact", environment, version),
+  qaScenarios: () => opslensKeysBase.custom("qa-scenarios")
 };
 
 export type DashboardSummary = {
@@ -199,6 +198,7 @@ export async function getDashboardSummary(filter: {
   to?: string;
 }): Promise<DashboardSummary> {
   const data = await graphqlRequest<{ dashboardSummary: DashboardSummary }>(
+    OPSLENS_API_URL,
     `
     query DashboardSummary($filter: DashboardFilterInput) {
       dashboardSummary(filter: $filter) {
@@ -235,6 +235,7 @@ export async function analyzeLogs(input: {
   const data = await graphqlRequest<{
     analyzeLogs: { createdIssues: number; updatedIssues: number; clusters: ErrorCluster[] };
   }>(
+    OPSLENS_API_URL,
     `
     mutation AnalyzeLogs($input: AnalyzeLogsInputModel!) {
       analyzeLogs(input: $input) {
@@ -275,6 +276,7 @@ export async function listIssues(filter: {
   const data = await graphqlRequest<{
     issues: { items: Issue[]; totalCount: number; page: number; pageSize: number };
   }>(
+    OPSLENS_API_URL,
     `
     query Issues($filter: IssueFilterInput) {
       issues(filter: $filter) {
@@ -311,6 +313,7 @@ export async function listIssues(filter: {
 
 export async function getIssueDetail(issueId: string): Promise<Issue> {
   const data = await graphqlRequest<{ issueDetail: Issue }>(
+    OPSLENS_API_URL,
     `
     query IssueDetail($issueId: String!) {
       issueDetail(issueId: $issueId) {
@@ -361,6 +364,7 @@ export async function getIssueDetail(issueId: string): Promise<Issue> {
 
 export async function updateIssueStatus(issueId: string, status: IssueStatus): Promise<Issue> {
   const data = await graphqlRequest<{ updateIssueStatus: Issue }>(
+    OPSLENS_API_URL,
     `
     mutation UpdateIssueStatus($input: UpdateIssueStatusInput!) {
       updateIssueStatus(input: $input) {
@@ -394,6 +398,7 @@ export async function updateIssueStatus(issueId: string, status: IssueStatus): P
 
 export async function assignIssue(issueId: string, assignee: string): Promise<Issue> {
   const data = await graphqlRequest<{ assignIssue: Issue }>(
+    OPSLENS_API_URL,
     `
     mutation AssignIssue($input: AssignIssueInput!) {
       assignIssue(input: $input) {
@@ -427,6 +432,7 @@ export async function assignIssue(issueId: string, assignee: string): Promise<Is
 
 export async function addIssueComment(issueId: string, author: string, body: string): Promise<Issue> {
   const data = await graphqlRequest<{ addIssueComment: Issue }>(
+    OPSLENS_API_URL,
     `
     mutation AddIssueComment($input: AddIssueCommentInput!) {
       addIssueComment(input: $input) {
@@ -465,6 +471,7 @@ export async function registerDeployment(input: {
   deployedAt?: string;
 }): Promise<Deployment> {
   const data = await graphqlRequest<{ registerDeployment: Deployment }>(
+    OPSLENS_API_URL,
     `
     mutation RegisterDeployment($input: RegisterDeploymentInput!) {
       registerDeployment(input: $input) {
@@ -485,6 +492,7 @@ export async function registerDeployment(input: {
 
 export async function getDeployments(environment?: Environment): Promise<Deployment[]> {
   const data = await graphqlRequest<{ deployments: Deployment[] }>(
+    OPSLENS_API_URL,
     `
     query Deployments($environment: String) {
       deployments(environment: $environment) {
@@ -507,6 +515,7 @@ export async function getDeploymentImpact(
   environment: Environment
 ): Promise<DeploymentImpactReport> {
   const data = await graphqlRequest<{ deploymentImpact: DeploymentImpactReport }>(
+    OPSLENS_API_URL,
     `
     query DeploymentImpact($input: DeploymentImpactInput!) {
       deploymentImpact(input: $input) {
@@ -542,6 +551,7 @@ export async function getAiBriefing(filter: {
   to?: string;
 }): Promise<string> {
   const data = await graphqlRequest<{ aiBriefing: string }>(
+    OPSLENS_API_URL,
     `
     query AiBriefing($filter: DashboardFilterInput) {
       aiBriefing(filter: $filter)
@@ -569,6 +579,7 @@ export async function generateQaScenario(input: {
   audience: string;
 }): Promise<QaScenario> {
   const data = await graphqlRequest<{ generateQaScenario: QaScenario }>(
+    OPSLENS_API_URL,
     `
     mutation GenerateQaScenario($input: QaAssistantInputModel!) {
       generateQaScenario(input: $input) {
@@ -591,6 +602,7 @@ export async function generateQaScenario(input: {
 
 export async function getRecentQaScenarios(): Promise<QaScenario[]> {
   const data = await graphqlRequest<{ recentQaScenarios: QaScenario[] }>(
+    OPSLENS_API_URL,
     `
     query RecentQaScenarios {
       recentQaScenarios {

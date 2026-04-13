@@ -154,7 +154,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Typography
               as="p"
               variant="caption"
-              className="text-primary font-semibold uppercase tracking-[0.14em]"
+              className="text-primary font-semibold uppercase tracking-wide"
             >
               Operations AI
             </Typography>

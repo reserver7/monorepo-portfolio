@@ -5,7 +5,7 @@
     "moduleResolution": "Node",
     "baseUrl": ".",
     "paths": {
-      "@repo/utils": ["../../packages/utils/index.ts"],
+      "@repo/utils": ["../../packages/utils/src/index.ts"],
       "@repo/utils/*": ["../../packages/utils/src/*"]
     },
     "outDir": "dist",

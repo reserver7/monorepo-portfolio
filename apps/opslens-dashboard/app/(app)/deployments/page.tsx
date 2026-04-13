@@ -7,7 +7,7 @@ import { useAppForm } from "@repo/forms";
 import { getDeploymentImpact, getDeployments, registerDeployment } from "@/features/ops/api";
 import { OpsCardListSkeleton, OpsInfoItem, OpsSectionCard, SeverityBadge } from "@/features/ops";
 import { useOpsFilters } from "@/features/ops/stores";
-import { formatDateTime, formatNumber } from "@/lib/utils";
+import { formatDateTime, formatNumber } from "@repo/utils";
 import { opslensQueryKeys } from "@/features/ops/api";
 
 type DeploymentFormValues = {
@@ -127,8 +127,8 @@ export default function DeploymentsPage() {
                     }`}
                   >
                     <p className="text-foreground font-semibold">{deployment.version}</p>
-                    <p className="text-muted mt-1 text-xs">{formatDateTime(deployment.deployedAt)}</p>
-                    <p className="text-muted mt-1 line-clamp-2 text-xs">{deployment.changelog}</p>
+                    <p className="text-muted mt-1 text-caption">{formatDateTime(deployment.deployedAt)}</p>
+                    <p className="text-muted mt-1 line-clamp-2 text-caption">{deployment.changelog}</p>
                   </Button>
                 );
               })}
@@ -174,7 +174,7 @@ export default function DeploymentsPage() {
                   {impactQuery.data.increasedIssues.map((item) => (
                     <div key={item.issueId} className="border-default rounded-lg border p-3">
                       <p className="text-foreground font-semibold">{item.title}</p>
-                      <div className="text-muted mt-1 flex flex-wrap items-center gap-2 text-xs">
+                      <div className="text-muted mt-1 flex flex-wrap items-center gap-2 text-caption">
                         <SeverityBadge severity={item.severity} />
                         <span>{item.serviceName}</span>
                         <span>·</span>

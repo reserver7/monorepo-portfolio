@@ -14,7 +14,7 @@ import {
   updateIssueStatus
 } from "@/features/ops/api";
 import { OpsInfoItem, OpsIssueDetailSkeleton, OpsSectionCard } from "@/features/ops";
-import { formatDateTime, formatNumber } from "@/lib/utils";
+import { formatDateTime, formatNumber } from "@repo/utils";
 import { opslensQueryKeys } from "@/features/ops/api";
 
 const statusOptions: Array<{ label: string; value: IssueStatus }> = [
@@ -203,10 +203,10 @@ export default function IssueDetailPage() {
             <div className="mt-3 max-h-[360px] space-y-2 overflow-auto pr-1">
               {issue.logs.map((log) => (
                 <div key={log.id} className="border-default rounded-lg border p-3">
-                  <p className="text-muted-foreground text-xs">
+                  <p className="text-muted-foreground text-caption">
                     {formatDateTime(log.occurredAt)} · {log.source} · {log.level}
                   </p>
-                  <p className="text-foreground mt-1 whitespace-pre-wrap break-all font-mono text-xs">
+                  <p className="text-foreground mt-1 whitespace-pre-wrap break-all font-mono text-caption">
                     {log.rawMessage}
                   </p>
                 </div>
@@ -253,7 +253,7 @@ export default function IssueDetailPage() {
                 <div key={comment.id} className="border-default rounded-lg border p-3 text-sm">
                   <p className="text-foreground font-semibold">{comment.author}</p>
                   <p className="text-muted mt-1 whitespace-pre-wrap">{comment.body}</p>
-                  <p className="text-muted-foreground mt-1 text-xs">{formatDateTime(comment.createdAt)}</p>
+                  <p className="text-muted-foreground mt-1 text-caption">{formatDateTime(comment.createdAt)}</p>
                 </div>
               ))
             )}

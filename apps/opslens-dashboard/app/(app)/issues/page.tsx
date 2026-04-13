@@ -8,7 +8,7 @@ import { keepPreviousData, useQuery } from "@repo/react-query";
 import { listIssues, type Issue, type IssueStatus, type Severity } from "@/features/ops/api";
 import { OpsSectionCard, SeverityBadge, StatusBadge } from "@/features/ops";
 import { useOpsFilters } from "@/features/ops/stores";
-import { formatDateTime, formatNumber } from "@/lib/utils";
+import { formatDateTime, formatNumber } from "@repo/utils";
 import {
   opslensQueryKeys,
   toOptionalSearch,
@@ -81,7 +81,7 @@ export default function IssuesPage() {
             >
               {row.original.title}
             </Link>
-            <p className="text-muted mt-1 max-w-[420px] truncate text-xs">{row.original.summary}</p>
+            <p className="text-muted mt-1 max-w-[420px] truncate text-caption">{row.original.summary}</p>
           </div>
         )
       },

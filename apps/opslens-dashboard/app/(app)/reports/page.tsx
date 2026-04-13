@@ -6,7 +6,7 @@ import { useQuery } from "@repo/react-query";
 import { getAiBriefing, getDashboardSummary, listIssues } from "@/features/ops/api";
 import { OpsCardListSkeleton, OpsSectionCard, SeverityBadge, StatusBadge } from "@/features/ops";
 import { useOpsFilters } from "@/features/ops/stores";
-import { formatDateTime, formatNumber } from "@/lib/utils";
+import { formatDateTime, formatNumber } from "@repo/utils";
 import { opslensQueryKeys, toOptionalSearch, toOptionalServiceName } from "@/features/ops/api";
 
 export default function ReportsPage() {
@@ -136,7 +136,7 @@ export default function ReportsPage() {
             readOnly
             value={reportText}
             rows={10}
-            className="bg-surface-elevated mt-3 font-mono text-xs"
+            className="bg-surface-elevated mt-3 font-mono text-caption"
           />
         </OpsSectionCard>
 
@@ -152,14 +152,14 @@ export default function ReportsPage() {
               {issuesQuery.data?.items.map((issue) => (
                 <div key={issue.id} className="border-default rounded-lg border p-3 text-sm">
                   <p className="text-foreground font-semibold">{issue.title}</p>
-                  <div className="text-muted mt-1 flex flex-wrap items-center gap-2 text-xs">
+                  <div className="text-muted mt-1 flex flex-wrap items-center gap-2 text-caption">
                     <SeverityBadge severity={issue.severity} />
                     <StatusBadge status={issue.status} />
                     <span>{issue.serviceName}</span>
                     <span>·</span>
                     <span>{formatNumber(issue.occurrenceCount)}회</span>
                   </div>
-                  <p className="text-muted-foreground mt-1 text-xs">
+                  <p className="text-muted-foreground mt-1 text-caption">
                     최근 발생: {formatDateTime(issue.lastOccurredAt)}
                   </p>
                 </div>
