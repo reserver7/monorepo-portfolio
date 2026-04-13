@@ -6,12 +6,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
 
 const sourceFontPath = resolve(repoRoot, "packages/theme/src/fonts/PretendardVariable.woff2");
-const targetFontPaths = [
-  "apps/docs/public/fonts/PretendardVariable.woff2",
-  "apps/whiteboard/public/fonts/PretendardVariable.woff2",
-  "apps/storybook/public/fonts/PretendardVariable.woff2",
-  "templates/next-app/public/fonts/PretendardVariable.woff2"
-].map((relativePath) => resolve(repoRoot, relativePath));
+const targetFontPaths = [];
 
 const run = async () => {
   await Promise.all(
@@ -21,8 +16,9 @@ const run = async () => {
     })
   );
 
-  console.log(`[sync-theme-fonts] synced ${targetFontPaths.length} targets from packages/theme/src/fonts`);
+  console.log(
+    `[sync-theme-fonts] app public font sync skipped (bundle font from packages/theme/src/fonts: ${sourceFontPath})`
+  );
 };
 
 await run();
-

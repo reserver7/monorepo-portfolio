@@ -1,0 +1,34 @@
+{
+  "name": "@repo/collab-web",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/forms": "workspace:*",
+    "@repo/react-query": "workspace:*",
+    "@repo/theme": "workspace:*",
+    "@repo/ui": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/zustand": "workspace:*",
+    "next": "^15.3.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "socket.io-client": "^4.8.1",
+    "yjs": "^13.6.27"
+  },
+  "devDependencies": {
+    "@repo/configs": "workspace:*",
+    "@repo/eslint-config": "workspace:*",
+    "@types/node": "^22.13.5",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17"
+  }
+}

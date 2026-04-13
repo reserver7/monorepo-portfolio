@@ -12,6 +12,8 @@ type BrowserWindowLike = {
   location: {
     protocol: string;
     hostname: string;
+    port?: string;
+    origin?: string;
     assign: (url: string) => void;
   };
   localStorage: {
@@ -50,6 +52,16 @@ const urlFromPort = (browserWindow: BrowserWindowLike, port: number, pathname: s
   return `${browserWindow.location.protocol}//${browserWindow.location.hostname}:${port}${pathname}`;
 };
 
+const getCurrentOrigin = (browserWindow: BrowserWindowLike): string => {
+  if (browserWindow.location.origin && browserWindow.location.origin.length > 0) {
+    return browserWindow.location.origin;
+  }
+
+  const port = browserWindow.location.port?.trim();
+  const portSuffix = port ? `:${port}` : "";
+  return `${browserWindow.location.protocol}//${browserWindow.location.hostname}${portSuffix}`;
+};
+
 const readCurrentTheme = (browserWindow: BrowserWindowLike): "light" | "dark" | "system" | null => {
   const value = browserWindow.localStorage.getItem(THEME_STORAGE_KEY)?.trim();
   return value === "light" || value === "dark" || value === "system" ? value : null;
@@ -64,9 +76,10 @@ const withThemeQuery = (
     return destinationUrl;
   }
 
-  const parsed = new URL(destinationUrl);
+  const isRelativePath = destinationUrl.startsWith("/");
+  const parsed = new URL(destinationUrl, getCurrentOrigin(browserWindow));
   parsed.searchParams.set(THEME_QUERY_KEY, currentTheme);
-  return parsed.toString();
+  return isRelativePath ? `${parsed.pathname}${parsed.search}${parsed.hash}` : parsed.toString();
 };
 
 const writeThemeBridge = (browserWindow: BrowserWindowLike): void => {

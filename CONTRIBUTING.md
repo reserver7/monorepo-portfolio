@@ -15,7 +15,7 @@
 
 ## 모노레포 계층 규칙
 
-### Frontend 앱 (`apps/docs`, `apps/whiteboard`, `apps/opslens-dashboard`)
+### Frontend 앱 (`apps/collab-web`, `apps/opslens-dashboard`)
 
 - `components/<category>`: 화면/표현 레이어
 - `hooks/<category>`: UI/상태 훅
@@ -29,7 +29,7 @@
 - `stores`: `<domain>`
 - `lib`: `config`, `http`, `navigation`, `collab`, `utils`
 
-### Backend 앱 (`apps/server`, `apps/opslens-api`)
+### Backend 앱 (`apps/collab-server`, `apps/opslens-api`)
 
 - 공통 코드: `common/<category>`
 - 도메인 코드: `modules/<domain>`
@@ -88,11 +88,10 @@
    - `pnpm --filter @repo/ui typecheck && pnpm --filter @repo/ui lint`
    - `pnpm --filter @repo/react-query typecheck && pnpm --filter @repo/react-query lint`
    - `pnpm --filter @repo/utils typecheck && pnpm --filter @repo/utils lint`
-   - `pnpm --filter @repo/docs typecheck && pnpm --filter @repo/docs lint`
-   - `pnpm --filter @repo/whiteboard typecheck && pnpm --filter @repo/whiteboard lint`
+   - `pnpm --filter @repo/collab-web typecheck && pnpm --filter @repo/collab-web lint`
    - `pnpm --filter @repo/opslens-dashboard typecheck && pnpm --filter @repo/opslens-dashboard lint`
    - `pnpm --filter @repo/opslens-api typecheck && pnpm --filter @repo/opslens-api lint`
-   - `pnpm --filter @repo/server typecheck && pnpm --filter @repo/server lint`
+   - `pnpm --filter @repo/collab-server typecheck && pnpm --filter @repo/collab-server lint`
 
 ## 커밋/PR 규칙
 

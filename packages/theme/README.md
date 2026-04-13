@@ -7,7 +7,7 @@
 - `AppThemeProvider`
 - `AppProviders`, `createAppProviders`
 - `ThemeToggle`
-- `AppHead` (테마 부트스트랩 + 폰트 preload)
+- `AppHead` (테마 부트스트랩, 폰트 preload 옵션)
 - `createAppMetadata`, `createEntityMetadata`
 
 ## 유틸

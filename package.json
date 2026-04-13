@@ -16,7 +16,7 @@
     "db:opslens:push": "pnpm --filter @repo/opslens-api exec prisma db push",
     "db:opslens:seed": "pnpm --filter @repo/opslens-api exec tsx prisma/seed.ts",
     "db:opslens:studio": "pnpm --filter @repo/opslens-api exec prisma studio",
-    "dev:collab": "pnpm turbo run dev --filter=@repo/server --filter=@repo/docs --filter=@repo/whiteboard",
+    "dev:collab": "pnpm turbo run dev --filter=@repo/collab-server --filter=@repo/collab-web",
     "dev:opslens": "pnpm turbo run dev --filter=@repo/opslens-api --filter=@repo/opslens-dashboard",
     "dev:storybook": "bash -lc 'node ./scripts/watch-ui-stories.mjs & WATCH_PID=$!; pnpm --filter @repo/storybook dev; kill $WATCH_PID >/dev/null 2>&1 || true'",
     "build:storybook": "pnpm --filter @repo/storybook build",
@@ -35,7 +35,8 @@
     "test:e2e:smoke": "playwright test tests/e2e/create-room-flow.spec.ts tests/e2e/cross-app-navigation.spec.ts --workers=2 --reporter=line",
     "test:e2e:fast": "playwright test --workers=3 --max-failures=1 --reporter=line",
     "test:e2e:access": "playwright test tests/e2e/access-control-flow.spec.ts --workers=1 --reporter=line",
-    "test:server": "pnpm --filter @repo/server exec jest --config jest.config.cjs --runInBand"
+    "test:collab-server": "pnpm --filter @repo/collab-server exec jest --config jest.config.cjs --runInBand",
+    "test:server": "pnpm run test:collab-server"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",

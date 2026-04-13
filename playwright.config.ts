@@ -2,8 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 const editorAccessKey = "integration-editor-key";
 const serverUrl = "http://127.0.0.1:4000";
-const docsUrl = "http://127.0.0.1:3000";
-const whiteboardUrl = "http://127.0.0.1:3001";
+const collabWebUrl = "http://127.0.0.1:3000";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -16,14 +15,14 @@ export default defineConfig({
   workers: process.env.CI ? 1 : 3,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
-    baseURL: docsUrl,
+    baseURL: collabWebUrl,
     trace: process.env.CI ? "retain-on-failure" : "off",
     screenshot: "only-on-failure",
     video: "off"
   },
   webServer: [
     {
-      command: "pnpm --filter @repo/server exec tsx src/index.ts",
+      command: "pnpm --filter @repo/collab-server exec tsx src/index.ts",
       url: `${serverUrl}/health`,
       timeout: 120_000,
       reuseExistingServer: !process.env.CI,
@@ -31,7 +30,7 @@ export default defineConfig({
         PORT: "4000",
         STATE_FILE_PATH: "/tmp/monorepo-portfolio-e2e-state.json",
         CORS_ORIGINS:
-          "http://127.0.0.1:3000,http://127.0.0.1:3001,http://localhost:3000,http://localhost:3001",
+          "http://127.0.0.1:3000,http://localhost:3000",
         COLLAB_SESSION_SECRET: "e2e-collab-session-secret",
         EDITOR_ACCESS_KEY: editorAccessKey,
         SOCKET_RATE_LIMIT_WINDOW_MS: "10000",
@@ -42,25 +41,14 @@ export default defineConfig({
       }
     },
     {
-      command: "pnpm --filter @repo/docs dev",
-      url: docsUrl,
+      command: "pnpm --filter @repo/collab-web dev",
+      url: collabWebUrl,
       timeout: 120_000,
       reuseExistingServer: !process.env.CI,
       env: {
         NEXT_PUBLIC_API_URL: serverUrl,
-        NEXT_PUBLIC_WHITEBOARD_APP_URL: whiteboardUrl,
+        NEXT_PUBLIC_APP_URL: collabWebUrl,
         NEXT_PUBLIC_DEFAULT_DOC_ROLE: "editor",
-        NEXT_PUBLIC_EDITOR_ACCESS_KEY: editorAccessKey
-      }
-    },
-    {
-      command: "pnpm --filter @repo/whiteboard dev",
-      url: whiteboardUrl,
-      timeout: 120_000,
-      reuseExistingServer: !process.env.CI,
-      env: {
-        NEXT_PUBLIC_API_URL: serverUrl,
-        NEXT_PUBLIC_DOCS_APP_URL: docsUrl,
         NEXT_PUBLIC_DEFAULT_BOARD_ROLE: "editor",
         NEXT_PUBLIC_EDITOR_ACCESS_KEY: editorAccessKey
       }

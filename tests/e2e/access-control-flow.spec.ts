@@ -2,7 +2,7 @@ import { expect, test, type APIRequestContext } from "@playwright/test";
 
 const serverUrl = "http://127.0.0.1:4000";
 const docsUrl = "http://127.0.0.1:3000";
-const whiteboardUrl = "http://127.0.0.1:3001";
+const whiteboardUrl = "http://127.0.0.1:3000/whiteboard";
 
 const uniqueName = (prefix: string): string => {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -56,7 +56,7 @@ test.describe("권한 및 보호 키 플로우", () => {
       localStorage.setItem("reserver7.document.editorAccessKey", "wrong-key");
     });
 
-    await page.goto(`${docsUrl}/doc/${documentId}`);
+    await page.goto(`${docsUrl}/docs/${documentId}`);
 
     const roleBadge = page.getByTestId("document-current-role");
     const editorKeyInput = page.getByTestId("document-editor-access-key-input");
@@ -92,7 +92,7 @@ test.describe("권한 및 보호 키 플로우", () => {
       localStorage.setItem("reserver7.board.editorAccessKey", "wrong-key");
     });
 
-    await page.goto(`${whiteboardUrl}/board/${boardId}`);
+    await page.goto(`${whiteboardUrl}/${boardId}`);
 
     const roleBadge = page.getByTestId("board-current-role");
     const addShapeButton = page.getByRole("button", { name: "도형 추가" });

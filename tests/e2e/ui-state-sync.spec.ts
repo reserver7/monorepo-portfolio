@@ -2,7 +2,7 @@ import { expect, test, type APIRequestContext } from "@playwright/test";
 
 const serverUrl = "http://127.0.0.1:4000";
 const docsUrl = "http://127.0.0.1:3000";
-const whiteboardUrl = "http://127.0.0.1:3001";
+const whiteboardUrl = "http://127.0.0.1:3000/whiteboard";
 
 const uniqueName = (prefix: string): string => {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -45,10 +45,10 @@ test.describe("UI 상태 동기화", () => {
     const targetCard = page.getByTestId(`document-card-${documentId}`);
     await expect(targetCard).toBeVisible();
     await targetCard.getByRole("button", { name: "문서 입장" }).click();
-    await expect(page).toHaveURL(new RegExp(`/doc/${documentId}$`));
+    await expect(page).toHaveURL(new RegExp(`/docs/${documentId}$`));
 
     await page.getByRole("link", { name: "문서 목록으로" }).click();
-    await expect(page).toHaveURL(`${docsUrl}/`);
+    await expect(page).toHaveURL(`${docsUrl}/docs`);
 
     await expect(homeEditorKeyInput).toHaveValue("");
   });
@@ -63,10 +63,10 @@ test.describe("UI 상태 동기화", () => {
     const targetCard = page.getByTestId(`board-card-${boardId}`);
     await expect(targetCard).toBeVisible();
     await targetCard.getByRole("button", { name: "보드 입장" }).click();
-    await expect(page).toHaveURL(new RegExp(`/board/${boardId}$`));
+    await expect(page).toHaveURL(new RegExp(`/whiteboard/${boardId}$`));
 
     await page.getByRole("link", { name: "보드 목록" }).click();
-    await expect(page).toHaveURL(`${whiteboardUrl}/`);
+    await expect(page).toHaveURL(`${whiteboardUrl}`);
 
     await expect(homeEditorKeyInput).toHaveValue("");
   });
@@ -96,7 +96,7 @@ test.describe("UI 상태 동기화", () => {
         const current = new URL(page.url());
         return `${current.origin}${current.pathname}`;
       })
-      .toBe(`${whiteboardUrl}/`);
+      .toBe(`${whiteboardUrl}`);
     await expect
       .poll(async () => {
         return isDarkMode();
