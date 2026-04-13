@@ -65,6 +65,18 @@ pnpm db:opslens:seed
 pnpm audit:workspace
 ```
 
+## 배포 기준
+
+- Collab Web은 Vercel 프로젝트 1개로 운영합니다.
+  - Project Name: `monorepo-portfolio-collab-web`
+  - Root Directory: `apps/collab-web`
+- 배포 시 필요한 GitHub Actions 시크릿:
+  - `VERCEL_TOKEN`
+  - `VERCEL_ORG_ID`
+  - `VERCEL_PROJECT_ID_COLLAB_WEB`
+- 릴리스 배포:
+  - `main` 머지 후 `v*` 태그 푸시 시 CD 워크플로우가 실행됩니다.
+
 ## 태그 배포
 
 ```bash

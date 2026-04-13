@@ -16,7 +16,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <AppHead />
       </head>
-      <body className={`${appFont.className} font-body text-foreground dark:text-foreground min-h-screen antialiased transition-colors`}>
+      <body className={`${appFont.className} font-body text-foreground dark:text-foreground min-h-screen antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>

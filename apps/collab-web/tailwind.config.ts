@@ -1,5 +1,5 @@
 import type { Config } from "tailwindcss";
-import { createAppTailwindConfig } from "@repo/configs/tailwind/create-app-config";
+import { createAppTailwindConfig } from "../../packages/configs/src/tailwind/create-app-tailwind-config";
 
 const config: Config = createAppTailwindConfig({
   theme: {

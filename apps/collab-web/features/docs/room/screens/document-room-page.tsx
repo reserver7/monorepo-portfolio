@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useAppForm } from "@repo/forms";
 import { useQuery } from "@repo/react-query";
 import {
@@ -86,6 +86,7 @@ const ActivityLogPanel = dynamic(
 );
 
 export default function DocumentRoomPage() {
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const documentId = Array.isArray(params.id) ? params.id[0] : params.id;
 
@@ -191,10 +192,7 @@ export default function DocumentRoomPage() {
   }
 
   const goHome = () => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    window.location.assign("/docs");
+    router.push("/docs");
   };
 
   return (

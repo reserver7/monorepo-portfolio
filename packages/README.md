@@ -25,6 +25,7 @@
 - 연동 적용(완료): `@repo/configs`, `@repo/theme`
   - `@repo/configs`는 Tailwind/Global CSS 경로를 통해 UI 토큰을 앱에 주입
   - `@repo/theme`는 light/dark 테마 상태와 동기화 정책을 담당
+  - 폰트는 `@repo/theme` 번들(`fonts.css`) 기준으로 주입하며, 앱별 `public/fonts` 복사 정책은 사용하지 않음
 - 비시각 패키지(대상 아님, 구조 정리 완료): `@repo/react-query`, `@repo/forms`, `@repo/zustand`, `@repo/utils`, `@repo/eslint-config`
   - 데이터/상태/유틸/설정 패키지로, 시각 스타일 대신 API/구조 일관성이 적용 대상
 
