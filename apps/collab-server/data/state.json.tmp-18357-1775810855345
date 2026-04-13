@@ -1,0 +1,923 @@
+{
+  "documents": [
+    {
+      "id": "c4425c3f-ae49-425f-a5ae-465da5fe84b1",
+      "title": "팀 협업 시작 문서",
+      "content": "# 실시간 협업 문서\n\n이곳에서 팀과 함께 문서를 편집해보세요.\n\n- Yjs CRDT 동기화\n- 댓글/멘션\n- 권한(보기/편집) 분리",
+      "yjsState": "AQKzkdabAgAoAQRtZXRhBXRpdGxlAXcY7YyAIO2YkeyXhSDsi5zsnpEg66y47IScBAEHY29udGVudJgBIyDsi6Tsi5zqsIQg7ZiR7JeFIOusuOyEnAoK7J206rOz7JeQ7IScIO2MgOqzvCDtlajqu5gg66y47ISc66W8IO2OuOynke2VtOuztOyEuOyalC4KCi0gWWpzIENSRFQg64+Z6riw7ZmUCi0g64yT6riAL+upmOyFmAotIOq2jO2VnCjrs7TquLAv7Y647KeRKSDrtoTrpqwA",
+      "comments": [],
+      "createdAt": "2026-03-25T08:13:00.480Z",
+      "updatedAt": "2026-03-25T08:13:00.480Z",
+      "version": 1,
+      "history": [
+        {
+          "id": "d1b6a91e-7fdf-44df-ba73-47b847a9391e",
+          "at": "2026-03-25T08:13:00.480Z",
+          "actor": "system",
+          "action": "create",
+          "summary": "Seed document created"
+        }
+      ]
+    },
+    {
+      "id": "1703aeee-e328-4469-aee3-0da9a3fb3aab",
+      "title": "문서-키-초기화-1774577721627-0wpru2",
+      "content": "",
+      "yjsState": "AgHulZPpCACoyt72zQgAAXcp66y47IScLe2CpC3stIjquLDtmZQtMTc3NDU3NzcyMTYyNy0wd3BydTIByt72zQgAIQEEbWV0YQV0aXRsZQEByt72zQgBAAE=",
+      "comments": [],
+      "createdAt": "2026-03-27T02:15:21.688Z",
+      "updatedAt": "2026-03-27T02:15:31.099Z",
+      "version": 2,
+      "history": [
+        {
+          "id": "9c2e8cc7-7d42-4382-b246-cf10e7baab88",
+          "at": "2026-03-27T02:15:31.099Z",
+          "actor": "게스트-290",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "d1842144-9c7c-4fe2-ba0d-0b2477ebb3e9",
+          "at": "2026-03-27T02:15:21.688Z",
+          "actor": "E2E UI 상태 검증",
+          "action": "create",
+          "summary": "Created \"문서-키-초기화-1774577721627-0wpru2\""
+        }
+      ]
+    },
+    {
+      "id": "e268309c-2e7a-40ff-a37c-801d6aaa68e7",
+      "title": "문서-권한-복구-1774577721664-r3am2w",
+      "content": "",
+      "yjsState": "AgGq7OOCBACooP+R+gEAAXcp66y47IScLeq2jO2VnC3rs7XqtawtMTc3NDU3NzcyMTY2NC1yM2FtMncBoP+R+gEAIQEEbWV0YQV0aXRsZQEBoP+R+gEBAAE=",
+      "comments": [],
+      "createdAt": "2026-03-27T02:15:21.697Z",
+      "updatedAt": "2026-03-27T02:15:31.231Z",
+      "version": 2,
+      "history": [
+        {
+          "id": "bad5ca93-d524-4086-843b-0484e70e420b",
+          "at": "2026-03-27T02:15:31.231Z",
+          "actor": "E2E 권한 사용자",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "5cc459da-307a-49c8-856e-f6ae78299100",
+          "at": "2026-03-27T02:15:21.697Z",
+          "actor": "E2E 권한 검증 사용자",
+          "action": "create",
+          "summary": "Created \"문서-권한-복구-1774577721664-r3am2w\""
+        }
+      ]
+    },
+    {
+      "id": "c91bb6d2-f2bf-449e-a228-31cac1dc99ee",
+      "title": "문서-키-초기화-1774577773506-00mnns",
+      "content": "",
+      "yjsState": "GQGjjubzDwCh1bquuAkAAQGGj5mbDgCh8cG+lwcAAQGS7LzhDQCh+N6LrAwAAQGbod/CDQCo5Ky6UwABdynrrLjshJwt7YKkLey0iOq4sO2ZlC0xNzc0NTc3NzczNTA2LTAwbW5ucwHlufiMDQCho47m8w8AAQGlwP3oDAChndatkwMAAQGf8bfKDAChho+Zmw4AAQHJzKyvDACh5bn4jA0AAQH43ousDAChvdCD2QYAAQG/+MKLDACh5bn4jA0AAQGG/fq8CwChs5aI8wEAAQG7m/qOCwCh5bn4jA0AAQHVuq64CQChgbCO4wQAAQGB3uClCQCh+N6LrAwAAQGKh8LXCAChycysrwwAAQHxwb6XBwChiofC1wgAAQGX+MrbBgCh+N6LrAwAAQG90IPZBgChn/G3ygwAAQGGl9mjBgChl/jK2wYAAQGBsI7jBAChnPTZngIAAQGd1q2TAwCh1bquuAkAAQGc9NmeAgAhAQRtZXRhBXRpdGxlAQGzlojzAQCho47m8w8AAQGM9cHrAQChndatkwMAAQHkrLpTAKGS7LzhDQABGKOO5vMPAQABho+Zmw4BAAGS7LzhDQEAAeW5+IwNAQABpcD96AwBAAGf8bfKDAEAAcnMrK8MAQAB+N6LrAwBAAG/+MKLDAEAAYb9+rwLAQABu5v6jgsBAAHVuq64CQEAAYHe4KUJAQABiofC1wgBAAHxwb6XBwEAAZf4ytsGAQABvdCD2QYBAAGGl9mjBgEAAYGwjuMEAQABndatkwMBAAGc9NmeAgEAAbOWiPMBAQABjPXB6wEBAAHkrLpTAQAB",
+      "comments": [],
+      "createdAt": "2026-03-27T02:16:13.519Z",
+      "updatedAt": "2026-04-10T08:40:47.779Z",
+      "version": 21,
+      "history": [
+        {
+          "id": "a48b6c8c-82b2-4bda-917d-ceac8a504fab",
+          "at": "2026-04-10T08:40:47.779Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "33660a85-d50f-40ee-baff-e1e9fffdb1ed",
+          "at": "2026-04-10T08:40:04.849Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "618b5a47-f05d-4175-8d08-5ce875e0748c",
+          "at": "2026-04-10T08:39:51.063Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "c9ce73fc-5713-498f-9ba6-574e26c001b4",
+          "at": "2026-04-10T08:39:24.704Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "cafd088f-69fa-43fd-beac-a40db941231f",
+          "at": "2026-04-10T08:38:47.474Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "6c5ec105-f9cb-4181-bd63-b43b4d928ee4",
+          "at": "2026-04-10T08:38:32.611Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "074f7f4d-6bef-4c64-8bf6-0e7934b56196",
+          "at": "2026-04-10T08:35:40.436Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "c772dbfe-05a0-4e07-9aee-6893a3f53e17",
+          "at": "2026-04-10T08:34:25.362Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "a60feaff-a8ae-45c9-a51d-aa6b38fb0f24",
+          "at": "2026-04-10T08:33:04.884Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "1b75125a-bf51-4965-a08b-bba5c1d01770",
+          "at": "2026-03-30T08:13:56.904Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "b79ddb52-5949-49ff-b278-b8ac71478700",
+          "at": "2026-03-30T08:13:56.771Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "0430e38c-57c5-46cc-a676-316e1f83e127",
+          "at": "2026-03-30T08:13:45.231Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "a72751ce-a365-4a09-b7e4-d3fbcd46ed2f",
+          "at": "2026-03-30T08:12:27.458Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "65661b82-c1fb-4c91-bca5-3714262a2591",
+          "at": "2026-03-30T08:11:56.025Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "af108a5d-0590-4118-a924-8514d8601bd7",
+          "at": "2026-03-30T08:00:26.093Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "784ac44b-f97e-4fed-8e1d-bc4b56b6bf56",
+          "at": "2026-03-30T07:53:42.493Z",
+          "actor": "게스트-923",
+          "action": "comment",
+          "summary": "Comment deleted"
+        },
+        {
+          "id": "af75d53b-2f72-46e6-ad1f-59d95106902d",
+          "at": "2026-03-30T07:53:40.509Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "7e2da004-4974-475b-ac16-b001e7614bb5",
+          "at": "2026-03-30T07:53:09.216Z",
+          "actor": "게스트-923",
+          "action": "comment",
+          "summary": "Comment added"
+        },
+        {
+          "id": "971ef6b8-2c73-40ca-9aed-b8d0fa6132de",
+          "at": "2026-03-30T07:53:07.567Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "c5a3ef5d-fc54-4cbe-9bd3-25d56356b3a9",
+          "at": "2026-03-27T02:16:17.854Z",
+          "actor": "게스트-668",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "a997988d-e140-4c4e-82b8-53a4986b34a9",
+          "at": "2026-03-27T02:16:13.519Z",
+          "actor": "E2E UI 상태 검증",
+          "action": "create",
+          "summary": "Created \"문서-키-초기화-1774577773506-00mnns\""
+        }
+      ]
+    },
+    {
+      "id": "605d91c9-da06-48fc-b0ad-907f5c994c0d",
+      "title": "문서-권한-복구-1774577773506-lrmzky",
+      "content": "",
+      "yjsState": "KgHv1Z7/DwCh6b6f8Q0AAQHE4bO6DwAhAQRtZXRhBXRpdGxlAQGxiL/hDgChnYuelwcAAQGFzc66DgChg5mr8g0AAQHw/oL7DQChyP2RzwMAAQGDmavyDQChr5CSoAcAAQHpvp/xDQChidiDpwIAAQH0lOm8DQCh3aC1hgMAAQGBhtCcDQChgsW65wgAAQGr/qH7DAChhtSv2AQAAQHJrMWsDACh84aYnwkAAQHI5/mCDAChwo24gQoAAQHgg76+CwChj9Hd2woAAQHPwo2BCwChhc3Oug4AAQGP0d3bCgChuobQwgIAAQHc36GzCgCh17L58QgAAQGK4KSCCgChxOGzug8AAQHCjbiBCgChgYbQnA0AAQHps/3OCQCh2OfxmgUAAQGq2Ii2CQChwo24gQoAAQHzhpifCQChwo24gQoAAQHXsvnxCAChz8KNgQsAAQGCxbrnCAChq/6h+wwAAQGo5u7BCACo9oagvgMAAXcp66y47IScLeq2jO2VnC3rs7XqtawtMTc3NDU3Nzc3MzUwNi1scm16a3kBr5CSoAcAoYS878YFAAEBnYuelwcAoYOZq/INAAEBhLzvxgUAocjn+YIMAAEBifv3nQUAoYnYg6cCAAEB2OfxmgUAofD+gvsNAAEBhtSv2AQAoYrgpIIKAAEB7tr6zAQAoe/Vnv8PAAEByP2RzwMAodzfobMKAAEB/+C1zgMAobqG0MICAAEB9oagvgMAoeCDvr4LAAEB3aC1hgMAodzfobMKAAEBoojU0wIAoYOZq/INAAEBuobQwgIAoe7a+swEAAEBidiDpwIAoemz/c4JAAEBk8TJjQIAoYOZq/INAAEB3uSZ9gEAobqG0MICAAEBmt/nfwCh3N+hswoAAQGw74VvAKHpvp/xDQABKe/Vnv8PAQABxOGzug8BAAGxiL/hDgEAAYXNzroOAQAB8P6C+w0BAAGDmavyDQEAAem+n/ENAQAB9JTpvA0BAAGBhtCcDQEAAav+ofsMAQAByazFrAwBAAHI5/mCDAEAAeCDvr4LAQABz8KNgQsBAAGP0d3bCgEAAdzfobMKAQABiuCkggoBAAHCjbiBCgEAAemz/c4JAQABqtiItgkBAAHzhpifCQEAAdey+fEIAQABgsW65wgBAAGvkJKgBwEAAZ2LnpcHAQABhLzvxgUBAAGJ+/edBQEAAdjn8ZoFAQABhtSv2AQBAAHu2vrMBAEAAcj9kc8DAQAB/+C1zgMBAAH2hqC+AwEAAd2gtYYDAQABoojU0wIBAAG6htDCAgEAAYnYg6cCAQABk8TJjQIBAAHe5Jn2AQEAAZrf538BAAGw74VvAQAB",
+      "comments": [],
+      "createdAt": "2026-03-27T02:16:13.521Z",
+      "updatedAt": "2026-03-30T07:50:30.296Z",
+      "version": 35,
+      "history": [
+        {
+          "id": "55cb4603-3200-4c3c-acb9-cf065c008993",
+          "at": "2026-03-30T07:50:30.296Z",
+          "actor": "게스트-923",
+          "action": "comment",
+          "summary": "Comment deleted"
+        },
+        {
+          "id": "ebcbfb3d-75f0-422f-ba52-55b8d4904b96",
+          "at": "2026-03-30T07:50:26.734Z",
+          "actor": "게스트-923",
+          "action": "comment",
+          "summary": "Comment edited"
+        },
+        {
+          "id": "d88eff89-0bc4-478c-aa0e-977a5288dede",
+          "at": "2026-03-30T07:50:24.363Z",
+          "actor": "게스트-923",
+          "action": "comment",
+          "summary": "Comment added"
+        },
+        {
+          "id": "378a2231-cfe3-445b-a8f3-c452f4f8b50e",
+          "at": "2026-03-30T07:50:21.256Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "1128278c-7b02-4306-a9aa-e618b8d9938f",
+          "at": "2026-03-30T07:39:22.587Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "fa5827fe-ca79-4154-8def-b88289dbe83f",
+          "at": "2026-03-30T07:39:13.339Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "95551990-a27f-41cc-b7c8-3966b1b6cd60",
+          "at": "2026-03-30T07:35:54.327Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "49ccdef6-5c38-4416-b52f-e57c4119c99d",
+          "at": "2026-03-30T07:35:05.671Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "c7403946-e7e0-4083-8c0a-be666610ef45",
+          "at": "2026-03-30T07:34:22.643Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "0b674a23-df13-48a7-b55b-15b372ac9048",
+          "at": "2026-03-30T07:31:15.233Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "61e74b6b-9cea-478a-8666-595f6fefbd17",
+          "at": "2026-03-30T07:31:04.104Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "6df4e1f2-a565-4233-ac32-8052c9920af7",
+          "at": "2026-03-30T07:28:37.210Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "d35e1518-a085-4418-85a4-9541ccc9ddc0",
+          "at": "2026-03-30T07:27:25.310Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "76dabd8a-8dd8-4fba-99ca-e7047bb5f483",
+          "at": "2026-03-30T07:26:27.830Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "c9a1a203-e66c-49ef-b8c9-31d4f4db4e2c",
+          "at": "2026-03-30T07:24:45.138Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "bfdc1622-9802-42e5-be10-1963e0fc2e4a",
+          "at": "2026-03-30T07:24:28.694Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "5477ce93-94fc-47e4-9fdc-7d14cb48ec92",
+          "at": "2026-03-30T07:22:13.541Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "8bcf44c0-87aa-48ea-b086-17aedb80d0d2",
+          "at": "2026-03-30T06:28:58.490Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "84f6f911-1fe7-4691-bf2e-154f663592e8",
+          "at": "2026-03-30T06:27:47.255Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "a0345e59-62ef-4305-8568-2896cfd636b7",
+          "at": "2026-03-30T06:23:27.278Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "209bfeae-6b4c-4889-a10c-0b79c42504f6",
+          "at": "2026-03-30T06:23:01.734Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "ed8f5df4-7099-41ef-b003-fe888263a4d9",
+          "at": "2026-03-30T06:22:54.604Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "8b46f98a-aab3-40fc-a576-ac325485ee20",
+          "at": "2026-03-30T06:22:48.913Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "f25aac8b-4f0b-4f3e-9293-b3754e8b8193",
+          "at": "2026-03-30T06:17:07.527Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "8b0c900d-6fbf-4861-a737-7c1fc439f3b4",
+          "at": "2026-03-30T06:16:40.820Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "29bff8c9-abaf-4d4f-bf70-d36ad2b63a04",
+          "at": "2026-03-30T06:16:08.189Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "5e282b06-77d7-4316-9c04-61c346483600",
+          "at": "2026-03-30T05:14:08.948Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "5ce7a8c2-2686-4ff1-903c-b8ad858a68a9",
+          "at": "2026-03-30T05:07:58.053Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "aab27036-938a-47f7-a532-9a10e5260cf1",
+          "at": "2026-03-30T05:04:48.502Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "726c77f7-69e2-46ec-adf3-5f31630bb991",
+          "at": "2026-03-30T05:04:08.994Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "e1f5a9fe-a7b1-404a-95e2-37f921d4a1e7",
+          "at": "2026-03-30T04:51:19.876Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "b9dfb2fb-ff9d-4cb6-8315-ba3c5e62ea36",
+          "at": "2026-03-27T05:25:41.428Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "da564c51-c675-4cf3-ba72-63faa2c743ac",
+          "at": "2026-03-27T02:17:45.379Z",
+          "actor": "게스트-923",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "bc762e03-ae76-4e98-91d4-6720f4b0134e",
+          "at": "2026-03-27T02:16:18.222Z",
+          "actor": "E2E 권한 사용자",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "9b2c04b0-c5ed-4764-837c-3d955403ee5d",
+          "at": "2026-03-27T02:16:13.521Z",
+          "actor": "E2E 권한 검증 사용자",
+          "action": "create",
+          "summary": "Created \"문서-권한-복구-1774577773506-lrmzky\""
+        }
+      ]
+    },
+    {
+      "id": "36a8761b-61b4-41e9-841c-adaf0b446235",
+      "title": "E2E 테스트 문서",
+      "content": "",
+      "yjsState": "AgHMss3gAgAhAQRtZXRhBXRpdGxlAQHMuegIAKjMss3gAgABdxRFMkUg7YWM7Iqk7Yq4IOusuOyEnAHMss3gAgEAAQ==",
+      "comments": [],
+      "createdAt": "2026-03-27T02:16:16.674Z",
+      "updatedAt": "2026-03-27T02:16:17.834Z",
+      "version": 2,
+      "history": [
+        {
+          "id": "64dabdec-1bb3-456d-b689-bca75c8bbaf6",
+          "at": "2026-03-27T02:16:17.834Z",
+          "actor": "게스트-481",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "59cbb66e-4ec8-4756-8901-bfe38148958b",
+          "at": "2026-03-27T02:16:16.674Z",
+          "actor": "게스트-481",
+          "action": "create",
+          "summary": "Created \"E2E 테스트 문서\""
+        }
+      ]
+    },
+    {
+      "id": "ab0d764d-571b-4dad-b49a-3d654441af7e",
+      "title": "협업 문서",
+      "content": "",
+      "yjsState": "HAHY0NblDgChq8L3sQ4AAQGot7OyDgCht8XC1QQAAQGrwvexDgChls24lwsAAQGB4Pi5DQCht8XC1QQAAQHDuImtDQChtPyxtAoAAQGA8r2MDQCht8XC1QQAAQHgh8+ADQChr8qqlgMAAQHbxebrCwChiI+20AsAAQGIj7bQCwChr6ailQsAAQHijYGeCwCh4IfPgA0AAQGWzbiXCwChmeW7tAUAAQGvpqKVCwChgfih8AoAAQGB+KHwCgChkrKa1ggAAQGega7QCgChiI+20AsAAQG0/LG0CgChjuni5AMAAQHjlKakCgCo28Xm6wsAAXcN7ZiR7JeFIOusuOyEnAH25rPyCAChw5LNpAcAAQGSsprWCACh2NDW5Q4AAQGPkYO9BwCht8XC1QQAAQHDks2kBwChr8qqlgMAAQGn+tKqBgChr8qqlgMAAQGVqaOWBgChw7iJrQ0AAQGZ5bu0BQChqLezsg4AAQG3xcLVBAChlamjlgYAAQGO6eLkAwCh4o2BngsAAQGvyqqWAwAhAQRtZXRhBXRpdGxlAQG9vO+tAgChw5LNpAcAAQHw+a8nAKGIj7bQCwABG9jQ1uUOAQABqLezsg4BAAGrwvexDgEAAYHg+LkNAQABw7iJrQ0BAAGA8r2MDQEAAeCHz4ANAQAB28Xm6wsBAAGIj7bQCwEAAeKNgZ4LAQABls24lwsBAAGvpqKVCwEAAYH4ofAKAQABnoGu0AoBAAG0/LG0CgEAAfbms/IIAQABkrKa1ggBAAGPkYO9BwEAAcOSzaQHAQABp/rSqgYBAAGVqaOWBgEAAZnlu7QFAQABt8XC1QQBAAGO6eLkAwEAAa/KqpYDAQABvbzvrQIBAAHw+a8nAQAB",
+      "comments": [],
+      "createdAt": "2026-04-02T07:13:38.732Z",
+      "updatedAt": "2026-04-10T08:47:03.893Z",
+      "version": 22,
+      "history": [
+        {
+          "id": "93274c63-e895-4aa5-abc2-cdc5ccbf85d9",
+          "at": "2026-04-10T08:47:03.893Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "1f62f483-8e3f-4ecf-9bf2-fa816744916c",
+          "at": "2026-04-10T08:46:36.884Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "ef41006e-335a-42a6-aa2e-48d7b7d1eda8",
+          "at": "2026-04-10T08:45:46.121Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "c990855f-7785-4f5d-b019-6b0103a4c883",
+          "at": "2026-04-10T08:45:41.156Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "11e4e767-c093-4a8a-bad6-a16da081a719",
+          "at": "2026-04-10T08:44:51.871Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "dd34ee46-eef5-4785-8931-3a37b245af57",
+          "at": "2026-04-10T08:39:22.373Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "7c64eb1c-eb37-487b-8d53-79d9ab28136d",
+          "at": "2026-04-10T08:32:39.407Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "80460393-f715-44b4-bd58-8039bef95997",
+          "at": "2026-04-10T08:30:34.327Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "c8e648e9-ce50-4d49-b4da-0285ae195c21",
+          "at": "2026-04-10T08:28:03.603Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "f3d03961-bd2a-49ba-8bfe-e8b36e18cefa",
+          "at": "2026-04-10T08:27:48.389Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "9d324e91-7aa1-46bc-a2fc-0fb6e00e9833",
+          "at": "2026-04-10T08:26:48.395Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "3919cf0a-e8fb-42fd-a64b-e287d5c64a0e",
+          "at": "2026-04-10T08:26:45.357Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "89188c96-b655-4d0c-8673-2ff7ecc0ef0e",
+          "at": "2026-04-10T08:25:37.196Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "41421c06-c51e-48d8-977a-9bb5ce0c25ee",
+          "at": "2026-04-09T05:23:52.680Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "12695b2a-b7be-4262-917a-7c879b06f489",
+          "at": "2026-04-08T04:50:21.921Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "da0df62f-2a14-43c8-a4e2-b224c5f312b8",
+          "at": "2026-04-06T09:55:41.812Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "79a3ec8f-27e1-41da-bb6a-0c4b893e28e7",
+          "at": "2026-04-02T07:29:39.004Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "f8f23b0d-a482-4e1e-abf2-e0b19efcfc93",
+          "at": "2026-04-02T07:18:29.544Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "fa429d40-276a-432c-8673-9fa320a78f2e",
+          "at": "2026-04-02T07:18:28.628Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "4c476c2f-5173-49cd-979c-1610cd74e239",
+          "at": "2026-04-02T07:15:53.801Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "639d8fdd-187d-43f6-9068-c01eed82cea4",
+          "at": "2026-04-02T07:13:41.421Z",
+          "actor": "게스트-317",
+          "action": "update",
+          "summary": "CRDT state synchronized",
+          "conflictResolvedBy": "yjs-crdt"
+        },
+        {
+          "id": "d056c947-0b58-4a8d-b735-2f6a89a8773e",
+          "at": "2026-04-02T07:13:38.732Z",
+          "actor": "게스트-317",
+          "action": "create",
+          "summary": "Created \"협업 문서\""
+        }
+      ]
+    }
+  ],
+  "boards": [
+    {
+      "id": "081f6cc0-8dbc-4058-8d18-ed1cddc0b9c6",
+      "title": "팀 아이디어 보드",
+      "createdAt": "2026-03-25T08:13:00.485Z",
+      "updatedAt": "2026-04-10T08:28:50.034Z",
+      "version": 2,
+      "shapes": [
+        {
+          "id": "b68aea57-75c7-4fea-b527-77f5379eaed7",
+          "type": "rect",
+          "x": 80,
+          "y": 80,
+          "w": 180,
+          "h": 110,
+          "fill": "#bfdbfe",
+          "stroke": "#2563eb",
+          "createdBy": "system",
+          "updatedAt": "2026-03-25T08:13:00.485Z"
+        },
+        {
+          "id": "e0971afa-463e-48c7-b1e5-ff3f79656640",
+          "type": "text",
+          "x": 300,
+          "y": 110,
+          "w": 220,
+          "h": 64,
+          "text": "더블클릭으로 텍스트 수정",
+          "fill": "#fef3c7",
+          "stroke": "#f59e0b",
+          "createdBy": "system",
+          "updatedAt": "2026-04-10T08:28:50.034Z"
+        }
+      ]
+    },
+    {
+      "id": "f3a7c98b-bf7c-41d6-a1db-abf1aebaaa82",
+      "title": "팀 아이디어 보드",
+      "shapes": [
+        {
+          "id": "78abf8d1-6c90-438a-9f3d-c583dac7ed60",
+          "type": "rect",
+          "x": 144,
+          "y": 107,
+          "w": 192,
+          "h": 116,
+          "fill": "#BFDBFE",
+          "stroke": "#2563EB",
+          "createdBy": "3c3441f9-d73b-4e46-b405-47db82b64701",
+          "updatedAt": "2026-03-25T08:15:45.813Z"
+        },
+        {
+          "id": "58f67498-a8f3-4529-bfa4-42e0f68ccd1e",
+          "type": "ellipse",
+          "x": 472,
+          "y": 139,
+          "w": 150,
+          "h": 104,
+          "fill": "#BBF7D0",
+          "stroke": "#16A34A",
+          "createdBy": "3c3441f9-d73b-4e46-b405-47db82b64701",
+          "updatedAt": "2026-03-25T08:15:43.499Z"
+        },
+        {
+          "id": "de094545-b804-42da-b752-14bb40886d10",
+          "type": "connector",
+          "x": 240,
+          "y": 165,
+          "w": 307,
+          "h": 26,
+          "fromShapeId": "78abf8d1-6c90-438a-9f3d-c583dac7ed60",
+          "toShapeId": "58f67498-a8f3-4529-bfa4-42e0f68ccd1e",
+          "startX": 240,
+          "startY": 165,
+          "endX": 547,
+          "endY": 191,
+          "fill": "transparent",
+          "stroke": "#475569",
+          "createdBy": "3c3441f9-d73b-4e46-b405-47db82b64701",
+          "updatedAt": "2026-03-25T08:15:49.865Z"
+        },
+        {
+          "id": "3cd31cf6-6e18-49a5-84d3-c4170a960681",
+          "type": "text",
+          "x": 452,
+          "y": 276,
+          "w": 180,
+          "h": 56,
+          "text": "새 텍스트",
+          "fill": "#FEF08A",
+          "stroke": "#CA8A04",
+          "createdBy": "3c3441f9-d73b-4e46-b405-47db82b64701",
+          "updatedAt": "2026-03-25T08:15:57.847Z"
+        }
+      ],
+      "createdAt": "2026-03-25T08:15:11.328Z",
+      "updatedAt": "2026-03-25T08:15:57.847Z",
+      "version": 18
+    },
+    {
+      "id": "1d57dc4b-a122-44b5-8996-77b8fd093c49",
+      "title": "보드-키-초기화-1774577731631-k8uues",
+      "shapes": [],
+      "createdAt": "2026-03-27T02:15:31.645Z",
+      "updatedAt": "2026-03-27T02:15:31.645Z",
+      "version": 1
+    },
+    {
+      "id": "07422435-8123-4636-8ff8-aae7aededbc3",
+      "title": "보드-권한-복구-1774577732224-2v3ddr",
+      "shapes": [],
+      "createdAt": "2026-03-27T02:15:32.230Z",
+      "updatedAt": "2026-03-27T02:15:32.230Z",
+      "version": 1
+    },
+    {
+      "id": "e3a4f759-fb82-4414-b0ad-5d492bcc6767",
+      "title": "보드-권한-복구-1774577779089-j3ah77",
+      "shapes": [],
+      "createdAt": "2026-03-27T02:16:19.097Z",
+      "updatedAt": "2026-03-27T02:16:19.097Z",
+      "version": 1
+    },
+    {
+      "id": "f16fb917-d189-4361-a52a-c8e6e1d9adf8",
+      "title": "팀 아이디어 보드",
+      "shapes": [],
+      "createdAt": "2026-03-27T05:41:47.473Z",
+      "updatedAt": "2026-03-27T05:41:47.473Z",
+      "version": 1
+    },
+    {
+      "id": "d188b334-5e31-4c39-8557-0eef96f8c7a3",
+      "title": "팀 아이디어 보드",
+      "shapes": [],
+      "createdAt": "2026-03-27T05:51:39.533Z",
+      "updatedAt": "2026-03-27T05:51:39.533Z",
+      "version": 1
+    },
+    {
+      "id": "d993ead1-263a-4add-b82d-f86034c24466",
+      "title": "팀 아이디어 보드",
+      "shapes": [],
+      "createdAt": "2026-03-27T05:53:01.394Z",
+      "updatedAt": "2026-03-27T05:53:01.394Z",
+      "version": 1
+    },
+    {
+      "id": "b38df672-48d2-414f-862e-538afe4951ab",
+      "title": "팀 아이디어 보드",
+      "shapes": [],
+      "createdAt": "2026-03-27T05:57:25.440Z",
+      "updatedAt": "2026-03-27T05:57:25.440Z",
+      "version": 1
+    }
+  ],
+  "documentAccessKeys": {
+    "e268309c-2e7a-40ff-a37c-801d6aaa68e7": "ek1$mn+ZwCylEmBajrlxUhfwvQ==$0AM6WSG+plv7gfekB/rL5WOB3zRHO5zdHwJ6RAABf9U=",
+    "605d91c9-da06-48fc-b0ad-907f5c994c0d": "ek1$mzT/thE6Ql5wUCHs2a3nrQ==$75oU4ZM0qVA1uKVXFIbQqVxkX9fecyNoyb8NyCqnURQ=",
+    "ab0d764d-571b-4dad-b49a-3d654441af7e": "ek1$t9Gn8dfW2Ja1/LBSnCugHw==$c2wFV4oelLjDQFi+5gTnoNcB0SFL0qpS5XWykvmsIVg="
+  },
+  "boardAccessKeys": {
+    "f3a7c98b-bf7c-41d6-a1db-abf1aebaaa82": "ek1$4szLm0Yb7jEDq8A86sEYzg==$8lpeoFBwpJiJ9tt9O5jtjOKynJ5Dwh71QfYXbF2heX8=",
+    "07422435-8123-4636-8ff8-aae7aededbc3": "ek1$DcfnAqftgPfpXialWMfa1w==$jH4/XLQfijGs9Gjf5JhP6ixKX3PeCCFtfVa5z70OTao=",
+    "e3a4f759-fb82-4414-b0ad-5d492bcc6767": "ek1$JzzdrRv/g0dFzi53g0Zd7w==$fD9A3yY3mjkOgOkZ6nvQiyf/VaE8FHOHZQnc6/a5Hs4=",
+    "b38df672-48d2-414f-862e-538afe4951ab": "ek1$bF6nq/xsZiozGFEnGR4PEg==$SPaCznCUgm3c5vsgJXkcvf9ZrhVKmdER4LxwjPpB0EI="
+  }
+}

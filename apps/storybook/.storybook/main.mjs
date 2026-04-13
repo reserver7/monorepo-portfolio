@@ -12,11 +12,27 @@ const config = {
     options: {}
   },
   async viteFinal(config) {
+    const ignoreWarnings = [
+      "Module level directives cause errors when bundled",
+      "Can't resolve original location of error."
+    ];
+
     return {
       ...config,
       define: {
         ...(config.define ?? {}),
         "process.env": {}
+      },
+      build: {
+        ...(config.build ?? {}),
+        rollupOptions: {
+          ...(config.build?.rollupOptions ?? {}),
+          onwarn(warning, warn) {
+            const message = warning?.message ?? "";
+            if (ignoreWarnings.some((text) => message.includes(text))) return;
+            warn(warning);
+          }
+        }
       }
     };
   },

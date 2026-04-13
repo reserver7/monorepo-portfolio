@@ -65,15 +65,15 @@ jobs:
           echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
           echo "검증 완료: ${release_tag} -> ${release_sha}"
 
-  deploy-docs:
-    name: Deploy Docs (Vercel Production)
+  deploy-collab-web:
+    name: Deploy Collab Web (Vercel Production)
     runs-on: ubuntu-latest
     needs: verify-tag-on-main
     timeout-minutes: 25
 
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_DOCS }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_COLLAB_WEB || secrets.VERCEL_PROJECT_ID_DOCS }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
     steps:
@@ -87,7 +87,7 @@ jobs:
           set -euo pipefail
           [ -n "${VERCEL_TOKEN}" ] || { echo "Missing secret: VERCEL_TOKEN"; exit 1; }
           [ -n "${VERCEL_ORG_ID}" ] || { echo "Missing secret: VERCEL_ORG_ID"; exit 1; }
-          [ -n "${VERCEL_PROJECT_ID}" ] || { echo "Missing secret: VERCEL_PROJECT_ID_DOCS"; exit 1; }
+          [ -n "${VERCEL_PROJECT_ID}" ] || { echo "Missing secret: VERCEL_PROJECT_ID_COLLAB_WEB (or VERCEL_PROJECT_ID_DOCS fallback)"; exit 1; }
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -103,58 +103,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Pull Vercel Environment Information (Docs)
+      - name: Pull Vercel Environment Information (Collab Web)
         run: pnpm dlx vercel@latest pull --yes --environment=production --token="${VERCEL_TOKEN}"
 
-      - name: Build Docs
+      - name: Build Collab Web
         run: pnpm dlx vercel@latest build --prod --token="${VERCEL_TOKEN}"
 
-      - name: Deploy Docs
-        run: pnpm dlx vercel@latest deploy --prebuilt --prod --token="${VERCEL_TOKEN}"
-
-  deploy-whiteboard:
-    name: Deploy Whiteboard (Vercel Production)
-    runs-on: ubuntu-latest
-    needs: verify-tag-on-main
-    timeout-minutes: 25
-
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_WHITEBOARD }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.verify-tag-on-main.outputs.release_sha }}
-
-      - name: Validate Vercel secrets
-        run: |
-          set -euo pipefail
-          [ -n "${VERCEL_TOKEN}" ] || { echo "Missing secret: VERCEL_TOKEN"; exit 1; }
-          [ -n "${VERCEL_ORG_ID}" ] || { echo "Missing secret: VERCEL_ORG_ID"; exit 1; }
-          [ -n "${VERCEL_PROJECT_ID}" ] || { echo "Missing secret: VERCEL_PROJECT_ID_WHITEBOARD"; exit 1; }
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.3
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Pull Vercel Environment Information (Whiteboard)
-        run: pnpm dlx vercel@latest pull --yes --environment=production --token="${VERCEL_TOKEN}"
-
-      - name: Build Whiteboard
-        run: pnpm dlx vercel@latest build --prod --token="${VERCEL_TOKEN}"
-
-      - name: Deploy Whiteboard
+      - name: Deploy Collab Web
         run: pnpm dlx vercel@latest deploy --prebuilt --prod --token="${VERCEL_TOKEN}"

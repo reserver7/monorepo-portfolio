@@ -4,17 +4,15 @@ Turborepo + pnpm 기반 모노레포입니다.
 
 ## 앱
 
-- `apps/docs` - 문서 협업 (`http://localhost:3000`)
-- `apps/whiteboard` - 화이트보드 협업 (`http://localhost:3001`)
-- `apps/server` - 협업 API/소켓 서버 (`http://localhost:4000`)
+- `apps/collab-web` - 문서+화이트보드 통합 협업 (`http://localhost:3000`)
+- `apps/collab-server` - 협업 API/소켓 서버 (`http://localhost:4000`)
 - `apps/opslens-dashboard` - 운영 대시보드 (`http://localhost:3002`)
 - `apps/opslens-api` - 운영 GraphQL API (`http://localhost:4100/graphql`)
 - `apps/storybook` - 디자인시스템 검증 (`http://localhost:6006`)
 
 ## 실제 도메인
 
-- Docs: <https://monorepo-portfolio-docs.vercel.app>
-- Whiteboard: <https://monorepo-portfolio-whiteboard.vercel.app>
+- Collab Web: <https://monorepo-portfolio-collab-web.vercel.app>
 - Server: <https://monorepo-portfolio-server.onrender.com>
 - OpsLens Dashboard: 미배포
 - OpsLens API: 미배포
@@ -56,7 +54,7 @@ pnpm new:app
 ```bash
 pnpm check
 pnpm build
-pnpm test:server
+pnpm test:collab-server
 pnpm test:e2e:smoke
 pnpm dev:storybook
 pnpm storybook:gen
