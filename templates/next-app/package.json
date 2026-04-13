@@ -11,8 +11,12 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
-    "@repo/collab-types": "workspace:*",
+    "@repo/forms": "workspace:*",
+    "@repo/react-query": "workspace:*",
+    "@repo/theme": "workspace:*",
     "@repo/ui": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@repo/zustand": "workspace:*",
     "next": "^15.3.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

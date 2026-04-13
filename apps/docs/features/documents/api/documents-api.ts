@@ -1,14 +1,16 @@
 import { docsClientEnv } from "@/lib/config";
-import { DocumentComment, DocumentRecord, DocumentSummary, HistoryEntry } from "@/lib/collab";
-import { createResourceClient, requestJson } from "@repo/react-query";
+import { DocumentComment, DocumentRecord, DocumentSummary, HistoryEntry } from "@/features/collaboration/model";
+import { createQueryKeys, createResourceClient, requestJson } from "@repo/react-query";
 
 export const API_BASE_URL = docsClientEnv.apiBaseUrl;
+const docsKeysBase = createQueryKeys("docs");
+
 export const docsQueryKeys = {
-  all: ["docs"] as const,
-  documents: () => [...docsQueryKeys.all, "documents"] as const,
-  document: (documentId: string) => [...docsQueryKeys.all, "document", documentId] as const,
-  history: (documentId: string) => [...docsQueryKeys.all, "history", documentId] as const,
-  comments: (documentId: string) => [...docsQueryKeys.all, "comments", documentId] as const
+  all: docsKeysBase.all,
+  documents: () => docsKeysBase.lists(),
+  document: (documentId: string) => docsKeysBase.detail(documentId),
+  history: (documentId: string) => docsKeysBase.custom("history", documentId),
+  comments: (documentId: string) => docsKeysBase.custom("comments", documentId)
 };
 
 const documentsResource = createResourceClient<
@@ -32,9 +34,7 @@ export const createDocument = async (input: {
   actor: string;
   editorAccessKey?: string;
 }): Promise<{ document: DocumentRecord }> => {
-  return requestJson<{ document: DocumentRecord }>(API_BASE_URL, "/api/documents", {
-    method: "POST",
-    body: JSON.stringify(input),
+  return documentsResource.create(input, {
     successMessage: "문서가 생성되었습니다."
   });
 };
@@ -44,14 +44,16 @@ export const deleteDocumentById = async (input: {
   editorAccessKey?: string;
   notifyOnError?: boolean;
 }): Promise<{ ok: true; documentId: string }> => {
-  return requestJson<{ ok: true; documentId: string }>(API_BASE_URL, `/api/documents/${input.documentId}`, {
-    method: "DELETE",
-    body: JSON.stringify({
+  return documentsResource.deleteById(
+    input.documentId,
+    {
       editorAccessKey: input.editorAccessKey
-    }),
-    notifyOnError: input.notifyOnError,
-    successMessage: "문서가 삭제되었습니다."
-  });
+    },
+    {
+      notifyOnError: input.notifyOnError,
+      successMessage: "문서가 삭제되었습니다."
+    }
+  );
 };
 
 export const getDocument = async (documentId: string): Promise<{ document: DocumentRecord }> => {

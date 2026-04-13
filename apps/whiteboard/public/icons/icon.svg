@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Realtime Whiteboard">
+  <rect width="256" height="256" rx="56" fill="#1d1d1f" />
+  <rect x="56" y="72" width="144" height="112" rx="18" fill="#ffffff" />
+  <path d="M88 148l26-28 24 18 30-34" stroke="#1d1d1f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <circle cx="88" cy="148" r="7" fill="#1d1d1f" />
+  <circle cx="114" cy="120" r="7" fill="#1d1d1f" />
+  <circle cx="138" cy="138" r="7" fill="#1d1d1f" />
+  <circle cx="168" cy="104" r="7" fill="#1d1d1f" />
+</svg>
+
