@@ -1,4 +1,4 @@
-import type { SwitchColor, SwitchSize } from "./switch.types";
+import type { SwitchSize } from "./switch.types";
 
 export const SWITCH_DEFAULTS = {
   size: "sm",
@@ -6,7 +6,7 @@ export const SWITCH_DEFAULTS = {
   loading: false
 } satisfies {
   size: SwitchSize;
-  color: SwitchColor;
+  color: "primary";
   loading: boolean;
 };
 
@@ -15,9 +15,9 @@ export const SWITCH_SIZE_CLASS: Record<SwitchSize, { root: string; thumb: string
   md: { root: "h-6 w-11", thumb: "h-5 w-5", checked: "data-[state=checked]:translate-x-5" }
 };
 
-export const SWITCH_COLOR_CLASS: Record<SwitchColor, string> = {
+export const SWITCH_COLOR_CLASS = {
   primary: "focus-visible:ring-primary/30 data-[state=checked]:bg-primary",
   success: "focus-visible:ring-success/30 data-[state=checked]:bg-success",
   warning: "focus-visible:ring-warning/30 data-[state=checked]:bg-warning",
   danger: "focus-visible:ring-danger/30 data-[state=checked]:bg-danger"
-};
+} as const;

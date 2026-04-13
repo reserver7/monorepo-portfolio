@@ -1,3 +1,7 @@
+import { trimTrailingSlash } from "../../string/trim-trailing-slash";
+import { getGlobalWindow } from "../../runtime/browser";
+import { isLocalHost } from "../../runtime/network";
+
 export interface NavigateToAppOptions {
   pathname?: string;
   targetOrigin?: string;
@@ -30,15 +34,11 @@ const normalizeOrigin = (rawOrigin: string | undefined): string | null => {
     return null;
   }
 
-  return value.endsWith("/") ? value.slice(0, -1) : value;
-};
-
-const isLocalHost = (hostname: string): boolean => {
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  return trimTrailingSlash(value);
 };
 
 const getBrowserWindow = (): BrowserWindowLike | null => {
-  const target = (globalThis as { window?: unknown }).window as Partial<BrowserWindowLike> | undefined;
+  const target = getGlobalWindow<Partial<BrowserWindowLike>>();
   if (!target?.location || !target.localStorage) {
     return null;
   }

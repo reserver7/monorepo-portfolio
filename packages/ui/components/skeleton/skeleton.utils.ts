@@ -1,3 +1,4 @@
+import { resolveOption } from "../internal/resolve-option";
 import { SKELETON_DEFAULTS, SKELETON_SIZE_CLASS } from "./skeleton.constants";
 import type { SkeletonSize, SkeletonVariant } from "./skeleton.types";
 
@@ -8,7 +9,7 @@ export function toCssLength(value: number | string | undefined) {
 }
 
 export function resolveSkeletonSizeClass(variant: SkeletonVariant, size: SkeletonSize | undefined) {
-  const resolvedSize = size ?? SKELETON_DEFAULTS.size;
+  const resolvedSize = resolveOption(size, SKELETON_SIZE_CLASS[variant], SKELETON_DEFAULTS.size);
   return SKELETON_SIZE_CLASS[variant][resolvedSize];
 }
 

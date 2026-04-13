@@ -1,4 +1,4 @@
-import type { SpinnerColor, SpinnerSize } from "./spinner.types";
+import type { SpinnerSize } from "./spinner.types";
 
 export const SPINNER_DEFAULTS = {
   open: true,
@@ -13,10 +13,10 @@ export const SPINNER_SIZE_CLASS: Record<SpinnerSize, string> = {
   lg: "h-8 w-8"
 };
 
-export const SPINNER_COLOR_CLASS: Record<SpinnerColor, string> = {
+export const SPINNER_COLOR_CLASS = {
   default: "text-muted",
   primary: "text-primary",
   danger: "text-danger",
   success: "text-success",
   warning: "text-warning"
-};
+} as const;

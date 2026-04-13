@@ -1,6 +1,6 @@
 import type { Participant } from "@repo/utils/collab";
 import { Badge, Card, Typography } from "@repo/ui";
-import type { WhiteboardShape } from "@/lib/collab";
+import type { WhiteboardShape } from "@/features/collaboration/model";
 import type { WhiteboardTool } from "./shape-utils";
 
 interface BoardSidePanelProps {
@@ -18,6 +18,15 @@ interface BoardSidePanelProps {
   eventLog: string[];
 }
 
+const toolNameByValue: Record<WhiteboardTool, string> = {
+  select: "선택/이동",
+  rect: "사각형",
+  ellipse: "타원",
+  diamond: "마름모",
+  text: "텍스트",
+  connector: "연결선"
+};
+
 export const BoardSidePanel = ({
   participants,
   sessionId,
@@ -28,13 +37,13 @@ export const BoardSidePanel = ({
   eventLog
 }: BoardSidePanelProps) => {
   const visibleEventLog = eventLog.slice(0, 100);
-  const panelItemClass = "rounded-xl border border-default bg-surface px-4 py-3";
+  const panelItemClass = "rounded-lg border border-default/70 bg-surface-elevated/65 px-3.5 py-3";
 
   return (
     <div className="space-y-4">
-      <Card className="p-5">
+      <Card className="border border-default/80 bg-surface p-5">
         <div className="mb-4 flex items-center justify-between gap-2">
-          <Typography as="h3" variant="body" className="font-semibold">
+          <Typography as="h3" variant="title" className="text-body-md font-semibold">
             참여자
           </Typography>
           <Badge variant="info" size="sm">
@@ -68,7 +77,7 @@ export const BoardSidePanel = ({
                     <Badge
                       variant={participant.role === "editor" ? "success" : "outline"}
                       size="sm"
-                      className="shrink-0 text-[11px]"
+                      className="shrink-0 text-caption"
                     >
                       {participant.role}
                     </Badge>
@@ -86,8 +95,8 @@ export const BoardSidePanel = ({
         </div>
       </Card>
 
-      <Card className="p-5">
-        <Typography as="h3" variant="body" className="mb-3 font-semibold">
+      <Card className="border border-default/80 bg-surface p-5">
+        <Typography as="h3" variant="title" className="mb-3 text-body-md font-semibold">
           선택 정보
         </Typography>
         <div className="space-y-3">
@@ -96,7 +105,7 @@ export const BoardSidePanel = ({
               선택 도구
             </Typography>
             <Typography variant="bodySm" className="mt-0.5 font-medium">
-              {activeTool}
+              {toolNameByValue[activeTool]}
             </Typography>
           </div>
           <div className={panelItemClass}>
@@ -118,16 +127,16 @@ export const BoardSidePanel = ({
         </div>
       </Card>
 
-      <Card className="p-5">
+      <Card className="border border-default/80 bg-surface p-5">
         <div className="mb-4 flex items-center justify-between gap-2">
-          <Typography as="h3" variant="body" className="font-semibold">
+          <Typography as="h3" variant="title" className="text-body-md font-semibold">
             변경 이력
           </Typography>
           <Typography as="span" variant="caption" color="subtle">
             최근 {historyEntries.length}건
           </Typography>
         </div>
-        <div className="max-h-[20rem] space-y-3 overflow-y-auto overscroll-contain pr-1">
+        <div className="max-h-[20rem] space-y-3 overflow-y-auto overscroll-contain">
           {historyEntries.length === 0 ? (
             <Typography variant="bodySm" color="subtle">
               표시할 변경 이력이 없습니다.
@@ -152,16 +161,16 @@ export const BoardSidePanel = ({
         </div>
       </Card>
 
-      <Card className="p-5">
+      <Card className="border border-default/80 bg-surface p-5">
         <div className="mb-4 flex items-center justify-between gap-2">
-          <Typography as="h3" variant="body" className="font-semibold">
+          <Typography as="h3" variant="title" className="text-body-md font-semibold">
             실시간 이벤트
           </Typography>
           <Typography as="span" variant="caption" color="subtle">
             최근 {eventLog.length}개
           </Typography>
         </div>
-        <div className="max-h-80 space-y-3 overflow-auto pr-1">
+        <div className="max-h-80 space-y-3 overflow-auto">
           {eventLog.length === 0 ? (
             <Typography variant="bodySm" color="subtle">
               이벤트가 발생하면 여기에 표시됩니다.

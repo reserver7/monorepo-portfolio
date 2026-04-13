@@ -7,7 +7,7 @@ import {
   DocumentRecord,
   Participant,
   SaveState
-} from "@/lib/collab";
+} from "@/features/collaboration/model";
 
 interface CollabStore {
   activeDocumentId: string | null;

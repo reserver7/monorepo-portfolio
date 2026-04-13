@@ -49,7 +49,7 @@ const meta: Meta<typeof Grid> = {
     minColumnWidth: "md",
     dense: false,
     fullWidth: false,
-    children: "<div className=\"rounded-md border border-default bg-surface-elevated p-3 text-body-sm\">Card 1</div>\n    <div className=\"rounded-md border border-default bg-surface-elevated p-3 text-body-sm\">Card 2</div>\n    <div className=\"rounded-md border border-default bg-surface-elevated p-3 text-body-sm\">Card 3</div>\n    <div className=\"rounded-md border border-default bg-surface-elevated p-3 text-body-sm\">Card 4</div>"
+    children: "<div className=\"rounded-[var(--radius-md)] border border-default bg-surface-elevated p-3 text-body-sm\">Card 1</div>\n    <div className=\"rounded-[var(--radius-md)] border border-default bg-surface-elevated p-3 text-body-sm\">Card 2</div>\n    <div className=\"rounded-[var(--radius-md)] border border-default bg-surface-elevated p-3 text-body-sm\">Card 3</div>\n    <div className=\"rounded-[var(--radius-md)] border border-default bg-surface-elevated p-3 text-body-sm\">Card 4</div>"
   },
   argTypes: {
     align: {control:"select",options:["start","center","end","stretch"],table:{defaultValue:{summary:"stretch"}}},
@@ -98,10 +98,10 @@ export const Playground: Story = {
     <Grid
       {...sanitizeStoryArgs(args as Record<string, unknown>)}
   >
-    <div className="rounded-md border border-default bg-surface-elevated p-3 text-body-sm">Card 1</div>
-    <div className="rounded-md border border-default bg-surface-elevated p-3 text-body-sm">Card 2</div>
-    <div className="rounded-md border border-default bg-surface-elevated p-3 text-body-sm">Card 3</div>
-    <div className="rounded-md border border-default bg-surface-elevated p-3 text-body-sm">Card 4</div>
+    <div className="rounded-[var(--radius-md)] border border-default bg-surface-elevated p-3 text-body-sm">Card 1</div>
+    <div className="rounded-[var(--radius-md)] border border-default bg-surface-elevated p-3 text-body-sm">Card 2</div>
+    <div className="rounded-[var(--radius-md)] border border-default bg-surface-elevated p-3 text-body-sm">Card 3</div>
+    <div className="rounded-[var(--radius-md)] border border-default bg-surface-elevated p-3 text-body-sm">Card 4</div>
   </Grid>
   )
 };

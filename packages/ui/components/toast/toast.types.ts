@@ -1,6 +1,8 @@
+import * as React from "react";
 import type { ToasterProps as SonnerToasterProps } from "sonner";
+import type { UiColorToken } from "../../styles/color-token";
 
-export type ToastColor = "success" | "error" | "info" | "warning";
+export type ToastColor = "success" | "error" | "info" | "warning" | UiColorToken;
 
 export interface ToastPayload {
   message: string;
@@ -23,5 +25,7 @@ export interface ToastProps {
   durationMs?: number;
   errorDurationMs?: number;
   dedupe?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
   toastOptions?: SonnerToasterProps["toastOptions"];
 }

@@ -245,7 +245,7 @@ export const Playground: Story = {
               value={String(query.filters.keyword ?? "")}
               onChange={(event) => setFilters({ ...query.filters, keyword: event.currentTarget.value })}
               placeholder="키워드 검색"
-              className="border-default h-9 w-[220px] rounded-md border bg-surface px-3 text-sm"
+              className="border-default h-9 w-[220px] rounded-[var(--radius-md)] border bg-surface px-3 text-sm"
             />
             <Button size="sm" variant="outline" onClick={resetFilters}>
               초기화

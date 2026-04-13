@@ -63,6 +63,8 @@ export type DataTableColumnDef<T> = {
 };
 
 export interface DataTableProps<T> {
+  className?: string;
+  style?: React.CSSProperties;
   columns: Array<DataTableColumnDef<T>>;
   data: T[];
   isLoading?: boolean;

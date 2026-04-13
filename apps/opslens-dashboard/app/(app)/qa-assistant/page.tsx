@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
 import { generateQaScenario, getRecentQaScenarios } from "@/features/ops/api";
 import { OpsCardListSkeleton, OpsSectionCard } from "@/features/ops";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime } from "@repo/utils";
 import { opslensQueryKeys } from "@/features/ops/api";
 
 type QaFormValues = {
@@ -139,10 +139,10 @@ export default function QaAssistantPage() {
               <article key={scenario.id} className="border-default rounded-lg border p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-foreground font-semibold">{scenario.featureName}</p>
-                  <p className="text-muted-foreground text-xs">{formatDateTime(scenario.createdAt)}</p>
+                  <p className="text-muted-foreground text-caption">{formatDateTime(scenario.createdAt)}</p>
                 </div>
 
-                <p className="text-muted-foreground mt-1 text-xs">대상: {scenario.audience}</p>
+                <p className="text-muted-foreground mt-1 text-caption">대상: {scenario.audience}</p>
 
                 <div className="mt-3 grid gap-3 md:grid-cols-3">
                   <ListBlock title="테스트 케이스" items={scenario.generatedCases} />
@@ -163,8 +163,8 @@ export default function QaAssistantPage() {
 function ListBlock({ title, items }: { title: string; items: string[] }) {
   return (
     <div className="border-default bg-surface-elevated rounded-lg border p-3">
-      <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">{title}</p>
-      <ul className="text-foreground/85 mt-2 list-disc space-y-1 pl-4 text-xs">
+      <p className="text-muted-foreground text-caption font-semibold uppercase tracking-wide">{title}</p>
+      <ul className="text-foreground/85 mt-2 list-disc space-y-1 pl-4 text-caption">
         {items.map((item) => (
           <li key={item}>{item}</li>
         ))}

@@ -24,6 +24,7 @@
     "storybook:watch": "node ./scripts/watch-ui-stories.mjs",
     "storybook:check": "node ./scripts/generate-ui-stories.mjs --check",
     "storybook:validate": "node ./scripts/generate-ui-stories.mjs --check",
+    "sync:fonts": "node ./scripts/sync-theme-fonts.mjs",
     "docs:ui:props": "node ./scripts/generate-ui-props-matrix.mjs",
     "format": "prettier --cache --write .",
     "format:check": "prettier --check .",

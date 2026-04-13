@@ -20,7 +20,7 @@ const SheetOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-foreground/35 backdrop-blur-[1px] transition-opacity duration-200 data-[state=closed]:opacity-0 data-[state=open]:opacity-100",
+      "fixed inset-0 z-50 bg-black/55 backdrop-blur-[10px] backdrop-saturate-150 transition-opacity duration-200 data-[state=closed]:opacity-0 data-[state=open]:opacity-100",
       className
     )}
     {...props}
@@ -80,7 +80,7 @@ const SheetContent = React.forwardRef<
           {showCloseButton ? (
             <DialogPrimitive.Close
               aria-label={closeAriaLabel}
-              className="text-muted focus:ring-primary absolute right-4 top-4 rounded-sm opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2"
+              className="text-muted focus:ring-primary absolute right-4 top-4 rounded-[var(--radius-sm)] opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2"
             >
               <X className="h-4 w-4" />
             </DialogPrimitive.Close>
@@ -113,7 +113,7 @@ const SheetTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn("text-foreground text-lg font-semibold", className)}
+    className={cn("text-title text-foreground", className)}
     {...props}
   />
 ));
@@ -123,7 +123,7 @@ const SheetDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Description ref={ref} className={cn("text-muted text-sm", className)} {...props} />
+  <DialogPrimitive.Description ref={ref} className={cn("text-body-sm text-muted", className)} {...props} />
 ));
 SheetDescription.displayName = DialogPrimitive.Description.displayName;
 

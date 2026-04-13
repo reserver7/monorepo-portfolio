@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import { useAppForm } from "@repo/forms";
 import { Badge, Button, Card, Textarea, confirm, Typography } from "@repo/ui";
-import { formatExactTime } from "@/lib/collab";
-import { DocumentComment, Participant } from "@/lib/collab";
+import { formatExactTime } from "@/features/collaboration/model";
+import { DocumentComment, Participant } from "@/features/collaboration/model";
 
 interface CommentsPanelProps {
   comments: DocumentComment[];
@@ -47,13 +47,13 @@ export const CommentsPanel = ({
   }, [participants]);
 
   const visibleComments = comments.slice(0, 40);
-  const panelItemClass = "rounded-xl border border-default bg-surface px-4 py-3";
-  const composerItemClass = "rounded-xl border border-default bg-surface-elevated px-4 py-3";
+  const panelItemClass = "rounded-lg border border-default/70 bg-surface-elevated/65 px-3.5 py-3";
+  const composerItemClass = "rounded-lg border border-default/80 bg-surface-elevated px-3.5 py-3";
 
   return (
-    <Card className="p-5">
+    <Card className="border border-default/80 bg-surface p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <Typography as="h3" variant="body" className="font-semibold">
+        <Typography as="h3" variant="title" className="text-body-md font-semibold">
           댓글 / 멘션
         </Typography>
         <Badge variant="outline" size="sm">
@@ -103,7 +103,7 @@ export const CommentsPanel = ({
         </div>
       </div>
 
-      <div className="max-h-[32rem] space-y-3 overflow-auto pr-1">
+      <div className="max-h-[32rem] space-y-3 overflow-auto">
         {comments.length === 0 ? (
           <Typography variant="bodySm" color="subtle">
             아직 등록된 댓글이 없습니다.

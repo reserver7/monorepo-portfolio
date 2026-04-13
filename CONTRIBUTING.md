@@ -38,14 +38,13 @@
 ### 공통 패키지 (`packages/*`)
 
 - `packages/ui`
-  - `components/form|layout|table|unit|overlay|feedback|shadcn`
-  - `hooks/form|layout|table|unit|overlay|feedback`
-- `packages/icons`
-  - 아이콘 공급 레이어 (기본 아이콘셋 직접 import 금지, `@repo/icons` 경유)
+  - `components/<component-name>/` 폴더 기반 구조
+  - `stories/` 및 `styles/` 기반 디자인시스템 검증/토큰 관리
 - `packages/react-query`
-  - QueryClient 기본 정책 + axios 기반 HTTP/GraphQL 공용 클라이언트
+  - QueryClient 정책 + HTTP/GraphQL 공용 클라이언트/유틸
 - `packages/utils`
-  - `collab` 하위에 `types|config|navigation|collab|storage|time`
+  - `collab`, `runtime`, `assert`, `error`, `string`, `format` 등 범용 유틸
+- `packages/theme`, `packages/forms`, `packages/zustand`, `packages/configs`, `packages/eslint-config`
 
 ## 네이밍 규칙
 
@@ -63,7 +62,6 @@
    - `@/lib/...`
 2. 패키지 사용은 공개 엔트리 우선:
    - `@repo/ui`
-   - `@repo/icons`
    - `@repo/react-query`
    - `@repo/utils`
    - `@repo/utils/collab`
@@ -78,9 +76,9 @@
 1. 기본 컴포넌트(입력/선택/테이블/레이아웃)는 `packages/ui`에 추가
 2. 도메인 조합 컴포넌트는 앱 내부에 추가
 3. 컴포넌트 추가 시:
-   - 해당 카테고리 `index.ts` export
-   - 루트 `components/index.ts` export
-   - 필요 시 hooks 카테고리도 동일하게 정리
+   - 컴포넌트 폴더 `index.ts` export
+   - `packages/ui/components/index.ts` 및 `packages/ui/index.ts` export
+   - 생성형 Storybook 규칙(`scripts/generate-ui-stories.mjs`)과 함께 동기화
 
 ## 리팩토링 체크리스트
 
@@ -88,7 +86,6 @@
 2. 모든 신규/변경 디렉터리에 `index.ts` 배치
 3. 아래 명령으로 검증
    - `pnpm --filter @repo/ui typecheck && pnpm --filter @repo/ui lint`
-   - `pnpm --filter @repo/icons typecheck && pnpm --filter @repo/icons lint`
    - `pnpm --filter @repo/react-query typecheck && pnpm --filter @repo/react-query lint`
    - `pnpm --filter @repo/utils typecheck && pnpm --filter @repo/utils lint`
    - `pnpm --filter @repo/docs typecheck && pnpm --filter @repo/docs lint`

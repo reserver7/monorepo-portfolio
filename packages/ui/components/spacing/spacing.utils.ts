@@ -1,7 +1,9 @@
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
 import {
   SPACING_BLOCK_CLASS,
   SPACING_BLOCK_RESPONSIVE_CLASS,
+  SPACING_DEFAULTS,
   SPACING_INLINE_CLASS,
   SPACING_INLINE_RESPONSIVE_CLASS,
   SPACING_SQUARE_CLASS,
@@ -16,20 +18,22 @@ export const getSpacingClassName = (params: {
   className?: string;
 }) => {
   const { size, axis, responsive, className } = params;
+  const resolvedSize = resolveOption(size, SPACING_BLOCK_CLASS, SPACING_DEFAULTS.size);
+  const resolvedAxis = resolveOption(axis, { vertical: true, horizontal: true, both: true }, SPACING_DEFAULTS.axis);
   const responsiveClass =
-    responsive && axis === "vertical"
-      ? SPACING_BLOCK_RESPONSIVE_CLASS[size]
-      : responsive && axis === "horizontal"
-        ? SPACING_INLINE_RESPONSIVE_CLASS[size]
-        : responsive && axis === "both"
-          ? SPACING_SQUARE_RESPONSIVE_CLASS[size]
+    responsive && resolvedAxis === "vertical"
+      ? SPACING_BLOCK_RESPONSIVE_CLASS[resolvedSize]
+      : responsive && resolvedAxis === "horizontal"
+        ? SPACING_INLINE_RESPONSIVE_CLASS[resolvedSize]
+        : responsive && resolvedAxis === "both"
+          ? SPACING_SQUARE_RESPONSIVE_CLASS[resolvedSize]
           : null;
 
   return cn(
     "shrink-0 pointer-events-none",
-    axis === "vertical" ? SPACING_BLOCK_CLASS[size] : null,
-    axis === "horizontal" ? SPACING_INLINE_CLASS[size] : null,
-    axis === "both" ? SPACING_SQUARE_CLASS[size] : null,
+    resolvedAxis === "vertical" ? SPACING_BLOCK_CLASS[resolvedSize] : null,
+    resolvedAxis === "horizontal" ? SPACING_INLINE_CLASS[resolvedSize] : null,
+    resolvedAxis === "both" ? SPACING_SQUARE_CLASS[resolvedSize] : null,
     responsiveClass,
     className
   );

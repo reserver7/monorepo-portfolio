@@ -20,7 +20,7 @@ type Story = StoryObj<ScrollAreaStoryArgs>;
 
 export const Playground: Story = {
   render: (args) => (
-    <ScrollArea className="h-64 w-full rounded-xl border border-default bg-surface p-3" scrollBarSize={args.scrollBarSize}>
+    <ScrollArea className="h-64 w-full rounded-[var(--radius-xl)] border border-default bg-surface p-3" scrollBarSize={args.scrollBarSize}>
       <div className="space-y-2 pr-2">
         {Array.from({ length: 24 }).map((_, index) => (
           <p key={index} className="text-body-sm text-foreground">

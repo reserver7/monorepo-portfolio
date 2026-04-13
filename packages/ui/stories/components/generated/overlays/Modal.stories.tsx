@@ -164,7 +164,7 @@ export const Playground: Story = {
             </section>
             <section className="space-y-2">
               <h4 className="text-body-sm text-foreground font-semibold">최근 변경 이력</h4>
-              <div className="border-default bg-surface-elevated max-h-40 space-y-2 overflow-y-auto rounded-md border p-3">
+              <div className="border-default bg-surface-elevated max-h-40 space-y-2 overflow-y-auto rounded-[var(--radius-md)] border p-3">
                 {[
                   "권한이 editor로 변경되었습니다.",
                   "보호 키 정책이 업데이트되었습니다.",

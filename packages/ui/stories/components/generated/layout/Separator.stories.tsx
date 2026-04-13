@@ -47,7 +47,6 @@ const meta: Meta<typeof Separator> = {
     decorative: true
   },
   argTypes: {
-    color: {control:"select",options:["default","subtle","strong","primary"],table:{defaultValue:{summary:"default"}}},
     inset: {control:"select",options:["none","sm","md"],table:{defaultValue:{summary:"none"}}},
     lineStyle: {control:"select",options:["solid","dashed","dotted"],table:{defaultValue:{summary:"solid"}}},
     thickness: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"sm"}}},

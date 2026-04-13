@@ -1,4 +1,5 @@
 import type { AccessRole } from "../types";
+import { getGlobalWindow } from "../../runtime/browser";
 
 type BrowserWindowLike = {
   localStorage: {
@@ -11,7 +12,7 @@ type BrowserWindowLike = {
 };
 
 const getBrowserWindow = (): BrowserWindowLike | null => {
-  const target = (globalThis as { window?: unknown }).window as Partial<BrowserWindowLike> | undefined;
+  const target = getGlobalWindow<Partial<BrowserWindowLike>>();
   if (!target?.localStorage) {
     return null;
   }

@@ -1,94 +1,79 @@
-import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Card } from "../../../../index";
+import { Badge, Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../../../index";
 
-const isRenderableNode = (value: unknown): boolean => {
-  if (value == null) return true;
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return true;
-  if (React.isValidElement(value)) return true;
-  if (Array.isArray(value)) return value.every(isRenderableNode);
-  return false;
+type CardStoryArgs = {
+  variant: "default" | "elevated" | "muted" | "ghost";
+  padding: "none" | "sm" | "md" | "lg";
+  radius: "md" | "lg" | "xl";
+  bordered: boolean;
+  interactive: boolean;
+  showBadge: boolean;
+  showFooterAction: boolean;
 };
 
-const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknown> => {
-  const next = { ...args };
-  for (const key of ["children","leftIcon","rightIcon","prefix","suffix","label","helperText","errorMessage","title","description","helper"]) {
-    if (!isRenderableNode(next[key])) delete next[key];
-  }
-  return next;
-};
-
-const meta: Meta<typeof Card> = {
+const meta: Meta<CardStoryArgs> = {
   title: "Components/Card",
   component: Card,
   tags: ["autodocs"],
   parameters: {
     layout: "padded",
-    controls: { expanded: true, exclude: [
-  "className",
-  "containerClassName",
-  "labelClassName",
-  "helperClassName",
-  "optionClassName",
-  "optionLabelClassName",
-  "optionDescriptionClassName",
-  "style",
-  "id",
-  /^on[A-Z].*/,
-  /.*ClassName$/
-] }
+    controls: { expanded: true, exclude: ["className", "style", "children", "id", /^on[A-Z].*/] }
   },
   args: {
-    variant: "default",
-    interactive: false,
+    variant: "elevated",
     padding: "md",
     radius: "xl",
     bordered: true,
-    children: "Card content"
+    interactive: false,
+    showBadge: true,
+    showFooterAction: true
   },
   argTypes: {
-    variant: {control:"select",options:["default","elevated","muted","ghost"],table:{defaultValue:{summary:"default"}}},
-    padding: {control:"select",options:["none","sm","md","lg"],table:{defaultValue:{summary:"md"}}},
-    radius: {control:"select",options:["md","lg","xl"],table:{defaultValue:{summary:"xl"}}},
-    interactive: {control:"boolean",table:{defaultValue:{summary:false}}},
-    bordered: {control:"boolean",table:{defaultValue:{summary:true}}},
-    children: {control:false,table:{disable:true}},
-    asChild: {control:false,table:{disable:true}},
-    leftIcon: {control:false,table:{disable:true}},
-    rightIcon: {control:false,table:{disable:true}},
-    options: {control:false,table:{}},
-    value: {control:false,table:{}},
-    defaultValue: {control:false,table:{}},
-    checked: {control:false,table:{}},
-    defaultChecked: {control:false,table:{}},
-    open: {control:false,table:{}},
-    defaultOpen: {control:false,table:{}},
-    onChange: {control:false,table:{}},
-    onCheckedChange: {control:false,table:{}},
-    onOpenChange: {control:false,table:{}},
-    prefix: {table:{disable:true}},
-    suffix: {table:{disable:true}},
-    className: {table:{disable:true}},
-    containerClassName: {table:{disable:true}},
-    labelClassName: {table:{disable:true}},
-    helperClassName: {table:{disable:true}},
-    optionClassName: {table:{disable:true}},
-    optionLabelClassName: {table:{disable:true}},
-    optionDescriptionClassName: {table:{disable:true}},
-    style: {table:{disable:true}},
-    id: {table:{disable:true}}
-  },
+    variant: { control: "inline-radio", options: ["default", "elevated", "muted", "ghost"] },
+    padding: { control: "inline-radio", options: ["none", "sm", "md", "lg"] },
+    radius: { control: "inline-radio", options: ["md", "lg", "xl"] },
+    bordered: { control: "boolean" },
+    interactive: { control: "boolean" },
+    showBadge: { control: "boolean" },
+    showFooterAction: { control: "boolean" }
+  }
 };
 
 export default meta;
-type Story = StoryObj<typeof Card>;
+type Story = StoryObj<CardStoryArgs>;
 
 export const Playground: Story = {
   render: (args) => (
-    <Card
-      {...sanitizeStoryArgs(args as Record<string, unknown>)}
-  >
-    Card content
-  </Card>
+    <div className="max-w-xl">
+      <Card
+        variant={args.variant}
+        padding={args.padding}
+        radius={args.radius}
+        bordered={args.bordered}
+        interactive={args.interactive}
+      >
+        <CardHeader padding="none">
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle>협업 문서 카드</CardTitle>
+            {args.showBadge ? <Badge variant="info">live</Badge> : null}
+          </div>
+          <CardDescription>권한, 상태, 메타 데이터를 묶어 표현하는 기본 카드 패턴입니다.</CardDescription>
+        </CardHeader>
+        <CardContent padding="none">
+          <div className="text-body-sm text-muted space-y-1">
+            <p>최근 수정: 2분 전</p>
+            <p>동시 접속: 3명</p>
+          </div>
+        </CardContent>
+        <CardFooter padding="none" className="mt-4 justify-end gap-2">
+          {args.showFooterAction ? (
+            <>
+              <Button size="sm" variant="outline">닫기</Button>
+              <Button size="sm" variant="primary">열기</Button>
+            </>
+          ) : null}
+        </CardFooter>
+      </Card>
+    </div>
   )
 };

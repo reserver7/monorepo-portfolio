@@ -11,5 +11,6 @@ export interface FormFieldProps {
   description?: React.ReactNode;
   error?: React.ReactNode;
   className?: string;
+  style?: React.CSSProperties;
   children: React.ReactNode;
 }

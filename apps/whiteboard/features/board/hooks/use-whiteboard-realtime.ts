@@ -21,15 +21,15 @@ import type {
   SocketErrorPayload
 } from "@repo/utils/collab";
 import { socketEventName } from "@repo/utils/collab";
-import { API_BASE_URL } from "@/lib/http";
+import { API_BASE_URL } from "@/features/boards/api";
 import {
   createGuestName,
   getOrCreateSessionId,
   getStoredEditorAccessKey,
   getStoredSessionToken,
   setStoredSessionIdentity
-} from "@/lib/collab";
-import { AccessRole, Participant, WhiteboardRecord, WhiteboardShape } from "@/lib/collab";
+} from "@/features/collaboration/model";
+import { AccessRole, Participant, WhiteboardRecord, WhiteboardShape } from "@/features/collaboration/model";
 import { useWhiteboardStore } from "@/features/board/stores/use-whiteboard-store";
 
 interface UseWhiteboardRealtimeOptions {

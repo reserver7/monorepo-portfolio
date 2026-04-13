@@ -45,7 +45,6 @@ const meta: Meta<typeof Label> = {
     children: "Label"
   },
   argTypes: {
-    color: {control:"select",options:["default","muted","danger"],table:{defaultValue:{summary:"default"}}},
     size: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"md"}}},
     required: {control:"boolean",table:{defaultValue:{summary:false}}},
     children: {control:false,table:{disable:true}},

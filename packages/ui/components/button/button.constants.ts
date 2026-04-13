@@ -14,17 +14,17 @@ export const BUTTON_DEFAULTS = {
 
 export const BUTTON_VARIANT_CLASS: Record<ButtonVariant, string> = {
   primary:
-    "bg-primary !text-primary-foreground shadow-sm hover:brightness-95 active:brightness-90 focus-visible:ring-primary/30",
+    "bg-primary !text-primary-foreground shadow-none hover:bg-[rgb(var(--color-accent-primary-hover))] active:bg-[rgb(var(--color-accent-primary-active))] focus-visible:ring-primary/35",
   secondary:
-    "border border-default bg-surface-elevated text-foreground shadow-sm hover:bg-surface active:bg-surface-elevated focus-visible:ring-primary/20",
+    "border border-default bg-surface-elevated text-foreground shadow-none hover:bg-surface active:bg-surface-elevated focus-visible:ring-primary/25",
   danger:
-    "bg-danger !text-danger-foreground shadow-sm hover:brightness-95 active:brightness-90 focus-visible:ring-danger/30",
+    "bg-danger !text-danger-foreground shadow-none hover:bg-[rgb(var(--color-feedback-danger-hover))] active:bg-[rgb(var(--color-feedback-danger-active))] focus-visible:ring-danger/35",
   ghost:
-    "border border-primary/25 bg-primary/8 text-primary shadow-none hover:border-primary/35 hover:bg-primary/12 active:bg-primary/16 focus-visible:ring-primary/25",
+    "border border-transparent bg-primary/10 text-primary shadow-none hover:bg-primary/15 active:bg-primary/20 focus-visible:ring-primary/25",
   outline:
-    "border border-default bg-surface text-foreground shadow-sm hover:bg-surface-elevated active:bg-surface focus-visible:ring-primary/20",
-  text: "bg-transparent text-primary shadow-none hover:bg-primary/10 active:bg-primary/15 focus-visible:ring-primary/20",
-  link: "bg-transparent text-primary underline-offset-4 shadow-none hover:underline active:opacity-80 focus-visible:ring-primary/20"
+    "border-2 border-primary/50 bg-transparent text-primary shadow-none hover:bg-primary/10 active:bg-primary/15 focus-visible:ring-primary/25",
+  text: "border border-transparent bg-transparent text-primary shadow-none hover:underline active:opacity-80 focus-visible:ring-primary/25",
+  link: "bg-transparent text-link underline-offset-4 shadow-none hover:underline active:opacity-80 focus-visible:ring-primary/25"
 };
 
 export const BUTTON_SIZE_CLASS: Record<ButtonSize, string> = {
@@ -34,9 +34,9 @@ export const BUTTON_SIZE_CLASS: Record<ButtonSize, string> = {
 };
 
 export const BUTTON_SHAPE_CLASS: Record<ButtonShape, string> = {
-  default: "rounded-md",
-  rounded: "rounded-xl",
-  pill: "rounded-full",
+  default: "rounded-[var(--radius-md)]",
+  rounded: "rounded-[var(--radius-xl)]",
+  pill: "rounded-[var(--radius-pill)]",
   square: "rounded-none"
 };
 

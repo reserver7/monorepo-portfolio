@@ -4,9 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
-    "./base": "./base.js",
-    "./library": "./library.js",
-    "./next": "./next.js"
+    ".": "./src/index.js",
+    "./base": "./src/base.js",
+    "./base.js": "./src/base.js",
+    "./library": "./src/library.js",
+    "./library.js": "./src/library.js",
+    "./next": "./src/next.js",
+    "./next.js": "./src/next.js",
+    "./strict": "./src/strict.js",
+    "./strict.js": "./src/strict.js"
   },
   "scripts": {
     "lint": "eslint . --max-warnings=0"

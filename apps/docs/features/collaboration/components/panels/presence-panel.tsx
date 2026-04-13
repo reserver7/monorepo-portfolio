@@ -1,4 +1,4 @@
-import { Participant } from "@/lib/collab";
+import { Participant } from "@/features/collaboration/model";
 import { Badge, Card, Typography } from "@repo/ui";
 
 interface PresencePanelProps {
@@ -7,12 +7,12 @@ interface PresencePanelProps {
 }
 
 export const PresencePanel = ({ participants, mySessionId }: PresencePanelProps) => {
-  const panelItemClass = "rounded-xl border border-default bg-surface px-4 py-3";
+  const panelItemClass = "rounded-lg border border-default/70 bg-surface-elevated/65 px-3.5 py-3";
 
   return (
-    <Card className="p-5">
+    <Card className="border border-default/80 bg-surface p-5">
       <div className="mb-4 flex items-center justify-between">
-        <Typography as="h3" variant="body" className="font-semibold">
+        <Typography as="h3" variant="title" className="text-body-md font-semibold">
           참여자
         </Typography>
         <Badge variant="info" size="sm">
@@ -46,7 +46,7 @@ export const PresencePanel = ({ participants, mySessionId }: PresencePanelProps)
                   <Badge
                     variant={participant.role === "editor" ? "success" : "outline"}
                     size="sm"
-                    className="shrink-0 text-[11px]"
+                    className="shrink-0 text-caption"
                   >
                     {participant.role}
                   </Badge>

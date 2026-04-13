@@ -3,7 +3,9 @@
 import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { Check, ChevronRight, Circle } from "lucide-react";
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
+import { resolveUiColorValue } from "../../styles/color-token";
 import {
   DROPDOWN_MENU_CONTENT_SIZE_CLASS,
   DROPDOWN_MENU_DEFAULTS,
@@ -30,22 +32,25 @@ export const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
 export const DropdownMenuSubTrigger = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>,
   DropdownMenuSubTriggerProps
->(({ className, inset, size = DROPDOWN_MENU_DEFAULTS.itemSize, children, ...props }, ref) => (
-  <DropdownMenuPrimitive.SubTrigger
-    ref={ref}
-    className={cn(
-      "relative flex cursor-default select-none items-center rounded-md outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-      DROPDOWN_MENU_ITEM_SIZE_CLASS[size],
-      DROPDOWN_MENU_ITEM_COLOR_CLASS.default,
-      inset ? "pl-8" : null,
-      className
-    )}
-    {...props}
-  >
-    {children}
-    <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted" />
-  </DropdownMenuPrimitive.SubTrigger>
-));
+>(({ className, inset, size = DROPDOWN_MENU_DEFAULTS.itemSize, children, ...props }, ref) => {
+  const resolvedSize = resolveOption(size, DROPDOWN_MENU_ITEM_SIZE_CLASS, DROPDOWN_MENU_DEFAULTS.itemSize);
+  return (
+    <DropdownMenuPrimitive.SubTrigger
+      ref={ref}
+      className={cn(
+        "relative flex cursor-default select-none items-center rounded-[var(--radius-sm)] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        DROPDOWN_MENU_ITEM_SIZE_CLASS[resolvedSize],
+        DROPDOWN_MENU_ITEM_COLOR_CLASS.default,
+        inset ? "pl-8" : null,
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted" />
+    </DropdownMenuPrimitive.SubTrigger>
+  );
+});
 DropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayName;
 
 export const DropdownMenuSubContent = React.forwardRef<
@@ -55,7 +60,7 @@ export const DropdownMenuSubContent = React.forwardRef<
   <DropdownMenuPrimitive.SubContent
     ref={ref}
     className={cn(
-      "border-default bg-surface z-50 min-w-[11rem] overflow-hidden rounded-lg border p-1 shadow-lg",
+      "border-default bg-surface z-50 min-w-[11rem] overflow-hidden rounded-[var(--radius-lg)] border p-1 shadow-card",
       className
     )}
     {...props}
@@ -66,20 +71,23 @@ DropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayNam
 export const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Content>,
   DropdownMenuContentProps
->(({ className, sideOffset = DROPDOWN_MENU_DEFAULTS.sideOffset, size = DROPDOWN_MENU_DEFAULTS.contentSize, ...props }, ref) => (
-  <DropdownMenuPrimitive.Portal>
-    <DropdownMenuPrimitive.Content
-      ref={ref}
-      sideOffset={sideOffset}
-      className={cn(
-        "border-default bg-surface z-50 overflow-hidden rounded-lg border p-1 shadow-md",
-        DROPDOWN_MENU_CONTENT_SIZE_CLASS[size],
-        className
-      )}
-      {...props}
-    />
-  </DropdownMenuPrimitive.Portal>
-));
+>(({ className, sideOffset = DROPDOWN_MENU_DEFAULTS.sideOffset, size = DROPDOWN_MENU_DEFAULTS.contentSize, ...props }, ref) => {
+  const resolvedSize = resolveOption(size, DROPDOWN_MENU_CONTENT_SIZE_CLASS, DROPDOWN_MENU_DEFAULTS.contentSize);
+  return (
+    <DropdownMenuPrimitive.Portal>
+      <DropdownMenuPrimitive.Content
+        ref={ref}
+        sideOffset={sideOffset}
+        className={cn(
+          "border-default bg-surface z-50 overflow-hidden rounded-[var(--radius-lg)] border p-1 shadow-card",
+          DROPDOWN_MENU_CONTENT_SIZE_CLASS[resolvedSize],
+          className
+        )}
+        {...props}
+      />
+    </DropdownMenuPrimitive.Portal>
+  );
+});
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
 
 export const DropdownMenuItem = React.forwardRef<
@@ -100,29 +108,39 @@ export const DropdownMenuItem = React.forwardRef<
       ...props
     },
     ref
-  ) => (
-    <DropdownMenuPrimitive.Item
-      ref={ref}
-      onSelect={(event) => {
-        if (keepOpenOnSelect) {
-          event.preventDefault();
-        }
-        onSelect?.(event);
-      }}
-      className={cn(
-        "relative flex cursor-default select-none items-center gap-2 rounded-md outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-        DROPDOWN_MENU_ITEM_SIZE_CLASS[size],
-        DROPDOWN_MENU_ITEM_COLOR_CLASS[color],
-        inset ? "pl-8" : null,
-        className
-      )}
-      {...props}
-    >
-      {leftSlot ? <span className="inline-flex h-4 w-4 items-center justify-center text-muted">{leftSlot}</span> : null}
-      <span className="min-w-0 flex-1 truncate">{children}</span>
-      {rightSlot ? <span className="ml-auto inline-flex items-center text-muted">{rightSlot}</span> : null}
-    </DropdownMenuPrimitive.Item>
-  )
+  ) => {
+    const resolvedSize = resolveOption(size, DROPDOWN_MENU_ITEM_SIZE_CLASS, DROPDOWN_MENU_DEFAULTS.itemSize);
+    const hasPresetColor = Object.prototype.hasOwnProperty.call(DROPDOWN_MENU_ITEM_COLOR_CLASS, color);
+    const resolvedColor = hasPresetColor
+      ? (color as keyof typeof DROPDOWN_MENU_ITEM_COLOR_CLASS)
+      : DROPDOWN_MENU_DEFAULTS.itemColor;
+    const resolvedColorKey = resolvedColor as keyof typeof DROPDOWN_MENU_ITEM_COLOR_CLASS;
+    const tokenColorValue = hasPresetColor ? undefined : resolveUiColorValue(color);
+    return (
+      <DropdownMenuPrimitive.Item
+        ref={ref}
+        onSelect={(event) => {
+          if (keepOpenOnSelect) {
+            event.preventDefault();
+          }
+          onSelect?.(event);
+        }}
+        className={cn(
+          "relative flex cursor-default select-none items-center gap-2 rounded-[var(--radius-sm)] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+          DROPDOWN_MENU_ITEM_SIZE_CLASS[resolvedSize],
+          DROPDOWN_MENU_ITEM_COLOR_CLASS[resolvedColorKey],
+          inset ? "pl-8" : null,
+          className
+        )}
+        style={tokenColorValue ? { color: tokenColorValue } : undefined}
+        {...props}
+      >
+        {leftSlot ? <span className="inline-flex h-4 w-4 items-center justify-center text-muted">{leftSlot}</span> : null}
+        <span className="min-w-0 flex-1 truncate">{children}</span>
+        {rightSlot ? <span className="ml-auto inline-flex items-center text-muted">{rightSlot}</span> : null}
+      </DropdownMenuPrimitive.Item>
+    );
+  }
 );
 DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
 
@@ -142,33 +160,43 @@ export const DropdownMenuCheckboxItem = React.forwardRef<
       ...props
     },
     ref
-  ) => (
-    <DropdownMenuPrimitive.CheckboxItem
-      ref={ref}
-      checked={checked}
-      onSelect={(event) => {
-        if (keepOpenOnSelect) {
-          event.preventDefault();
-        }
-        onSelect?.(event);
-      }}
-      className={cn(
-        "relative flex cursor-default select-none items-center rounded-md outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-        DROPDOWN_MENU_ITEM_SIZE_CLASS[size],
-        DROPDOWN_MENU_ITEM_COLOR_CLASS[color],
-        "pl-8 pr-2",
-        className
-      )}
-      {...props}
-    >
-      <span className="absolute left-2 inline-flex h-4 w-4 items-center justify-center text-muted">
-        <DropdownMenuPrimitive.ItemIndicator>
-          <Check className="h-4 w-4" />
-        </DropdownMenuPrimitive.ItemIndicator>
-      </span>
-      <span className="truncate">{children}</span>
-    </DropdownMenuPrimitive.CheckboxItem>
-  )
+  ) => {
+    const resolvedSize = resolveOption(size, DROPDOWN_MENU_ITEM_SIZE_CLASS, DROPDOWN_MENU_DEFAULTS.itemSize);
+    const hasPresetColor = Object.prototype.hasOwnProperty.call(DROPDOWN_MENU_ITEM_COLOR_CLASS, color);
+    const resolvedColor = hasPresetColor
+      ? (color as keyof typeof DROPDOWN_MENU_ITEM_COLOR_CLASS)
+      : DROPDOWN_MENU_DEFAULTS.itemColor;
+    const resolvedColorKey = resolvedColor as keyof typeof DROPDOWN_MENU_ITEM_COLOR_CLASS;
+    const tokenColorValue = hasPresetColor ? undefined : resolveUiColorValue(color);
+    return (
+      <DropdownMenuPrimitive.CheckboxItem
+        ref={ref}
+        checked={checked}
+        onSelect={(event) => {
+          if (keepOpenOnSelect) {
+            event.preventDefault();
+          }
+          onSelect?.(event);
+        }}
+        className={cn(
+          "relative flex cursor-default select-none items-center rounded-[var(--radius-sm)] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+          DROPDOWN_MENU_ITEM_SIZE_CLASS[resolvedSize],
+          DROPDOWN_MENU_ITEM_COLOR_CLASS[resolvedColorKey],
+          "pl-8 pr-2",
+          className
+        )}
+        style={tokenColorValue ? { color: tokenColorValue } : undefined}
+        {...props}
+      >
+        <span className="absolute left-2 inline-flex h-4 w-4 items-center justify-center text-muted">
+          <DropdownMenuPrimitive.ItemIndicator>
+            <Check className="h-4 w-4" />
+          </DropdownMenuPrimitive.ItemIndicator>
+        </span>
+        <span className="truncate">{children}</span>
+      </DropdownMenuPrimitive.CheckboxItem>
+    );
+  }
 );
 DropdownMenuCheckboxItem.displayName = DropdownMenuPrimitive.CheckboxItem.displayName;
 
@@ -187,45 +215,58 @@ export const DropdownMenuRadioItem = React.forwardRef<
       ...props
     },
     ref
-  ) => (
-    <DropdownMenuPrimitive.RadioItem
-      ref={ref}
-      onSelect={(event) => {
-        if (keepOpenOnSelect) {
-          event.preventDefault();
-        }
-        onSelect?.(event);
-      }}
-      className={cn(
-        "relative flex cursor-default select-none items-center rounded-md outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-        DROPDOWN_MENU_ITEM_SIZE_CLASS[size],
-        DROPDOWN_MENU_ITEM_COLOR_CLASS[color],
-        "pl-8 pr-2",
-        className
-      )}
-      {...props}
-    >
-      <span className="absolute left-2 inline-flex h-4 w-4 items-center justify-center text-muted">
-        <DropdownMenuPrimitive.ItemIndicator>
-          <Circle className="h-2.5 w-2.5 fill-current" />
-        </DropdownMenuPrimitive.ItemIndicator>
-      </span>
-      <span className="truncate">{children}</span>
-    </DropdownMenuPrimitive.RadioItem>
-  )
+  ) => {
+    const resolvedSize = resolveOption(size, DROPDOWN_MENU_ITEM_SIZE_CLASS, DROPDOWN_MENU_DEFAULTS.itemSize);
+    const hasPresetColor = Object.prototype.hasOwnProperty.call(DROPDOWN_MENU_ITEM_COLOR_CLASS, color);
+    const resolvedColor = hasPresetColor
+      ? (color as keyof typeof DROPDOWN_MENU_ITEM_COLOR_CLASS)
+      : DROPDOWN_MENU_DEFAULTS.itemColor;
+    const resolvedColorKey = resolvedColor as keyof typeof DROPDOWN_MENU_ITEM_COLOR_CLASS;
+    const tokenColorValue = hasPresetColor ? undefined : resolveUiColorValue(color);
+    return (
+      <DropdownMenuPrimitive.RadioItem
+        ref={ref}
+        onSelect={(event) => {
+          if (keepOpenOnSelect) {
+            event.preventDefault();
+          }
+          onSelect?.(event);
+        }}
+        className={cn(
+          "relative flex cursor-default select-none items-center rounded-[var(--radius-sm)] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+          DROPDOWN_MENU_ITEM_SIZE_CLASS[resolvedSize],
+          DROPDOWN_MENU_ITEM_COLOR_CLASS[resolvedColorKey],
+          "pl-8 pr-2",
+          className
+        )}
+        style={tokenColorValue ? { color: tokenColorValue } : undefined}
+        {...props}
+      >
+        <span className="absolute left-2 inline-flex h-4 w-4 items-center justify-center text-muted">
+          <DropdownMenuPrimitive.ItemIndicator>
+            <Circle className="h-2.5 w-2.5 fill-current" />
+          </DropdownMenuPrimitive.ItemIndicator>
+        </span>
+        <span className="truncate">{children}</span>
+      </DropdownMenuPrimitive.RadioItem>
+    );
+  }
 );
 DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName;
 
 export const DropdownMenuLabel = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Label>,
   DropdownMenuLabelProps
->(({ className, inset, size = DROPDOWN_MENU_DEFAULTS.labelSize, ...props }, ref) => (
-  <DropdownMenuPrimitive.Label
-    ref={ref}
-    className={cn(DROPDOWN_MENU_LABEL_SIZE_CLASS[size], inset ? "pl-8" : null, className)}
-    {...props}
-  />
-));
+>(({ className, inset, size = DROPDOWN_MENU_DEFAULTS.labelSize, ...props }, ref) => {
+  const resolvedSize = resolveOption(size, DROPDOWN_MENU_LABEL_SIZE_CLASS, DROPDOWN_MENU_DEFAULTS.labelSize);
+  return (
+    <DropdownMenuPrimitive.Label
+      ref={ref}
+      className={cn(DROPDOWN_MENU_LABEL_SIZE_CLASS[resolvedSize], inset ? "pl-8" : null, className)}
+      {...props}
+    />
+  );
+});
 DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName;
 
 export const DropdownMenuSeparator = React.forwardRef<

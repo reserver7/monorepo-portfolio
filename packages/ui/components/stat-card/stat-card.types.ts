@@ -1,6 +1,7 @@
 import * as React from "react";
+import type { UiColorToken } from "../../styles/color-token";
 
-export type StatCardColor = "default" | "primary" | "danger" | "warning";
+export type StatCardColor = "default" | "primary" | "danger" | "warning" | UiColorToken;
 export type StatCardSize = "sm" | "md" | "lg";
 
 export interface StatCardProps {
@@ -10,4 +11,5 @@ export interface StatCardProps {
   color?: StatCardColor;
   size?: StatCardSize;
   className?: string;
+  style?: React.CSSProperties;
 }

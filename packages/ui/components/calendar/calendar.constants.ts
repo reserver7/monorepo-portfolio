@@ -16,11 +16,11 @@ export const CALENDAR_DEFAULTS = {
   withMonthYearPicker: false
 } as const;
 
-export const CALENDAR_BASE_CLASS = "rounded-lg";
+export const CALENDAR_BASE_CLASS = "rounded-[var(--radius-lg)]";
 
 export const CALENDAR_VARIANT_CLASS: Record<CalendarVariant, string> = {
   default: "bg-surface",
-  elevated: "border border-default bg-surface-elevated shadow-sm"
+  elevated: "border border-default bg-surface-elevated shadow-card"
 };
 
 export const CALENDAR_WRAPPER_PADDING_CLASS: Record<CalendarDensity, string> = {
@@ -68,7 +68,7 @@ export const createCalendarClassNames = (size: CalendarSize, density: CalendarDe
     nav_button: cn(
       buttonVariants({ variant: "ghost", size: "sm" }),
       sizeClass.navButton,
-      "rounded-md p-0 text-muted hover:text-foreground"
+      "rounded-[var(--radius-md)] p-0 text-muted hover:text-foreground"
     ),
     nav_button_previous: "absolute left-1",
     nav_button_next: "absolute right-1",
@@ -78,7 +78,7 @@ export const createCalendarClassNames = (size: CalendarSize, density: CalendarDe
     row: cn("flex", gapClass.row),
     cell: cn("relative p-0 text-center", sizeClass.cell),
     day: cn(
-      "rounded-md border border-transparent p-0 font-medium text-foreground transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+      "rounded-[var(--radius-md)] border border-transparent p-0 font-medium text-foreground transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
       sizeClass.day
     ),
     day_selected: "bg-primary text-primary-foreground hover:bg-primary/95",

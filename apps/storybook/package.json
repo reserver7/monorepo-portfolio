@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@repo/theme": "workspace:*",
     "@repo/ui": "workspace:*"
   },
   "devDependencies": {

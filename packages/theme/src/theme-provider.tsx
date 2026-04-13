@@ -3,7 +3,6 @@
 import { ThemeProvider, type ThemeProviderProps } from "next-themes";
 import { THEME_STORAGE_KEY } from "./constants";
 
-export type AppTheme = "light" | "dark" | "system";
 export type ResolvedTheme = "light" | "dark";
 
 export type AppThemeProviderProps = Omit<ThemeProviderProps, "storageKey">;

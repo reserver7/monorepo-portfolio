@@ -46,7 +46,7 @@ const meta: Meta<typeof Flex> = {
     gap: "sm",
     inline: false,
     fullWidth: false,
-    children: "<div className=\"rounded-md border border-default bg-surface-elevated px-3 py-1.5 text-body-sm\">Item A</div>\n    <div className=\"rounded-md border border-default bg-surface-elevated px-3 py-1.5 text-body-sm\">Item B</div>\n    <div className=\"rounded-md border border-default bg-surface-elevated px-3 py-1.5 text-body-sm\">Item C</div>"
+    children: "<div className=\"rounded-[var(--radius-md)] border border-default bg-surface-elevated px-3 py-1.5 text-body-sm\">Item A</div>\n    <div className=\"rounded-[var(--radius-md)] border border-default bg-surface-elevated px-3 py-1.5 text-body-sm\">Item B</div>\n    <div className=\"rounded-[var(--radius-md)] border border-default bg-surface-elevated px-3 py-1.5 text-body-sm\">Item C</div>"
   },
   argTypes: {
     align: {control:"select",options:["start","center","end","stretch","baseline"],table:{defaultValue:{summary:"stretch"}}},
@@ -92,9 +92,9 @@ export const Playground: Story = {
     <Flex
       {...sanitizeStoryArgs(args as Record<string, unknown>)}
   >
-    <div className="rounded-md border border-default bg-surface-elevated px-3 py-1.5 text-body-sm">Item A</div>
-    <div className="rounded-md border border-default bg-surface-elevated px-3 py-1.5 text-body-sm">Item B</div>
-    <div className="rounded-md border border-default bg-surface-elevated px-3 py-1.5 text-body-sm">Item C</div>
+    <div className="rounded-[var(--radius-md)] border border-default bg-surface-elevated px-3 py-1.5 text-body-sm">Item A</div>
+    <div className="rounded-[var(--radius-md)] border border-default bg-surface-elevated px-3 py-1.5 text-body-sm">Item B</div>
+    <div className="rounded-[var(--radius-md)] border border-default bg-surface-elevated px-3 py-1.5 text-body-sm">Item C</div>
   </Flex>
   )
 };

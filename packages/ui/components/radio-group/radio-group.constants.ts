@@ -19,4 +19,4 @@ export const RADIO_GROUP_INDICATOR_SIZE_CLASS: Record<RadioGroupSize, string> = 
 };
 
 export const RADIO_GROUP_ITEM_BASE_CLASS =
-  "border-default bg-surface text-primary ring-offset-surface transition-all duration-150 hover:border-primary/50 hover:bg-primary/5 focus-visible:ring-primary/30 data-[state=checked]:border-primary data-[state=checked]:text-primary aspect-square rounded-full border shadow-none focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-default disabled:hover:bg-surface";
+  "border-default bg-surface text-primary ring-offset-surface transition-all duration-150 hover:border-primary/50 hover:bg-primary/5 focus-visible:ring-primary/30 data-[state=checked]:border-primary data-[state=checked]:text-primary data-[state=checked]:hover:border-primary data-[state=checked]:hover:bg-primary/10 aspect-square rounded-full border shadow-none focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-default disabled:hover:bg-surface";

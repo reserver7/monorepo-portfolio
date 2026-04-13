@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
 import {
   BUTTON_DEFAULTS,
@@ -13,6 +14,13 @@ import {
 import { useButtonDisabledState } from "./button.hooks";
 import type { ButtonProps, ButtonVariantsInput } from "./button.types";
 
+const isDevelopmentRuntime = () => {
+  if (typeof process === "undefined" || !process.env) {
+    return false;
+  }
+  return process.env.NODE_ENV !== "production";
+};
+
 export const buttonVariants = ({
   variant = BUTTON_DEFAULTS.variant,
   size = BUTTON_DEFAULTS.size,
@@ -21,11 +29,14 @@ export const buttonVariants = ({
   fullWidth = BUTTON_DEFAULTS.fullWidth,
   className
 }: ButtonVariantsInput) => {
+  const resolvedVariant = resolveOption(variant, BUTTON_VARIANT_CLASS, BUTTON_DEFAULTS.variant);
+  const resolvedSize = resolveOption(size, BUTTON_SIZE_CLASS, BUTTON_DEFAULTS.size);
+  const resolvedShape = resolveOption(shape, BUTTON_SHAPE_CLASS, BUTTON_DEFAULTS.shape);
   return cn(
-    "inline-flex items-center justify-center gap-2 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:pointer-events-none disabled:opacity-50",
-    BUTTON_VARIANT_CLASS[variant],
-    iconOnly ? BUTTON_ICON_ONLY_SIZE_CLASS[size] : BUTTON_SIZE_CLASS[size],
-    BUTTON_SHAPE_CLASS[shape],
+    "inline-flex items-center justify-center gap-2 font-normal transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:pointer-events-none disabled:opacity-50",
+    BUTTON_VARIANT_CLASS[resolvedVariant],
+    iconOnly ? BUTTON_ICON_ONLY_SIZE_CLASS[resolvedSize] : BUTTON_SIZE_CLASS[resolvedSize],
+    BUTTON_SHAPE_CLASS[resolvedShape],
     fullWidth && !iconOnly ? "w-full" : "w-auto",
     className
   );
@@ -67,6 +78,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const resolvedType = asChild ? undefined : (type ?? "button");
     const content = iconOnly ? null : loading && loadingLabel ? loadingLabel : children;
     const hasIcon = Boolean(leftIcon || rightIcon);
+    const hasAsChildDecorators = loading || leftIcon || rightIcon || iconOnly;
+    const asChildContent = React.useMemo(() => {
+      if (React.isValidElement(children)) {
+        return children;
+      }
+      return <span>{children}</span>;
+    }, [children]);
     const computedClassName = React.useMemo(
       () =>
         buttonVariants({
@@ -80,8 +98,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       [asChild, className, fullWidth, iconOnly, isDisabled, shape, size, variant]
     );
 
-    if (process.env.NODE_ENV !== "production" && iconOnly && !hasIcon) {
+    if (isDevelopmentRuntime() && iconOnly && !hasIcon) {
       console.warn("[Button] `iconOnly` 버튼에는 `leftIcon` 또는 `rightIcon`이 필요합니다.");
+    }
+    if (isDevelopmentRuntime() && asChild && hasAsChildDecorators) {
+      console.warn("[Button] `asChild` 사용 시 loading/iconOnly/leftIcon/rightIcon은 무시됩니다.");
     }
 
     return (
@@ -99,9 +120,15 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         data-loading={loading ? "true" : "false"}
         {...props}
       >
-        {loading ? <ButtonSpinner /> : leftIcon ? <span className="shrink-0">{leftIcon}</span> : null}
-        {content}
-        {!loading && rightIcon ? <span className="shrink-0">{rightIcon}</span> : null}
+        {asChild ? (
+          asChildContent
+        ) : (
+          <>
+            {loading ? <ButtonSpinner /> : leftIcon ? <span className="shrink-0">{leftIcon}</span> : null}
+            {content}
+            {!loading && rightIcon ? <span className="shrink-0">{rightIcon}</span> : null}
+          </>
+        )}
       </Comp>
     );
   }

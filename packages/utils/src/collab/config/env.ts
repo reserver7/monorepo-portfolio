@@ -1,5 +1,6 @@
 import type { AccessRole } from "../types";
 import { coerceAccessRole } from "../core/role";
+import { trimTrailingSlash } from "../../string/trim-trailing-slash";
 
 const normalizeUrl = (rawValue: string | undefined, fallback: string): string => {
   const value = rawValue?.trim();
@@ -7,7 +8,7 @@ const normalizeUrl = (rawValue: string | undefined, fallback: string): string =>
     return fallback;
   }
 
-  return value.endsWith("/") ? value.slice(0, -1) : value;
+  return trimTrailingSlash(value);
 };
 
 const normalizeRole = (rawRole: string | undefined): AccessRole => {

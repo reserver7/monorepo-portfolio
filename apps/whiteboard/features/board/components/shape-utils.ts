@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { PRIMITIVE_COLOR_PALETTE } from "@repo/ui";
-import type { WhiteboardShape } from "@/lib/collab";
+import type { WhiteboardShape } from "@/features/collaboration/model";
 
 export type WhiteboardTool = "select" | "rect" | "ellipse" | "diamond" | "text" | "connector";
 export type ResizeHandle = "nw" | "ne" | "sw" | "se";

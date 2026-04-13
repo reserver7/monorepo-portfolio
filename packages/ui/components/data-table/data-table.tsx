@@ -68,7 +68,7 @@ const resolveColumnWidth = (width: number | string | undefined, fallback: number
 const areSameOrder = (a: string[], b: string[]): boolean => a.length === b.length && a.every((value, index) => value === b[index]);
 
 export const DataTableColumnHeader = React.memo(function DataTableColumnHeader({ title }: { column?: { id: string }; title: string }) {
-  return <span className="text-muted text-xs font-semibold">{title}</span>;
+  return <span className="text-foreground text-xs font-semibold">{title}</span>;
 });
 DataTableColumnHeader.displayName = "DataTableColumnHeader";
 
@@ -139,15 +139,15 @@ const DataTableRowItem = React.memo(function DataTableRowItem({
       className={cn(
         "last:border-none",
         selectable && "cursor-pointer",
-        selectable && rowSelected && "bg-primary/5",
         striped && row.rowIndex % 2 === 1 && "bg-surface-elevated/30",
+        selectable && rowSelected && "bg-primary/10 hover:bg-primary/20",
         typeof rowClassName === "function" ? rowClassName({ row: row.rowContext, selected: rowSelected }) : rowClassName
       )}
       aria-selected={selectable ? rowSelected : undefined}
       onClick={(event) => onActivateRow(event, row)}
     >
       {selectable ? (
-        <TableCell className={cn("w-11 px-3 text-center", columnDivider && "border-default border-r")}>
+        <TableCell className={cn("w-11 px-3 text-center", rowSelected && "bg-primary/10", columnDivider && "border-default border-r")}>
           <div className="flex items-center justify-center" data-no-row-select="true">
             <TableSelectCheckbox checked={rowSelected} onChange={(checked) => onToggleRow(row.key, checked)} />
           </div>
@@ -165,7 +165,8 @@ const DataTableRowItem = React.memo(function DataTableRowItem({
               "text-foreground px-3 align-middle",
               alignClass,
               columnDivider && "border-default border-r last:border-r-0",
-              cell.column.fixed && "bg-surface",
+              rowSelected && "bg-primary/10",
+              cell.column.fixed && (rowSelected ? "bg-primary/10" : "bg-surface"),
               resolvedCellClassName
             )}
             style={viewModel?.cellStyle}
@@ -193,6 +194,8 @@ const DataTableRowItem = React.memo(function DataTableRowItem({
 DataTableRowItem.displayName = "DataTableRowItem";
 
 export function DataTable<T>({
+  className,
+  style,
   columns,
   data,
   isLoading,
@@ -853,10 +856,10 @@ export function DataTable<T>({
   );
 
   return (
-    <div className="space-y-3">
+    <div className={cn("space-y-3", className)} style={style}>
       {toolbarPosition === "top" && renderedToolbar ? <div className="px-1">{renderedToolbar}</div> : null}
 
-      <div className="border-default bg-surface overflow-x-auto rounded-xl border">
+      <div className="border-default bg-surface overflow-x-auto rounded-[var(--radius-xl)] border">
         <Table
           className={cn("min-w-full text-sm", tableClassName)}
           density={tableDensity}
@@ -864,7 +867,7 @@ export function DataTable<T>({
           containerClassName="max-h-[70vh]"
           containerRef={tableContainerRef}
         >
-          <TableHeader className="bg-surface-elevated/70">
+          <TableHeader className="bg-surface-elevated">
             <TableRow>
               {selectable ? (
                 <TableHead className={cn("w-11 px-3 text-center", columnDivider && "border-default border-r")}>
@@ -898,7 +901,7 @@ export function DataTable<T>({
                       "group relative px-3",
                       headerAlignClass,
                       columnDivider && "border-default border-r last:border-r-0",
-                      column.fixed && "bg-surface-elevated/95 backdrop-blur",
+                      column.fixed && "bg-surface-elevated",
                       column.headerClassName
                     )}
                     style={headerStyle}

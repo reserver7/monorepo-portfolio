@@ -1,6 +1,6 @@
 import { createAppStore, createSelectors } from "@repo/zustand";
 import { appendEventLog } from "@repo/utils/collab";
-import { AccessRole, ConnectionState, Participant, WhiteboardRecord, WhiteboardShape } from "@/lib/collab";
+import { AccessRole, ConnectionState, Participant, WhiteboardRecord, WhiteboardShape } from "@/features/collaboration/model";
 
 interface WhiteboardStore {
   activeBoardId: string | null;

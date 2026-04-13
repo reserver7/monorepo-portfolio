@@ -2,7 +2,9 @@
 
 import * as React from "react";
 import * as ProgressPrimitive from "@radix-ui/react-progress";
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
+import { resolveUiColorValue } from "../../styles/color-token";
 import { PROGRESS_COLOR_CLASS, PROGRESS_DEFAULTS, PROGRESS_SIZE_CLASS } from "./progress.constants";
 import type { ProgressProps } from "./progress.types";
 
@@ -21,10 +23,19 @@ const ProgressComponent = React.forwardRef<React.ElementRef<typeof ProgressPrimi
     },
     ref
   ) => {
+    const resolvedSize = resolveOption(size, PROGRESS_SIZE_CLASS, PROGRESS_DEFAULTS.size);
+    const hasPresetColor = Object.prototype.hasOwnProperty.call(PROGRESS_COLOR_CLASS, color);
+    const resolvedColor = hasPresetColor
+      ? resolveOption(color as keyof typeof PROGRESS_COLOR_CLASS, PROGRESS_COLOR_CLASS, PROGRESS_DEFAULTS.color)
+      : PROGRESS_DEFAULTS.color;
+    const tokenColorValue = hasPresetColor ? undefined : resolveUiColorValue(color);
     const normalizedValue = Math.max(0, Math.min(100, value ?? 0));
     const indicatorStyle = React.useMemo<React.CSSProperties>(
-      () => (indeterminate ? { width: "45%" } : { transform: `translateX(-${100 - normalizedValue}%)` }),
-      [indeterminate, normalizedValue]
+      () => ({
+        ...(indeterminate ? { width: "45%" } : { transform: `translateX(-${100 - normalizedValue}%)` }),
+        ...(tokenColorValue ? { backgroundColor: tokenColorValue } : {})
+      }),
+      [indeterminate, normalizedValue, tokenColorValue]
     );
 
     return (
@@ -33,7 +44,7 @@ const ProgressComponent = React.forwardRef<React.ElementRef<typeof ProgressPrimi
           ref={ref}
           className={cn(
             "bg-surface-elevated relative w-full overflow-hidden rounded-full",
-            PROGRESS_SIZE_CLASS[size],
+            PROGRESS_SIZE_CLASS[resolvedSize],
             className
           )}
           value={normalizedValue}
@@ -42,7 +53,7 @@ const ProgressComponent = React.forwardRef<React.ElementRef<typeof ProgressPrimi
           <ProgressPrimitive.Indicator
             className={cn(
               "h-full w-full flex-1 transition-all",
-              PROGRESS_COLOR_CLASS[color],
+              PROGRESS_COLOR_CLASS[resolvedColor],
               indeterminate && "animate-pulse",
               striped && "bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,.18)_25%,rgba(255,255,255,.18)_50%,transparent_50%,transparent_75%,rgba(255,255,255,.18)_75%)] bg-[length:1rem_1rem]"
             )}

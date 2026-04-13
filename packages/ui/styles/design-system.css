@@ -1,186 +1,209 @@
 :root {
-  /* typography tokens */
-  --font-size-heading-xl: 1.875rem;
-  --font-size-heading-lg: 1.5rem;
-  --font-size-heading-md: 1.25rem;
-  --font-size-body-md: 0.9375rem;
+  /* typography tokens (Brand-inspired) */
+  --font-family-display: "Pretendard", "Noto Sans KR", "Segoe UI", "Malgun Gothic", sans-serif;
+  --font-family-body: "Pretendard", "Noto Sans KR", "Segoe UI", "Malgun Gothic", sans-serif;
+  --font-size-heading-xl: 3.5rem;
+  --font-size-heading-lg: 2.5rem;
+  --font-size-heading-md: 1.75rem;
+  --font-size-title: 1.3125rem;
+  --font-size-body-md: 1.0625rem;
   --font-size-body-sm: 0.875rem;
-  --font-size-caption: 0.8125rem;
-  --line-height-tight: 1.25;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.65;
+  --font-size-caption: 0.875rem;
+  --font-size-micro: 0.75rem;
+  --line-height-tightest: 1.07;
+  --line-height-tight: 1.14;
+  --line-height-normal: 1.47;
+  --line-height-relaxed: 1.5;
   --font-weight-regular: 400;
-  --font-weight-medium: 500;
+  --font-weight-medium: 400;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+  --letter-spacing-display-hero: -0.28px;
+  --letter-spacing-body: -0.374px;
+  --letter-spacing-caption: -0.224px;
+  --letter-spacing-micro: -0.12px;
 
   /* semantic tokens (light) */
-  --color-bg-canvas: 248 250 252;
-  --color-fg-default: 30 41 59;
-  --color-bg-surface: 255 255 255;
-  --color-bg-surface-raised: 241 245 249;
-  --color-border-default: 226 232 240;
-  --color-fg-muted: 148 163 184;
-  --color-fg-subtle: 100 116 139;
+  --color-bg-canvas: 241 243 248;
+  --color-fg-default: 29 29 31;
+  --color-bg-surface: 252 253 255;
+  --color-bg-surface-raised: 247 249 253;
+  --color-border-default: 202 208 218;
+  --color-fg-muted: 77 81 90;
+  --color-fg-subtle: 108 114 124;
 
-  --color-accent-primary: 59 130 246;
-  --color-accent-primary-hover: 37 99 235;
-  --color-accent-primary-active: 29 78 216;
+  --color-accent-primary: 0 113 227;
+  --color-accent-primary-hover: 0 102 204;
+  --color-accent-primary-active: 0 90 190;
+  --color-accent-link: 0 102 204;
+  --color-accent-link-dark: 41 151 255;
   --color-fg-on-accent: 255 255 255;
 
-  --color-feedback-success: 34 197 94;
-  --color-feedback-success-hover: 22 163 74;
-  --color-feedback-success-active: 21 128 61;
+  --color-feedback-success: 48 209 88;
+  --color-feedback-success-hover: 40 180 75;
+  --color-feedback-success-active: 32 150 62;
   --color-fg-on-success: 255 255 255;
 
-  --color-feedback-danger: 239 68 68;
-  --color-feedback-danger-hover: 220 38 38;
-  --color-feedback-danger-active: 185 28 28;
+  --color-feedback-danger: 255 59 48;
+  --color-feedback-danger-hover: 230 50 40;
+  --color-feedback-danger-active: 210 40 30;
   --color-fg-on-danger: 255 255 255;
 
-  --color-feedback-warning: 234 179 8;
-  --color-feedback-warning-hover: 202 138 4;
-  --color-feedback-warning-active: 161 98 7;
-  --color-fg-on-warning: 15 23 42;
+  --color-feedback-warning: 255 159 10;
+  --color-feedback-warning-hover: 230 140 8;
+  --color-feedback-warning-active: 210 120 6;
+  --color-fg-on-warning: 29 29 31;
 
-  --color-feedback-info: 14 165 233;
-  --color-feedback-info-hover: 2 132 199;
-  --color-feedback-info-active: 3 105 161;
+  --color-feedback-info: 90 200 250;
+  --color-feedback-info-hover: 66 180 235;
+  --color-feedback-info-active: 45 160 214;
   --color-fg-on-info: 255 255 255;
 
+  /* geometry + elevation */
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 11px;
+  --radius-xl: 12px;
+  --radius-pill: 980px;
+  --radius-round: 9999px;
+  --shadow-card: 0 2px 6px 0 rgb(15 23 42 / 0.06), 0 14px 32px 0 rgb(15 23 42 / 0.08);
+  --shadow-none: none;
+
   /* palette tokens */
-  --BLUE-1000: #1e3a8a;
-  --BLUE-900: #1d4ed8;
-  --BLUE-800: #2563eb;
-  --BLUE-700: #3b82f6;
-  --BLUE-600: #60a5fa;
-  --BLUE-500: #93c5fd;
-  --BLUE-400: #bfdbfe;
-  --BLUE-300: #dbeafe;
-  --BLUE-200: #eff6ff;
-  --BLUE-100: #f5faff;
+  --BLUE-1000: #00305f;
+  --BLUE-900: #00418a;
+  --BLUE-800: #005bb5;
+  --BLUE-700: #0066cc;
+  --BLUE-600: #0071e3;
+  --BLUE-500: #2997ff;
+  --BLUE-400: #75b8ff;
+  --BLUE-300: #a8d1ff;
+  --BLUE-200: #d7e9ff;
+  --BLUE-100: #eef6ff;
 
-  --INDIGO-1000: #1e1b4b;
-  --INDIGO-900: #312e81;
-  --INDIGO-800: #3730a3;
-  --INDIGO-700: #4338ca;
-  --INDIGO-600: #4f46e5;
-  --INDIGO-500: #6366f1;
-  --INDIGO-400: #818cf8;
-  --INDIGO-300: #a5b4fc;
-  --INDIGO-200: #c7d2fe;
-  --INDIGO-100: #eef2ff;
+  --INDIGO-1000: #1a1a1d;
+  --INDIGO-900: #2a2a2d;
+  --INDIGO-800: #3a3a3f;
+  --INDIGO-700: #51515a;
+  --INDIGO-600: #6e6e73;
+  --INDIGO-500: #8e8e93;
+  --INDIGO-400: #aeaeb2;
+  --INDIGO-300: #c7c7cc;
+  --INDIGO-200: #d2d2d7;
+  --INDIGO-100: #f5f5f7;
 
-  --NATURAL-1000: #0f172a;
-  --NATURAL-900: #1e293b;
-  --NATURAL-800: #334155;
-  --NATURAL-700: #475569;
-  --NATURAL-600: #64748b;
-  --NATURAL-500: #94a3b8;
-  --NATURAL-400: #cbd5e1;
-  --NATURAL-300: #e2e8f0;
-  --NATURAL-200: #f1f5f9;
-  --NATURAL-100: #f8fafc;
+  --NATURAL-1000: #000000;
+  --NATURAL-900: #1d1d1f;
+  --NATURAL-800: #272729;
+  --NATURAL-700: #424245;
+  --NATURAL-600: #6e6e73;
+  --NATURAL-500: #8e8e93;
+  --NATURAL-400: #aeaeb2;
+  --NATURAL-300: #c7c7cc;
+  --NATURAL-200: #d2d2d7;
+  --NATURAL-100: #f5f5f7;
 
-  --GREEN-1000: #052e16;
-  --GREEN-900: #14532d;
-  --GREEN-800: #166534;
-  --GREEN-700: #15803d;
-  --GREEN-600: #16a34a;
-  --GREEN-500: #22c55e;
-  --GREEN-400: #4ade80;
-  --GREEN-300: #86efac;
-  --GREEN-200: #bbf7d0;
-  --GREEN-100: #dcfce7;
+  --GREEN-1000: #0a3418;
+  --GREEN-900: #115a26;
+  --GREEN-800: #1a7a34;
+  --GREEN-700: #239443;
+  --GREEN-600: #30b357;
+  --GREEN-500: #30d158;
+  --GREEN-400: #70dd8c;
+  --GREEN-300: #9eeab1;
+  --GREEN-200: #c5f4d3;
+  --GREEN-100: #e8fcef;
 
-  --RED-1000: #450a0a;
-  --RED-900: #7f1d1d;
-  --RED-800: #991b1b;
-  --RED-700: #b91c1c;
-  --RED-600: #dc2626;
-  --RED-500: #ef4444;
-  --RED-400: #f87171;
-  --RED-300: #fca5a5;
-  --RED-200: #fecaca;
-  --RED-100: #fee2e2;
+  --RED-1000: #4e0d08;
+  --RED-900: #7a120f;
+  --RED-800: #a91f1a;
+  --RED-700: #d22e25;
+  --RED-600: #f03f35;
+  --RED-500: #ff3b30;
+  --RED-400: #ff7c74;
+  --RED-300: #ffa7a1;
+  --RED-200: #ffcfc9;
+  --RED-100: #ffeceb;
 
-  --YELLOW-1000: #422006;
-  --YELLOW-900: #713f12;
-  --YELLOW-800: #854d0e;
-  --YELLOW-700: #a16207;
-  --YELLOW-600: #ca8a04;
-  --YELLOW-500: #eab308;
-  --YELLOW-400: #facc15;
-  --YELLOW-300: #fde047;
-  --YELLOW-200: #fef08a;
-  --YELLOW-100: #fef9c3;
+  --YELLOW-1000: #5a2d00;
+  --YELLOW-900: #864300;
+  --YELLOW-800: #b35b00;
+  --YELLOW-700: #d67600;
+  --YELLOW-600: #ef9300;
+  --YELLOW-500: #ff9f0a;
+  --YELLOW-400: #ffbf5c;
+  --YELLOW-300: #ffd18a;
+  --YELLOW-200: #ffe4b9;
+  --YELLOW-100: #fff3df;
 
-  --SKY-1000: #082f49;
-  --SKY-900: #0c4a6e;
-  --SKY-800: #075985;
-  --SKY-700: #0369a1;
-  --SKY-600: #0284c7;
-  --SKY-500: #0ea5e9;
-  --SKY-400: #38bdf8;
-  --SKY-300: #7dd3fc;
-  --SKY-200: #bae6fd;
-  --SKY-100: #e0f2fe;
+  --SKY-1000: #004766;
+  --SKY-900: #00658f;
+  --SKY-800: #0084b8;
+  --SKY-700: #1ea3da;
+  --SKY-600: #39bee8;
+  --SKY-500: #5ac8fa;
+  --SKY-400: #82d7fb;
+  --SKY-300: #a8e5fc;
+  --SKY-200: #cef2fe;
+  --SKY-100: #ecfbff;
 
-  --ORANGE-1000: #431407;
-  --ORANGE-900: #7c2d12;
-  --ORANGE-800: #9a3412;
-  --ORANGE-700: #c2410c;
-  --ORANGE-600: #ea580c;
-  --ORANGE-500: #f97316;
-  --ORANGE-400: #fb923c;
-  --ORANGE-300: #fdba74;
-  --ORANGE-200: #fed7aa;
-  --ORANGE-100: #ffedd5;
+  --ORANGE-1000: #5a2300;
+  --ORANGE-900: #853400;
+  --ORANGE-800: #ad4a00;
+  --ORANGE-700: #cb6200;
+  --ORANGE-600: #e67a00;
+  --ORANGE-500: #ff9500;
+  --ORANGE-400: #ffb04d;
+  --ORANGE-300: #ffc78b;
+  --ORANGE-200: #ffdfbf;
+  --ORANGE-100: #fff3e6;
 
-  --PURPLE-1000: #2e1065;
-  --PURPLE-900: #4c1d95;
-  --PURPLE-800: #5b21b6;
-  --PURPLE-700: #6d28d9;
-  --PURPLE-600: #7c3aed;
-  --PURPLE-500: #8b5cf6;
-  --PURPLE-400: #a78bfa;
-  --PURPLE-300: #c4b5fd;
-  --PURPLE-200: #ddd6fe;
-  --PURPLE-100: #f3e8ff;
+  --PURPLE-1000: #37154f;
+  --PURPLE-900: #512176;
+  --PURPLE-800: #67309a;
+  --PURPLE-700: #7e41b8;
+  --PURPLE-600: #944fd2;
+  --PURPLE-500: #af52de;
+  --PURPLE-400: #c481ea;
+  --PURPLE-300: #d7abf2;
+  --PURPLE-200: #e9d2f8;
+  --PURPLE-100: #f7effd;
 }
 
 .dark {
-  --color-bg-canvas: 15 23 42;
-  --color-fg-default: 248 250 252;
-  --color-bg-surface: 30 41 59;
-  --color-bg-surface-raised: 51 65 85;
-  --color-border-default: 51 65 85;
-  --color-fg-muted: 148 163 184;
-  --color-fg-subtle: 100 116 139;
+  --color-bg-canvas: 14 17 22;
+  --color-fg-default: 237 241 247;
+  --color-bg-surface: 24 28 36;
+  --color-bg-surface-raised: 31 36 46;
+  --color-border-default: 56 64 78;
+  --color-fg-muted: 188 196 209;
+  --color-fg-subtle: 146 156 172;
 
-  --color-accent-primary: 59 130 246;
-  --color-accent-primary-hover: 37 99 235;
-  --color-accent-primary-active: 29 78 216;
+  --color-accent-primary: 41 151 255;
+  --color-accent-primary-hover: 64 164 255;
+  --color-accent-primary-active: 28 135 235;
+  --color-accent-link: 41 151 255;
+  --color-accent-link-dark: 41 151 255;
   --color-fg-on-accent: 255 255 255;
 
-  --color-feedback-success: 34 197 94;
-  --color-feedback-success-hover: 22 163 74;
-  --color-feedback-success-active: 21 128 61;
+  --color-feedback-success: 48 209 88;
+  --color-feedback-success-hover: 70 222 105;
+  --color-feedback-success-active: 37 170 72;
   --color-fg-on-success: 255 255 255;
 
-  --color-feedback-danger: 239 68 68;
-  --color-feedback-danger-hover: 220 38 38;
-  --color-feedback-danger-active: 185 28 28;
+  --color-feedback-danger: 255 69 58;
+  --color-feedback-danger-hover: 255 91 82;
+  --color-feedback-danger-active: 220 52 43;
   --color-fg-on-danger: 255 255 255;
 
-  --color-feedback-warning: 234 179 8;
-  --color-feedback-warning-hover: 202 138 4;
-  --color-feedback-warning-active: 161 98 7;
-  --color-fg-on-warning: 15 23 42;
+  --color-feedback-warning: 255 159 10;
+  --color-feedback-warning-hover: 255 181 56;
+  --color-feedback-warning-active: 230 140 8;
+  --color-fg-on-warning: 29 29 31;
 
-  --color-feedback-info: 14 165 233;
-  --color-feedback-info-hover: 2 132 199;
-  --color-feedback-info-active: 3 105 161;
+  --color-feedback-info: 100 210 255;
+  --color-feedback-info-hover: 130 220 255;
+  --color-feedback-info-active: 78 180 224;
   --color-fg-on-info: 255 255 255;
 }
 
@@ -191,85 +214,4 @@
 
 .dark {
   color-scheme: dark;
-}
-
-/* compatibility utility classes used across apps/components */
-.bg-surface {
-  background-color: rgb(var(--color-bg-surface));
-}
-
-.bg-surface-elevated {
-  background-color: rgb(var(--color-bg-surface-raised));
-}
-
-.text-foreground {
-  color: rgb(var(--color-fg-default));
-}
-
-.text-muted {
-  color: rgb(var(--color-fg-muted));
-}
-
-.text-muted-foreground {
-  color: rgb(var(--color-fg-subtle));
-}
-
-.border-default {
-  border-color: rgb(var(--color-border-default));
-}
-
-.bg-primary {
-  background-color: rgb(var(--color-accent-primary));
-}
-
-.text-primary {
-  color: rgb(var(--color-accent-primary));
-}
-
-.text-primary-foreground {
-  color: rgb(var(--color-fg-on-accent));
-}
-
-.bg-danger {
-  background-color: rgb(var(--color-feedback-danger));
-}
-
-.text-danger {
-  color: rgb(var(--color-feedback-danger));
-}
-
-.text-danger-foreground {
-  color: rgb(var(--color-fg-on-danger));
-}
-
-.bg-warning {
-  background-color: rgb(var(--color-feedback-warning));
-}
-
-.text-warning {
-  color: rgb(var(--color-feedback-warning));
-}
-
-.text-warning-foreground {
-  color: rgb(var(--color-fg-on-warning));
-}
-
-.bg-info {
-  background-color: rgb(var(--color-feedback-info));
-}
-
-.text-info {
-  color: rgb(var(--color-feedback-info));
-}
-
-.bg-success {
-  background-color: rgb(var(--color-feedback-success));
-}
-
-.text-success {
-  color: rgb(var(--color-feedback-success));
-}
-
-.text-success-foreground {
-  color: rgb(var(--color-fg-on-success));
 }

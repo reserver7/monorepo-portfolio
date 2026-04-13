@@ -15,12 +15,13 @@ export function FormField({
   description,
   error,
   className,
+  style,
   children
 }: FormFieldProps) {
   const bySize = FORM_FIELD_SIZE_CONFIG[size];
 
   return (
-    <div className={cn("grid", bySize.gap, className)}>
+    <div className={cn("grid", bySize.gap, className)} style={style}>
       {label ? (
         <Label htmlFor={htmlFor} size={bySize.label} required={requiredMark} className="inline-flex items-center gap-1">
           <span>{label}</span>

@@ -21,7 +21,7 @@ export const CreateRoomRow: Story = {
     const [role, setRole] = React.useState<string | null>("viewer");
 
     return (
-      <div className="w-[980px] rounded-xl border border-default bg-surface p-6">
+      <div className="w-[980px] rounded-[var(--radius-xl)] border border-default bg-surface p-6">
         <div className="grid grid-cols-[1fr_1fr_1fr_auto] items-end gap-3">
           <Input label="표시 이름" value={name} onChange={(event) => setName(event.target.value)} />
           <Input label="새 문서 제목" value={title} onChange={(event) => setTitle(event.target.value)} />

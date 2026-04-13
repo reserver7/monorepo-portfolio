@@ -26,7 +26,7 @@ import type {
 } from "@repo/utils/collab";
 import { socketEventName } from "@repo/utils/collab";
 import { notifyUiSuccess } from "@repo/react-query";
-import { API_BASE_URL } from "@/lib/http";
+import { API_BASE_URL } from "@/features/documents/api";
 import {
   createGuestName,
   getStoredEditorAccessKey,
@@ -35,8 +35,8 @@ import {
   getStoredYjsSnapshot,
   setStoredSessionIdentity,
   setStoredYjsSnapshot
-} from "@/lib/collab";
-import { AccessRole, DocumentRecord, Participant } from "@/lib/collab";
+} from "@/features/collaboration/model";
+import { AccessRole, DocumentRecord, Participant } from "@/features/collaboration/model";
 import { useCollabStore } from "@/features/collaboration/stores/use-collab-store";
 
 interface UseCollaborationOptions {

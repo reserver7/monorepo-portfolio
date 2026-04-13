@@ -36,10 +36,13 @@ export interface SelectProps<T = SelectPrimitiveValue> {
   variant?: SelectTriggerVariant;
   status?: SelectTriggerStatus;
   className?: string;
+  style?: React.CSSProperties;
   containerClassName?: string;
+  containerStyle?: React.CSSProperties;
   labelClassName?: string;
   helperClassName?: string;
   contentClassName?: string;
+  contentStyle?: React.CSSProperties;
   searchPlaceholder?: string;
   maxVisibleItems?: number;
   maxTagCount?: number;

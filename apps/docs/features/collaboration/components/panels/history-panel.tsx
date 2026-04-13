@@ -1,5 +1,5 @@
-import { HistoryEntry } from "@/lib/collab";
-import { formatExactTime } from "@/lib/collab";
+import { HistoryEntry } from "@/features/collaboration/model";
+import { formatExactTime } from "@/features/collaboration/model";
 import { Badge, Card, Typography } from "@repo/ui";
 
 interface HistoryPanelProps {
@@ -14,12 +14,12 @@ const actionLabel: Record<HistoryEntry["action"], string> = {
 };
 
 export const HistoryPanel = ({ entries }: HistoryPanelProps) => {
-  const panelItemClass = "rounded-xl border border-default bg-surface px-4 py-3";
+  const panelItemClass = "rounded-lg border border-default/70 bg-surface-elevated/65 px-3.5 py-3";
 
   return (
-    <Card className="p-5">
+    <Card className="border border-default/80 bg-surface p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <Typography as="h3" variant="body" className="font-semibold">
+        <Typography as="h3" variant="title" className="text-body-md font-semibold">
           변경 이력
         </Typography>
         <Badge variant="outline" size="sm">
@@ -27,7 +27,7 @@ export const HistoryPanel = ({ entries }: HistoryPanelProps) => {
         </Badge>
       </div>
 
-      <div className="max-h-[20rem] space-y-3 overflow-y-auto overscroll-contain pr-1">
+      <div className="max-h-[20rem] space-y-3 overflow-y-auto overscroll-contain">
         {entries.length === 0 ? (
           <Typography variant="bodySm" color="subtle">
             아직 기록된 히스토리가 없습니다.

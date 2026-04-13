@@ -1,4 +1,4 @@
-import type { SeparatorColor, SeparatorLineStyle, SeparatorThickness } from "./separator.types";
+import type { SeparatorLineStyle, SeparatorThickness } from "./separator.types";
 
 export const SEPARATOR_DEFAULTS = {
   color: "default",
@@ -7,19 +7,19 @@ export const SEPARATOR_DEFAULTS = {
   lineStyle: "solid"
 } as const;
 
-export const SEPARATOR_COLOR_CLASS: Record<SeparatorColor, string> = {
+export const SEPARATOR_COLOR_CLASS = {
   default: "bg-border",
   subtle: "bg-default/60",
   strong: "bg-foreground/20",
   primary: "bg-primary/40"
-};
+} as const;
 
-export const SEPARATOR_BORDER_COLOR_CLASS: Record<SeparatorColor, string> = {
+export const SEPARATOR_BORDER_COLOR_CLASS = {
   default: "border-border",
   subtle: "border-default/60",
   strong: "border-foreground/20",
   primary: "border-primary/40"
-};
+} as const;
 
 export const SEPARATOR_INSET_CLASS = {
   none: "",

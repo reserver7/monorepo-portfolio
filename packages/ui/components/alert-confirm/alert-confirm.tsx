@@ -3,6 +3,7 @@
 import * as React from "react";
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { Button, buttonVariants } from "../button";
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
 import {
   ALERT_CONFIRM_CONTENT_DEFAULTS,
@@ -30,27 +31,32 @@ export const AlertConfirmContent = React.forwardRef<
       ...props
     },
     ref
-  ) => (
-  <AlertDialogPrimitive.Portal>
-    <AlertDialogPrimitive.Overlay className="bg-foreground/35 fixed inset-0 z-50 backdrop-blur-[1px] transition-opacity duration-200 data-[state=closed]:opacity-0 data-[state=open]:opacity-100" />
-    <AlertDialogPrimitive.Content
-      ref={ref}
-      onEscapeKeyDown={(event) => {
-        if (preventEscapeClose) {
-          event.preventDefault();
-        }
-        onEscapeKeyDown?.(event);
-      }}
-      className={cn(
-        "border-default bg-surface fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-xl border p-6 shadow-lg",
-        ALERT_CONFIRM_CONTENT_SIZE_CLASS[size],
-        ALERT_CONFIRM_CONTENT_INTENT_CLASS[intent],
-        className
-      )}
-      {...props}
-    />
-  </AlertDialogPrimitive.Portal>
-));
+  ) => {
+    const resolvedSize = resolveOption(size, ALERT_CONFIRM_CONTENT_SIZE_CLASS, ALERT_CONFIRM_CONTENT_DEFAULTS.size);
+    const resolvedIntent = resolveOption(intent, ALERT_CONFIRM_CONTENT_INTENT_CLASS, ALERT_CONFIRM_CONTENT_DEFAULTS.intent);
+    return (
+      <AlertDialogPrimitive.Portal>
+        <AlertDialogPrimitive.Overlay className="bg-foreground/35 fixed inset-0 z-50 backdrop-blur-[1px] transition-opacity duration-200 data-[state=closed]:opacity-0 data-[state=open]:opacity-100" />
+        <AlertDialogPrimitive.Content
+          ref={ref}
+          onEscapeKeyDown={(event) => {
+            if (preventEscapeClose) {
+              event.preventDefault();
+            }
+            onEscapeKeyDown?.(event);
+          }}
+          className={cn(
+            "border-default bg-surface fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-xl)] border p-6 shadow-card",
+            ALERT_CONFIRM_CONTENT_SIZE_CLASS[resolvedSize],
+            ALERT_CONFIRM_CONTENT_INTENT_CLASS[resolvedIntent],
+            className
+          )}
+          {...props}
+        />
+      </AlertDialogPrimitive.Portal>
+    );
+  }
+);
 AlertConfirmContent.displayName = AlertDialogPrimitive.Content.displayName;
 
 export function AlertConfirmHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

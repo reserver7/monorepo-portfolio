@@ -286,6 +286,9 @@ importers:
 
   apps/storybook:
     dependencies:
+      '@repo/theme':
+        specifier: workspace:*
+        version: link:../../packages/theme
       '@repo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -438,6 +441,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.10.0(react-hook-form@7.72.0(react@19.2.4))
+      '@repo/utils':
+        specifier: workspace:*
+        version: link:../utils
       react-hook-form:
         specifier: ^7.62.0
         version: 7.72.0(react@19.2.4)
@@ -606,6 +612,9 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.1.4
         version: 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@repo/utils':
+        specifier: workspace:*
+        version: link:../utils
       clsx:
         specifier: ^2.1.0
         version: 2.1.1

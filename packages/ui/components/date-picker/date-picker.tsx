@@ -5,6 +5,7 @@ import { Controller } from "react-hook-form";
 import type { DateRange } from "react-day-picker";
 import { CalendarDays, X } from "lucide-react";
 import { useComposedRefs, useControlledValue } from "../../hooks";
+import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
 import { Button } from "../button";
 import { Calendar } from "../calendar";
@@ -91,6 +92,9 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
     const selectedRangeTo = selectedRange?.to;
 
     const activeStatus = resolveInputStatus(status ?? state, Boolean(errorMessage));
+    const resolvedSize = resolveOption(size, INPUT_SIZE_CLASS, INPUT_DEFAULTS.size);
+    const resolvedVariant = resolveOption(variant, INPUT_VARIANT_CLASS, INPUT_DEFAULTS.variant);
+    const resolvedStatus = resolveOption(activeStatus, INPUT_STATUS_CLASS, INPUT_DEFAULTS.status);
     const generatedId = React.useId();
     const resolvedId = id ?? `date-picker-${generatedId}`;
     const supportText = errorMessage ?? helperText;
@@ -204,16 +208,17 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
       () =>
         cn(
           "h-10 w-full justify-between px-3 py-0 font-normal leading-none",
-          INPUT_SIZE_CLASS[size],
-          INPUT_VARIANT_CLASS[variant],
-          INPUT_STATUS_CLASS[activeStatus],
+          "focus-visible:ring-0 focus-visible:ring-offset-0",
+          INPUT_SIZE_CLASS[resolvedSize],
+          INPUT_VARIANT_CLASS[resolvedVariant],
+          INPUT_STATUS_CLASS[resolvedStatus],
           triggerLabel !== placeholder && triggerLabel !== DATE_PICKER_DEFAULTS.rangePlaceholder
             ? "text-foreground"
             : "text-muted",
           readOnly ? "cursor-default bg-surface text-muted hover:bg-surface active:bg-surface" : null,
           className
         ),
-      [activeStatus, className, placeholder, readOnly, size, triggerLabel, variant]
+      [className, placeholder, readOnly, resolvedSize, resolvedStatus, resolvedVariant, triggerLabel]
     );
 
     return (
@@ -221,7 +226,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
         {label ? (
           <Label
             htmlFor={resolvedId}
-            size={size === "lg" ? "md" : "sm"}
+            size={resolvedSize === "lg" ? "md" : "sm"}
             className={cn("inline-flex items-center gap-1", labelClassName)}
           >
             <span>{label}</span>
@@ -262,7 +267,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
                       handleClear();
                     }}
                     aria-label="선택한 날짜 지우기"
-                    className="text-muted hover:bg-surface-elevated hover:text-foreground inline-flex h-5 w-5 items-center justify-center rounded transition-colors"
+                    className="text-muted hover:bg-surface-elevated hover:text-foreground inline-flex h-5 w-5 items-center justify-center rounded-[var(--radius-round)] transition-colors"
                   >
                     <X className="h-3.5 w-3.5" aria-hidden />
                   </span>

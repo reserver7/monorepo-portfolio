@@ -1,9 +1,10 @@
 import type * as React from "react";
 import type * as AvatarPrimitive from "@radix-ui/react-avatar";
+import type { UiColorToken } from "../../styles/color-token";
 
 export type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
 export type AvatarShape = "circle" | "rounded" | "square";
-export type AvatarColor = "default" | "primary" | "success" | "warning" | "danger";
+export type AvatarColor = "default" | "primary" | "success" | "warning" | "danger" | UiColorToken;
 export type AvatarStatus = "online" | "offline" | "away" | "busy";
 
 export interface AvatarProps extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root> {

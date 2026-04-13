@@ -6,7 +6,7 @@ import { useQuery } from "@repo/react-query";
 import { getDashboardSummary } from "@/features/ops/api";
 import { OpsDashboardSkeleton, OpsSectionCard, SeverityBadge } from "@/features/ops";
 import { useOpsFilters } from "@/features/ops/stores";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber } from "@repo/utils";
 import { opslensQueryKeys, toOptionalSearch, toOptionalServiceName } from "@/features/ops/api";
 
 const SeverityDistributionChart = dynamic(
@@ -102,7 +102,7 @@ export default function DashboardPage() {
               {summary.newAfterLatestDeployment.map((issue) => (
                 <li key={issue.issueId} className="border-default rounded-lg border p-3">
                   <p className="text-foreground text-sm font-semibold">{issue.title}</p>
-                  <div className="text-muted mt-1 flex items-center gap-2 text-xs">
+                  <div className="text-muted mt-1 flex items-center gap-2 text-caption">
                     <SeverityBadge severity={issue.severity} />
                     <span>횟수: {formatNumber(issue.count)}</span>
                   </div>
