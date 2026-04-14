@@ -14,7 +14,7 @@ Turborepo + pnpm 기반 모노레포입니다.
 
 - Collab Web: <https://monorepo-portfolio-collab-web.vercel.app>
 - Server: <https://monorepo-portfolio-server.onrender.com>
-- Storybook: Vercel + Chromatic 운영(설정 후 활성화)
+- Storybook: <https://monorepo-portfolio-storybook.vercel.app>
 - OpsLens Dashboard: 미배포
 - OpsLens API: 미배포
 
