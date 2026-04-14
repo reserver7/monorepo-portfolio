@@ -43,7 +43,7 @@ Storybook은 아래 2가지 방식으로 함께 운영합니다.
 - 필요 시크릿: `CHROMATIC_PROJECT_TOKEN`
 
 2. Vercel (운영 공유 URL)
-- 워크플로: `CD - Storybook (Vercel Release Tag)`
+- 워크플로: `CD - Storybook (Vercel Tag Release)`
 - 트리거: `sb-v*` 태그 푸시 또는 수동 실행
 - 필요 시크릿:
   - `VERCEL_TOKEN`

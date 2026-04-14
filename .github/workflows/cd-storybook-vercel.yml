@@ -1,4 +1,4 @@
-name: CD - Storybook (Vercel Release Tag)
+name: CD - Storybook (Vercel Tag Release)
 
 on:
   push:
@@ -102,8 +102,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build Storybook Static
-        run: pnpm build:storybook
+      - name: Pull Vercel Environment Information (Storybook)
+        run: pnpm dlx vercel@latest pull --yes --environment=production --token="${VERCEL_TOKEN}"
 
-      - name: Deploy Storybook Static to Vercel
-        run: pnpm dlx vercel@latest deploy ./apps/storybook/storybook-static --prod --yes --token="${VERCEL_TOKEN}"
+      - name: Build Storybook (Vercel Prebuilt)
+        run: pnpm dlx vercel@latest build --prod --token="${VERCEL_TOKEN}"
+
+      - name: Deploy Storybook (Vercel Prebuilt)
+        run: pnpm dlx vercel@latest deploy --prebuilt --prod --yes --token="${VERCEL_TOKEN}"

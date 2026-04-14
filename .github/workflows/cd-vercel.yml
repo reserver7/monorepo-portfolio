@@ -1,4 +1,4 @@
-name: CD - Vercel (Release Tag)
+name: CD - Collab Web (Vercel Tag Release)
 
 on:
   push:

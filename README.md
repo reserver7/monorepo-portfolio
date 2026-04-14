@@ -79,7 +79,7 @@ pnpm audit:workspace
   - `CHROMATIC_PROJECT_TOKEN` (Storybook 시각 회귀 검사용)
 - 릴리스 배포:
   - `main` 머지 후 태그 규칙에 따라 CD 워크플로우가 실행됩니다.
-    - `collab-v*`: Collab Web 배포
+    - `collab-v*`: Collab Web + Collab Server 배포
     - `sb-v*`: Storybook 배포
   - CI는 PR(`main` 대상)과 수동 실행에서 동작합니다.
 

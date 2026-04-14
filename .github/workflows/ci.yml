@@ -1,4 +1,4 @@
-name: CI
+name: CI - Pull Request Validation
 
 on:
   pull_request:
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   core-checks:
-    name: Core Checks (PR to Main + Manual)
+    name: Validate Monorepo (Lint/Typecheck/Build)
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -54,7 +54,7 @@ jobs:
         run: pnpm turbo run build
 
   chromatic:
-    name: Chromatic Visual Tests
+    name: Validate UI Visual Regressions (Chromatic)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     if: ${{ secrets.CHROMATIC_PROJECT_TOKEN != '' }}
