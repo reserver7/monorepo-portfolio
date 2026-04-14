@@ -57,30 +57,47 @@ jobs:
     name: Validate UI Visual Regressions (Chromatic)
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: ${{ secrets.CHROMATIC_PROJECT_TOKEN != '' }}
     needs: core-checks
 
     steps:
+      - name: Check Chromatic token
+        id: chromatic-token
+        env:
+          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CHROMATIC_PROJECT_TOKEN}" ]; then
+            echo "enabled=false" >> "${GITHUB_OUTPUT}"
+            echo "CHROMATIC_PROJECT_TOKEN is missing. Skipping Chromatic."
+            exit 0
+          fi
+          echo "enabled=true" >> "${GITHUB_OUTPUT}"
+
       - name: Checkout
+        if: ${{ steps.chromatic-token.outputs.enabled == 'true' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Setup pnpm
+        if: ${{ steps.chromatic-token.outputs.enabled == 'true' }}
         uses: pnpm/action-setup@v4
         with:
           version: 10.12.3
 
       - name: Setup Node
+        if: ${{ steps.chromatic-token.outputs.enabled == 'true' }}
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: "pnpm"
 
       - name: Install dependencies
+        if: ${{ steps.chromatic-token.outputs.enabled == 'true' }}
         run: pnpm install --frozen-lockfile
 
       - name: Publish to Chromatic
+        if: ${{ steps.chromatic-token.outputs.enabled == 'true' }}
         uses: chromaui/action@v13
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
