@@ -1,8 +1,8 @@
-name: CD - Server (Render Release Tag)
+name: CD - Collab Server (Render Tag Release)
 
 on:
   push:
-    tags: ["v*"]
+    tags: ["collab-v*"]
   workflow_dispatch:
     inputs:
       release_tag:
