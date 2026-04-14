@@ -3,8 +3,6 @@ name: CI
 on:
   pull_request:
     branches: ["main"]
-  push:
-    branches: ["main"]
   workflow_dispatch:
 
 concurrency:
@@ -15,14 +13,118 @@ permissions:
   contents: read
 
 jobs:
-  core-checks:
-    name: Core Checks (Main + PR to Main)
+  detect-changes:
+    name: Detect Changed Scope
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    outputs:
+      global: ${{ steps.filter.outputs.global }}
+      collab_web: ${{ steps.filter.outputs.collab_web }}
+      collab_server: ${{ steps.filter.outputs.collab_server }}
+      storybook: ${{ steps.filter.outputs.storybook }}
+      opslens: ${{ steps.filter.outputs.opslens }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Detect changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            global:
+              - ".github/workflows/**"
+              - "turbo.json"
+              - "pnpm-lock.yaml"
+              - "pnpm-workspace.yaml"
+              - "package.json"
+            collab_web:
+              - "apps/collab-web/**"
+              - "packages/ui/**"
+              - "packages/theme/**"
+              - "packages/forms/**"
+              - "packages/react-query/**"
+              - "packages/utils/**"
+              - "packages/zustand/**"
+              - "packages/configs/**"
+            collab_server:
+              - "apps/collab-server/**"
+              - "packages/utils/**"
+              - "packages/configs/**"
+            storybook:
+              - "apps/storybook/**"
+              - "packages/ui/**"
+              - "packages/theme/**"
+              - "packages/configs/**"
+              - "scripts/generate-ui-stories.mjs"
+              - "scripts/watch-ui-stories.mjs"
+            opslens:
+              - "apps/opslens-dashboard/**"
+              - "apps/opslens-api/**"
+              - "packages/ui/**"
+              - "packages/theme/**"
+              - "packages/forms/**"
+              - "packages/react-query/**"
+              - "packages/utils/**"
+              - "packages/zustand/**"
+              - "packages/configs/**"
+
+  collab-web-checks:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.global == 'true' || needs.detect-changes.outputs.collab_web == 'true' }}
+    uses: ./.github/workflows/_turbo-scope-checks.yml
+    with:
+      job_name: Collab Web Checks
+      lint_command: pnpm turbo run lint --filter=@repo/collab-web
+      typecheck_command: pnpm turbo run typecheck --filter=@repo/collab-web
+      build_command: pnpm turbo run build --filter=@repo/collab-web
+
+  collab-server-checks:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.global == 'true' || needs.detect-changes.outputs.collab_server == 'true' }}
+    uses: ./.github/workflows/_turbo-scope-checks.yml
+    with:
+      job_name: Collab Server Checks
+      lint_command: pnpm turbo run lint --filter=@repo/collab-server
+      typecheck_command: pnpm turbo run typecheck --filter=@repo/collab-server
+      build_command: pnpm turbo run build --filter=@repo/collab-server
+
+  storybook-checks:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.global == 'true' || needs.detect-changes.outputs.storybook == 'true' }}
+    uses: ./.github/workflows/_turbo-scope-checks.yml
+    with:
+      job_name: Storybook Checks
+      pre_commands: |
+        pnpm storybook:gen
+        git diff --exit-code -- packages/ui/stories/components/generated
+        pnpm storybook:check
+      lint_command: pnpm turbo run lint --filter=@repo/storybook
+      typecheck_command: pnpm turbo run typecheck --filter=@repo/storybook
+      build_command: pnpm turbo run build --filter=@repo/storybook
+
+  opslens-checks:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.global == 'true' || needs.detect-changes.outputs.opslens == 'true' }}
+    uses: ./.github/workflows/_turbo-scope-checks.yml
+    with:
+      job_name: OpsLens Checks
+      lint_command: pnpm turbo run lint --filter=@repo/opslens-dashboard --filter=@repo/opslens-api
+      typecheck_command: pnpm turbo run typecheck --filter=@repo/opslens-dashboard --filter=@repo/opslens-api
+      build_command: pnpm turbo run build --filter=@repo/opslens-dashboard --filter=@repo/opslens-api
+
+  chromatic:
+    name: Chromatic Visual Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [detect-changes, storybook-checks]
+    if: ${{ (needs.detect-changes.outputs.global == 'true' || needs.detect-changes.outputs.storybook == 'true') && secrets.CHROMATIC_PROJECT_TOKEN != '' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -38,19 +140,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify Storybook Auto Stories Are Up To Date
-        run: |
-          pnpm storybook:gen
-          git diff --exit-code -- packages/ui/stories/components/generated
-
-      - name: Verify Storybook Coverage
-        run: pnpm storybook:check
-
-      - name: Lint
-        run: pnpm turbo run lint
-
-      - name: Typecheck
-        run: pnpm turbo run typecheck
-
-      - name: Build
-        run: pnpm turbo run build
+      - name: Publish to Chromatic
+        uses: chromaui/action@v13
+        with:
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          buildScriptName: build:storybook

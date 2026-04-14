@@ -1,0 +1,62 @@
+name: _Verify Release Tag On Main
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        required: true
+        type: string
+    outputs:
+      release_sha:
+        description: "Resolved tag commit SHA on main history"
+        value: ${{ jobs.verify.outputs.release_sha }}
+      release_tag:
+        description: "Normalized release tag"
+        value: ${{ jobs.verify.outputs.release_tag }}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify Release Tag Commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      release_sha: ${{ steps.resolve-release.outputs.release_sha }}
+      release_tag: ${{ steps.resolve-release.outputs.release_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release tag and ensure commit belongs to main
+        id: resolve-release
+        env:
+          INPUT_RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          release_tag="$(printf '%s' "${INPUT_RELEASE_TAG}" | xargs)"
+          if [ -z "${release_tag}" ]; then
+            echo "release_tag 입력값이 비어 있습니다."
+            exit 1
+          fi
+
+          git fetch --force --tags origin
+          if ! git rev-parse -q --verify "refs/tags/${release_tag}" >/dev/null; then
+            echo "태그를 찾을 수 없습니다: ${release_tag}"
+            exit 1
+          fi
+          release_sha="$(git rev-list -n 1 "refs/tags/${release_tag}")"
+
+          git fetch --no-tags origin main --depth=1
+          if ! git merge-base --is-ancestor "${release_sha}" "origin/main"; then
+            echo "릴리스 태그는 main 이력 위 커밋만 허용됩니다: ${release_tag} (${release_sha})"
+            exit 1
+          fi
+
+          echo "release_tag=${release_tag}" >> "${GITHUB_OUTPUT}"
+          echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
+          echo "검증 완료: ${release_tag} -> ${release_sha}"

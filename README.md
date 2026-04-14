@@ -14,6 +14,7 @@ Turborepo + pnpm 기반 모노레포입니다.
 
 - Collab Web: <https://monorepo-portfolio-collab-web.vercel.app>
 - Server: <https://monorepo-portfolio-server.onrender.com>
+- Storybook: Vercel + Chromatic 운영(설정 후 활성화)
 - OpsLens Dashboard: 미배포
 - OpsLens API: 미배포
 
@@ -74,17 +75,25 @@ pnpm audit:workspace
   - `VERCEL_TOKEN`
   - `VERCEL_ORG_ID`
   - `VERCEL_PROJECT_ID_COLLAB_WEB`
+  - `VERCEL_PROJECT_ID_STORYBOOK` (Storybook Vercel 배포용)
+  - `CHROMATIC_PROJECT_TOKEN` (Storybook 시각 회귀 검사용)
 - 릴리스 배포:
-  - `main` 머지 후 `v*` 태그 푸시 시 CD 워크플로우가 실행됩니다.
+  - `main` 머지 후 태그 규칙에 따라 CD 워크플로우가 실행됩니다.
+    - `web-v*`: Collab Web 배포
+    - `sb-v*`: Storybook 배포
+  - CI는 PR(`main` 대상)과 수동 실행에서 동작합니다.
 
 ## 태그 배포
 
 ```bash
-git tag -a v0.2.x -m "release: 설명"
-git push origin v0.2.x
+git tag -a web-v0.2.x -m "release: collab web"
+git push origin web-v0.2.x
+
+git tag -a sb-v0.2.x -m "release: storybook"
+git push origin sb-v0.2.x
 ```
 
-- `v*` 태그 푸시 시 CD 워크플로우가 실행됩니다.
+- 태그 접두사에 맞는 CD만 실행됩니다.
 - 일반 개발 흐름: 기능 브랜치 → PR → Squash Merge(main) → 태그 생성/푸시
 
 ## 관련 문서
