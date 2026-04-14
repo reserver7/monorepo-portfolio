@@ -13,136 +13,10 @@ permissions:
   contents: read
 
 jobs:
-  detect-changes:
-    name: Detect Changed Scope
-    runs-on: ubuntu-latest
-    outputs:
-      global: ${{ steps.filter.outputs.global }}
-      collab_web: ${{ steps.filter.outputs.collab_web }}
-      collab_server: ${{ steps.filter.outputs.collab_server }}
-      storybook: ${{ steps.filter.outputs.storybook }}
-      opslens: ${{ steps.filter.outputs.opslens }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Detect changes
-        id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            global:
-              - ".github/workflows/**"
-              - "turbo.json"
-              - "pnpm-lock.yaml"
-              - "pnpm-workspace.yaml"
-              - "package.json"
-            collab_web:
-              - "apps/collab-web/**"
-              - "packages/ui/**"
-              - "packages/theme/**"
-              - "packages/forms/**"
-              - "packages/react-query/**"
-              - "packages/utils/**"
-              - "packages/zustand/**"
-              - "packages/configs/**"
-            collab_server:
-              - "apps/collab-server/**"
-              - "packages/utils/**"
-              - "packages/configs/**"
-            storybook:
-              - "apps/storybook/**"
-              - "packages/ui/**"
-              - "packages/theme/**"
-              - "packages/configs/**"
-              - "scripts/generate-ui-stories.mjs"
-              - "scripts/watch-ui-stories.mjs"
-            opslens:
-              - "apps/opslens-dashboard/**"
-              - "apps/opslens-api/**"
-              - "packages/ui/**"
-              - "packages/theme/**"
-              - "packages/forms/**"
-              - "packages/react-query/**"
-              - "packages/utils/**"
-              - "packages/zustand/**"
-              - "packages/configs/**"
-
-  collab-web-checks:
-    name: Collab Web Checks
+  core-checks:
+    name: Core Checks (PR to Main + Manual)
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.global == 'true' || needs.detect-changes.outputs.collab_web == 'true' }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.3
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint (Collab Web Scope)
-        run: pnpm turbo run lint --filter=@repo/collab-web
-
-      - name: Typecheck (Collab Web Scope)
-        run: pnpm turbo run typecheck --filter=@repo/collab-web
-
-      - name: Build (Collab Web Scope)
-        run: pnpm turbo run build --filter=@repo/collab-web
-
-  collab-server-checks:
-    name: Collab Server Checks
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.global == 'true' || needs.detect-changes.outputs.collab_server == 'true' }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.3
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint (Collab Server Scope)
-        run: pnpm turbo run lint --filter=@repo/collab-server
-
-      - name: Typecheck (Collab Server Scope)
-        run: pnpm turbo run typecheck --filter=@repo/collab-server
-
-      - name: Build (Collab Server Scope)
-        run: pnpm turbo run build --filter=@repo/collab-server
-
-  storybook-checks:
-    name: Storybook Checks
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.global == 'true' || needs.detect-changes.outputs.storybook == 'true' }}
 
     steps:
       - name: Checkout
@@ -170,55 +44,21 @@ jobs:
       - name: Verify Storybook Coverage
         run: pnpm storybook:check
 
-      - name: Lint (Storybook Scope)
-        run: pnpm turbo run lint --filter=@repo/storybook
+      - name: Lint
+        run: pnpm turbo run lint
 
-      - name: Typecheck (Storybook Scope)
-        run: pnpm turbo run typecheck --filter=@repo/storybook
+      - name: Typecheck
+        run: pnpm turbo run typecheck
 
-      - name: Build (Storybook Scope)
-        run: pnpm turbo run build --filter=@repo/storybook
-
-  opslens-checks:
-    name: OpsLens Checks
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.global == 'true' || needs.detect-changes.outputs.opslens == 'true' }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.3
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint (OpsLens Scope)
-        run: pnpm turbo run lint --filter=@repo/opslens-dashboard --filter=@repo/opslens-api
-
-      - name: Typecheck (OpsLens Scope)
-        run: pnpm turbo run typecheck --filter=@repo/opslens-dashboard --filter=@repo/opslens-api
-
-      - name: Build (OpsLens Scope)
-        run: pnpm turbo run build --filter=@repo/opslens-dashboard --filter=@repo/opslens-api
+      - name: Build
+        run: pnpm turbo run build
 
   chromatic:
     name: Chromatic Visual Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [detect-changes, storybook-checks]
-    if: ${{ (needs.detect-changes.outputs.global == 'true' || needs.detect-changes.outputs.storybook == 'true') && secrets.CHROMATIC_PROJECT_TOKEN != '' }}
+    if: ${{ secrets.CHROMATIC_PROJECT_TOKEN != '' }}
+    needs: core-checks
 
     steps:
       - name: Checkout
