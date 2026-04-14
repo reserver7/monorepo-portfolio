@@ -70,48 +70,148 @@ jobs:
               - "packages/configs/**"
 
   collab-web-checks:
+    name: Collab Web Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.global == 'true' || needs.detect-changes.outputs.collab_web == 'true' }}
-    uses: ./.github/workflows/_turbo-scope-checks.yml
-    with:
-      job_name: Collab Web Checks
-      lint_command: pnpm turbo run lint --filter=@repo/collab-web
-      typecheck_command: pnpm turbo run typecheck --filter=@repo/collab-web
-      build_command: pnpm turbo run build --filter=@repo/collab-web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (Collab Web Scope)
+        run: pnpm turbo run lint --filter=@repo/collab-web
+
+      - name: Typecheck (Collab Web Scope)
+        run: pnpm turbo run typecheck --filter=@repo/collab-web
+
+      - name: Build (Collab Web Scope)
+        run: pnpm turbo run build --filter=@repo/collab-web
 
   collab-server-checks:
+    name: Collab Server Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.global == 'true' || needs.detect-changes.outputs.collab_server == 'true' }}
-    uses: ./.github/workflows/_turbo-scope-checks.yml
-    with:
-      job_name: Collab Server Checks
-      lint_command: pnpm turbo run lint --filter=@repo/collab-server
-      typecheck_command: pnpm turbo run typecheck --filter=@repo/collab-server
-      build_command: pnpm turbo run build --filter=@repo/collab-server
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (Collab Server Scope)
+        run: pnpm turbo run lint --filter=@repo/collab-server
+
+      - name: Typecheck (Collab Server Scope)
+        run: pnpm turbo run typecheck --filter=@repo/collab-server
+
+      - name: Build (Collab Server Scope)
+        run: pnpm turbo run build --filter=@repo/collab-server
 
   storybook-checks:
+    name: Storybook Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.global == 'true' || needs.detect-changes.outputs.storybook == 'true' }}
-    uses: ./.github/workflows/_turbo-scope-checks.yml
-    with:
-      job_name: Storybook Checks
-      pre_commands: |
-        pnpm storybook:gen
-        git diff --exit-code -- packages/ui/stories/components/generated
-        pnpm storybook:check
-      lint_command: pnpm turbo run lint --filter=@repo/storybook
-      typecheck_command: pnpm turbo run typecheck --filter=@repo/storybook
-      build_command: pnpm turbo run build --filter=@repo/storybook
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify Storybook Auto Stories Are Up To Date
+        run: |
+          pnpm storybook:gen
+          git diff --exit-code -- packages/ui/stories/components/generated
+
+      - name: Verify Storybook Coverage
+        run: pnpm storybook:check
+
+      - name: Lint (Storybook Scope)
+        run: pnpm turbo run lint --filter=@repo/storybook
+
+      - name: Typecheck (Storybook Scope)
+        run: pnpm turbo run typecheck --filter=@repo/storybook
+
+      - name: Build (Storybook Scope)
+        run: pnpm turbo run build --filter=@repo/storybook
 
   opslens-checks:
+    name: OpsLens Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.global == 'true' || needs.detect-changes.outputs.opslens == 'true' }}
-    uses: ./.github/workflows/_turbo-scope-checks.yml
-    with:
-      job_name: OpsLens Checks
-      lint_command: pnpm turbo run lint --filter=@repo/opslens-dashboard --filter=@repo/opslens-api
-      typecheck_command: pnpm turbo run typecheck --filter=@repo/opslens-dashboard --filter=@repo/opslens-api
-      build_command: pnpm turbo run build --filter=@repo/opslens-dashboard --filter=@repo/opslens-api
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (OpsLens Scope)
+        run: pnpm turbo run lint --filter=@repo/opslens-dashboard --filter=@repo/opslens-api
+
+      - name: Typecheck (OpsLens Scope)
+        run: pnpm turbo run typecheck --filter=@repo/opslens-dashboard --filter=@repo/opslens-api
+
+      - name: Build (OpsLens Scope)
+        run: pnpm turbo run build --filter=@repo/opslens-dashboard --filter=@repo/opslens-api
 
   chromatic:
     name: Chromatic Visual Tests
