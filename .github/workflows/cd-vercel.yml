@@ -2,7 +2,7 @@ name: CD - Vercel (Release Tag)
 
 on:
   push:
-    tags: ["web-v*"]
+    tags: ["collab-v*"]
   workflow_dispatch:
     inputs:
       release_tag:
