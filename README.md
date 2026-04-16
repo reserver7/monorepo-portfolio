@@ -6,8 +6,8 @@ Turborepo + pnpm 기반 모노레포입니다.
 
 - `apps/collab-web` - 문서+화이트보드 통합 협업 (`http://localhost:3000`)
 - `apps/collab-server` - 협업 API/소켓 서버 (`http://localhost:4000`)
-- `apps/opslens-dashboard` - 운영 대시보드 (`http://localhost:3002`)
-- `apps/opslens-api` - 운영 GraphQL API (`http://localhost:4100/graphql`)
+- `apps/opslens-web` - 운영 대시보드 (`http://localhost:3002`)
+- `apps/opslens-server` - 운영 GraphQL API (`http://localhost:4100/graphql`)
 - `apps/storybook` - 디자인시스템 검증 (`http://localhost:6006`)
 
 ## 실제 도메인
@@ -23,6 +23,7 @@ Turborepo + pnpm 기반 모노레포입니다.
 - `@repo/ui`: 디자인시스템 컴포넌트/토큰
 - `@repo/theme`: 테마/프로바이더
 - `@repo/react-query`: Query/HTTP 유틸
+- `@repo/opslens`: OpsLens 도메인 API/타입/쿼리키
 - `@repo/forms`: RHF 중심 폼 유틸
 - `@repo/zustand`: 상태관리 유틸
 - `@repo/utils`: 협업/공통 로직 유틸

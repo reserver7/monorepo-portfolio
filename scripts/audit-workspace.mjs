@@ -4,7 +4,7 @@ import path from "node:path";
 
 const rootDir = process.cwd();
 const appsDir = path.join(rootDir, "apps");
-const frontendApps = ["collab-web", "opslens-dashboard"];
+const frontendApps = ["collab-web", "opslens-web"];
 const allApps = fs
   .readdirSync(appsDir, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
