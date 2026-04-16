@@ -1,0 +1,223 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input AddIssueCommentInput {
+  author: String!
+  body: String!
+  issueId: String!
+}
+
+input AnalyzeLogsInputModel {
+  deploymentVersion: String
+  environment: String!
+  rawLogs: String!
+  serviceName: String!
+  source: String!
+}
+
+type AnalyzeLogsPayloadType {
+  clusters: [ErrorClusterType!]!
+  createdIssues: Int!
+  updatedIssues: Int!
+}
+
+input AssignIssueInput {
+  assignee: String!
+  issueId: String!
+}
+
+input DashboardFilterInput {
+  environment: String
+  from: String
+  query: String
+  serviceName: String
+  to: String
+}
+
+type DashboardSummaryType {
+  aiBriefing: String!
+  errorTrend24h: [TrendPointType!]!
+  newAfterLatestDeployment: [RepeatedErrorType!]!
+  severityDistribution: [SeverityCountType!]!
+  todayIssueCount: Int!
+  topRepeatedErrors: [RepeatedErrorType!]!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+input DeploymentImpactInput {
+  environment: String!
+  version: String!
+}
+
+type DeploymentImpactItemType {
+  afterCount: Int!
+  beforeCount: Int!
+  delta: Int!
+  issueId: String!
+  serviceName: String!
+  severity: String!
+  title: String!
+}
+
+type DeploymentImpactReportType {
+  deployedAt: DateTime!
+  environment: String!
+  increasedIssueCount: Int!
+  increasedIssues: [DeploymentImpactItemType!]!
+  summary: String!
+  totalAfterErrorCount: Int!
+  version: String!
+}
+
+type DeploymentType {
+  changelog: String!
+  deployedAt: DateTime!
+  environment: String!
+  id: String!
+  version: String!
+}
+
+type ErrorClusterType {
+  affectedArea: String!
+  count: Int!
+  deploymentCorrelation: String!
+  firstSeen: DateTime!
+  lastSeen: DateTime!
+  normalizedMessage: String!
+  probableCauses: [String!]!
+  reproductionGuide: String!
+  severity: String!
+  suggestedActions: [String!]!
+  title: String!
+}
+
+type IssueCommentType {
+  author: String!
+  body: String!
+  createdAt: DateTime!
+  id: String!
+}
+
+input IssueFilterInput {
+  environment: String
+  page: Int = 1
+  pageSize: Int = 20
+  query: String
+  serviceName: String
+  severity: String
+  status: String
+}
+
+type IssueListPayloadType {
+  items: [IssueType!]!
+  page: Int!
+  pageSize: Int!
+  totalCount: Int!
+}
+
+type IssueType {
+  affectedArea: String
+  assignee: String
+  comments: [IssueCommentType!]!
+  createdAt: DateTime!
+  deploymentCorrelation: String
+  deploymentVersion: String
+  environment: String!
+  firstOccurredAt: DateTime!
+  id: String!
+  lastOccurredAt: DateTime!
+  logs: [LogEventType!]!
+  occurrenceCount: Int!
+  probableCauses: [String!]!
+  reproductionGuide: String!
+  serviceName: String!
+  severity: String!
+  status: String!
+  suggestedActions: [String!]!
+  summary: String!
+  title: String!
+  updatedAt: DateTime!
+}
+
+type LogEventType {
+  endpoint: String
+  id: String!
+  level: String!
+  normalizedMessage: String!
+  occurredAt: DateTime!
+  page: String
+  rawMessage: String!
+  source: String!
+  userId: String
+}
+
+type Mutation {
+  addIssueComment(input: AddIssueCommentInput!): IssueType!
+  analyzeLogs(input: AnalyzeLogsInputModel!): AnalyzeLogsPayloadType!
+  assignIssue(input: AssignIssueInput!): IssueType!
+  generateQaScenario(input: QaAssistantInputModel!): QaScenarioType!
+  registerDeployment(input: RegisterDeploymentInput!): DeploymentType!
+  updateIssueStatus(input: UpdateIssueStatusInput!): IssueType!
+}
+
+input QaAssistantInputModel {
+  audience: String!
+  changedScreens: String!
+  featureName: String!
+  relatedApis: String!
+  releaseNote: String!
+}
+
+type QaScenarioType {
+  audience: String!
+  createdAt: DateTime!
+  featureName: String!
+  generatedCases: [String!]!
+  id: String!
+  regressionTargets: [String!]!
+  riskPoints: [String!]!
+}
+
+type Query {
+  aiBriefing(filter: DashboardFilterInput): String!
+  dashboardSummary(filter: DashboardFilterInput): DashboardSummaryType!
+  deploymentImpact(input: DeploymentImpactInput!): DeploymentImpactReportType!
+  deployments(environment: String): [DeploymentType!]!
+  issueDetail(issueId: String!): IssueType!
+  issues(filter: IssueFilterInput): IssueListPayloadType!
+  recentQaScenarios: [QaScenarioType!]!
+}
+
+input RegisterDeploymentInput {
+  changelog: String!
+  deployedAt: String
+  environment: String!
+  version: String!
+}
+
+type RepeatedErrorType {
+  count: Int!
+  issueId: String!
+  severity: String!
+  title: String!
+}
+
+type SeverityCountType {
+  count: Int!
+  severity: String!
+}
+
+type TrendPointType {
+  count: Int!
+  hour: String!
+}
+
+input UpdateIssueStatusInput {
+  issueId: String!
+  status: String!
+}
