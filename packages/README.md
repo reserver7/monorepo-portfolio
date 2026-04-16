@@ -13,6 +13,7 @@
 - `@repo/ui`
 - `@repo/theme`
 - `@repo/react-query`
+- `@repo/opslens`
 - `@repo/forms`
 - `@repo/zustand`
 - `@repo/utils`
@@ -45,6 +46,7 @@ pnpm --filter @repo/utils typecheck
 - 루트 가이드: [`../README.md`](../README.md)
 - UI 패키지: [`./ui/README.md`](./ui/README.md)
 - React Query 패키지: [`./react-query/README.md`](./react-query/README.md)
+- OpsLens 패키지: [`./opslens/README.md`](./opslens/README.md)
 - Zustand 패키지: [`./zustand/README.md`](./zustand/README.md)
 - Utils 패키지: [`./utils/README.md`](./utils/README.md)
 - Forms 패키지: [`./forms/README.md`](./forms/README.md)

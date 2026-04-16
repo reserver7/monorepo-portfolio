@@ -24,9 +24,9 @@ export const BADGE_VARIANT_CLASS: Record<BadgeVariant, string> = {
 };
 
 export const BADGE_SIZE_CLASS: Record<BadgeSize, string> = {
-  sm: "h-5 px-2 text-caption",
-  md: "h-6 px-2.5 text-body-sm",
-  lg: "h-7 px-3 text-body-sm"
+  sm: "h-6 px-2.5 text-micro",
+  md: "h-7 px-3 text-caption",
+  lg: "h-8 px-3.5 text-body-sm"
 };
 
 export const BADGE_SHAPE_CLASS: Record<BadgeShape, string> = {

@@ -5,9 +5,10 @@ import { BOX_DEFAULTS } from "./box.constants";
 import { getBoxClassName } from "./box.utils";
 import type { BoxProps } from "./box.types";
 
-const BoxBase = React.forwardRef<HTMLDivElement, BoxProps>(
+const BoxBase = React.forwardRef<HTMLElement, BoxProps>(
   (
     {
+      as: Comp = "div",
       className,
       variant = BOX_DEFAULTS.variant,
       padding = BOX_DEFAULTS.padding,
@@ -19,17 +20,15 @@ const BoxBase = React.forwardRef<HTMLDivElement, BoxProps>(
       ...props
     },
     ref
-  ) => (
-    <div
-      ref={ref}
-      className={getBoxClassName({ variant, padding, radius, shadow, border, fullWidth, fullHeight, className })}
-      {...props}
-    />
-  )
+  ) =>
+    React.createElement(Comp, {
+      ref,
+      className: getBoxClassName({ variant, padding, radius, shadow, border, fullWidth, fullHeight, className }),
+      ...props
+    })
 );
 
 BoxBase.displayName = "BoxBase";
 
 export const Box = React.memo(BoxBase);
 Box.displayName = "Box";
-

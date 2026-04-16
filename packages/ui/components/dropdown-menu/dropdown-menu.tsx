@@ -38,7 +38,7 @@ export const DropdownMenuSubTrigger = React.forwardRef<
     <DropdownMenuPrimitive.SubTrigger
       ref={ref}
       className={cn(
-        "relative flex cursor-default select-none items-center rounded-[var(--radius-sm)] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "relative flex cursor-pointer select-none items-center rounded-[var(--radius-sm)] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         DROPDOWN_MENU_ITEM_SIZE_CLASS[resolvedSize],
         DROPDOWN_MENU_ITEM_COLOR_CLASS.default,
         inset ? "pl-8" : null,
@@ -126,7 +126,7 @@ export const DropdownMenuItem = React.forwardRef<
           onSelect?.(event);
         }}
         className={cn(
-          "relative flex cursor-default select-none items-center gap-2 rounded-[var(--radius-sm)] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+          "relative flex cursor-pointer select-none items-center gap-2 rounded-[var(--radius-sm)] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
           DROPDOWN_MENU_ITEM_SIZE_CLASS[resolvedSize],
           DROPDOWN_MENU_ITEM_COLOR_CLASS[resolvedColorKey],
           inset ? "pl-8" : null,
@@ -179,7 +179,7 @@ export const DropdownMenuCheckboxItem = React.forwardRef<
           onSelect?.(event);
         }}
         className={cn(
-          "relative flex cursor-default select-none items-center rounded-[var(--radius-sm)] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+          "relative flex cursor-pointer select-none items-center rounded-[var(--radius-sm)] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
           DROPDOWN_MENU_ITEM_SIZE_CLASS[resolvedSize],
           DROPDOWN_MENU_ITEM_COLOR_CLASS[resolvedColorKey],
           "pl-8 pr-2",
@@ -233,7 +233,7 @@ export const DropdownMenuRadioItem = React.forwardRef<
           onSelect?.(event);
         }}
         className={cn(
-          "relative flex cursor-default select-none items-center rounded-[var(--radius-sm)] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+          "relative flex cursor-pointer select-none items-center rounded-[var(--radius-sm)] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
           DROPDOWN_MENU_ITEM_SIZE_CLASS[resolvedSize],
           DROPDOWN_MENU_ITEM_COLOR_CLASS[resolvedColorKey],
           "pl-8 pr-2",

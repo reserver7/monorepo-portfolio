@@ -41,7 +41,7 @@ export const BUTTON_SHAPE_CLASS: Record<ButtonShape, string> = {
 };
 
 export const BUTTON_ICON_ONLY_SIZE_CLASS: Record<ButtonSize, string> = {
-  sm: "h-9 w-9 p-0",
-  md: "h-10 w-10 p-0",
-  lg: "h-11 w-11 p-0"
+  sm: "h-9 w-9 shrink-0 p-0",
+  md: "h-10 w-10 shrink-0 p-0",
+  lg: "h-11 w-11 shrink-0 p-0"
 };
