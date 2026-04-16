@@ -29,7 +29,7 @@ export const SELECT_DEFAULTS = {
 export const SELECT_ROW_HEIGHT_PX = 36;
 
 export const SELECT_TRIGGER_BASE_CLASS =
-  "inline-flex w-full items-center justify-between rounded-[var(--radius-md)] border px-3 py-2 text-foreground outline-none transition-colors focus:ring-1 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex w-full cursor-pointer items-center justify-between rounded-[var(--radius-md)] border px-3 py-2 text-foreground outline-none transition-colors focus:ring-1 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50";
 
 export const SELECT_CONTENT_BASE_CLASS =
   "z-50 max-h-80 min-w-[var(--radix-select-trigger-width)] w-[var(--radix-select-trigger-width)] overflow-hidden rounded-[var(--radius-md)] border border-default bg-surface shadow-[var(--shadow-card)]";

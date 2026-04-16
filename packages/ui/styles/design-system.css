@@ -215,3 +215,37 @@
 .dark {
   color-scheme: dark;
 }
+
+.ui-button svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.ui-button[data-icon-only="true"] {
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  aspect-ratio: 1 / 1;
+  flex: 0 0 auto;
+}
+
+.ui-button[data-icon-only="true"][data-size="sm"] {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  min-width: 2.25rem !important;
+  min-height: 2.25rem !important;
+}
+
+.ui-button[data-icon-only="true"][data-size="md"] {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  min-width: 2.5rem !important;
+  min-height: 2.5rem !important;
+}
+
+.ui-button[data-icon-only="true"][data-size="lg"] {
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  min-width: 2.75rem !important;
+  min-height: 2.75rem !important;
+}
