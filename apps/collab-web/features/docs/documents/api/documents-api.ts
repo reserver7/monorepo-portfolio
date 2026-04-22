@@ -1,4 +1,5 @@
 import { docsClientEnv } from "@/lib/config";
+import { getCollabText } from "@/lib/i18n/runtime";
 import { DocumentComment, DocumentRecord, DocumentSummary, HistoryEntry } from "@/features/docs/collaboration/model";
 import { createQueryKeys, createResourceClient, requestJson } from "@repo/react-query";
 
@@ -35,7 +36,7 @@ export const createDocument = async (input: {
   editorAccessKey?: string;
 }): Promise<{ document: DocumentRecord }> => {
   return documentsResource.create(input, {
-    successMessage: "문서가 생성되었습니다."
+    successMessage: getCollabText("collab.api.documents.createSuccess")
   });
 };
 
@@ -51,7 +52,7 @@ export const deleteDocumentById = async (input: {
     },
     {
       notifyOnError: input.notifyOnError,
-      successMessage: "문서가 삭제되었습니다."
+      successMessage: getCollabText("collab.api.documents.deleteSuccess")
     }
   );
 };
@@ -117,6 +118,6 @@ export const createDocumentComment = async (input: {
       body: input.body,
       mentions: input.mentions
     }),
-    successMessage: "댓글이 등록되었습니다."
+    successMessage: getCollabText("collab.api.documents.commentCreateSuccess")
   });
 };

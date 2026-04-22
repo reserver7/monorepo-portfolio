@@ -1,5 +1,6 @@
 import { WhiteboardRecord, WhiteboardSummary } from "@/features/whiteboard/collaboration/model";
 import { whiteboardClientEnv } from "@/lib/config";
+import { getCollabText } from "@/lib/i18n/runtime";
 import { createQueryKeys, createResourceClient } from "@repo/react-query";
 
 export const API_BASE_URL = whiteboardClientEnv.apiBaseUrl;
@@ -33,7 +34,7 @@ export const createBoard = async (input: {
   editorAccessKey?: string;
 }): Promise<{ board: WhiteboardRecord }> => {
   return boardsResource.create(input, {
-    successMessage: "화이트보드가 생성되었습니다."
+    successMessage: getCollabText("collab.api.whiteboard.createSuccess")
   });
 };
 
@@ -49,7 +50,7 @@ export const deleteBoardById = async (input: {
     },
     {
       notifyOnError: input.notifyOnError,
-      successMessage: "화이트보드가 삭제되었습니다."
+      successMessage: getCollabText("collab.api.whiteboard.deleteSuccess")
     }
   );
 };

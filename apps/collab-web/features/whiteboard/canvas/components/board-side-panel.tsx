@@ -1,7 +1,9 @@
 import type { Participant } from "@repo/utils/collab";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge, Card, Typography } from "@repo/ui";
 import type { WhiteboardShape } from "@/features/whiteboard/collaboration/model";
 import type { WhiteboardTool } from "./shape-utils";
+import { normalizeGuestDisplayName } from "@/lib/i18n/display-name";
 
 interface BoardSidePanelProps {
   participants: Participant[];
@@ -18,15 +20,6 @@ interface BoardSidePanelProps {
   eventLog: string[];
 }
 
-const toolNameByValue: Record<WhiteboardTool, string> = {
-  select: "선택/이동",
-  rect: "사각형",
-  ellipse: "타원",
-  diamond: "마름모",
-  text: "텍스트",
-  connector: "연결선"
-};
-
 export const BoardSidePanel = ({
   participants,
   sessionId,
@@ -36,24 +29,34 @@ export const BoardSidePanel = ({
   historyEntries,
   eventLog
 }: BoardSidePanelProps) => {
+  const t = useTranslations("collab.whiteboardPanel");
+  const locale = useLocale();
   const visibleEventLog = eventLog.slice(0, 100);
   const panelItemClass = "rounded-lg border border-default/70 bg-surface-elevated/65 px-3.5 py-3";
+  const toolNameByValue: Record<WhiteboardTool, string> = {
+    select: t("tool.select"),
+    rect: t("tool.rect"),
+    ellipse: t("tool.ellipse"),
+    diamond: t("tool.diamond"),
+    text: t("tool.text"),
+    connector: t("tool.connector")
+  };
 
   return (
     <div className="space-y-4">
       <Card className="border border-default/80 bg-surface p-5">
         <div className="mb-4 flex items-center justify-between gap-2">
           <Typography as="h3" variant="title" className="text-body-md font-semibold">
-            참여자
+            {t("participants.title")}
           </Typography>
           <Badge variant="info" size="sm">
-            {participants.length}명
+            {t("participants.count", { count: participants.length })}
           </Badge>
         </div>
         <div className="space-y-3">
           {participants.length === 0 ? (
             <Typography variant="bodySm" color="subtle">
-              아직 접속한 참여자가 없습니다.
+              {t("participants.empty")}
             </Typography>
           ) : (
             participants.map((participant) => {
@@ -70,8 +73,8 @@ export const BoardSidePanel = ({
                         style={{ backgroundColor: participant.color }}
                       />
                       <Typography as="span" variant="bodySm" className="truncate font-medium">
-                        {participant.displayName}
-                        {isMe ? " (나)" : ""}
+                        {normalizeGuestDisplayName(participant.displayName, locale)}
+                        {isMe ? t("participants.meSuffix") : ""}
                       </Typography>
                     </div>
                     <Badge
@@ -85,7 +88,7 @@ export const BoardSidePanel = ({
 
                   <div className="mt-1.5 flex items-center justify-end">
                     <Typography as="span" variant="caption" color="subtle" className="tabular-nums">
-                      커서: {cursorX}, {cursorY}
+                      {t("participants.cursor", { x: cursorX, y: cursorY })}
                     </Typography>
                   </div>
                 </div>
@@ -97,12 +100,12 @@ export const BoardSidePanel = ({
 
       <Card className="border border-default/80 bg-surface p-5">
         <Typography as="h3" variant="title" className="mb-3 text-body-md font-semibold">
-          선택 정보
+          {t("selection.title")}
         </Typography>
         <div className="space-y-3">
           <div className={panelItemClass}>
             <Typography variant="caption" color="subtle">
-              선택 도구
+              {t("selection.toolLabel")}
             </Typography>
             <Typography variant="bodySm" className="mt-0.5 font-medium">
               {toolNameByValue[activeTool]}
@@ -110,18 +113,18 @@ export const BoardSidePanel = ({
           </div>
           <div className={panelItemClass}>
             <Typography variant="caption" color="subtle">
-              선택 요소
+              {t("selection.elementLabel")}
             </Typography>
             <Typography variant="bodySm" className="mt-0.5 font-medium">
-              {selectedShape ? `${selectedShape.type} (${selectedShape.id.slice(0, 6)})` : "없음"}
+              {selectedShape ? `${selectedShape.type} (${selectedShape.id.slice(0, 6)})` : t("common.none")}
             </Typography>
           </div>
           <div className={panelItemClass}>
             <Typography variant="caption" color="subtle">
-              연결 시작점
+              {t("selection.connectorStartLabel")}
             </Typography>
             <Typography variant="bodySm" className="mt-0.5 font-medium">
-              {connectorFromShapeId ? connectorFromShapeId.slice(0, 6) : "없음"}
+              {connectorFromShapeId ? connectorFromShapeId.slice(0, 6) : t("common.none")}
             </Typography>
           </div>
         </div>
@@ -130,16 +133,16 @@ export const BoardSidePanel = ({
       <Card className="border border-default/80 bg-surface p-5">
         <div className="mb-4 flex items-center justify-between gap-2">
           <Typography as="h3" variant="title" className="text-body-md font-semibold">
-            변경 이력
+            {t("history.title")}
           </Typography>
           <Typography as="span" variant="caption" color="subtle">
-            최근 {historyEntries.length}건
+            {t("history.recentCount", { count: historyEntries.length })}
           </Typography>
         </div>
         <div className="max-h-[20rem] space-y-3 overflow-y-auto overscroll-contain">
           {historyEntries.length === 0 ? (
             <Typography variant="bodySm" color="subtle">
-              표시할 변경 이력이 없습니다.
+              {t("history.empty")}
             </Typography>
           ) : (
             historyEntries.map((entry) => (
@@ -149,11 +152,11 @@ export const BoardSidePanel = ({
                     {entry.shapeType}
                   </Typography>
                   <Typography as="span" variant="caption" color="subtle">
-                    {new Date(entry.updatedAt).toLocaleString("ko-KR")}
+                    {new Date(entry.updatedAt).toLocaleString(locale)}
                   </Typography>
                 </div>
                 <Typography variant="caption" color="subtle" className="mt-1">
-                  by {entry.actor}
+                  {t("history.by")} {normalizeGuestDisplayName(entry.actor, locale)}
                 </Typography>
               </div>
             ))
@@ -164,16 +167,16 @@ export const BoardSidePanel = ({
       <Card className="border border-default/80 bg-surface p-5">
         <div className="mb-4 flex items-center justify-between gap-2">
           <Typography as="h3" variant="title" className="text-body-md font-semibold">
-            실시간 이벤트
+            {t("events.title")}
           </Typography>
           <Typography as="span" variant="caption" color="subtle">
-            최근 {eventLog.length}개
+            {t("events.recentCount", { count: eventLog.length })}
           </Typography>
         </div>
         <div className="max-h-80 space-y-3 overflow-auto">
           {eventLog.length === 0 ? (
             <Typography variant="bodySm" color="subtle">
-              이벤트가 발생하면 여기에 표시됩니다.
+              {t("events.empty")}
             </Typography>
           ) : (
             visibleEventLog.map((log, index) => (

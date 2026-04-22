@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useAppForm } from "@repo/forms";
 import { useQuery } from "@repo/react-query";
 import {
@@ -26,12 +27,12 @@ import {
   confirm,
   useDisclosure
 } from "@repo/ui";
+import { CollabLocaleFilter } from "@/features/common/components/collab-locale-filter";
 import { getBoard, whiteboardQueryKeys } from "@/features/whiteboard/boards/api";
 import { useWhiteboardRealtime } from "@/features/whiteboard/canvas/hooks/use-whiteboard-realtime";
 import { useWhiteboardStore } from "@/features/whiteboard/canvas/stores/use-whiteboard-store";
 import { WhiteboardShape } from "@/features/whiteboard/collaboration/model";
 import {
-  createGuestName,
   getStoredDisplayName,
   getStoredEditorAccessKey,
   getStoredRole,
@@ -40,7 +41,7 @@ import {
   setStoredRole
 } from "@/features/whiteboard/collaboration/model";
 import { formatExactTime, formatRelativeTime } from "@/features/whiteboard/collaboration/model";
-import { collabFieldCopy } from "@repo/utils/collab";
+import { createLocaleGuestName, normalizeGuestDisplayName } from "@/lib/i18n/display-name";
 import {
   ConnectorHandle,
   findNearestNodeCenter,
@@ -59,22 +60,11 @@ const BoardSidePanel = dynamic(
   { ssr: false }
 );
 
-const connectionLabel = {
-  connecting: "연결 중",
-  online: "온라인",
-  offline: "오프라인"
-} as const;
-
-const toolLabel: Record<WhiteboardTool, string> = {
-  select: "선택/이동",
-  rect: "사각형",
-  ellipse: "타원",
-  diamond: "마름모",
-  text: "텍스트",
-  connector: "연결선"
-};
-
 export default function WhiteboardRoomPage() {
+  const t = useTranslations("collab.whiteboardRoom");
+  const tFields = useTranslations("collab.fields");
+  const locale = useLocale();
+  const resolveGuestName = useCallback(() => createLocaleGuestName(locale), [locale]);
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const boardId = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -85,7 +75,7 @@ export default function WhiteboardRoomPage() {
     editorAccessKey: string;
   }>({
     defaultValues: {
-      displayName: "게스트",
+      displayName: resolveGuestName(),
       requestedRole: "editor",
       editorAccessKey: ""
     }
@@ -110,12 +100,12 @@ export default function WhiteboardRoomPage() {
     const stored = getStoredDisplayName();
     const storedRole = getStoredRole();
     const storedEditorAccessKey = getStoredEditorAccessKey();
-    const nextDisplayName = stored?.trim() ? stored : createGuestName();
+    const nextDisplayName = stored?.trim() ? normalizeGuestDisplayName(stored, locale) : resolveGuestName();
     sessionForm.setValue("displayName", nextDisplayName);
     setStoredDisplayName(nextDisplayName);
     sessionForm.setValue("requestedRole", storedRole ?? "editor");
     sessionForm.setValue("editorAccessKey", storedEditorAccessKey ?? "");
-  }, [sessionForm]);
+  }, [locale, resolveGuestName, sessionForm]);
 
   const boardQuery = useQuery({
     queryKey: whiteboardQueryKeys.board(boardId),
@@ -181,7 +171,7 @@ export default function WhiteboardRoomPage() {
     onClose: closeCreateTextDialog
   } = useDisclosure();
   const createTextForm = useAppForm<{ newTextDraft: string }>({
-    defaultValues: { newTextDraft: "새 텍스트" }
+    defaultValues: { newTextDraft: t("textModal.defaultText") }
   });
   const newTextDraft = createTextForm.watch("newTextDraft");
   const [pendingTextPosition, setPendingTextPosition] = useState<{ x: number; y: number } | null>(null);
@@ -220,6 +210,21 @@ export default function WhiteboardRoomPage() {
         actor: shape.createdBy || "unknown"
       }));
   }, [shapes]);
+
+  const connectionLabel = {
+    connecting: t("status.connection.connecting"),
+    online: t("status.connection.online"),
+    offline: t("status.connection.offline")
+  } as const;
+
+  const toolLabel: Record<WhiteboardTool, string> = {
+    select: t("tool.select"),
+    rect: t("tool.rect"),
+    ellipse: t("tool.ellipse"),
+    diamond: t("tool.diamond"),
+    text: t("tool.text"),
+    connector: t("tool.connector")
+  };
 
   const toBoardPoint = (clientX: number, clientY: number) => {
     const rect = boardRef.current?.getBoundingClientRect();
@@ -342,16 +347,20 @@ export default function WhiteboardRoomPage() {
             ).length;
 
       const elementLabel =
-        target.type === "connector" ? "연결선" : target.type === "text" ? "텍스트" : "도형";
+        target.type === "connector"
+          ? t("deleteDialog.element.connector")
+          : target.type === "text"
+            ? t("deleteDialog.element.text")
+            : t("deleteDialog.element.shape");
       const shouldDelete = await confirm({
-        title: `${elementLabel}을 삭제할까요?`,
+        title: t("deleteDialog.title", { element: elementLabel }),
         description:
           linkedConnectorCount > 0
-            ? `연결된 연결선 ${linkedConnectorCount}개도 함께 삭제됩니다.`
-            : "삭제된 요소는 복구할 수 없습니다.",
-        confirmText: "삭제",
+            ? t("deleteDialog.descriptionWithConnectors", { count: linkedConnectorCount })
+            : t("deleteDialog.description"),
+        confirmText: t("common.delete"),
         confirmVariant: "danger",
-        cancelText: "취소"
+        cancelText: t("common.cancel")
       });
 
       if (!shouldDelete) {
@@ -382,7 +391,7 @@ export default function WhiteboardRoomPage() {
       } else {
         setPendingTextPosition(null);
       }
-      createTextForm.setValue("newTextDraft", "새 텍스트");
+      createTextForm.setValue("newTextDraft", t("textModal.defaultText"));
       openCreateTextDialog();
       return;
     }
@@ -473,7 +482,8 @@ export default function WhiteboardRoomPage() {
     <MarketingGlassNav
       product="Whiteboard Room"
       subtitle={`ID: ${boardId.slice(0, 8)}...`}
-      actions={[{ label: "보드 목록으로", href: "/whiteboard" }]}
+      rightSlot={<CollabLocaleFilter />}
+      actions={[{ label: t("actions.backToList"), href: "/whiteboard" }]}
     />
     <main className="mx-auto min-h-screen w-full max-w-[1360px] px-4 pb-10 pt-3 md:px-8 md:pb-12 md:pt-4">
       <MarketingSection tone="light" className="mb-5 bg-surface">
@@ -481,47 +491,47 @@ export default function WhiteboardRoomPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <Button variant="outline" size="sm" className="rounded-xl" onClick={goHome}>
-              보드 목록으로
+              {t("actions.backToList")}
             </Button>
             <Badge variant="outline" size="md">
-              보드 ID: {boardId.slice(0, 8)}...
+              {t("status.boardId")}: {boardId.slice(0, 8)}...
             </Badge>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" size="md">
-              연결: {connectionLabel[connection]}
+              {t("status.connection.label")}: {connectionLabel[connection]}
             </Badge>
             <Badge variant="outline" size="md">
-              도구: {toolLabel[activeTool]}
+              {t("status.tool")}: {toolLabel[activeTool]}
             </Badge>
             <Badge
               variant={currentRole === "editor" ? "success" : "outline"}
               size="md"
               data-testid="board-current-role"
             >
-              권한: {currentRole}
+              {t("status.role")}: {currentRole}
             </Badge>
           </div>
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px]">
           <Input
-            label={collabFieldCopy.displayNameLabel}
+            label={tFields("displayName.label")}
             control={sessionForm.control}
             name="displayName"
             onChange={(event) => {
-              setStoredDisplayName(event.target.value.trim() || createGuestName());
+              setStoredDisplayName(event.target.value.trim() || resolveGuestName());
             }}
-            placeholder={collabFieldCopy.displayNamePlaceholder}
+            placeholder={tFields("displayName.placeholder")}
             size="md"
           />
           <div className="grid gap-1" data-testid="board-requested-role-select">
-            <Label size="sm">{collabFieldCopy.requestRolePlaceholder}</Label>
+            <Label size="sm">{tFields("requestRole.label")}</Label>
             <Select
               options={[
-                { label: collabFieldCopy.requestOptionEditor, value: "editor" },
-                { label: collabFieldCopy.requestOptionViewer, value: "viewer" }
+                { label: tFields("requestRole.optionEditor"), value: "editor" },
+                { label: tFields("requestRole.optionViewer"), value: "viewer" }
               ]}
               control={sessionForm.control}
               name="requestedRole"
@@ -529,13 +539,13 @@ export default function WhiteboardRoomPage() {
                 const nextRole = String(value) === "viewer" ? "viewer" : "editor";
                 setStoredRole(nextRole);
               }}
-              placeholder={collabFieldCopy.requestRolePlaceholder}
+              placeholder={tFields("requestRole.placeholder")}
               size="md"
               className="w-full"
             />
           </div>
           <Input
-            label={collabFieldCopy.editorAccessKeyLabel}
+            label={tFields("editorAccessKey.label")}
             type="password"
             control={sessionForm.control}
             name="editorAccessKey"
@@ -543,7 +553,7 @@ export default function WhiteboardRoomPage() {
             onChange={(event) => {
               setStoredEditorAccessKey(event.target.value);
             }}
-            placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
+            placeholder={tFields("editorAccessKey.placeholder")}
             size="md"
           />
         </div>
@@ -554,13 +564,13 @@ export default function WhiteboardRoomPage() {
       <section className="border-default bg-surface mb-4 rounded-2xl border p-5 shadow-[var(--shadow-card)]">
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <Input
-            label="보드 제목"
+            label={t("content.titleLabel")}
             value={title}
             onChange={(event) => updateTitle(event.target.value)}
             readOnly={isReadOnly}
             size="md"
             className="text-base font-semibold"
-            placeholder="보드 제목"
+            placeholder={t("content.titlePlaceholder")}
           />
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -569,7 +579,7 @@ export default function WhiteboardRoomPage() {
               disabled={isReadOnly || activeTool === "connector"}
               onClick={() => createShapeByActiveTool()}
             >
-              {activeTool === "text" ? "텍스트 추가" : "도형 추가"}
+              {activeTool === "text" ? t("actions.addText") : t("actions.addShape")}
             </Button>
             <Button
               variant="danger"
@@ -583,13 +593,13 @@ export default function WhiteboardRoomPage() {
                 void requestRemoveShapeWithConfirm(selectedShapeId);
               }}
             >
-              선택 삭제
+              {t("actions.deleteSelected")}
             </Button>
             <Button variant="outline" size="md" onClick={undo} disabled={isReadOnly}>
-              Undo
+              {t("actions.undo")}
             </Button>
             <Button variant="outline" size="md" onClick={redo} disabled={isReadOnly}>
-              Redo
+              {t("actions.redo")}
             </Button>
           </div>
         </div>
@@ -597,28 +607,30 @@ export default function WhiteboardRoomPage() {
         <div className="mt-3 grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
           <Select
             options={[
-              { label: "선택 / 이동", value: "select" },
-              { label: "사각형", value: "rect" },
-              { label: "타원", value: "ellipse" },
-              { label: "마름모", value: "diamond" },
-              { label: "텍스트", value: "text" },
-              { label: "연결선", value: "connector" }
+              { label: t("tool.select"), value: "select" },
+              { label: t("tool.rect"), value: "rect" },
+              { label: t("tool.ellipse"), value: "ellipse" },
+              { label: t("tool.diamond"), value: "diamond" },
+              { label: t("tool.text"), value: "text" },
+              { label: t("tool.connector"), value: "connector" }
             ]}
             value={activeTool}
             onChange={(value) => {
               const nextTool = String(value) as WhiteboardTool;
               setActiveTool(nextTool);
             }}
-            placeholder="도구 선택"
+            placeholder={t("tool.placeholder")}
             size="md"
           />
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <Card className="text-body-sm text-muted px-3 py-2">버전 {version}</Card>
+            <Card className="text-body-sm text-muted px-3 py-2">
+              {t("content.version")} {version}
+            </Card>
             <Card className="text-body-sm text-muted px-3 py-2">
               {updatedAt
-                ? `최근 수정: ${formatRelativeTime(updatedAt)} (${formatExactTime(updatedAt)})`
-                : "최근 수정 -"}
+                ? `${t("content.lastUpdated")}: ${formatRelativeTime(updatedAt, locale)} (${formatExactTime(updatedAt, locale)})`
+                : `${t("content.lastUpdated")} -`}
             </Card>
           </div>
         </div>
@@ -632,8 +644,8 @@ export default function WhiteboardRoomPage() {
           className="mb-4"
           title={
             connectorFromShapeId
-              ? "시작 도형이 선택되었습니다. 연결할 대상 도형을 클릭하세요."
-              : "연결선 모드입니다. 시작 도형을 클릭한 뒤, 대상 도형을 클릭하면 선이 생성됩니다."
+              ? t("content.connectorHintSelected")
+              : t("content.connectorHint")
           }
         />
       ) : null}
@@ -643,28 +655,28 @@ export default function WhiteboardRoomPage() {
         onOpenChange={(open) => {
           setIsCreateTextDialogOpen(open);
           if (!open) {
-            createTextForm.setValue("newTextDraft", "새 텍스트");
+            createTextForm.setValue("newTextDraft", t("textModal.defaultText"));
             setPendingTextPosition(null);
           }
         }}
       >
         <ModalContent>
           <ModalHeader>
-            <ModalTitle>텍스트 추가</ModalTitle>
-            <ModalDescription>보드에 생성할 텍스트를 입력하세요.</ModalDescription>
+            <ModalTitle>{t("textModal.createTitle")}</ModalTitle>
+            <ModalDescription>{t("textModal.createDescription")}</ModalDescription>
           </ModalHeader>
           <Input
             autoFocus
             control={createTextForm.control}
             name="newTextDraft"
-            placeholder="텍스트를 입력하세요"
+            placeholder={t("textModal.inputPlaceholder")}
           />
           <ModalFooter
-            confirmText="생성"
+            confirmText={t("textModal.createConfirm")}
             confirmVariant="primary"
             onCancel={() => {
               closeCreateTextDialog();
-              createTextForm.setValue("newTextDraft", "새 텍스트");
+              createTextForm.setValue("newTextDraft", t("textModal.defaultText"));
               setPendingTextPosition(null);
             }}
             onConfirm={() => {
@@ -679,7 +691,7 @@ export default function WhiteboardRoomPage() {
               addShape(created);
               setSelectedShapeId(created.id);
               closeCreateTextDialog();
-              createTextForm.setValue("newTextDraft", "새 텍스트");
+              createTextForm.setValue("newTextDraft", t("textModal.defaultText"));
               setPendingTextPosition(null);
             }}
             confirmDisabled={!newTextDraft.trim()}
@@ -698,17 +710,17 @@ export default function WhiteboardRoomPage() {
       >
         <ModalContent>
           <ModalHeader>
-            <ModalTitle>텍스트 수정</ModalTitle>
-            <ModalDescription>선택한 텍스트 내용을 수정합니다.</ModalDescription>
+            <ModalTitle>{t("textModal.editTitle")}</ModalTitle>
+            <ModalDescription>{t("textModal.editDescription")}</ModalDescription>
           </ModalHeader>
           <Input
             autoFocus
             control={editTextForm.control}
             name="editingTextDraft"
-            placeholder="텍스트를 입력하세요"
+            placeholder={t("textModal.inputPlaceholder")}
           />
           <ModalFooter
-            confirmText="저장"
+            confirmText={t("textModal.saveConfirm")}
             confirmVariant="primary"
             onCancel={() => {
               setEditingTextShapeId(null);
@@ -738,8 +750,8 @@ export default function WhiteboardRoomPage() {
           size="sm"
           align="left"
           className="mb-4"
-          title="보기 전용(`viewer`) 세션입니다."
-          description="상단에서 `editor 요청`으로 바꾸고 편집 키를 입력하면 재요청됩니다. 보드 편집은 제한되며 참여자 커서 확인만 가능합니다."
+          title={t("content.readOnly.title")}
+          description={t("content.readOnly.description")}
         />
       ) : null}
 
@@ -1100,7 +1112,7 @@ export default function WhiteboardRoomPage() {
 
                   {shape.type === "text" ? (
                     <div className="text-foreground flex h-full items-center justify-center px-2 text-center text-caption font-medium">
-                      {shape.text || "텍스트"}
+                      {shape.text || t("tool.text")}
                     </div>
                   ) : (
                     <div className="text-muted-foreground pointer-events-none flex h-full items-center justify-center text-caption font-semibold uppercase tracking-wide">
@@ -1119,7 +1131,7 @@ export default function WhiteboardRoomPage() {
               >
                 <div className="h-3 w-3 rounded-full" style={{ backgroundColor: participant.color }} />
                 <div className="bg-foreground mt-1 rounded px-1.5 py-0.5 text-caption text-white">
-                  {participant.displayName}
+                  {normalizeGuestDisplayName(participant.displayName, locale)}
                 </div>
               </div>
             ))}

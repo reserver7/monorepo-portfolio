@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { createEntityMetadata } from "@repo/theme";
+import { getAppMetadataText, resolveRequestLocale } from "@/lib/i18n/server";
 
 interface DocRoomLayoutProps {
   children: React.ReactNode;
@@ -10,10 +11,12 @@ interface DocRoomMetadataProps {
 }
 
 export async function generateMetadata({ params }: DocRoomMetadataProps): Promise<Metadata> {
+  const locale = await resolveRequestLocale();
+  const text = getAppMetadataText(locale);
   const { id } = await params;
   return createEntityMetadata({
-    appName: "Collaborative Suite",
-    entityLabel: "문서",
+    appName: text.appName,
+    entityLabel: text.docsEntityLabel,
     entityId: id,
     appUrl: process.env.NEXT_PUBLIC_APP_URL,
     pathname: `/docs/${id}`

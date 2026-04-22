@@ -1,0 +1,435 @@
+{
+  "collab": {
+    "docsHome": {
+      "common": {
+        "cancel": "취소",
+        "delete": "삭제"
+      },
+      "defaultDraftTitle": "협업 문서",
+      "deleteDialog": {
+        "confirmDeleteDocument": "문서 삭제",
+        "default": {
+          "description": "삭제된 문서는 복구할 수 없습니다.",
+          "title": "문서를 삭제할까요?"
+        },
+        "passwordLabel": "삭제 비밀번호",
+        "passwordPlaceholder": "삭제 비밀번호",
+        "protected": {
+          "description": "이 문서는 편집 키로 보호되어 있습니다. 삭제 비밀번호를 입력해 주세요.",
+          "title": "문서를 삭제할까요?"
+        }
+      },
+      "emptyTitle": "(제목 없음)",
+      "form": {
+        "titleLabel": "새 문서 제목",
+        "titlePlaceholder": "문서 제목"
+      },
+      "hero": {
+        "create": "새 문서 만들기",
+        "description": "여러 사용자가 동시에 접속해 문서를 함께 편집하고, 변경 사항이 즉시 동기화됩니다.",
+        "learnMore": "목록으로 이동",
+        "title": "실시간 협업 문서 서비스"
+      },
+      "list": {
+        "autoRefresh": "자동 새로고침: 5초",
+        "card": {
+          "badges": {
+            "protected": "키 보호"
+          },
+          "enter": "문서 입장",
+          "updatedAt": "수정 일시",
+          "updatedRelative": "최근 수정"
+        },
+        "emptyDescription": "첫 문서를 생성해보세요.",
+        "emptyTitle": "아직 문서가 없습니다.",
+        "errorDescription": "서버 상태를 확인해 주세요.",
+        "errorTitle": "문서 목록 조회에 실패했습니다.",
+        "title": "문서 목록"
+      },
+      "messages": {
+        "deleteFailed": "문서 삭제에 실패했습니다.",
+        "deletePasswordCheck": "삭제 비밀번호를 확인해 주세요.",
+        "deletePasswordInvalid": "삭제 비밀번호가 올바르지 않습니다.",
+        "deletePasswordRequired": "삭제 비밀번호를 입력해 주세요."
+      },
+      "nav": {
+        "toWhiteboard": "화이트보드로 이동"
+      },
+      "overview": {
+        "description": "문서와 권한 상태를 확인하고, 필요한 문서로 바로 진입하세요.",
+        "guide": {
+          "step1": "1) 이름/권한을 설정하고 문서를 생성합니다.",
+          "step2": "2) 편집 키를 입력하면 문서 진입 시 기본으로 재사용됩니다.",
+          "step3": "3) 삭제가 필요한 경우 문서 카드에서 즉시 처리합니다.",
+          "title": "사용 가이드"
+        },
+        "stats": {
+          "comments": "댓글",
+          "documents": "문서",
+          "protected": "보호됨"
+        },
+        "title": "워크스페이스 개요"
+      }
+    },
+    "docsPanels": {
+      "activity": {
+        "countSuffix": "건",
+        "empty": "아직 활동 로그가 없습니다.",
+        "recent": "최근",
+        "title": "활동 로그"
+      },
+      "comments": {
+        "commonCancel": "취소",
+        "commonSave": "저장",
+        "countSuffix": "개",
+        "delete": "삭제",
+        "deleteDialog": {
+          "confirm": "댓글 삭제",
+          "description": "삭제된 댓글은 복구할 수 없습니다.",
+          "title": "댓글을 삭제할까요?"
+        },
+        "edit": "수정",
+        "empty": "아직 댓글이 없습니다.",
+        "inputPlaceholder": "댓글을 입력하세요. 예) @동료 확인 부탁드립니다.",
+        "meSuffix": " (나)",
+        "mentionLabel": "멘션 후보",
+        "none": "없음",
+        "submit": "등록",
+        "title": "댓글"
+      },
+      "history": {
+        "action": {
+          "comment": "댓글",
+          "create": "생성",
+          "save": "저장",
+          "update": "수정"
+        },
+        "by": "작성자",
+        "countSuffix": "건",
+        "empty": "표시할 이력이 없습니다.",
+        "title": "변경 이력"
+      },
+      "presence": {
+        "countSuffix": "명",
+        "empty": "접속 중인 참여자가 없습니다.",
+        "meSuffix": " (나)",
+        "title": "참여자"
+      }
+    },
+    "docsRoom": {
+      "actions": {
+        "backToList": "문서 목록으로"
+      },
+      "content": {
+        "activeParticipants": "동시 접속",
+        "editorPlaceholder": "여기서부터 실시간 협업이 시작됩니다...",
+        "errorDescription": "존재하지 않는 문서이거나 서버가 실행 중이 아닐 수 있습니다.",
+        "errorTitle": "문서를 불러오지 못했습니다.",
+        "lastUpdated": "최근 수정",
+        "peopleSuffix": "명",
+        "readOnly": {
+          "description": "상단에서 `editor 요청`으로 바꾸고 편집 키를 입력하면 재요청됩니다. 문서 편집은 비활성화되어 있으며 댓글 작성은 가능합니다.",
+          "title": "보기 전용(`viewer`) 세션입니다."
+        },
+        "titlePlaceholder": "문서 제목",
+        "version": "버전"
+      },
+      "panel": {
+        "loadingDescription": "잠시만 기다려 주세요.",
+        "loadingTitle": "패널 불러오는 중"
+      },
+      "status": {
+        "connection": {
+          "connecting": "연결 중",
+          "label": "연결",
+          "offline": "오프라인",
+          "online": "온라인"
+        },
+        "documentId": "문서 ID",
+        "role": "권한",
+        "save": {
+          "idle": "대기",
+          "label": "저장",
+          "offline": "오프라인 보류",
+          "saved": "저장됨",
+          "saving": "동기화 중"
+        }
+      }
+    },
+    "locale": {
+      "label": "언어",
+      "options": {
+        "en": "English",
+        "ja": "日本語",
+        "ko": "한국어"
+      },
+      "placeholder": "언어 선택"
+    },
+    "fields": {
+      "displayName": {
+        "label": "표시 이름",
+        "placeholder": "표시 이름을 입력하세요"
+      },
+      "entryRole": {
+        "label": "입장 권한",
+        "optionEditor": "editor",
+        "optionViewer": "viewer",
+        "placeholder": "입장 권한 선택"
+      },
+      "requestRole": {
+        "label": "편집 권한",
+        "optionEditor": "editor",
+        "optionViewer": "viewer",
+        "placeholder": "권한을 선택하세요"
+      },
+      "editorAccessKey": {
+        "label": "편집 키",
+        "placeholder": "편집 키를 입력하세요"
+      }
+    },
+    "whiteboardHome": {
+      "common": {
+        "cancel": "취소",
+        "delete": "삭제"
+      },
+      "defaultBoardTitle": "팀 아이디어 보드",
+      "deleteDialog": {
+        "confirmDeleteBoard": "화이트보드 삭제",
+        "default": {
+          "description": "삭제된 화이트보드는 복구할 수 없습니다.",
+          "title": "화이트보드를 삭제할까요?"
+        },
+        "passwordLabel": "삭제 비밀번호",
+        "passwordPlaceholder": "삭제 비밀번호",
+        "protected": {
+          "description": "이 화이트보드는 편집 키로 보호되어 있습니다. 삭제 비밀번호를 입력해 주세요.",
+          "title": "화이트보드를 삭제할까요?"
+        }
+      },
+      "emptyTitle": "(제목 없음)",
+      "form": {
+        "titleLabel": "새 보드 제목",
+        "titlePlaceholder": "보드 제목"
+      },
+      "hero": {
+        "create": "새 보드 만들기",
+        "description": "도형 추가, 텍스트 입력, 드래그 이동, 참여자 커서 공유, undo/redo를 실시간 동기화로 제공합니다.",
+        "learnMore": "목록으로 이동",
+        "title": "실시간 화이트보드 협업"
+      },
+      "list": {
+        "autoRefresh": "자동 새로고침: 5초",
+        "card": {
+          "badges": {
+            "protected": "키 보호"
+          },
+          "enter": "보드 입장",
+          "updatedAt": "수정 일시",
+          "updatedRelative": "최근 수정"
+        },
+        "emptyDescription": "첫 보드를 생성해보세요.",
+        "emptyTitle": "아직 보드가 없습니다.",
+        "errorDescription": "서버 상태를 확인해 주세요.",
+        "errorTitle": "보드 목록 조회에 실패했습니다.",
+        "title": "보드 목록"
+      },
+      "messages": {
+        "deleteFailed": "화이트보드 삭제에 실패했습니다.",
+        "deletePasswordCheck": "삭제 비밀번호를 확인해 주세요.",
+        "deletePasswordInvalid": "삭제 비밀번호가 올바르지 않습니다.",
+        "deletePasswordRequired": "삭제 비밀번호를 입력해 주세요."
+      },
+      "nav": {
+        "toDocs": "문서로 이동"
+      },
+      "overview": {
+        "description": "보드 생성/보호/도형 규모를 한눈에 확인하고 필요한 보드로 빠르게 이동하세요.",
+        "guide": {
+          "step1": "1) 보드 제목/권한을 설정하고 보드를 생성합니다.",
+          "step2": "2) 편집 키를 입력하면 보드 입장 시 기본으로 사용됩니다.",
+          "step3": "3) 삭제는 보드 카드에서 즉시 처리할 수 있습니다.",
+          "title": "사용 가이드"
+        },
+        "stats": {
+          "boards": "보드",
+          "protected": "보호됨",
+          "shapes": "도형"
+        },
+        "title": "협업 보드 현황"
+      }
+    },
+    "whiteboardPanel": {
+      "common": {
+        "none": "없음"
+      },
+      "events": {
+        "empty": "이벤트가 발생하면 여기에 표시됩니다.",
+        "recentCount": "최근 {count}개",
+        "title": "실시간 이벤트"
+      },
+      "history": {
+        "by": "작성자",
+        "empty": "표시할 변경 이력이 없습니다.",
+        "recentCount": "최근 {count}건",
+        "title": "변경 이력"
+      },
+      "participants": {
+        "count": "{count}명",
+        "cursor": "커서: {x}, {y}",
+        "empty": "아직 접속한 참여자가 없습니다.",
+        "meSuffix": " (나)",
+        "title": "참여자"
+      },
+      "selection": {
+        "connectorStartLabel": "연결 시작점",
+        "elementLabel": "선택 요소",
+        "title": "선택 정보",
+        "toolLabel": "선택 도구"
+      },
+      "tool": {
+        "connector": "연결선",
+        "diamond": "마름모",
+        "ellipse": "타원",
+        "rect": "사각형",
+        "select": "선택/이동",
+        "text": "텍스트"
+      }
+    },
+    "whiteboardRoom": {
+      "actions": {
+        "addShape": "도형 추가",
+        "addText": "텍스트 추가",
+        "backToList": "보드 목록으로",
+        "deleteSelected": "선택 삭제",
+        "undo": "실행 취소",
+        "redo": "다시 실행"
+      },
+      "common": {
+        "cancel": "취소",
+        "delete": "삭제"
+      },
+      "content": {
+        "connectorHint": "연결선 모드입니다. 시작 도형을 클릭한 뒤, 대상 도형을 클릭하면 선이 생성됩니다.",
+        "connectorHintSelected": "시작 도형이 선택되었습니다. 연결할 대상 도형을 클릭하세요.",
+        "lastUpdated": "최근 수정",
+        "readOnly": {
+          "description": "상단에서 `editor 요청`으로 바꾸고 편집 키를 입력하면 재요청됩니다. 보드 편집은 제한되며 참여자 커서 확인만 가능합니다.",
+          "title": "보기 전용(`viewer`) 세션입니다."
+        },
+        "titleLabel": "보드 제목",
+        "titlePlaceholder": "보드 제목",
+        "version": "버전"
+      },
+      "deleteDialog": {
+        "description": "삭제된 요소는 복구할 수 없습니다.",
+        "descriptionWithConnectors": "연결된 연결선 {count}개도 함께 삭제됩니다.",
+        "element": {
+          "connector": "연결선",
+          "shape": "도형",
+          "text": "텍스트"
+        },
+        "title": "{element}을 삭제할까요?"
+      },
+      "status": {
+        "boardId": "보드 ID",
+        "connection": {
+          "connecting": "연결 중",
+          "label": "연결",
+          "offline": "오프라인",
+          "online": "온라인"
+        },
+        "role": "권한",
+        "tool": "도구"
+      },
+      "textModal": {
+        "createConfirm": "생성",
+        "createDescription": "보드에 생성할 텍스트를 입력하세요.",
+        "createTitle": "텍스트 추가",
+        "defaultText": "새 텍스트",
+        "editDescription": "선택한 텍스트 내용을 수정합니다.",
+        "editTitle": "텍스트 수정",
+        "inputPlaceholder": "텍스트를 입력하세요",
+        "saveConfirm": "저장"
+      },
+      "tool": {
+        "connector": "연결선",
+        "diamond": "마름모",
+        "ellipse": "타원",
+        "placeholder": "도구 선택",
+        "rect": "사각형",
+        "select": "선택 / 이동",
+        "text": "텍스트"
+      }
+    },
+    "api": {
+      "documents": {
+        "commentCreateSuccess": "댓글이 등록되었습니다.",
+        "createSuccess": "문서가 생성되었습니다.",
+        "deleteSuccess": "문서가 삭제되었습니다."
+      },
+      "whiteboard": {
+        "createSuccess": "화이트보드가 생성되었습니다.",
+        "deleteSuccess": "화이트보드가 삭제되었습니다."
+      }
+    },
+    "realtime": {
+      "docs": {
+        "comment": {
+          "addedBy": "{name} 님이 댓글을 남겼습니다.",
+          "deleted": "댓글이 삭제되었습니다.",
+          "mentionedYou": "{name} 님이 회원님을 멘션했습니다.",
+          "offlineAdd": "오프라인 상태에서는 댓글을 전송할 수 없습니다.",
+          "offlineDelete": "오프라인 상태에서는 댓글을 삭제할 수 없습니다.",
+          "offlineUpdate": "오프라인 상태에서는 댓글을 수정할 수 없습니다.",
+          "updatedBy": "{name} 님이 댓글을 수정했습니다."
+        },
+        "conflict": {
+          "detail": "동시 수정 충돌이 감지되어 서버 기준(last-write-wins)으로 정리되었습니다. (서버 버전 {version})",
+          "merged": "충돌이 감지되어 서버 기준으로 병합되었습니다."
+        },
+        "connection": {
+          "connectError": "서버 연결 실패. 자동 재시도 중입니다.",
+          "connected": "실시간 연결이 활성화되었습니다.",
+          "disconnected": "연결이 끊어져 오프라인 상태입니다."
+        },
+        "document": {
+          "stateReceived": "문서 최신 상태를 수신했습니다. (권한: {role})",
+          "syncedByEditor": "{name} 님의 변경사항이 동기화되었습니다."
+        },
+        "permission": {
+          "viewerMode": "읽기 전용 권한으로 전환되어 편집이 제한됩니다."
+        }
+      },
+      "whiteboard": {
+        "board": {
+          "stateReceived": "보드 최신 상태를 수신했습니다. (권한: {role})",
+          "syncedByEditor": "{name} 님의 변경사항이 반영되었습니다."
+        },
+        "conflict": {
+          "detail": "동시 수정 충돌이 발생해 서버 기준(last-write-wins)으로 정리되었습니다. (서버 버전 {version})",
+          "merged": "충돌이 감지되어 서버 기준으로 반영되었습니다."
+        },
+        "connection": {
+          "connectError": "서버 연결 실패. 자동 재시도 중입니다.",
+          "connected": "화이트보드 실시간 연결이 활성화되었습니다.",
+          "disconnected": "연결이 끊어졌습니다. 재연결 대기 중입니다."
+        },
+        "defaultTitle": "화이트보드",
+        "permission": {
+          "viewerMode": "읽기 전용 권한으로 전환되어 편집이 제한됩니다."
+        }
+      }
+    }
+  },
+  "common": {
+    "apply": "적용",
+    "cancel": "취소",
+    "delete": "삭제",
+    "ok": "확인",
+    "search": "검색"
+  },
+  "error": {
+    "fallbackDescription": "잠시 후 다시 시도하거나 새로고침해 주세요.",
+    "fallbackTitle": "문서 화면에서 오류가 발생했습니다."
+  }
+}

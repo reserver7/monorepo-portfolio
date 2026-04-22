@@ -1,0 +1,435 @@
+{
+  "collab": {
+    "docsHome": {
+      "common": {
+        "cancel": "Cancel",
+        "delete": "Delete"
+      },
+      "defaultDraftTitle": "Collaborative Document",
+      "deleteDialog": {
+        "confirmDeleteDocument": "Delete Document",
+        "default": {
+          "description": "Deleted documents cannot be restored.",
+          "title": "Delete this document?"
+        },
+        "passwordLabel": "Delete password",
+        "passwordPlaceholder": "Delete password",
+        "protected": {
+          "description": "This document is protected by an editor key. Enter the delete password.",
+          "title": "Delete this document?"
+        }
+      },
+      "emptyTitle": "(Untitled)",
+      "form": {
+        "titleLabel": "New document title",
+        "titlePlaceholder": "Document title"
+      },
+      "hero": {
+        "create": "Create New Document",
+        "description": "Multiple users can edit together in real time, and changes are synced instantly.",
+        "learnMore": "Go to List",
+        "title": "Real-time Collaborative Documents"
+      },
+      "list": {
+        "autoRefresh": "Auto refresh: 5s",
+        "card": {
+          "badges": {
+            "protected": "Key Protected"
+          },
+          "enter": "Open Document",
+          "updatedAt": "Updated at",
+          "updatedRelative": "Last updated"
+        },
+        "emptyDescription": "Create your first document.",
+        "emptyTitle": "No documents yet.",
+        "errorDescription": "Please check server status.",
+        "errorTitle": "Failed to load document list.",
+        "title": "Document List"
+      },
+      "messages": {
+        "deleteFailed": "Failed to delete document.",
+        "deletePasswordCheck": "Please check the delete password.",
+        "deletePasswordInvalid": "The delete password is invalid.",
+        "deletePasswordRequired": "Please enter the delete password."
+      },
+      "nav": {
+        "toWhiteboard": "Go to Whiteboard"
+      },
+      "overview": {
+        "description": "Check document and permission status, then jump straight into the one you need.",
+        "guide": {
+          "step1": "1) Set name/role and create a document.",
+          "step2": "2) Enter editor key to reuse it when entering a document.",
+          "step3": "3) Delete immediately from the document card when needed.",
+          "title": "Usage Guide"
+        },
+        "stats": {
+          "comments": "Comments",
+          "documents": "Documents",
+          "protected": "Protected"
+        },
+        "title": "Workspace Overview"
+      }
+    },
+    "docsPanels": {
+      "activity": {
+        "countSuffix": "items",
+        "empty": "No activity logs yet.",
+        "recent": "Recent",
+        "title": "Activity Log"
+      },
+      "comments": {
+        "commonCancel": "Cancel",
+        "commonSave": "Save",
+        "countSuffix": "items",
+        "delete": "Delete",
+        "deleteDialog": {
+          "confirm": "Delete Comment",
+          "description": "Deleted comments cannot be restored.",
+          "title": "Delete this comment?"
+        },
+        "edit": "Edit",
+        "empty": "No comments yet.",
+        "inputPlaceholder": "Write a comment. e.g. @teammate please review",
+        "meSuffix": " (me)",
+        "mentionLabel": "Mention candidates",
+        "none": "None",
+        "submit": "Post",
+        "title": "Comments"
+      },
+      "history": {
+        "action": {
+          "comment": "Comment",
+          "create": "Create",
+          "save": "Save",
+          "update": "Update"
+        },
+        "by": "By",
+        "countSuffix": "items",
+        "empty": "No history to display.",
+        "title": "Change History"
+      },
+      "presence": {
+        "countSuffix": " users",
+        "empty": "No active participants.",
+        "meSuffix": " (me)",
+        "title": "Participants"
+      }
+    },
+    "docsRoom": {
+      "actions": {
+        "backToList": "Back to Docs"
+      },
+      "content": {
+        "activeParticipants": "Active users",
+        "editorPlaceholder": "Real-time collaboration starts here...",
+        "errorDescription": "The document may not exist or the server may not be running.",
+        "errorTitle": "Failed to load document.",
+        "lastUpdated": "Last updated",
+        "peopleSuffix": " users",
+        "readOnly": {
+          "description": "Switch to `request editor` at the top and enter an editor key to request again. Editing is disabled in viewer mode, but commenting is available.",
+          "title": "You are in read-only (`viewer`) mode."
+        },
+        "titlePlaceholder": "Document title",
+        "version": "Version"
+      },
+      "panel": {
+        "loadingDescription": "Please wait a moment.",
+        "loadingTitle": "Loading panel"
+      },
+      "status": {
+        "connection": {
+          "connecting": "Connecting",
+          "label": "Connection",
+          "offline": "Offline",
+          "online": "Online"
+        },
+        "documentId": "Document ID",
+        "role": "Role",
+        "save": {
+          "idle": "Idle",
+          "label": "Save",
+          "offline": "Queued offline",
+          "saved": "Saved",
+          "saving": "Syncing"
+        }
+      }
+    },
+    "locale": {
+      "label": "Language",
+      "options": {
+        "en": "English",
+        "ja": "Japanese",
+        "ko": "Korean"
+      },
+      "placeholder": "Language"
+    },
+    "fields": {
+      "displayName": {
+        "label": "Display name",
+        "placeholder": "Enter display name"
+      },
+      "entryRole": {
+        "label": "Entry role",
+        "optionEditor": "editor",
+        "optionViewer": "viewer",
+        "placeholder": "Select entry role"
+      },
+      "requestRole": {
+        "label": "Editing role",
+        "optionEditor": "editor",
+        "optionViewer": "viewer",
+        "placeholder": "Select role"
+      },
+      "editorAccessKey": {
+        "label": "Editor key",
+        "placeholder": "Enter editor key"
+      }
+    },
+    "whiteboardHome": {
+      "common": {
+        "cancel": "Cancel",
+        "delete": "Delete"
+      },
+      "defaultBoardTitle": "Team Idea Board",
+      "deleteDialog": {
+        "confirmDeleteBoard": "Delete Whiteboard",
+        "default": {
+          "description": "Deleted whiteboards cannot be restored.",
+          "title": "Delete this whiteboard?"
+        },
+        "passwordLabel": "Delete password",
+        "passwordPlaceholder": "Delete password",
+        "protected": {
+          "description": "This whiteboard is protected by an editor key. Enter the delete password.",
+          "title": "Delete this whiteboard?"
+        }
+      },
+      "emptyTitle": "(Untitled)",
+      "form": {
+        "titleLabel": "New board title",
+        "titlePlaceholder": "Board title"
+      },
+      "hero": {
+        "create": "Create New Board",
+        "description": "Add shapes, input text, drag & move, share participant cursors, and sync undo/redo in real time.",
+        "learnMore": "Go to List",
+        "title": "Real-time Whiteboard Collaboration"
+      },
+      "list": {
+        "autoRefresh": "Auto refresh: 5s",
+        "card": {
+          "badges": {
+            "protected": "Key Protected"
+          },
+          "enter": "Open Board",
+          "updatedAt": "Updated at",
+          "updatedRelative": "Last updated"
+        },
+        "emptyDescription": "Create your first board.",
+        "emptyTitle": "No boards yet.",
+        "errorDescription": "Please check server status.",
+        "errorTitle": "Failed to load board list.",
+        "title": "Board List"
+      },
+      "messages": {
+        "deleteFailed": "Failed to delete whiteboard.",
+        "deletePasswordCheck": "Please check the delete password.",
+        "deletePasswordInvalid": "The delete password is invalid.",
+        "deletePasswordRequired": "Please enter the delete password."
+      },
+      "nav": {
+        "toDocs": "Go to Docs"
+      },
+      "overview": {
+        "description": "See board creation/protection/shape scale at a glance and jump quickly to the board you need.",
+        "guide": {
+          "step1": "1) Set board title/role and create a board.",
+          "step2": "2) Enter editor key to reuse it when entering a board.",
+          "step3": "3) Delete instantly from the board card.",
+          "title": "Usage Guide"
+        },
+        "stats": {
+          "boards": "Boards",
+          "protected": "Protected",
+          "shapes": "Shapes"
+        },
+        "title": "Board Overview"
+      }
+    },
+    "whiteboardPanel": {
+      "common": {
+        "none": "None"
+      },
+      "events": {
+        "empty": "Events will appear here.",
+        "recentCount": "Recent {count}",
+        "title": "Realtime Events"
+      },
+      "history": {
+        "by": "By",
+        "empty": "No change history to display.",
+        "recentCount": "Recent {count}",
+        "title": "Change History"
+      },
+      "participants": {
+        "count": "{count} users",
+        "cursor": "Cursor: {x}, {y}",
+        "empty": "No active participants yet.",
+        "meSuffix": " (me)",
+        "title": "Participants"
+      },
+      "selection": {
+        "connectorStartLabel": "Connector start",
+        "elementLabel": "Selected element",
+        "title": "Selection Info",
+        "toolLabel": "Selected tool"
+      },
+      "tool": {
+        "connector": "Connector",
+        "diamond": "Diamond",
+        "ellipse": "Ellipse",
+        "rect": "Rectangle",
+        "select": "Select/Move",
+        "text": "Text"
+      }
+    },
+    "whiteboardRoom": {
+      "actions": {
+        "addShape": "Add Shape",
+        "addText": "Add Text",
+        "backToList": "Back to Boards",
+        "deleteSelected": "Delete Selected",
+        "undo": "Undo",
+        "redo": "Redo"
+      },
+      "common": {
+        "cancel": "Cancel",
+        "delete": "Delete"
+      },
+      "content": {
+        "connectorHint": "Connector mode is on. Click a start shape, then click a target shape to create a connector.",
+        "connectorHintSelected": "Start shape selected. Click a target shape to connect.",
+        "lastUpdated": "Last updated",
+        "readOnly": {
+          "description": "Switch to `request editor` at the top and enter an editor key to request again. Board editing is limited in viewer mode, but participant cursors are still visible.",
+          "title": "You are in read-only (`viewer`) mode."
+        },
+        "titleLabel": "Board title",
+        "titlePlaceholder": "Board title",
+        "version": "Version"
+      },
+      "deleteDialog": {
+        "description": "Deleted elements cannot be restored.",
+        "descriptionWithConnectors": "Connected connectors ({count}) will also be removed.",
+        "element": {
+          "connector": "Connector",
+          "shape": "Shape",
+          "text": "Text"
+        },
+        "title": "Delete {element}?"
+      },
+      "status": {
+        "boardId": "Board ID",
+        "connection": {
+          "connecting": "Connecting",
+          "label": "Connection",
+          "offline": "Offline",
+          "online": "Online"
+        },
+        "role": "Role",
+        "tool": "Tool"
+      },
+      "textModal": {
+        "createConfirm": "Create",
+        "createDescription": "Enter text to add to the board.",
+        "createTitle": "Add Text",
+        "defaultText": "New Text",
+        "editDescription": "Edit the selected text.",
+        "editTitle": "Edit Text",
+        "inputPlaceholder": "Enter text",
+        "saveConfirm": "Save"
+      },
+      "tool": {
+        "connector": "Connector",
+        "diamond": "Diamond",
+        "ellipse": "Ellipse",
+        "placeholder": "Select tool",
+        "rect": "Rectangle",
+        "select": "Select / Move",
+        "text": "Text"
+      }
+    },
+    "api": {
+      "documents": {
+        "commentCreateSuccess": "Comment posted.",
+        "createSuccess": "Document created.",
+        "deleteSuccess": "Document deleted."
+      },
+      "whiteboard": {
+        "createSuccess": "Whiteboard created.",
+        "deleteSuccess": "Whiteboard deleted."
+      }
+    },
+    "realtime": {
+      "docs": {
+        "comment": {
+          "addedBy": "{name} added a comment.",
+          "deleted": "Comment deleted.",
+          "mentionedYou": "{name} mentioned you.",
+          "offlineAdd": "Comments cannot be posted while offline.",
+          "offlineDelete": "Comments cannot be deleted while offline.",
+          "offlineUpdate": "Comments cannot be edited while offline.",
+          "updatedBy": "{name} updated a comment."
+        },
+        "conflict": {
+          "detail": "A concurrent edit conflict was detected and resolved by server last-write-wins. (Server version {version})",
+          "merged": "Conflict detected and merged based on server state."
+        },
+        "connection": {
+          "connectError": "Server connection failed. Retrying automatically.",
+          "connected": "Realtime connection is active.",
+          "disconnected": "Connection lost. You are offline."
+        },
+        "document": {
+          "stateReceived": "Received latest document state. (Role: {role})",
+          "syncedByEditor": "Changes from {name} have been synced."
+        },
+        "permission": {
+          "viewerMode": "Switched to read-only mode. Editing is restricted."
+        }
+      },
+      "whiteboard": {
+        "board": {
+          "stateReceived": "Received latest board state. (Role: {role})",
+          "syncedByEditor": "Changes from {name} have been applied."
+        },
+        "conflict": {
+          "detail": "A concurrent edit conflict occurred and was resolved by server last-write-wins. (Server version {version})",
+          "merged": "Conflict detected and applied based on server state."
+        },
+        "connection": {
+          "connectError": "Server connection failed. Retrying automatically.",
+          "connected": "Whiteboard realtime connection is active.",
+          "disconnected": "Connection lost. Waiting to reconnect."
+        },
+        "defaultTitle": "Whiteboard",
+        "permission": {
+          "viewerMode": "Switched to read-only mode. Editing is restricted."
+        }
+      }
+    }
+  },
+  "common": {
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "ok": "OK",
+    "search": "Search"
+  },
+  "error": {
+    "fallbackDescription": "Please try again in a moment or refresh the page.",
+    "fallbackTitle": "An error occurred on the document screen."
+  }
+}

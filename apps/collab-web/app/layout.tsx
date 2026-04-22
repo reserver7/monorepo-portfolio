@@ -1,23 +1,32 @@
 import type { Metadata } from "next";
 import { AppHead, appFont, createAppMetadata } from "@repo/theme";
 import { Providers } from "@/app/providers";
+import { getAppMetadataText, resolveRequestLocale } from "@/lib/i18n/server";
 import "./globals.css";
 
-export const metadata: Metadata = createAppMetadata({
-  appName: "Collaborative Suite",
-  description: "문서와 화이트보드를 하나의 워크스페이스에서 제공하는 실시간 협업 플랫폼",
-  appUrl: process.env.NEXT_PUBLIC_APP_URL,
-  keywords: ["협업", "문서", "화이트보드", "실시간 편집", "collaboration"]
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await resolveRequestLocale();
+  const text = getAppMetadataText(locale);
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return createAppMetadata({
+    appName: text.appName,
+    description: text.description,
+    appUrl: process.env.NEXT_PUBLIC_APP_URL,
+    keywords: text.keywords,
+    locale: text.ogLocale
+  });
+}
+
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const locale = await resolveRequestLocale();
+
   return (
-    <html lang="ko" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <AppHead />
       </head>
       <body className={`${appFont.className} font-body text-foreground dark:text-foreground min-h-screen antialiased`}>
-        <Providers>{children}</Providers>
+        <Providers initialLocale={locale}>{children}</Providers>
       </body>
     </html>
   );

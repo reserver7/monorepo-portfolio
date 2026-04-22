@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { createEntityMetadata } from "@repo/theme";
+import { getAppMetadataText, resolveRequestLocale } from "@/lib/i18n/server";
 
 interface BoardRoomLayoutProps {
   children: React.ReactNode;
@@ -10,10 +11,12 @@ interface BoardRoomMetadataProps {
 }
 
 export async function generateMetadata({ params }: BoardRoomMetadataProps): Promise<Metadata> {
+  const locale = await resolveRequestLocale();
+  const text = getAppMetadataText(locale);
   const { id } = await params;
   return createEntityMetadata({
-    appName: "Collaborative Suite",
-    entityLabel: "화이트보드",
+    appName: text.appName,
+    entityLabel: text.whiteboardEntityLabel,
     entityId: id,
     appUrl: process.env.NEXT_PUBLIC_APP_URL,
     pathname: `/whiteboard/${id}`
