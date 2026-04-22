@@ -61,9 +61,9 @@ export default function DeploymentsPage() {
       <SplitWorkspaceLayout
         sidebarWidthClassName="xl:grid-cols-[minmax(0,1fr)_360px]"
         main={
-          <Grid className="gap-6 xl:grid-cols-2">
+          <Grid className="gap-[var(--space-6)] xl:grid-cols-2">
             <OpsSectionCard title="최근 배포 이력">
-              <Flex className="items-center justify-end gap-2">
+              <Flex className="items-center justify-end gap-[var(--space-2)]">
                 <Button
                   type="button"
                   variant="ghost"
@@ -78,11 +78,11 @@ export default function DeploymentsPage() {
               {deploymentsQuery.isLoading ? (
                 <OpsCardListSkeleton count={5} />
               ) : deploymentsQuery.isError ? (
-                <StateView variant="error" size="sm" title="배포 이력 조회에 실패했습니다." className="mt-3" />
+                <StateView variant="error" size="sm" title="배포 이력 조회에 실패했습니다." className="mt-[var(--space-3)]" />
               ) : (deploymentsQuery.data?.length ?? 0) === 0 ? (
-                <StateView variant="empty" size="sm" title="등록된 배포가 없습니다." className="mt-3" />
+                <StateView variant="empty" size="sm" title="등록된 배포가 없습니다." className="mt-[var(--space-3)]" />
               ) : (
-                <Box className="mt-3 space-y-2">
+                <Box className="mt-[var(--space-3)] space-y-[var(--space-2)]">
                   {deploymentsQuery.data?.map((deployment) => {
                     const selected = selectedVersion === deployment.version;
                     return (
@@ -91,13 +91,13 @@ export default function DeploymentsPage() {
                         type="button"
                         variant="outline"
                         onClick={() => setSelectedVersion(deployment.version)}
-                        className={`h-auto w-full justify-start rounded-xl p-3 text-left ${
+                        className={`h-auto w-full justify-start rounded-xl p-[var(--space-3)] text-left ${
                           selected ? "border-info/40 bg-info/10" : "border-default bg-surface"
                         }`}
                       >
                         <Box as="p" className="text-foreground font-semibold">{deployment.version}</Box>
-                        <Box as="p" className="text-muted mt-1 text-caption">{formatDateTime(deployment.deployedAt)}</Box>
-                        <Box as="p" className="text-muted mt-1 line-clamp-2 text-caption">{deployment.changelog}</Box>
+                        <Box as="p" className="text-muted mt-[var(--space-1)] text-caption">{formatDateTime(deployment.deployedAt)}</Box>
+                        <Box as="p" className="text-muted mt-[var(--space-1)] line-clamp-2 text-caption">{deployment.changelog}</Box>
                       </Button>
                     );
                   })}
@@ -107,19 +107,19 @@ export default function DeploymentsPage() {
 
             <OpsSectionCard title="배포 영향 분석">
               {!selectedVersion ? (
-                <StateView variant="info" size="sm" title="분석할 버전을 선택해 주세요." className="mt-3" />
+                <StateView variant="info" size="sm" title="분석할 버전을 선택해 주세요." className="mt-[var(--space-3)]" />
               ) : impactQuery.isLoading ? (
                 <StateView
                   variant="loading"
                   size="sm"
-                  className="border-default bg-surface-elevated rounded-xl border p-4"
+                  className="border-default bg-surface-elevated rounded-xl border p-[var(--space-4)]"
                   title="선택한 배포 버전 기준으로 영향도를 계산하는 중입니다."
                 />
               ) : impactQuery.isError || !impactQuery.data ? (
-                <StateView variant="error" size="sm" title="영향 분석에 실패했습니다." className="mt-3" />
+                <StateView variant="error" size="sm" title="영향 분석에 실패했습니다." className="mt-[var(--space-3)]" />
               ) : (
-                <Box className="mt-3 space-y-3 text-sm">
-                  <Grid className="gap-3 md:grid-cols-2">
+                <Box className="mt-[var(--space-3)] space-y-[var(--space-3)] text-sm">
+                  <Grid className="gap-[var(--space-3)] md:grid-cols-2">
                     <OpsInfoItem label="배포 버전" value={impactQuery.data.version} />
                     <OpsInfoItem label="배포 시각" value={formatDateTime(impactQuery.data.deployedAt)} />
                     <OpsInfoItem
@@ -132,18 +132,18 @@ export default function DeploymentsPage() {
                     />
                   </Grid>
 
-                  <Box as="p" className="border-default bg-surface-elevated text-muted rounded-lg border p-3">
+                  <Box as="p" className="border-default bg-surface-elevated text-muted rounded-lg border p-[var(--space-3)]">
                     {impactQuery.data.summary}
                   </Box>
 
                   {impactQuery.data.increasedIssues.length === 0 ? (
                     <StateView variant="empty" size="sm" title="증가한 이슈가 없습니다." />
                   ) : (
-                    <Box className="space-y-2">
+                    <Box className="space-y-[var(--space-2)]">
                       {impactQuery.data.increasedIssues.map((item) => (
-                        <Box key={item.issueId} className="border-default rounded-lg border p-3">
+                        <Box key={item.issueId} className="border-default rounded-lg border p-[var(--space-3)]">
                           <Box as="p" className="text-foreground font-semibold">{item.title}</Box>
-                          <Flex className="text-muted mt-1 flex-wrap items-center gap-2 text-caption">
+                          <Flex className="text-muted mt-[var(--space-1)] flex-wrap items-center gap-[var(--space-2)] text-caption">
                             <SeverityBadge severity={item.severity} />
                             <Box as="span">{item.serviceName}</Box>
                             <Box as="span">·</Box>
@@ -165,7 +165,7 @@ export default function DeploymentsPage() {
             title="배포 등록"
             description="배포 버전을 등록하면 배포 전/후 에러 증감 분석이 가능합니다."
           >
-            <form className="grid gap-3" onSubmit={form.handleSubmit((values) => createMutation.mutate(values))}>
+            <form className="grid gap-[var(--space-3)]" onSubmit={form.handleSubmit((values) => createMutation.mutate(values))}>
               <FormField label="배포 버전" htmlFor="deployment-version" size="sm">
                 <Input
                   id="deployment-version"

@@ -65,7 +65,7 @@ export default function QaAssistantPage() {
             title="QA 자동화 지원"
             description="기능 변경 정보를 입력하면 테스트 시나리오/위험 포인트/회귀 대상을 자동 생성합니다."
           >
-            <form className="grid gap-3" onSubmit={form.handleSubmit((values) => generateMutation.mutate(values))}>
+            <form className="grid gap-[var(--space-3)]" onSubmit={form.handleSubmit((values) => generateMutation.mutate(values))}>
               <FormField label="기능 설명" htmlFor="qa-feature-name" size="sm">
                 <Input
                   id="qa-feature-name"
@@ -131,21 +131,21 @@ export default function QaAssistantPage() {
             {scenariosQuery.isLoading ? (
               <OpsCardListSkeleton count={3} />
             ) : scenariosQuery.isError ? (
-              <StateView variant="error" size="sm" title="시나리오 조회에 실패했습니다." className="mt-3" />
+              <StateView variant="error" size="sm" title="시나리오 조회에 실패했습니다." className="mt-[var(--space-3)]" />
             ) : (scenariosQuery.data?.length ?? 0) === 0 ? (
-              <StateView variant="empty" size="sm" title="아직 생성된 시나리오가 없습니다." className="mt-3" />
+              <StateView variant="empty" size="sm" title="아직 생성된 시나리오가 없습니다." className="mt-[var(--space-3)]" />
             ) : (
-              <Box className="mt-3 space-y-3">
+              <Box className="mt-[var(--space-3)] space-y-[var(--space-3)]">
                 {scenariosQuery.data?.map((scenario) => (
-                  <article key={scenario.id} className="border-default rounded-xl border p-4">
-                    <Flex className="flex-wrap items-center justify-between gap-2">
+                  <article key={scenario.id} className="border-default rounded-xl border p-[var(--space-4)]">
+                    <Flex className="flex-wrap items-center justify-between gap-[var(--space-2)]">
                       <Box as="p" className="text-foreground font-semibold">{scenario.featureName}</Box>
                       <Box as="p" className="text-muted-foreground text-caption">{formatDateTime(scenario.createdAt)}</Box>
                     </Flex>
 
-                    <Box as="p" className="text-muted-foreground mt-1 text-caption">대상: {scenario.audience}</Box>
+                    <Box as="p" className="text-muted-foreground mt-[var(--space-1)] text-caption">대상: {scenario.audience}</Box>
 
-                    <Grid className="mt-3 gap-3">
+                    <Grid className="mt-[var(--space-3)] gap-[var(--space-3)]">
                       <ListBlock title="테스트 케이스" items={scenario.generatedCases} />
                       <ListBlock title="리스크 포인트" items={scenario.riskPoints} />
                       <ListBlock title="회귀 대상" items={scenario.regressionTargets} />
@@ -165,9 +165,9 @@ export default function QaAssistantPage() {
 
 function ListBlock({ title, items }: { title: string; items: string[] }) {
   return (
-    <Box className="border-default bg-surface-elevated rounded-lg border p-3">
+    <Box className="border-default bg-surface-elevated rounded-lg border p-[var(--space-3)]">
       <Box as="p" className="text-muted-foreground text-caption font-semibold uppercase tracking-wide">{title}</Box>
-      <ul className="text-foreground/85 mt-2 list-disc space-y-1 pl-4 text-caption">
+      <ul className="text-foreground/85 mt-[var(--space-2)] list-disc space-y-[var(--space-1)] pl-[var(--space-4)] text-caption">
         {items.map((item) => (
           <li key={item}>{item}</li>
         ))}

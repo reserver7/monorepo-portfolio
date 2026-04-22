@@ -92,7 +92,7 @@ export default function IssuesPage() {
             >
               {row.original.title}
             </Link>
-            <Box as="p" className="text-muted mt-1 max-w-[420px] truncate text-caption">{row.original.summary}</Box>
+            <Box as="p" className="text-muted mt-[var(--space-1)] max-w-[420px] truncate text-caption">{row.original.summary}</Box>
           </Box>
         )
       },
@@ -154,8 +154,8 @@ export default function IssuesPage() {
         }
         sidebar={
           <OpsSectionCard title="필터" description="조건 변경 시 목록이 자동 갱신됩니다.">
-            <Box className="space-y-4">
-              <Grid className="gap-1">
+            <Box className="space-y-[var(--space-4)]">
+              <Grid className="gap-[var(--space-1)]">
                 <Label size="sm">상태</Label>
                 <Select
                   options={statusOptions}
@@ -165,7 +165,7 @@ export default function IssuesPage() {
                   size="md"
                 />
               </Grid>
-              <Grid className="gap-1">
+              <Grid className="gap-[var(--space-1)]">
                 <Label size="sm">심각도</Label>
                 <Select
                   options={severityOptions}
@@ -175,11 +175,11 @@ export default function IssuesPage() {
                   size="md"
                 />
               </Grid>
-              <Box className="border-default bg-surface-elevated rounded-xl border p-3">
+              <Box className="border-default bg-surface-elevated rounded-xl border p-[var(--space-3)]">
                 <Typography as="p" variant="caption" color="subtle" className="font-semibold">
                   현재 결과
                 </Typography>
-                <Typography as="p" variant="h3" className="mt-1">
+                <Typography as="p" variant="h3" className="mt-[var(--space-1)]">
                   {formatNumber(issueCount)}
                 </Typography>
                 <Typography as="p" variant="caption" color="muted">

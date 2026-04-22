@@ -33,10 +33,14 @@ type Summary = Pick<DashboardSummary, "severityDistribution" | "errorTrend24h" |
 
 export function SeverityDistributionChart({ summary }: { summary: Summary }) {
   return (
-    <Box role="img" aria-label="심각도별 이슈 분포 파이 차트">
+    <Box
+      role="img"
+      aria-label="심각도별 이슈 분포 파이 차트"
+      className="[&_.recharts-wrapper:focus]:outline-none [&_.recharts-surface:focus]:outline-none [&_.recharts-sector:focus]:outline-none [&_[tabindex]:focus]:outline-none"
+    >
       <ResponsiveContainer width="100%" height={240}>
         <PieChart>
-          <Pie data={summary.severityDistribution} dataKey="count" nameKey="severity" outerRadius={80} label>
+          <Pie data={summary.severityDistribution} dataKey="count" nameKey="severity" outerRadius={80} label rootTabIndex={-1}>
             {summary.severityDistribution.map((entry) => (
               <Cell key={entry.severity} fill={severityColors[entry.severity] ?? chartColorTokens.fallback} />
             ))}
@@ -50,7 +54,11 @@ export function SeverityDistributionChart({ summary }: { summary: Summary }) {
 
 export function ErrorTrendChart({ summary }: { summary: Summary }) {
   return (
-    <Box role="img" aria-label="최근 24시간 에러 추이 선 그래프">
+    <Box
+      role="img"
+      aria-label="최근 24시간 에러 추이 선 그래프"
+      className="[&_.recharts-wrapper:focus]:outline-none [&_.recharts-surface:focus]:outline-none [&_.recharts-sector:focus]:outline-none [&_[tabindex]:focus]:outline-none"
+    >
       <ResponsiveContainer width="100%" height={240}>
         <LineChart data={summary.errorTrend24h}>
           <CartesianGrid stroke="rgb(var(--color-border-default) / 0.8)" strokeDasharray="3 3" />
@@ -66,7 +74,11 @@ export function ErrorTrendChart({ summary }: { summary: Summary }) {
 
 export function TopRepeatedErrorsChart({ summary }: { summary: Summary }) {
   return (
-    <Box role="img" aria-label="반복 에러 상위 5개 막대 그래프">
+    <Box
+      role="img"
+      aria-label="반복 에러 상위 5개 막대 그래프"
+      className="[&_.recharts-wrapper:focus]:outline-none [&_.recharts-surface:focus]:outline-none [&_.recharts-sector:focus]:outline-none [&_[tabindex]:focus]:outline-none"
+    >
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={summary.topRepeatedErrors} layout="vertical">
           <CartesianGrid stroke="rgb(var(--color-border-default) / 0.8)" strokeDasharray="3 3" />

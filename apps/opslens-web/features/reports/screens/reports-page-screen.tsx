@@ -90,13 +90,13 @@ export default function ReportsPage() {
       <SplitWorkspaceLayout
         sidebarWidthClassName="xl:grid-cols-[minmax(0,1fr)_360px]"
         main={
-          <Box className="space-y-6">
+          <Box className="space-y-[var(--stack-gap)]">
             <OpsSectionCard
               title="AI 브리핑"
               description="운영/개발/기획이 같은 맥락으로 이슈를 이해하도록 요약합니다."
             >
-              <Flex className="flex-wrap items-center justify-between gap-3">
-                <Flex className="items-center gap-2 text-sm">
+              <Flex className="flex-wrap items-center justify-between gap-[var(--space-3)]">
+                <Flex className="items-center gap-[var(--space-2)] text-sm">
                   <Button
                     type="button"
                     variant={audience === "developer" ? "primary" : "outline"}
@@ -117,15 +117,15 @@ export default function ReportsPage() {
               </Flex>
 
               {briefingQuery.isLoading ? (
-                <Box className="border-default bg-surface-elevated mt-3 space-y-2 rounded-xl border p-4">
+                <Box className="border-default bg-surface-elevated mt-[var(--space-3)] space-y-[var(--space-2)] rounded-xl border p-[var(--space-4)]">
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-4 w-11/12" />
                   <Skeleton className="h-4 w-4/5" />
                 </Box>
               ) : briefingQuery.isError ? (
-                <StateView variant="error" size="sm" title="브리핑 생성에 실패했습니다." className="mt-3" />
+                <StateView variant="error" size="sm" title="브리핑 생성에 실패했습니다." className="mt-[var(--space-3)]" />
               ) : (
-                <Box className="border-default bg-surface-elevated mt-3 rounded-xl border p-4">
+                <Box className="border-default bg-surface-elevated mt-[var(--space-3)] rounded-xl border p-[var(--space-4)]">
                   <Box as="p" className="text-foreground whitespace-pre-wrap text-sm leading-6">{briefingQuery.data}</Box>
                 </Box>
               )}
@@ -139,7 +139,7 @@ export default function ReportsPage() {
                 readOnly
                 value={reportText}
                 rows={10}
-                className="bg-surface-elevated mt-3 font-mono text-caption"
+                className="bg-surface-elevated mt-[var(--space-3)] font-mono text-caption"
               />
             </OpsSectionCard>
           </Box>
@@ -149,22 +149,22 @@ export default function ReportsPage() {
             {issuesQuery.isLoading ? (
               <OpsCardListSkeleton count={5} />
             ) : issuesQuery.isError ? (
-              <StateView variant="error" size="sm" title="이슈 조회에 실패했습니다." className="mt-3" />
+              <StateView variant="error" size="sm" title="이슈 조회에 실패했습니다." className="mt-[var(--space-3)]" />
             ) : (issuesQuery.data?.items.length ?? 0) === 0 ? (
-              <StateView variant="empty" size="sm" title="대상 이슈가 없습니다." className="mt-3" />
+              <StateView variant="empty" size="sm" title="대상 이슈가 없습니다." className="mt-[var(--space-3)]" />
             ) : (
-              <Box className="mt-3 space-y-2">
+              <Box className="mt-[var(--space-3)] space-y-[var(--space-2)]">
                 {issuesQuery.data?.items.map((issue) => (
-                  <Box key={issue.id} className="border-default bg-surface-elevated rounded-xl border p-3 text-sm">
+                  <Box key={issue.id} className="border-default bg-surface-elevated rounded-xl border p-[var(--space-3)] text-sm">
                     <Box as="p" className="text-foreground font-semibold">{issue.title}</Box>
-                    <Flex className="text-muted mt-1 flex-wrap items-center gap-2 text-caption">
+                    <Flex className="text-muted mt-[var(--space-1)] flex-wrap items-center gap-[var(--space-2)] text-caption">
                       <SeverityBadge severity={issue.severity} />
                       <StatusBadge status={issue.status} />
                       <Box as="span">{issue.serviceName}</Box>
                       <Box as="span">·</Box>
                       <Box as="span">{formatNumber(issue.occurrenceCount)}회</Box>
                     </Flex>
-                    <Box as="p" className="text-muted-foreground mt-1 text-caption">
+                    <Box as="p" className="text-muted-foreground mt-[var(--space-1)] text-caption">
                       최근 발생: {formatDateTime(issue.lastOccurredAt)}
                     </Box>
                   </Box>
@@ -179,7 +179,7 @@ export default function ReportsPage() {
         <StateView
           variant="loading"
           size="sm"
-          className="border-default bg-surface rounded-xl border p-4"
+          className="border-default bg-surface rounded-xl border p-[var(--space-4)]"
           title="대시보드 요약 데이터를 갱신하는 중입니다."
         />
       ) : null}

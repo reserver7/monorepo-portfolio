@@ -1,66 +1,70 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAppForm } from "@repo/forms";
 import {
-  Box,
-  Avatar,
   Badge,
+  Box,
   Button,
   ConsoleAppLayout,
-  DatePicker,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  Input,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalDescription,
-  ModalHeader,
-  ModalTitle,
-  Select,
   Flex,
+  Input,
   Typography,
-  useDebouncedValue,
+  toast,
   useDisclosure
 } from "@repo/ui";
-import { AlertTriangle, Bell, LogOut, Menu, Search, Settings, UserCircle2 } from "lucide-react";
+import { Bell, Menu, Search, SlidersHorizontal } from "lucide-react";
+import { OPS_ALERT_EVENT_NAME, useOpsAlertStore, type CreateOpsAlertInput } from "@/features/alerts";
+import { AlertsModal, OpsFilterSheet, type OpsFilterFormValues, ProfileMenu } from "@/features/modals";
 import { useOpsFilterStore } from "@/features/stores";
 import { opsNavItems } from "@/lib/navigation";
+import { toCalendarLocale } from "@/lib/i18n/messages";
+
+const NAV_LABEL_KEYS: Record<string, string> = {
+  "/": "dashboard",
+  "/logs": "logs",
+  "/issues": "issues",
+  "/qa-assistant": "qaAssistant",
+  "/deployments": "deployments",
+  "/reports": "reports",
+  "/settings": "settings"
+};
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const tCommon = useTranslations("common");
+  const tNav = useTranslations("nav");
   const pathname = usePathname();
   const router = useRouter();
   const { isOpen: mobileOpen, onOpen: openMobile, onClose: closeMobile } = useDisclosure();
   const { isOpen: alertModalOpen, onOpen: openAlertModal, onClose: closeAlertModal } = useDisclosure();
+  const { isOpen: filterSheetOpen, onOpen: openFilterSheet, onClose: closeFilterSheet } = useDisclosure();
 
   const environment = useOpsFilterStore((state) => state.environment);
+  const locale = useOpsFilterStore((state) => state.locale);
   const serviceName = useOpsFilterStore((state) => state.serviceName);
   const search = useOpsFilterStore((state) => state.search);
   const from = useOpsFilterStore((state) => state.from);
   const to = useOpsFilterStore((state) => state.to);
   const sidebarCollapsed = useOpsFilterStore((state) => state.sidebarCollapsed);
   const setEnvironment = useOpsFilterStore((state) => state.setEnvironment);
+  const setLocale = useOpsFilterStore((state) => state.setLocale);
   const setServiceName = useOpsFilterStore((state) => state.setServiceName);
   const setSearch = useOpsFilterStore((state) => state.setSearch);
   const setRange = useOpsFilterStore((state) => state.setRange);
   const toggleSidebar = useOpsFilterStore((state) => state.toggleSidebar);
 
-  const filterForm = useAppForm<{
-    environment: "dev" | "stage" | "prod";
-    serviceName: string;
-    fromDate: string;
-    toDate: string;
-    search: string;
-  }>({
+  const alerts = useOpsAlertStore((state) => state.alerts);
+  const addAlert = useOpsAlertStore((state) => state.addAlert);
+  const markRead = useOpsAlertStore((state) => state.markRead);
+  const markAllRead = useOpsAlertStore((state) => state.markAllRead);
+  const removeAlert = useOpsAlertStore((state) => state.removeAlert);
+
+  const filterForm = useAppForm<OpsFilterFormValues>({
     defaultValues: {
       environment,
+      locale,
       serviceName,
       fromDate: from?.slice(0, 10) ?? "",
       toDate: to?.slice(0, 10) ?? "",
@@ -68,13 +72,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   });
 
-  const watchEnvironment = filterForm.watch("environment");
-  const watchServiceName = filterForm.watch("serviceName");
   const watchFromDate = filterForm.watch("fromDate");
   const watchToDate = filterForm.watch("toDate");
+  const watchLocaleDraft = filterForm.watch("locale");
   const watchSearch = filterForm.watch("search");
 
-  const debouncedSearch = useDebouncedValue(watchSearch, 250);
   const fromDateFromStore = from?.slice(0, 10) ?? "";
   const toDateFromStore = to?.slice(0, 10) ?? "";
 
@@ -82,68 +84,157 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (filterForm.getValues("search") !== search) {
       filterForm.setValue("search", search);
     }
-
     if (filterForm.getValues("environment") !== environment) {
       filterForm.setValue("environment", environment);
     }
-
+    if (filterForm.getValues("locale") !== locale) {
+      filterForm.setValue("locale", locale);
+    }
     if (filterForm.getValues("serviceName") !== serviceName) {
       filterForm.setValue("serviceName", serviceName);
     }
-
     if (filterForm.getValues("fromDate") !== fromDateFromStore) {
       filterForm.setValue("fromDate", fromDateFromStore);
     }
-
     if (filterForm.getValues("toDate") !== toDateFromStore) {
       filterForm.setValue("toDate", toDateFromStore);
     }
-  }, [environment, filterForm, fromDateFromStore, search, serviceName, toDateFromStore]);
-
-  useEffect(() => {
-    if (debouncedSearch !== search) {
-      setSearch(debouncedSearch);
-    }
-  }, [debouncedSearch, search, setSearch]);
-
-  useEffect(() => {
-    if (watchEnvironment !== environment) {
-      setEnvironment(watchEnvironment);
-    }
-  }, [watchEnvironment, environment, setEnvironment]);
-
-  useEffect(() => {
-    if (watchServiceName !== serviceName) {
-      setServiceName(watchServiceName);
-    }
-  }, [watchServiceName, serviceName, setServiceName]);
-
-  useEffect(() => {
-    const nextFrom = watchFromDate ? `${watchFromDate}T00:00:00.000Z` : undefined;
-    const nextTo = watchToDate ? `${watchToDate}T23:59:59.999Z` : undefined;
-    if (nextFrom !== from || nextTo !== to) {
-      setRange(nextFrom, nextTo);
-    }
-  }, [watchFromDate, watchToDate, from, to, setRange]);
+  }, [environment, filterForm, fromDateFromStore, locale, search, serviceName, toDateFromStore]);
 
   const fromDate = watchFromDate ?? "";
   const toDate = watchToDate ?? "";
-  const unreadAlertCount = 2;
-  const [language, setLanguage] = useState<"en" | "ko">("en");
+
+  const [searchPanelOpen, setSearchPanelOpen] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>(["결제 오류", "API 500", "socket timeout"]);
+  const searchWrapRef = useRef<HTMLDivElement | null>(null);
+
+  const unreadAlertCount = alerts.filter((item) => !item.readAt).length;
+  const draftSheetLocale = watchLocaleDraft ?? locale;
+  const draftCalendarLocale = toCalendarLocale(draftSheetLocale);
+  const sortedAlerts = useMemo(
+    () => [...alerts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [alerts]
+  );
+  const localizedNavItems = useMemo(
+    () =>
+      opsNavItems.map((item) => {
+        const key = NAV_LABEL_KEYS[item.href];
+        return { ...item, label: key ? tNav(key) : item.label };
+      }),
+    [tNav]
+  );
+  const activeFilterCount = [locale !== "ko", serviceName !== "all", Boolean(fromDateFromStore), Boolean(toDateFromStore)].filter(
+    Boolean
+  ).length;
+  const visibleRecent = useMemo(() => recentSearches.slice(0, 5), [recentSearches]);
+
+  const pushRecentSearch = (term: string) => {
+    const next = term.trim();
+    if (!next) return;
+    setRecentSearches((prev) => [next, ...prev.filter((item) => item !== next)].slice(0, 8));
+  };
+
+  const applySearchTerm = (term: string) => {
+    const next = term.trim();
+    filterForm.setValue("search", next);
+    setSearch(next);
+    pushRecentSearch(next);
+    setSearchPanelOpen(false);
+  };
+
+  const deleteRecentSearch = (term: string) => {
+    setRecentSearches((prev) => prev.filter((item) => item !== term));
+  };
+
+  const clearSearch = () => {
+    filterForm.setValue("search", "");
+    setSearch("");
+    setSearchPanelOpen(false);
+  };
+
+  const commitSearch = () => {
+    const next = watchSearch.trim();
+    setSearch(next);
+    if (next) {
+      pushRecentSearch(next);
+    }
+    setSearchPanelOpen(false);
+  };
+
+  const resetDraftFilters = () => {
+    filterForm.setValue("environment", "prod");
+    filterForm.setValue("locale", "ko");
+    filterForm.setValue("serviceName", "all");
+    filterForm.setValue("fromDate", "");
+    filterForm.setValue("toDate", "");
+  };
+
+  const applyDraftFilters = () => {
+    const nextEnvironment = filterForm.getValues("environment");
+    const nextLocale = filterForm.getValues("locale");
+    const nextServiceName = filterForm.getValues("serviceName");
+    const nextFromDate = filterForm.getValues("fromDate");
+    const nextToDate = filterForm.getValues("toDate");
+
+    setEnvironment(nextEnvironment);
+    setLocale(nextLocale);
+    setServiceName(nextServiceName);
+    setRange(
+      nextFromDate ? `${nextFromDate}T00:00:00.000Z` : undefined,
+      nextToDate ? `${nextToDate}T23:59:59.999Z` : undefined
+    );
+    closeFilterSheet();
+  };
+
+  useEffect(() => {
+    if (!filterSheetOpen) return;
+    filterForm.setValue("environment", environment);
+    filterForm.setValue("locale", locale);
+    filterForm.setValue("serviceName", serviceName);
+    filterForm.setValue("fromDate", fromDateFromStore);
+    filterForm.setValue("toDate", toDateFromStore);
+  }, [environment, filterForm, filterSheetOpen, fromDateFromStore, locale, serviceName, toDateFromStore]);
+
+  useEffect(() => {
+    const onPointerDown = (event: MouseEvent) => {
+      if (!searchWrapRef.current) return;
+      if (!searchWrapRef.current.contains(event.target as Node)) {
+        setSearchPanelOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, []);
+
+  useEffect(() => {
+    const listener = (event: Event) => {
+      const custom = event as CustomEvent<CreateOpsAlertInput>;
+      const detail = custom.detail;
+      if (!detail?.title) return;
+
+      addAlert(detail);
+      const color = detail.level === "critical" ? "error" : detail.level === "high" ? "warning" : "info";
+      toast[color](detail.title);
+    };
+
+    window.addEventListener(OPS_ALERT_EVENT_NAME, listener as EventListener);
+    return () => window.removeEventListener(OPS_ALERT_EVENT_NAME, listener as EventListener);
+  }, [addAlert]);
 
   return (
     <ConsoleAppLayout
       pathname={pathname}
-      navItems={opsNavItems}
+      navItems={localizedNavItems}
       sidebarCollapsed={sidebarCollapsed}
       mobileOpen={mobileOpen}
       onToggleSidebar={toggleSidebar}
       onOpenMobile={openMobile}
       onCloseMobile={closeMobile}
-      headerTitle="운영 현황"
+      headerTitle={tCommon("headerTitle")}
       headerContent={
-        <Flex className="w-full items-center justify-between gap-4">
-          <Flex className="min-w-0 flex-1 items-center gap-3">
+        <Flex className="w-full items-center justify-between gap-[var(--space-3)]">
+          <Flex className="min-w-0 flex-1 items-center gap-[var(--space-2)]">
             <Button
               variant="secondary"
               size="sm"
@@ -151,39 +242,116 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               leftIcon={<Menu />}
               onClick={openMobile}
               className="inline-flex md:hidden"
-              aria-label="사이드바 열기"
+              aria-label={tCommon("openSidebar")}
             />
 
-            <Typography as="p" variant="bodySm" className="hidden font-semibold tracking-tight lg:block">
-              운영 현황
-            </Typography>
-
-            <Box className="relative w-full max-w-[360px] lg:max-w-[420px]">
-              <Search className="text-muted-foreground pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2" />
+            <Box ref={searchWrapRef} className="relative w-full max-w-[420px]">
               <Input
-                placeholder="서비스, 이슈, 로그 검색"
-                className="placeholder:text-muted text-body-md border-default bg-surface hover:border-primary/35 focus:border-primary focus:ring-primary/30 h-10 w-full rounded-[var(--radius-md)] border px-3 py-2 pl-8 shadow-none outline-none ring-0 transition-colors focus:ring-1 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+                value={watchSearch}
+                onFocus={() => setSearchPanelOpen(true)}
+                onChange={(event) => {
+                  filterForm.setValue("search", event.target.value);
+                  setSearchPanelOpen(true);
+                }}
+                onEnter={() => commitSearch()}
+                onEscape={() => setSearchPanelOpen(false)}
+                prefix={<Search className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />}
+                clearable
+                onClear={clearSearch}
+                placeholder={tCommon("searchPlaceholder")}
+                className="text-body-md h-[var(--toolbar-height)]"
               />
+
+              {searchPanelOpen ? (
+                <Box className="border-default bg-surface absolute left-0 top-[calc(100%+6px)] z-30 w-full rounded-[var(--radius-md)] border p-[var(--space-2)] shadow-md">
+                  <Flex className="items-center justify-between pb-[var(--space-1)]">
+                    <Typography as="p" variant="caption" color="muted">
+                      {tCommon("recentSearch")}
+                    </Typography>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="text-muted h-[var(--size-control-sm)] rounded-sm px-[var(--space-2)] text-[11px]"
+                      onClick={() => setRecentSearches([])}
+                    >
+                      {tCommon("clearAll")}
+                    </Button>
+                  </Flex>
+
+                  {visibleRecent.length > 0 ? (
+                    <Flex className="flex-wrap gap-[var(--space-1)]">
+                      {visibleRecent.map((term) => (
+                        <Badge
+                          key={term}
+                          variant="outline"
+                          size="md"
+                          shape="pill"
+                          truncate
+                          maxWidth={220}
+                          interactive
+                          removable
+                          removeLabel={`${term} 삭제`}
+                          onRemove={() => deleteRecentSearch(term)}
+                          className="text-foreground h-[var(--chip-height)] hover:bg-surface-elevated cursor-pointer"
+                          onClick={() => applySearchTerm(term)}
+                        >
+                          {term}
+                        </Badge>
+                      ))}
+                    </Flex>
+                  ) : (
+                    <Typography as="p" variant="caption" color="muted" className="py-[var(--space-1)]">
+                      {tCommon("recentSearchEmpty")}
+                    </Typography>
+                  )}
+                </Box>
+              ) : null}
             </Box>
           </Flex>
 
-          <Flex className="items-center gap-1 md:gap-2">
+          <Flex className="items-center gap-[var(--space-1)] md:gap-[var(--space-2)]">
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              leftIcon={<SlidersHorizontal />}
+              className={`border-default bg-surface-elevated hover:bg-surface relative h-[var(--size-control-md)] w-[var(--size-control-md)] rounded-md border p-0 ${
+                activeFilterCount > 0 ? "text-primary" : "text-foreground"
+              }`}
+              aria-label={tCommon("openFilters")}
+              onClick={openFilterSheet}
+            >
+              {activeFilterCount > 0 ? (
+                <Box as="span" className="absolute right-0 top-0 -translate-y-1/2 translate-x-1/2">
+                  <Badge
+                    variant="dangerSolid"
+                    size="sm"
+                    className="h-[var(--size-chip-sm)] min-w-[var(--size-chip-sm)] justify-center px-[var(--space-1)] text-[10px] font-semibold leading-none"
+                  >
+                    {activeFilterCount}
+                  </Badge>
+                </Box>
+              ) : null}
+            </Button>
+
             <Box as="span" className="relative inline-flex">
               <Button
-                variant="secondary"
+                variant="ghost"
                 size="sm"
                 iconOnly
                 leftIcon={<Bell />}
-                className="rounded-md"
-                aria-label="알림 보기"
+                className={`border-default bg-surface-elevated hover:bg-surface h-[var(--size-control-md)] w-[var(--size-control-md)] rounded-md border p-0 ${
+                  unreadAlertCount > 0 ? "text-primary" : "text-foreground"
+                }`}
+                aria-label={tCommon("openAlerts")}
                 onClick={openAlertModal}
               />
               {unreadAlertCount > 0 ? (
                 <Box as="span" className="absolute right-0 top-0 -translate-y-1/2 translate-x-1/2">
                   <Badge
-                    variant="danger"
+                    variant="dangerSolid"
                     size="sm"
-                    className="border-danger/40 bg-danger text-danger-foreground h-4 min-w-4 border px-1 text-[10px] leading-none"
+                    className="h-[var(--size-chip-sm)] min-w-[var(--size-chip-sm)] justify-center px-[var(--space-1)] text-[10px] font-semibold leading-none"
                   >
                     {unreadAlertCount}
                   </Badge>
@@ -191,184 +359,43 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ) : null}
             </Box>
 
-            <Box className="hidden min-w-[104px] md:block">
-              <Select
-                options={[
-                  { label: "EN", value: "en" },
-                  { label: "KO", value: "ko" }
-                ]}
-                value={language}
-                onChange={(value) => setLanguage((value as "en" | "ko") ?? "en")}
-                size="sm"
-                className="h-8"
-              />
-            </Box>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="hover:bg-surface-elevated active:bg-surface-elevated h-9 w-9 rounded-full p-0"
-                  aria-label="프로필 메뉴"
-                >
-                  <Avatar size="sm" name="Moni Roy" status="online" color="primary" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[220px]">
-                <DropdownMenuLabel>Moni Roy</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  leftSlot={<UserCircle2 className="h-4 w-4" />}
-                  onSelect={() => router.push("/settings")}
-                >
-                  내 프로필
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  leftSlot={<Settings className="h-4 w-4" />}
-                  onSelect={() => router.push("/settings")}
-                >
-                  워크스페이스 설정
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem leftSlot={<LogOut className="h-4 w-4" />} color="danger">
-                  로그아웃
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <ProfileMenu onMoveToSettings={() => router.push("/settings")} />
           </Flex>
         </Flex>
       }
-      brandEyebrow="Operations AI"
-      brandTitle="OpsLens"
-      filterContent={
-        <Flex className="w-full items-center gap-2 overflow-x-auto">
-          <Box className="min-w-[180px] max-w-[220px] flex-1">
-            <Select
-              options={[
-                { label: "prod", value: "prod" },
-                { label: "stage", value: "stage" },
-                { label: "dev", value: "dev" }
-              ]}
-              control={filterForm.control}
-              name="environment"
-              size="md"
-              className="h-10"
-            />
-          </Box>
-
-          <Box className="min-w-[200px] max-w-[260px] flex-1">
-            <Select
-              options={[
-                { label: "all", value: "all" },
-                { label: "docs", value: "docs" },
-                { label: "whiteboard", value: "whiteboard" },
-                { label: "billing", value: "billing" },
-                { label: "checkout", value: "checkout" }
-              ]}
-              control={filterForm.control}
-              name="serviceName"
-              searchable
-              size="md"
-              className="h-10"
-            />
-          </Box>
-
-          <Box className="min-w-[260px] flex-[1.2]">
-            <DatePicker
-              id="filter-period"
-              mode="range"
-              range={{ from: fromDate, to: toDate }}
-              onRangeChange={(nextRange) => {
-                filterForm.setValue("fromDate", nextRange.from ?? "");
-                filterForm.setValue("toDate", nextRange.to ?? "");
-              }}
-              size="md"
-              placeholder="기간 선택"
-              className="bg-surface h-10 shadow-none focus-visible:ring-0"
-            />
-          </Box>
-
-          <Box className="min-w-[220px] flex-[1.3]">
-            <Box className="relative">
-              <Search className="text-muted-foreground pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2" />
-              <Input
-                id="filter-query"
-                value={watchSearch}
-                onChange={(event) => filterForm.setValue("search", event.target.value)}
-                placeholder="검색"
-                size="md"
-                className="h-10 pl-8"
-              />
-            </Box>
-          </Box>
-        </Flex>
-      }
+      brandEyebrow={tCommon("brandEyebrow")}
+      brandTitle={tCommon("brandTitle")}
     >
       <>
         {children}
-        <Modal
+        <AlertsModal
           open={alertModalOpen}
           onOpenChange={(nextOpen) => (nextOpen ? openAlertModal() : closeAlertModal())}
-        >
-          <ModalContent size="sm">
-            <ModalHeader>
-              <ModalTitle>운영 알림</ModalTitle>
-              <ModalDescription>중요 알림을 확인하고 즉시 대응할 수 있습니다.</ModalDescription>
-            </ModalHeader>
-            <ModalBody className="space-y-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  closeAlertModal();
-                  router.push("/issues");
-                }}
-                className="border-default bg-surface-elevated hover:bg-surface h-auto w-full justify-between rounded-lg border p-3 text-left"
-              >
-                <Flex className="min-w-0 items-start gap-2">
-                  <AlertTriangle className="text-danger mt-0.5 h-5 w-5 shrink-0" />
-                  <Box className="min-w-0">
-                    <Typography as="p" variant="bodySm" className="truncate font-semibold">
-                      결제 승인 단계 TypeError 급증
-                    </Typography>
-                    <Typography as="p" variant="caption" color="muted">
-                      방금 전
-                    </Typography>
-                  </Box>
-                </Flex>
-                <Badge variant="danger" size="sm">
-                  critical
-                </Badge>
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  closeAlertModal();
-                  router.push("/issues");
-                }}
-                className="border-default bg-surface-elevated hover:bg-surface h-auto w-full justify-between rounded-lg border p-3 text-left"
-              >
-                <Flex className="min-w-0 items-start gap-2">
-                  <AlertTriangle className="text-warning mt-0.5 h-5 w-5 shrink-0" />
-                  <Box className="min-w-0">
-                    <Typography as="p" variant="bodySm" className="truncate font-semibold">
-                      주문 상세 API 500 에러 재발
-                    </Typography>
-                    <Typography as="p" variant="caption" color="muted">
-                      5분 전
-                    </Typography>
-                  </Box>
-                </Flex>
-                <Badge variant="warning" size="sm">
-                  high
-                </Badge>
-              </Button>
-            </ModalBody>
-          </ModalContent>
-        </Modal>
+          alerts={sortedAlerts}
+          onMarkAllRead={markAllRead}
+          onMarkRead={markRead}
+          onRemoveAlert={removeAlert}
+          onMoveToIssues={(id) => {
+            markRead(id);
+            closeAlertModal();
+            router.push("/issues");
+          }}
+        />
+        <OpsFilterSheet
+          locale={draftSheetLocale}
+          calendarLocale={draftCalendarLocale}
+          open={filterSheetOpen}
+          onOpenChange={(nextOpen) => (nextOpen ? openFilterSheet() : closeFilterSheet())}
+          control={filterForm.control}
+          fromDate={fromDate}
+          toDate={toDate}
+          onRangeChange={(nextRange) => {
+            filterForm.setValue("fromDate", nextRange.from ?? "");
+            filterForm.setValue("toDate", nextRange.to ?? "");
+          }}
+          onReset={resetDraftFilters}
+          onApply={applyDraftFilters}
+        />
       </>
     </ConsoleAppLayout>
   );

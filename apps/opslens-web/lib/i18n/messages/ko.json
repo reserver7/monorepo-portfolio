@@ -1,0 +1,75 @@
+{
+  "common": {
+    "headerTitle": "운영 현황",
+    "searchPlaceholder": "서비스, 이슈, 로그 검색",
+    "recentSearch": "최근 검색",
+    "recentSearchEmpty": "최근 검색어가 없습니다.",
+    "clearAll": "전체 삭제",
+    "openAlerts": "알림 보기",
+    "openFilters": "필터 열기",
+    "openSidebar": "사이드바 열기",
+    "profileMenu": "프로필 메뉴",
+    "brandEyebrow": "Operations AI",
+    "brandTitle": "OpsLens"
+  },
+  "nav": {
+    "dashboard": "대시보드",
+    "logs": "로그",
+    "issues": "이슈",
+    "qaAssistant": "QA 어시스턴트",
+    "deployments": "배포",
+    "reports": "리포트",
+    "settings": "설정"
+  },
+  "filter": {
+    "title": "운영 필터",
+    "description": "서비스와 기간 중심으로 결과 범위를 좁힙니다.",
+    "language": "언어",
+    "service": "서비스",
+    "period": "기간",
+    "selectPeriod": "기간 선택",
+    "selectPlaceholder": "선택하세요",
+    "selectSearchPlaceholder": "검색",
+    "selectEmptyMessage": "결과가 없습니다.",
+    "resetFilters": "필터 초기화",
+    "apply": "적용"
+  },
+  "alerts": {
+    "title": "운영 알림",
+    "description": "읽지 않은 알림을 우선 확인하고 대응하세요.",
+    "unread": "읽지 않음",
+    "markAllRead": "모두 읽음",
+    "remove": "알림 삭제",
+    "none": "새로운 알림이 없습니다."
+  },
+  "profile": {
+    "myProfile": "내 프로필",
+    "workspaceSettings": "워크스페이스 설정",
+    "logout": "로그아웃"
+  },
+  "dashboard": {
+    "title": "운영 대시보드",
+    "badgeService": "서비스",
+    "badgeLanguage": "언어",
+    "badgePeriod": "기간",
+    "badgeSearch": "검색"
+  },
+  "locale": {
+    "ko": "한국어",
+    "en": "English",
+    "ja": "日本語"
+  },
+  "service": {
+    "all": "전체",
+    "docs": "문서",
+    "whiteboard": "화이트보드",
+    "billing": "결제",
+    "checkout": "체크아웃"
+  },
+  "settings": {
+    "language": "언어",
+    "service": "서비스",
+    "search": "검색어",
+    "none": "(없음)"
+  }
+}
