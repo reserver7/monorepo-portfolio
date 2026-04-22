@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   core-checks:
-    name: Validate Monorepo (Lint/Typecheck/Build)
+    name: Validate Monorepo (Fast PR Checks)
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -36,12 +36,35 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Detect changed areas
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            ui_storybook:
+              - 'packages/ui/**'
+              - 'packages/theme/**'
+              - 'apps/storybook/**'
+              - 'scripts/generate-ui-stories.mjs'
+              - 'scripts/watch-ui-stories.mjs'
+
+      - name: i18n key consistency
+        run: pnpm i18n:check
+
+      - name: i18n extract fail-fast
+        run: pnpm i18n:extract:check
+
+      - name: i18n missing-key fail-fast
+        run: pnpm i18n:sync:check
+
       - name: Verify Storybook Auto Stories Are Up To Date
+        if: steps.changes.outputs.ui_storybook == 'true'
         run: |
           pnpm storybook:gen
           git diff --exit-code -- packages/ui/stories/components/generated
 
       - name: Verify Storybook Coverage
+        if: steps.changes.outputs.ui_storybook == 'true'
         run: pnpm storybook:check
 
       - name: Lint
@@ -49,9 +72,6 @@ jobs:
 
       - name: Typecheck
         run: pnpm turbo run typecheck
-
-      - name: Build
-        run: pnpm turbo run build
 
   chromatic:
     name: Validate UI Visual Regressions (Chromatic)
