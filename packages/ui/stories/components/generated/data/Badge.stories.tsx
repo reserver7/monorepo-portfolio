@@ -51,7 +51,7 @@ const meta: Meta<typeof Badge> = {
     children: "Badge"
   },
   argTypes: {
-    variant: {control:"select",options:["default","secondary","outline","success","warning","danger","destructive","info"],table:{defaultValue:{summary:"default"}}},
+    variant: {control:"select",options:["default","secondary","outline","success","warning","danger","dangerSolid","destructive","info"],table:{defaultValue:{summary:"default"}}},
     size: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"sm"}}},
     shape: {control:"select",options:["pill","rounded","square"],table:{defaultValue:{summary:"pill"}}},
     removeLabel: {control:"text",table:{defaultValue:{summary:"제거"}}},

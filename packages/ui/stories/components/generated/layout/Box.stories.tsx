@@ -50,6 +50,7 @@ const meta: Meta<typeof Box> = {
   },
   argTypes: {
     variant: {control:"select",options:["plain","surface","elevated","muted"],table:{defaultValue:{summary:"plain"}}},
+    as: {control:"select",options:["div","section","header","main","aside","nav","span","p","h1","h2","h3","h4","h5","h6"],table:{}},
     padding: {control:"select",options:["none","xs","sm","md","lg","xl"],table:{defaultValue:{summary:"none"}}},
     radius: {control:"select",options:["none","sm","md","lg","xl","full"],table:{defaultValue:{summary:"none"}}},
     shadow: {control:"select",options:["none","sm","md","lg"],table:{defaultValue:{summary:"none"}}},
