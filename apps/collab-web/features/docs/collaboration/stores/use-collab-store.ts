@@ -38,7 +38,7 @@ interface CollabStore {
   setSaveState: (state: SaveState) => void;
   markSavedCheckpoint: (updatedAt: string, version: number) => void;
   setConflictMessage: (message: string | null) => void;
-  pushEvent: (message: string) => void;
+  pushEvent: (message: string, locale?: string) => void;
 }
 
 const MAX_LOG = 24;
@@ -174,8 +174,8 @@ const collabStore = createAppStore<CollabStore>(
     setConflictMessage: (message) => {
       set({ conflictMessage: message });
     },
-    pushEvent: (message) => {
-      set({ eventLog: appendEventLog(get().eventLog, message, MAX_LOG) });
+    pushEvent: (message, locale) => {
+      set({ eventLog: appendEventLog(get().eventLog, message, MAX_LOG, locale) });
     }
   }),
   { name: "docs-collab-store" }

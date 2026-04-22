@@ -29,20 +29,20 @@ export const SELECT_DEFAULTS = {
 export const SELECT_ROW_HEIGHT_PX = 36;
 
 export const SELECT_TRIGGER_BASE_CLASS =
-  "inline-flex w-full cursor-pointer items-center justify-between rounded-[var(--radius-md)] border px-3 py-2 text-foreground outline-none transition-colors focus:ring-1 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex w-full cursor-pointer items-center justify-between rounded-[var(--radius-md)] border px-[var(--space-3)] py-[var(--space-2)] text-foreground outline-none transition-colors focus:ring-1 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50";
 
 export const SELECT_CONTENT_BASE_CLASS =
-  "z-50 max-h-80 min-w-[var(--radix-select-trigger-width)] w-[var(--radix-select-trigger-width)] overflow-hidden rounded-[var(--radius-md)] border border-default bg-surface shadow-[var(--shadow-card)]";
+  "z-50 max-h-[var(--size-select-content-max-h)] min-w-[var(--radix-select-trigger-width)] w-[var(--radix-select-trigger-width)] overflow-hidden rounded-[var(--radius-md)] border border-default bg-surface shadow-[var(--shadow-card)]";
 
 export const SELECT_POPOVER_CONTENT_BASE_CLASS =
-  "border-default bg-surface z-50 rounded-[var(--radius-md)] border p-2 shadow-[var(--shadow-card)]";
+  "border-default bg-surface z-50 rounded-[var(--radius-md)] border p-[var(--space-2)] shadow-[var(--shadow-card)]";
 
-export const SELECT_SCROLL_LIST_CLASS = "space-y-1 overflow-auto p-1";
+export const SELECT_SCROLL_LIST_CLASS = "space-y-[var(--space-1)] overflow-auto p-[var(--space-1)]";
 
 export const SELECT_SIZE_CLASS: Record<SelectTriggerSize, string> = {
-  sm: "h-9 text-body-sm",
-  md: "h-11 text-body-md",
-  lg: "h-12 text-body-md"
+  sm: "h-[var(--size-control-md)] text-body-sm",
+  md: "h-[var(--size-control-xl)] text-body-md",
+  lg: "h-[var(--size-control-2xl)] text-body-md"
 };
 
 export const SELECT_VARIANT_CLASS: Record<SelectTriggerVariant, string> = {

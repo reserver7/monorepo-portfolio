@@ -23,14 +23,14 @@ export const SEPARATOR_BORDER_COLOR_CLASS = {
 
 export const SEPARATOR_INSET_CLASS = {
   none: "",
-  sm: "mx-2",
-  md: "mx-4"
+  sm: "mx-[var(--space-2)]",
+  md: "mx-[var(--space-4)]"
 } as const;
 
 export const SEPARATOR_THICKNESS_CLASS: Record<SeparatorThickness, { horizontal: string; vertical: string }> = {
-  sm: { horizontal: "h-px", vertical: "w-px" },
-  md: { horizontal: "h-0.5", vertical: "w-0.5" },
-  lg: { horizontal: "h-1", vertical: "w-1" }
+  sm: { horizontal: "h-[var(--size-border-hairline)]", vertical: "w-[var(--size-border-hairline)]" },
+  md: { horizontal: "h-[var(--size-border-thin)]", vertical: "w-[var(--size-border-thin)]" },
+  lg: { horizontal: "h-[var(--space-1)]", vertical: "w-[var(--space-1)]" }
 };
 
 export const SEPARATOR_LINE_STYLE_CLASS: Record<SeparatorLineStyle, string> = {

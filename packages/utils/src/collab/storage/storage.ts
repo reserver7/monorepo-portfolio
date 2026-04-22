@@ -28,7 +28,7 @@ const normalizeRole = (rawValue: string | null): AccessRole | null => {
   return null;
 };
 
-export const createGuestName = (): string => `게스트-${Math.floor(100 + Math.random() * 900)}`;
+export const createGuestName = (): string => `Guest ${Math.floor(100 + Math.random() * 900)}`;
 
 export const getOrCreateSessionId = (storageKey: string): string => {
   const browserWindow = getBrowserWindow();

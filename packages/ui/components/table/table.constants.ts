@@ -8,7 +8,7 @@ export const TABLE_DEFAULTS = {
 } as const;
 
 export const TABLE_DENSITY_CLASS: Record<TableDensity, string> = {
-  compact: "[&_td]:py-1 [&_th]:py-1",
+  compact: "[&_td]:py-[var(--space-1)] [&_th]:py-[var(--space-1)]",
   default: "",
-  comfortable: "[&_td]:py-3.5 [&_th]:py-3.5"
+  comfortable: "[&_td]:py-[var(--space-3-5)] [&_th]:py-[var(--space-3-5)]"
 };

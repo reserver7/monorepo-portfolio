@@ -69,7 +69,7 @@ export const SelectTrigger = React.forwardRef<
       >
         {children}
         <SelectPrimitive.Icon asChild>
-          <ChevronDown className="text-muted h-4 w-4 shrink-0" />
+          <ChevronDown className="text-muted h-[var(--size-icon-md)] w-[var(--size-icon-md)] shrink-0" />
         </SelectPrimitive.Icon>
       </SelectPrimitive.Trigger>
     );
@@ -89,7 +89,7 @@ export const SelectContent = React.forwardRef<
       className={cn(SELECT_CONTENT_BASE_CLASS, className)}
       {...props}
     >
-      <SelectPrimitive.Viewport className="p-1">{children}</SelectPrimitive.Viewport>
+      <SelectPrimitive.Viewport className="p-[var(--space-1)]">{children}</SelectPrimitive.Viewport>
     </SelectPrimitive.Content>
   </SelectPrimitive.Portal>
 ));
@@ -107,7 +107,7 @@ export const SelectItem = React.forwardRef<React.ElementRef<typeof SelectPrimiti
     >
       <SelectPrimitive.ItemText className="truncate">{children}</SelectPrimitive.ItemText>
       <SelectPrimitive.ItemIndicator>
-        <Check className="h-4 w-4" />
+        <Check className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />
       </SelectPrimitive.ItemIndicator>
     </SelectPrimitive.Item>
   )
@@ -237,7 +237,7 @@ function SelectSingle<T = SelectPrimitiveValue>({
             ) : (
               <span className="text-muted truncate">{placeholder}</span>
             )}
-            <ChevronDown className="text-muted ml-2 h-4 w-4 shrink-0" />
+            <ChevronDown className="text-muted ml-2 h-[var(--size-icon-md)] w-[var(--size-icon-md)] shrink-0" />
           </button>
         </PopoverPrimitive.Trigger>
         <PopoverPrimitive.Portal>
@@ -273,7 +273,7 @@ function SelectSingle<T = SelectPrimitiveValue>({
                       }}
                     >
                       <span className="truncate">{option.label}</span>
-                      {checked ? <Check className="h-4 w-4" /> : null}
+                      {checked ? <Check className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" /> : null}
                     </button>
                   );
                 })}
@@ -293,7 +293,7 @@ function SelectSingle<T = SelectPrimitiveValue>({
       onOpenChange={handleOpenChange}
     >
       <SelectTrigger size={resolvedSize} variant={resolvedVariant} status={activeStatus} className={className} style={style}>
-        <span className="flex min-w-0 flex-1 items-center gap-1">
+        <span className="flex min-w-0 flex-1 items-center gap-[var(--space-1)]">
           <SelectValue placeholder={placeholder} />
         </span>
       </SelectTrigger>
@@ -481,23 +481,23 @@ function SelectMultiple<T = SelectPrimitiveValue>({
           ) : selectedValues.length === 0 ? (
             <span className="text-muted truncate">{placeholder}</span>
           ) : (
-            <span className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+            <span className="flex min-w-0 flex-1 items-center gap-[var(--space-1-5)] overflow-hidden">
               {visibleTagKeys.map((key) => (
                 <span
                   key={key}
-                  className="bg-primary/10 text-primary inline-flex max-w-[9rem] shrink-0 items-center rounded-[var(--radius-sm)] px-2.5 py-0.5 text-[11px] font-medium"
+                  className="bg-primary/10 text-primary inline-flex max-w-[var(--size-popover-sm)] shrink-0 items-center rounded-[var(--radius-sm)] px-[var(--space-2-5)] py-[var(--size-border-hairline)] text-[11px] font-medium"
                 >
                   <span className="truncate">{labelByKey.get(key) ?? key}</span>
                 </span>
               ))}
               {hiddenTagCount > 0 ? (
-                <span className="bg-surface-elevated text-muted inline-flex shrink-0 items-center rounded-[var(--radius-sm)] px-2 py-0.5 text-[11px] font-medium">
+                <span className="bg-surface-elevated text-muted inline-flex shrink-0 items-center rounded-[var(--radius-sm)] px-[var(--space-2)] py-[var(--size-border-hairline)] text-[11px] font-medium">
                   +{hiddenTagCount}
                 </span>
               ) : null}
             </span>
           )}
-          <ChevronDown className="text-muted ml-2 h-4 w-4 shrink-0" />
+          <ChevronDown className="text-muted ml-2 h-[var(--size-icon-md)] w-[var(--size-icon-md)] shrink-0" />
         </button>
       </PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
@@ -509,7 +509,7 @@ function SelectMultiple<T = SelectPrimitiveValue>({
         >
           <button
             type="button"
-            className="text-body-sm text-muted hover:bg-surface-elevated hover:text-foreground mb-1 flex h-8 w-full items-center justify-between gap-2 rounded-[var(--radius-md)] px-3"
+            className="text-body-sm text-muted hover:bg-surface-elevated hover:text-foreground mb-[var(--space-1)] flex h-[var(--size-control-sm)] w-full items-center justify-between gap-[var(--space-2)] rounded-[var(--radius-md)] px-[var(--space-3)]"
             onClick={handleToggleAll}
           >
             <span>{isAllSelected ? "전체 해제" : "전체 선택"}</span>
@@ -517,7 +517,7 @@ function SelectMultiple<T = SelectPrimitiveValue>({
           </button>
 
           {loading ? (
-            <div className="text-body-sm text-muted px-2 py-2">불러오는 중...</div>
+            <div className="text-body-sm text-muted px-[var(--space-2)] py-[var(--space-2)]">불러오는 중...</div>
           ) : filteredOptions.length === 0 ? (
             <div className="text-body-sm text-muted px-2 py-2">{emptyMessage}</div>
           ) : (
@@ -539,11 +539,11 @@ function SelectMultiple<T = SelectPrimitiveValue>({
                   >
                     <span
                       className={cn(
-                        "border-default bg-surface flex h-4 w-4 items-center justify-center rounded-[var(--radius-sm)] border",
+                        "border-default bg-surface flex h-[var(--size-icon-md)] w-[var(--size-icon-md)] items-center justify-center rounded-[var(--radius-sm)] border",
                         checked ? "border-primary/40 bg-primary/10" : null
                       )}
                     >
-                      {checked ? <Check className="text-primary h-3.5 w-3.5" /> : null}
+                      {checked ? <Check className="text-primary h-[var(--size-icon-sm)] w-[var(--size-icon-sm)]" /> : null}
                     </span>
                     <span className="truncate">{option.label}</span>
                   </button>

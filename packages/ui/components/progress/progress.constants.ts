@@ -9,9 +9,9 @@ export const PROGRESS_DEFAULTS = {
 } as const;
 
 export const PROGRESS_SIZE_CLASS: Record<ProgressSize, string> = {
-  sm: "h-1.5",
-  md: "h-2",
-  lg: "h-3"
+  sm: "h-[var(--space-1-5)]",
+  md: "h-[var(--space-2)]",
+  lg: "h-[var(--space-3)]"
 };
 
 export const PROGRESS_COLOR_CLASS = {

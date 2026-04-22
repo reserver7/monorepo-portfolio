@@ -40,7 +40,7 @@ const TableSelectCheckbox = React.memo(function TableSelectCheckbox({
     <input
       ref={ref}
       type="checkbox"
-      className="h-4 w-4 rounded border-default accent-primary"
+      className="h-[var(--size-icon-md)] w-[var(--size-icon-md)] rounded border-default accent-primary"
       checked={checked}
       disabled={disabled}
       onClick={(event) => event.stopPropagation()}
@@ -857,14 +857,14 @@ export function DataTable<T>({
 
   return (
     <div className={cn("space-y-3", className)} style={style}>
-      {toolbarPosition === "top" && renderedToolbar ? <div className="px-1">{renderedToolbar}</div> : null}
+      {toolbarPosition === "top" && renderedToolbar ? <div className="px-[var(--space-1)]">{renderedToolbar}</div> : null}
 
       <div className="border-default bg-surface overflow-x-auto rounded-[var(--radius-xl)] border">
         <Table
           className={cn("min-w-full text-sm", tableClassName)}
           density={tableDensity}
           stickyHeader={stickyHeader}
-          containerClassName="max-h-[70vh]"
+          containerClassName="max-h-[var(--size-data-table-max-h)]"
           containerRef={tableContainerRef}
         >
           <TableHeader className="bg-surface-elevated">
@@ -887,11 +887,11 @@ export function DataTable<T>({
                 const isActiveSort = currentSortState?.id === id;
                 const sortDirection = isActiveSort ? currentSortState?.direction : null;
                 const sortIcon = !column.__sortable ? null : sortDirection === "asc" ? (
-                  <ArrowUp className="h-4 w-4" />
+                  <ArrowUp className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />
                 ) : sortDirection === "desc" ? (
-                  <ArrowDown className="h-4 w-4" />
+                  <ArrowDown className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />
                 ) : (
-                  <ArrowUpDown className="h-4 w-4" />
+                  <ArrowUpDown className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />
                 );
 
                 return (
@@ -910,7 +910,7 @@ export function DataTable<T>({
                       <button
                         type="button"
                         className={cn(
-                          "inline-flex w-full items-center gap-1 transition-colors",
+                          "inline-flex w-full items-center gap-[var(--space-1)] transition-colors",
                           headerAlignClass === "text-right"
                             ? "justify-end"
                             : headerAlignClass === "text-center"
@@ -1006,7 +1006,7 @@ export function DataTable<T>({
         </div>
       ) : null}
 
-      {toolbarPosition === "bottom" && renderedToolbar ? <div className="px-1">{renderedToolbar}</div> : null}
+      {toolbarPosition === "bottom" && renderedToolbar ? <div className="px-[var(--space-1)]">{renderedToolbar}</div> : null}
     </div>
   );
 }

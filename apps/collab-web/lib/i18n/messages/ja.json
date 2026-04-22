@@ -1,0 +1,435 @@
+{
+  "collab": {
+    "docsHome": {
+      "common": {
+        "cancel": "キャンセル",
+        "delete": "削除"
+      },
+      "defaultDraftTitle": "共同ドキュメント",
+      "deleteDialog": {
+        "confirmDeleteDocument": "ドキュメント削除",
+        "default": {
+          "description": "削除したドキュメントは復元できません。",
+          "title": "このドキュメントを削除しますか？"
+        },
+        "passwordLabel": "削除パスワード",
+        "passwordPlaceholder": "削除パスワード",
+        "protected": {
+          "description": "このドキュメントは編集キーで保護されています。削除パスワードを入力してください。",
+          "title": "このドキュメントを削除しますか？"
+        }
+      },
+      "emptyTitle": "（無題）",
+      "form": {
+        "titleLabel": "新しいドキュメントタイトル",
+        "titlePlaceholder": "ドキュメントタイトル"
+      },
+      "hero": {
+        "create": "新規ドキュメント作成",
+        "description": "複数のユーザーが同時に接続して共同編集でき、変更内容は即時に同期されます。",
+        "learnMore": "一覧へ移動",
+        "title": "リアルタイム共同ドキュメント"
+      },
+      "list": {
+        "autoRefresh": "自動更新: 5秒",
+        "card": {
+          "badges": {
+            "protected": "キー保護"
+          },
+          "enter": "ドキュメントを開く",
+          "updatedAt": "更新日時",
+          "updatedRelative": "最終更新"
+        },
+        "emptyDescription": "最初のドキュメントを作成してください。",
+        "emptyTitle": "ドキュメントがありません。",
+        "errorDescription": "サーバー状態を確認してください。",
+        "errorTitle": "ドキュメント一覧の取得に失敗しました。",
+        "title": "ドキュメント一覧"
+      },
+      "messages": {
+        "deleteFailed": "ドキュメントの削除に失敗しました。",
+        "deletePasswordCheck": "削除パスワードを確認してください。",
+        "deletePasswordInvalid": "削除パスワードが正しくありません。",
+        "deletePasswordRequired": "削除パスワードを入力してください。"
+      },
+      "nav": {
+        "toWhiteboard": "ホワイトボードへ移動"
+      },
+      "overview": {
+        "description": "ドキュメントと権限の状態を確認し、必要なドキュメントへすぐに移動できます。",
+        "guide": {
+          "step1": "1) 名前/権限を設定してドキュメントを作成します。",
+          "step2": "2) 編集キーを入力すると、入室時に再利用されます。",
+          "step3": "3) 削除が必要な場合はカードから即時処理できます。",
+          "title": "利用ガイド"
+        },
+        "stats": {
+          "comments": "コメント",
+          "documents": "ドキュメント",
+          "protected": "保護済み"
+        },
+        "title": "ワークスペース概要"
+      }
+    },
+    "docsPanels": {
+      "activity": {
+        "countSuffix": "件",
+        "empty": "アクティビティログがありません。",
+        "recent": "最近",
+        "title": "アクティビティログ"
+      },
+      "comments": {
+        "commonCancel": "キャンセル",
+        "commonSave": "保存",
+        "countSuffix": "件",
+        "delete": "削除",
+        "deleteDialog": {
+          "confirm": "コメント削除",
+          "description": "削除したコメントは復元できません。",
+          "title": "このコメントを削除しますか？"
+        },
+        "edit": "編集",
+        "empty": "コメントがありません。",
+        "inputPlaceholder": "コメントを入力してください。例) @teammate 確認お願いします",
+        "meSuffix": " (自分)",
+        "mentionLabel": "メンション候補",
+        "none": "なし",
+        "submit": "登録",
+        "title": "コメント"
+      },
+      "history": {
+        "action": {
+          "comment": "コメント",
+          "create": "作成",
+          "save": "保存",
+          "update": "更新"
+        },
+        "by": "作成者",
+        "countSuffix": "件",
+        "empty": "表示する履歴がありません。",
+        "title": "変更履歴"
+      },
+      "presence": {
+        "countSuffix": "人",
+        "empty": "参加者がいません。",
+        "meSuffix": " (自分)",
+        "title": "参加者"
+      }
+    },
+    "docsRoom": {
+      "actions": {
+        "backToList": "ドキュメント一覧へ"
+      },
+      "content": {
+        "activeParticipants": "同時接続",
+        "editorPlaceholder": "ここからリアルタイム共同編集が始まります...",
+        "errorDescription": "ドキュメントが存在しないか、サーバーが停止している可能性があります。",
+        "errorTitle": "ドキュメントを読み込めませんでした。",
+        "lastUpdated": "最終更新",
+        "peopleSuffix": "人",
+        "readOnly": {
+          "description": "上部で `editor request` を選び、編集キーを入力すると再リクエストされます。viewer では編集は無効ですがコメントは可能です。",
+          "title": "読み取り専用（`viewer`）セッションです。"
+        },
+        "titlePlaceholder": "ドキュメントタイトル",
+        "version": "バージョン"
+      },
+      "panel": {
+        "loadingDescription": "しばらくお待ちください。",
+        "loadingTitle": "パネル読み込み中"
+      },
+      "status": {
+        "connection": {
+          "connecting": "接続中",
+          "label": "接続",
+          "offline": "オフライン",
+          "online": "オンライン"
+        },
+        "documentId": "ドキュメントID",
+        "role": "権限",
+        "save": {
+          "idle": "待機",
+          "label": "保存",
+          "offline": "オフライン保留",
+          "saved": "保存済み",
+          "saving": "同期中"
+        }
+      }
+    },
+    "locale": {
+      "label": "言語",
+      "options": {
+        "en": "英語",
+        "ja": "日本語",
+        "ko": "韓国語"
+      },
+      "placeholder": "言語"
+    },
+    "fields": {
+      "displayName": {
+        "label": "表示名",
+        "placeholder": "表示名を入力してください"
+      },
+      "entryRole": {
+        "label": "入場権限",
+        "optionEditor": "editor",
+        "optionViewer": "viewer",
+        "placeholder": "入場権限を選択してください"
+      },
+      "requestRole": {
+        "label": "編集権限",
+        "optionEditor": "editor",
+        "optionViewer": "viewer",
+        "placeholder": "権限を選択してください"
+      },
+      "editorAccessKey": {
+        "label": "編集キー",
+        "placeholder": "編集キーを入力してください"
+      }
+    },
+    "whiteboardHome": {
+      "common": {
+        "cancel": "キャンセル",
+        "delete": "削除"
+      },
+      "defaultBoardTitle": "チームアイデアボード",
+      "deleteDialog": {
+        "confirmDeleteBoard": "ホワイトボード削除",
+        "default": {
+          "description": "削除したホワイトボードは復元できません。",
+          "title": "このホワイトボードを削除しますか？"
+        },
+        "passwordLabel": "削除パスワード",
+        "passwordPlaceholder": "削除パスワード",
+        "protected": {
+          "description": "このホワイトボードは編集キーで保護されています。削除パスワードを入力してください。",
+          "title": "このホワイトボードを削除しますか？"
+        }
+      },
+      "emptyTitle": "（無題）",
+      "form": {
+        "titleLabel": "新しいボードタイトル",
+        "titlePlaceholder": "ボードタイトル"
+      },
+      "hero": {
+        "create": "新規ボード作成",
+        "description": "図形追加、テキスト入力、ドラッグ移動、参加者カーソル共有、undo/redo をリアルタイム同期で提供します。",
+        "learnMore": "一覧へ移動",
+        "title": "リアルタイムホワイトボード共同作業"
+      },
+      "list": {
+        "autoRefresh": "自動更新: 5秒",
+        "card": {
+          "badges": {
+            "protected": "キー保護"
+          },
+          "enter": "ボードを開く",
+          "updatedAt": "更新日時",
+          "updatedRelative": "最終更新"
+        },
+        "emptyDescription": "最初のボードを作成してください。",
+        "emptyTitle": "ボードがありません。",
+        "errorDescription": "サーバー状態を確認してください。",
+        "errorTitle": "ボード一覧の取得に失敗しました。",
+        "title": "ボード一覧"
+      },
+      "messages": {
+        "deleteFailed": "ホワイトボードの削除に失敗しました。",
+        "deletePasswordCheck": "削除パスワードを確認してください。",
+        "deletePasswordInvalid": "削除パスワードが正しくありません。",
+        "deletePasswordRequired": "削除パスワードを入力してください。"
+      },
+      "nav": {
+        "toDocs": "ドキュメントへ移動"
+      },
+      "overview": {
+        "description": "ボード作成/保護/図形規模を一目で確認し、必要なボードへすばやく移動できます。",
+        "guide": {
+          "step1": "1) ボードタイトル/権限を設定して作成します。",
+          "step2": "2) 編集キーを入力すると入室時に再利用されます。",
+          "step3": "3) 削除はボードカードから即時処理できます。",
+          "title": "利用ガイド"
+        },
+        "stats": {
+          "boards": "ボード",
+          "protected": "保護済み",
+          "shapes": "図形"
+        },
+        "title": "ボード概要"
+      }
+    },
+    "whiteboardPanel": {
+      "common": {
+        "none": "なし"
+      },
+      "events": {
+        "empty": "イベント発生時にここへ表示されます。",
+        "recentCount": "直近 {count}件",
+        "title": "リアルタイムイベント"
+      },
+      "history": {
+        "by": "作成者",
+        "empty": "表示する変更履歴がありません。",
+        "recentCount": "直近 {count}件",
+        "title": "変更履歴"
+      },
+      "participants": {
+        "count": "{count}人",
+        "cursor": "カーソル: {x}, {y}",
+        "empty": "接続中の参加者がいません。",
+        "meSuffix": " (自分)",
+        "title": "参加者"
+      },
+      "selection": {
+        "connectorStartLabel": "接続開始点",
+        "elementLabel": "選択要素",
+        "title": "選択情報",
+        "toolLabel": "選択ツール"
+      },
+      "tool": {
+        "connector": "接続線",
+        "diamond": "ひし形",
+        "ellipse": "楕円",
+        "rect": "長方形",
+        "select": "選択/移動",
+        "text": "テキスト"
+      }
+    },
+    "whiteboardRoom": {
+      "actions": {
+        "addShape": "図形追加",
+        "addText": "テキスト追加",
+        "backToList": "ボード一覧へ",
+        "deleteSelected": "選択削除",
+        "undo": "元に戻す",
+        "redo": "やり直し"
+      },
+      "common": {
+        "cancel": "キャンセル",
+        "delete": "削除"
+      },
+      "content": {
+        "connectorHint": "接続線モードです。開始図形をクリックし、次に対象図形をクリックすると線が作成されます。",
+        "connectorHintSelected": "開始図形が選択されました。接続先の図形をクリックしてください。",
+        "lastUpdated": "最終更新",
+        "readOnly": {
+          "description": "上部で `editor request` を選択し、編集キーを入力すると再リクエストされます。viewer では編集は制限され、参加者カーソルの確認のみ可能です。",
+          "title": "読み取り専用（`viewer`）セッションです。"
+        },
+        "titleLabel": "ボードタイトル",
+        "titlePlaceholder": "ボードタイトル",
+        "version": "バージョン"
+      },
+      "deleteDialog": {
+        "description": "削除した要素は復元できません。",
+        "descriptionWithConnectors": "接続されたコネクタ {count}個も一緒に削除されます。",
+        "element": {
+          "connector": "接続線",
+          "shape": "図形",
+          "text": "テキスト"
+        },
+        "title": "{element}を削除しますか？"
+      },
+      "status": {
+        "boardId": "ボードID",
+        "connection": {
+          "connecting": "接続中",
+          "label": "接続",
+          "offline": "オフライン",
+          "online": "オンライン"
+        },
+        "role": "権限",
+        "tool": "ツール"
+      },
+      "textModal": {
+        "createConfirm": "作成",
+        "createDescription": "ボードに追加するテキストを入力してください。",
+        "createTitle": "テキスト追加",
+        "defaultText": "新しいテキスト",
+        "editDescription": "選択したテキスト内容を編集します。",
+        "editTitle": "テキスト編集",
+        "inputPlaceholder": "テキストを入力してください",
+        "saveConfirm": "保存"
+      },
+      "tool": {
+        "connector": "接続線",
+        "diamond": "ひし形",
+        "ellipse": "楕円",
+        "placeholder": "ツール選択",
+        "rect": "長方形",
+        "select": "選択 / 移動",
+        "text": "テキスト"
+      }
+    },
+    "api": {
+      "documents": {
+        "commentCreateSuccess": "コメントが登録されました。",
+        "createSuccess": "ドキュメントが作成されました。",
+        "deleteSuccess": "ドキュメントが削除されました。"
+      },
+      "whiteboard": {
+        "createSuccess": "ホワイトボードが作成されました。",
+        "deleteSuccess": "ホワイトボードが削除されました。"
+      }
+    },
+    "realtime": {
+      "docs": {
+        "comment": {
+          "addedBy": "{name} さんがコメントを残しました。",
+          "deleted": "コメントが削除されました。",
+          "mentionedYou": "{name} さんがあなたをメンションしました。",
+          "offlineAdd": "オフラインではコメントを送信できません。",
+          "offlineDelete": "オフラインではコメントを削除できません。",
+          "offlineUpdate": "オフラインではコメントを編集できません。",
+          "updatedBy": "{name} さんがコメントを編集しました。"
+        },
+        "conflict": {
+          "detail": "同時編集の競合が検出され、サーバー基準（last-write-wins）で整理されました。（サーバーバージョン {version}）",
+          "merged": "競合が検出され、サーバー基準でマージされました。"
+        },
+        "connection": {
+          "connectError": "サーバー接続に失敗しました。自動再試行中です。",
+          "connected": "リアルタイム接続が有効になりました。",
+          "disconnected": "接続が切断され、オフライン状態です。"
+        },
+        "document": {
+          "stateReceived": "最新のドキュメント状態を受信しました。（権限: {role}）",
+          "syncedByEditor": "{name} さんの変更が同期されました。"
+        },
+        "permission": {
+          "viewerMode": "読み取り専用に切り替わり、編集が制限されます。"
+        }
+      },
+      "whiteboard": {
+        "board": {
+          "stateReceived": "最新のボード状態を受信しました。（権限: {role}）",
+          "syncedByEditor": "{name} さんの変更が反映されました。"
+        },
+        "conflict": {
+          "detail": "同時編集の競合が発生し、サーバー基準（last-write-wins）で整理されました。（サーバーバージョン {version}）",
+          "merged": "競合が検出され、サーバー基準で反映されました。"
+        },
+        "connection": {
+          "connectError": "サーバー接続に失敗しました。自動再試行中です。",
+          "connected": "ホワイトボードのリアルタイム接続が有効になりました。",
+          "disconnected": "接続が切断されました。再接続を待機しています。"
+        },
+        "defaultTitle": "ホワイトボード",
+        "permission": {
+          "viewerMode": "読み取り専用に切り替わり、編集が制限されます。"
+        }
+      }
+    }
+  },
+  "common": {
+    "apply": "適用",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "ok": "確認",
+    "search": "検索"
+  },
+  "error": {
+    "fallbackDescription": "しばらくしてから再試行するか、ページを更新してください。",
+    "fallbackTitle": "ドキュメント画面でエラーが発生しました。"
+  }
+}

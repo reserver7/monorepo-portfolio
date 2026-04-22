@@ -21,12 +21,12 @@ export const SplitWorkspaceLayout = ({
   stickySidebar = true
 }: SplitWorkspaceLayoutProps) => {
   return (
-    <div className={cn("grid items-start gap-5", sidebarWidthClassName, className)}>
+    <div className={cn("grid items-start gap-[var(--layout-section-gap)]", sidebarWidthClassName, className)}>
       <section className={cn("min-w-0", mainClassName)}>{main}</section>
       <aside
         className={cn(
-          "min-w-0 space-y-4",
-          stickySidebar && "lg:sticky lg:top-6 lg:self-start",
+          "min-w-0 space-y-[var(--space-4)]",
+          stickySidebar && "lg:sticky lg:top-[var(--space-6)] lg:self-start",
           sidebarClassName
         )}
       >

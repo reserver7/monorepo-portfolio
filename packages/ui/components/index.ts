@@ -146,7 +146,7 @@ export {
   SheetTitle,
   SheetDescription
 } from "./sheet";
-export { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "./tooltip";
+export { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent, AutoEllipsisTooltip } from "./tooltip";
 export {
   Skeleton,
   type SkeletonAnimation,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { io, Socket } from "socket.io-client";
 import type {
   BoardAddShapePayload,
@@ -23,7 +24,6 @@ import type {
 import { socketEventName } from "@repo/utils/collab";
 import { API_BASE_URL } from "@/features/whiteboard/boards/api";
 import {
-  createGuestName,
   getOrCreateSessionId,
   getStoredEditorAccessKey,
   getStoredSessionToken,
@@ -31,6 +31,7 @@ import {
 } from "@/features/whiteboard/collaboration/model";
 import { AccessRole, Participant, WhiteboardRecord, WhiteboardShape } from "@/features/whiteboard/collaboration/model";
 import { useWhiteboardStore } from "@/features/whiteboard/canvas/stores/use-whiteboard-store";
+import { createLocaleGuestName, normalizeGuestDisplayName } from "@/lib/i18n/display-name";
 
 interface UseWhiteboardRealtimeOptions {
   boardId: string;
@@ -66,6 +67,8 @@ export const useWhiteboardRealtime = ({
   undo: () => void;
   redo: () => void;
 } => {
+  const t = useTranslations("collab.realtime.whiteboard");
+  const locale = useLocale();
   const title = useWhiteboardStore.use.title();
   const version = useWhiteboardStore.use.version();
   const currentRole = useWhiteboardStore.use.role();
@@ -96,7 +99,7 @@ export const useWhiteboardRealtime = ({
   const requestedRoleRef = useRef<AccessRole>(role);
   const roleRef = useRef<AccessRole>(role);
   const versionRef = useRef<number>(initialBoard?.version ?? 0);
-  const titleRef = useRef<string>(initialBoard?.title ?? "화이트보드");
+  const titleRef = useRef<string>(initialBoard?.title ?? t("defaultTitle"));
   const cursorSentAtRef = useRef<number>(0);
   const shapeEmitTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
@@ -133,7 +136,7 @@ export const useWhiteboardRealtime = ({
         boardId,
         sessionId: sessionIdRef.current,
         sessionToken: sessionTokenRef.current || undefined,
-        displayName: displayNameRef.current.trim() || createGuestName(),
+        displayName: normalizeGuestDisplayName(displayNameRef.current.trim() || createLocaleGuestName(locale), locale),
         role: requestedRoleRef.current,
         editorAccessKey: editorAccessKeyRef.current ?? getStoredEditorAccessKey() ?? undefined
       };
@@ -181,18 +184,18 @@ export const useWhiteboardRealtime = ({
     socket.on("connect", () => {
       setConnection("online");
       setConflictMessage(null);
-      pushEvent("화이트보드 실시간 연결이 활성화되었습니다.");
+      pushEvent(t("connection.connected"), locale);
       emitBoardJoin(socket);
     });
 
     socket.on("disconnect", () => {
       setConnection("offline");
-      pushEvent("연결이 끊어졌습니다. 재연결 대기 중입니다.");
+      pushEvent(t("connection.disconnected"), locale);
     });
 
     socket.on("connect_error", () => {
       setConnection("offline");
-      pushEvent("서버 연결 실패. 자동 재시도 중입니다.");
+      pushEvent(t("connection.connectError"), locale);
     });
 
     socket.on(
@@ -209,7 +212,7 @@ export const useWhiteboardRealtime = ({
         versionRef.current = board.version;
         titleRef.current = board.title;
         setConflictMessage(null);
-        pushEvent(`보드 최신 상태를 수신했습니다. (권한: ${nextRole})`);
+        pushEvent(t("board.stateReceived", { role: nextRole }), locale);
       }
     );
 
@@ -218,7 +221,7 @@ export const useWhiteboardRealtime = ({
       versionRef.current = board.version;
       titleRef.current = board.title;
       if (editor && editor.sessionId !== sessionIdRef.current) {
-        pushEvent(`${editor.displayName} 님의 변경사항이 반영되었습니다.`);
+        pushEvent(t("board.syncedByEditor", { name: normalizeGuestDisplayName(editor.displayName, locale) }), locale);
       }
     });
 
@@ -251,10 +254,8 @@ export const useWhiteboardRealtime = ({
           return;
         }
 
-        setConflictMessage(
-          `동시 수정 충돌이 발생해 서버 기준(last-write-wins)으로 정리되었습니다. (서버 버전 ${serverVersion})`
-        );
-        pushEvent("충돌이 감지되어 서버 기준으로 반영되었습니다.");
+        setConflictMessage(t("conflict.detail", { version: serverVersion }));
+        pushEvent(t("conflict.merged"), locale);
       }
     );
 
@@ -268,7 +269,7 @@ export const useWhiteboardRealtime = ({
         const wasRequestingEditor = requestedRoleRef.current === "editor";
         roleRef.current = deniedRole;
         setRole(deniedRole);
-        pushEvent("읽기 전용 권한으로 전환되어 편집이 제한됩니다.");
+        pushEvent(t("permission.viewerMode"), locale);
 
         if (wasRequestingEditor && deniedRole !== "editor") {
           requestedRoleRef.current = deniedRole;
@@ -280,7 +281,7 @@ export const useWhiteboardRealtime = ({
 
     socket.on(socketEventName.socketError, ({ message }: SocketErrorPayload) => {
       if (message) {
-        pushEvent(message);
+        pushEvent(message, locale);
       }
     });
 
@@ -299,11 +300,13 @@ export const useWhiteboardRealtime = ({
     boardId,
     emitBoardJoin,
     hydrateBoard,
+    locale,
     pushEvent,
     setConflictMessage,
     setConnection,
     setParticipants,
     setRole,
+    t,
     upsertParticipant
   ]);
 

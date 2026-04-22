@@ -9,13 +9,13 @@ export const RADIO_GROUP_DEFAULTS = {
 };
 
 export const RADIO_GROUP_SIZE_CLASS: Record<RadioGroupSize, string> = {
-  sm: "h-4 w-4",
-  md: "h-5 w-5"
+  sm: "h-[var(--size-icon-md)] w-[var(--size-icon-md)]",
+  md: "h-[var(--size-icon-lg)] w-[var(--size-icon-lg)]"
 };
 
 export const RADIO_GROUP_INDICATOR_SIZE_CLASS: Record<RadioGroupSize, string> = {
-  sm: "h-2.5 w-2.5",
-  md: "h-3 w-3"
+  sm: "h-[var(--space-2-5)] w-[var(--space-2-5)]",
+  md: "h-[var(--space-3)] w-[var(--space-3)]"
 };
 
 export const RADIO_GROUP_ITEM_BASE_CLASS =

@@ -10,9 +10,9 @@ export const TOOLTIP_DEFAULTS = {
 } as const;
 
 export const TOOLTIP_SIZE_CLASS: Record<TooltipSize, string> = {
-  sm: "px-2 py-1 text-[11px]",
-  md: "px-3 py-1.5 text-xs",
-  lg: "px-3.5 py-2 text-body-sm"
+  sm: "px-[var(--space-2)] py-[var(--space-1)] text-[11px]",
+  md: "px-[var(--space-3)] py-[var(--space-1-5)] text-xs",
+  lg: "px-[var(--space-3-5)] py-[var(--space-2)] text-body-sm"
 };
 
 export const TOOLTIP_COLOR_CLASS = {

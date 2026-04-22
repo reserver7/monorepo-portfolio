@@ -62,10 +62,30 @@ pnpm dev:storybook
 pnpm storybook:gen
 pnpm storybook:check
 pnpm storybook:watch
+pnpm i18n:check
+pnpm i18n:extract
+pnpm i18n:extract:check
+pnpm i18n:sync
+pnpm i18n:sync:check
+pnpm i18n:draft -- --provider=openai --source=ko --targets=en,ja
 pnpm db:opslens:migrate:dev
 pnpm db:opslens:seed
 pnpm audit:workspace
 ```
+
+## i18n 자동화
+
+- 적용 범위: `apps/*/lib/i18n/messages/*.json` 이 있는 앱 전체 (`opslens-web`, `collab-web`).
+- 기준 로케일: `ko.json` (기본 기준 파일).
+- 키 추출 자동화:
+  - `pnpm i18n:extract` : 코드(`useTranslations` + `t(...)`)에서 신규 키를 찾아 `ko.json`에 추가
+  - `pnpm i18n:extract:check` : PR fail-fast (코드에 신규 키가 있는데 기준 로케일에 없으면 실패)
+- 누락 자동 채움:
+  - `pnpm i18n:sync` : 기준 로케일(`ko`)에서 타 로케일로 누락 키 복제
+  - `pnpm i18n:sync:check` : PR fail-fast
+- 기계번역 초안 파이프라인:
+  - `pnpm i18n:draft -- --provider=openai --source=ko --targets=en,ja`
+  - `OPENAI_API_KEY`가 없으면 `__TODO_TRANSLATE__:*` 형태로 초안 플레이스홀더를 채워 후속 번역 큐로 사용
 
 ## 배포 기준
 

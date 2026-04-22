@@ -87,12 +87,12 @@ const TextareaBase = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     );
 
     return (
-      <div className={cn("grid gap-1.5", containerClassName)}>
+      <div className={cn("grid gap-[var(--space-1-5)]", containerClassName)}>
         {label ? (
           <Label
             htmlFor={resolvedId}
             size={size === "lg" ? "md" : "sm"}
-            className={cn("inline-flex items-center gap-1", labelClassName)}
+            className={cn("inline-flex items-center gap-[var(--space-1)]", labelClassName)}
           >
             <span>{label}</span>
             {required ? <span className="text-danger">*</span> : null}

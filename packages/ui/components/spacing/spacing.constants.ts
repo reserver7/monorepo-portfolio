@@ -7,61 +7,61 @@ export const SPACING_DEFAULTS = {
 };
 
 export const SPACING_BLOCK_CLASS: Record<SpacingSize, string> = {
-  "2xs": "h-1",
-  xs: "h-2",
-  sm: "h-3",
-  md: "h-4",
-  lg: "h-6",
-  xl: "h-8",
-  "2xl": "h-12"
+  "2xs": "h-[var(--space-1)]",
+  xs: "h-[var(--space-2)]",
+  sm: "h-[var(--space-3)]",
+  md: "h-[var(--space-4)]",
+  lg: "h-[var(--space-6)]",
+  xl: "h-[var(--space-8)]",
+  "2xl": "h-[var(--space-12)]"
 };
 
 export const SPACING_INLINE_CLASS: Record<SpacingSize, string> = {
-  "2xs": "w-1",
-  xs: "w-2",
-  sm: "w-3",
-  md: "w-4",
-  lg: "w-6",
-  xl: "w-8",
-  "2xl": "w-12"
+  "2xs": "w-[var(--space-1)]",
+  xs: "w-[var(--space-2)]",
+  sm: "w-[var(--space-3)]",
+  md: "w-[var(--space-4)]",
+  lg: "w-[var(--space-6)]",
+  xl: "w-[var(--space-8)]",
+  "2xl": "w-[var(--space-12)]"
 };
 
 export const SPACING_SQUARE_CLASS: Record<SpacingSize, string> = {
-  "2xs": "h-1 w-1",
-  xs: "h-2 w-2",
-  sm: "h-3 w-3",
-  md: "h-4 w-4",
-  lg: "h-6 w-6",
-  xl: "h-8 w-8",
-  "2xl": "h-12 w-12"
+  "2xs": "h-[var(--space-1)] w-[var(--space-1)]",
+  xs: "h-[var(--space-2)] w-[var(--space-2)]",
+  sm: "h-[var(--space-3)] w-[var(--space-3)]",
+  md: "h-[var(--space-4)] w-[var(--space-4)]",
+  lg: "h-[var(--space-6)] w-[var(--space-6)]",
+  xl: "h-[var(--space-8)] w-[var(--space-8)]",
+  "2xl": "h-[var(--space-12)] w-[var(--space-12)]"
 };
 
 export const SPACING_BLOCK_RESPONSIVE_CLASS: Record<SpacingSize, string> = {
-  "2xs": "md:h-2",
-  xs: "md:h-3",
-  sm: "md:h-4",
-  md: "md:h-6",
-  lg: "md:h-8",
-  xl: "md:h-12",
-  "2xl": "md:h-16"
+  "2xs": "md:h-[var(--space-2)]",
+  xs: "md:h-[var(--space-3)]",
+  sm: "md:h-[var(--space-4)]",
+  md: "md:h-[var(--space-6)]",
+  lg: "md:h-[var(--space-8)]",
+  xl: "md:h-[var(--space-12)]",
+  "2xl": "md:h-[var(--space-16)]"
 };
 
 export const SPACING_INLINE_RESPONSIVE_CLASS: Record<SpacingSize, string> = {
-  "2xs": "md:w-2",
-  xs: "md:w-3",
-  sm: "md:w-4",
-  md: "md:w-6",
-  lg: "md:w-8",
-  xl: "md:w-12",
-  "2xl": "md:w-16"
+  "2xs": "md:w-[var(--space-2)]",
+  xs: "md:w-[var(--space-3)]",
+  sm: "md:w-[var(--space-4)]",
+  md: "md:w-[var(--space-6)]",
+  lg: "md:w-[var(--space-8)]",
+  xl: "md:w-[var(--space-12)]",
+  "2xl": "md:w-[var(--space-16)]"
 };
 
 export const SPACING_SQUARE_RESPONSIVE_CLASS: Record<SpacingSize, string> = {
-  "2xs": "md:h-2 md:w-2",
-  xs: "md:h-3 md:w-3",
-  sm: "md:h-4 md:w-4",
-  md: "md:h-6 md:w-6",
-  lg: "md:h-8 md:w-8",
-  xl: "md:h-12 md:w-12",
-  "2xl": "md:h-16 md:w-16"
+  "2xs": "md:h-[var(--space-2)] md:w-[var(--space-2)]",
+  xs: "md:h-[var(--space-3)] md:w-[var(--space-3)]",
+  sm: "md:h-[var(--space-4)] md:w-[var(--space-4)]",
+  md: "md:h-[var(--space-6)] md:w-[var(--space-6)]",
+  lg: "md:h-[var(--space-8)] md:w-[var(--space-8)]",
+  xl: "md:h-[var(--space-12)] md:w-[var(--space-12)]",
+  "2xl": "md:h-[var(--space-16)] md:w-[var(--space-16)]"
 };

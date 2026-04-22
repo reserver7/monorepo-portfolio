@@ -1,5 +1,7 @@
 import { Participant } from "@/features/docs/collaboration/model";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge, Card, Typography } from "@repo/ui";
+import { normalizeGuestDisplayName } from "@/lib/i18n/display-name";
 
 interface PresencePanelProps {
   participants: Participant[];
@@ -7,23 +9,26 @@ interface PresencePanelProps {
 }
 
 export const PresencePanel = ({ participants, mySessionId }: PresencePanelProps) => {
+  const t = useTranslations("collab.docsPanels.presence");
+  const locale = useLocale();
   const panelItemClass = "rounded-lg border border-default/70 bg-surface-elevated/65 px-3.5 py-3";
 
   return (
     <Card className="border border-default/80 bg-surface p-5">
       <div className="mb-4 flex items-center justify-between">
         <Typography as="h3" variant="title" className="text-body-md font-semibold">
-          참여자
+          {t("title")}
         </Typography>
         <Badge variant="info" size="sm">
-          {participants.length}명
+          {participants.length}
+          {t("countSuffix")}
         </Badge>
       </div>
 
       <div className="space-y-3">
         {participants.length === 0 ? (
           <Typography variant="bodySm" color="subtle">
-            아직 접속한 참여자가 없습니다.
+            {t("empty")}
           </Typography>
         ) : (
           participants.map((participant) => {
@@ -39,8 +44,8 @@ export const PresencePanel = ({ participants, mySessionId }: PresencePanelProps)
                       aria-hidden
                     />
                     <Typography as="span" variant="bodySm" className="truncate font-medium">
-                      {participant.displayName}
-                      {isMe ? " (나)" : ""}
+                      {normalizeGuestDisplayName(participant.displayName, locale)}
+                      {isMe ? t("meSuffix") : ""}
                     </Typography>
                   </div>
                   <Badge

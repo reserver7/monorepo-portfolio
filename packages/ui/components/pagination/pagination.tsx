@@ -114,9 +114,24 @@ const PaginationBase = React.forwardRef(function PaginationBase(
     const resolvedVariant = resolveOption(variant, PAGINATION_VARIANT_MAP, PAGINATION_DEFAULTS.variant);
     const buttonSize = PAGINATION_SIZE_MAP[resolvedSize];
     const buttonVariant = PAGINATION_VARIANT_MAP[resolvedVariant];
-    const paginationCellClass = resolvedSize === "sm" ? "h-8 min-w-8 px-2 text-body-xs" : resolvedSize === "lg" ? "h-10 min-w-10 px-3 text-body-md" : "h-9 min-w-9 px-2.5 text-body-sm";
-    const paginationIconButtonClass = resolvedSize === "sm" ? "h-8 w-8 p-0" : resolvedSize === "lg" ? "h-10 w-10 p-0" : "h-9 w-9 p-0";
-    const paginationLabelClass = resolvedSize === "sm" ? "h-8 min-w-20 text-body-xs" : resolvedSize === "lg" ? "h-10 min-w-24 text-body-md" : "h-9 min-w-20 text-body-sm";
+    const paginationCellClass =
+      resolvedSize === "sm"
+        ? "h-[var(--size-control-sm)] min-w-[var(--size-control-sm)] px-[var(--space-2)] text-body-xs"
+        : resolvedSize === "lg"
+          ? "h-[var(--size-control-lg)] min-w-[var(--size-control-lg)] px-[var(--space-3)] text-body-md"
+          : "h-[var(--size-control-md)] min-w-[var(--size-control-md)] px-[var(--space-2-5)] text-body-sm";
+    const paginationIconButtonClass =
+      resolvedSize === "sm"
+        ? "h-[var(--size-control-sm)] w-[var(--size-control-sm)] p-0"
+        : resolvedSize === "lg"
+          ? "h-[var(--size-control-lg)] w-[var(--size-control-lg)] p-0"
+          : "h-[var(--size-control-md)] w-[var(--size-control-md)] p-0";
+    const paginationLabelClass =
+      resolvedSize === "sm"
+        ? "h-[var(--size-control-sm)] min-w-[var(--space-20)] text-body-xs"
+        : resolvedSize === "lg"
+          ? "h-[var(--size-control-lg)] min-w-[var(--space-24)] text-body-md"
+          : "h-[var(--size-control-md)] min-w-[var(--space-20)] text-body-sm";
     const digitWidth = Math.max(2, String(safeTotalPages).length);
     const pageCellWidth = `calc(${digitWidth}ch + 1.25rem)`;
     const stableNumericStyle = React.useMemo(() => ({ fontVariantNumeric: "tabular-nums" as const }), []);
@@ -220,7 +235,7 @@ const PaginationBase = React.forwardRef(function PaginationBase(
       <nav
         ref={ref}
         className={cn(
-          "flex flex-col gap-2",
+          "flex flex-col gap-[var(--space-2)]",
           fullWidth ? "w-full" : "w-fit max-w-full",
           fullWidth ? null : "sm:flex-row sm:items-center sm:justify-between",
           className
@@ -228,13 +243,13 @@ const PaginationBase = React.forwardRef(function PaginationBase(
         aria-label="Pagination"
         {...props}
       >
-        <div className={cn("flex items-center gap-1", fullWidth ? "w-full flex-wrap justify-center" : "flex-wrap")} style={stableNumericStyle}>
+        <div className={cn("flex items-center gap-[var(--space-1)]", fullWidth ? "w-full flex-wrap justify-center" : "flex-wrap")} style={stableNumericStyle}>
           {showFirstLast ? (
             renderIconControl({
               ariaLabel: "첫 페이지",
               disabled: isNavDisabled || currentPage <= 1,
               onClick: () => selectPage(1),
-              icon: <ChevronsLeft className="h-4 w-4" />
+              icon: <ChevronsLeft className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />
             })
           ) : null}
 
@@ -243,14 +258,14 @@ const PaginationBase = React.forwardRef(function PaginationBase(
               ariaLabel: "이전 페이지",
               disabled: isNavDisabled || currentPage <= 1,
               onClick: () => selectPage(currentPage - 1),
-              icon: <ChevronLeft className="h-4 w-4" />
+              icon: <ChevronLeft className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />
             })
           ) : null}
 
           {simple ? (
             <span
               className={cn(
-                "inline-flex items-center justify-center rounded-[var(--radius-md)] border border-default bg-surface px-3 font-medium text-foreground",
+              "inline-flex items-center justify-center rounded-[var(--radius-md)] border border-default bg-surface px-[var(--space-3)] font-medium text-foreground",
                 paginationLabelClass
               )}
               style={stableLabelStyle}
@@ -265,7 +280,7 @@ const PaginationBase = React.forwardRef(function PaginationBase(
                   className={cn("text-muted inline-flex items-center justify-center", paginationCellClass)}
                   style={stableCellStyle}
                 >
-                  <MoreHorizontal className="h-4 w-4" />
+                  <MoreHorizontal className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />
                 </span>
               ) : (
                 renderPageControl(item.value)
@@ -278,7 +293,7 @@ const PaginationBase = React.forwardRef(function PaginationBase(
               ariaLabel: "다음 페이지",
               disabled: isNavDisabled || currentPage >= safeTotalPages,
               onClick: () => selectPage(currentPage + 1),
-              icon: <ChevronRight className="h-4 w-4" />
+              icon: <ChevronRight className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />
             })
           ) : null}
 
@@ -287,13 +302,18 @@ const PaginationBase = React.forwardRef(function PaginationBase(
               ariaLabel: "마지막 페이지",
               disabled: isNavDisabled || currentPage >= safeTotalPages,
               onClick: () => selectPage(safeTotalPages),
-              icon: <ChevronsRight className="h-4 w-4" />
+              icon: <ChevronsRight className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />
             })
           ) : null}
         </div>
 
         {hasTools ? (
-          <div className={cn("flex flex-wrap items-center gap-2 text-body-sm text-muted", fullWidth ? "justify-center" : "sm:justify-end")}>
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-[var(--space-2)] text-body-sm text-muted",
+              fullWidth ? "justify-center" : "sm:justify-end"
+            )}
+          >
             {showTotal ? <span>{totalText}</span> : null}
             {showPageInfo ? (
               <span>
@@ -301,10 +321,10 @@ const PaginationBase = React.forwardRef(function PaginationBase(
               </span>
             ) : null}
             {showPageSizeSelector ? (
-              <label className="inline-flex items-center gap-1">
+              <label className="inline-flex items-center gap-[var(--space-1)]">
                 <span>{pageSizeLabel}</span>
                 <select
-                  className="h-8 rounded-[var(--radius-md)] border border-default bg-surface px-2 text-body-sm text-foreground"
+                  className="h-[var(--size-control-sm)] rounded-[var(--radius-md)] border border-default bg-surface px-[var(--space-2)] text-body-sm text-foreground"
                   value={resolvedPageSize}
                   disabled={disabled}
                   onChange={(event) => changePageSize(Number(event.target.value))}
@@ -319,9 +339,9 @@ const PaginationBase = React.forwardRef(function PaginationBase(
               </label>
             ) : null}
             {showQuickJumper ? (
-              <div className="inline-flex items-center gap-1">
+              <div className="inline-flex items-center gap-[var(--space-1)]">
                 <input
-                  className="h-8 w-16 rounded-[var(--radius-md)] border border-default bg-surface px-2 text-body-sm text-foreground"
+                  className="h-[var(--size-control-sm)] w-[var(--space-16)] rounded-[var(--radius-md)] border border-default bg-surface px-[var(--space-2)] text-body-sm text-foreground"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={quickJumpValue}

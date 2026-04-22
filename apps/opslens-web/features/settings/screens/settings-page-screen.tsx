@@ -1,15 +1,31 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { Grid, Textarea } from "@repo/ui";
 import { OpsInfoItem, OpsPageShell, OpsSectionCard } from "@/features";
 import { useOpsFilterStore } from "@/features/stores";
 import { opslensClientEnv } from "@/lib/config";
 
 export default function SettingsPage() {
-  const environment = useOpsFilterStore((state) => state.environment);
+  const tSettings = useTranslations("settings");
+  const tLocale = useTranslations("locale");
+  const tService = useTranslations("service");
+  const locale = useOpsFilterStore((state) => state.locale);
   const serviceName = useOpsFilterStore((state) => state.serviceName);
   const search = useOpsFilterStore((state) => state.search);
+  const localeLabel = tLocale(locale);
+  const serviceLabel = serviceName === "all"
+    ? tService("all")
+    : serviceName === "docs"
+      ? tService("docs")
+      : serviceName === "whiteboard"
+        ? tService("whiteboard")
+        : serviceName === "billing"
+          ? tService("billing")
+          : serviceName === "checkout"
+            ? tService("checkout")
+            : serviceName;
 
   const envPreview = useMemo(
     () =>
@@ -33,10 +49,10 @@ export default function SettingsPage() {
         title="프로젝트 설정"
         description="현재 필터 상태와 API 연결 정보를 확인할 수 있습니다."
       >
-        <Grid className="gap-3 md:grid-cols-3">
-          <OpsInfoItem label="환경" value={environment} />
-          <OpsInfoItem label="서비스" value={serviceName} />
-          <OpsInfoItem label="검색어" value={search || "(없음)"} />
+        <Grid className="gap-[var(--space-3)] md:grid-cols-3">
+          <OpsInfoItem label={tSettings("language")} value={localeLabel} />
+          <OpsInfoItem label={tSettings("service")} value={serviceLabel} />
+          <OpsInfoItem label={tSettings("search")} value={search || tSettings("none")} />
         </Grid>
       </OpsSectionCard>
 
@@ -48,7 +64,7 @@ export default function SettingsPage() {
       </OpsSectionCard>
 
       <OpsSectionCard title="운영 확장 TODO">
-        <ul className="text-muted list-disc space-y-1 pl-5 text-sm">
+        <ul className="text-muted list-disc space-y-[var(--space-1)] pl-[var(--space-5)] text-sm">
           <li>Slack/Jira API 연동 토큰 연결</li>
           <li>Sentry/Datadog Webhook 수집 파이프라인 추가</li>
           <li>권한 모델(RBAC)과 감사 로그 적용</li>

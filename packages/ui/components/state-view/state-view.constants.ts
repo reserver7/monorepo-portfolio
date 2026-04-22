@@ -21,20 +21,20 @@ export const STATE_VIEW_VARIANT_MAP: Record<
 };
 
 export const STATE_VIEW_SIZE_CLASS: Record<StateSize, string> = {
-  sm: "p-3",
-  md: "p-4",
-  lg: "p-6"
+  sm: "p-[var(--space-3)]",
+  md: "p-[var(--space-4)]",
+  lg: "p-[var(--space-6)]"
 };
 
 export const STATE_VIEW_LAYOUT_CLASS: Record<StateLayout, string> = {
-  inline: "flex flex-row gap-3",
-  stacked: "flex flex-col gap-2"
+  inline: "flex flex-row gap-[var(--space-3)]",
+  stacked: "flex flex-col gap-[var(--space-2)]"
 };
 
 export const STATE_VIEW_ICON_SIZE_CLASS: Record<StateSize, string> = {
-  sm: "h-4 w-4",
-  md: "h-5 w-5",
-  lg: "h-6 w-6"
+  sm: "h-[var(--size-icon-md)] w-[var(--size-icon-md)]",
+  md: "h-[var(--size-icon-lg)] w-[var(--size-icon-lg)]",
+  lg: "h-[var(--size-control-sm)] w-[var(--size-control-sm)]"
 };
 
 export const STATE_VIEW_TITLE_SIZE_CLASS: Record<StateSize, string> = {

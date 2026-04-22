@@ -16,6 +16,8 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
   suffix?: React.ReactNode;
   clearable?: boolean;
   onClear?: () => void;
+  onEnter?: (value: string, event: React.KeyboardEvent<HTMLInputElement>) => void;
+  onEscape?: (value: string, event: React.KeyboardEvent<HTMLInputElement>) => void;
   containerClassName?: string;
   labelClassName?: string;
   helperClassName?: string;

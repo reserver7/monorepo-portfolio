@@ -13,9 +13,9 @@ export const INPUT_DEFAULTS = {
 };
 
 export const INPUT_SIZE_CLASS: Record<InputSize, string> = {
-  sm: "h-9 text-body-sm",
-  md: "h-11 text-body-md",
-  lg: "h-12 text-body-md"
+  sm: "h-[var(--size-control-md)] text-body-sm",
+  md: "h-[var(--size-control-xl)] text-body-md",
+  lg: "h-[var(--size-control-2xl)] text-body-md"
 };
 
 export const INPUT_VARIANT_CLASS: Record<InputVariant, string> = {

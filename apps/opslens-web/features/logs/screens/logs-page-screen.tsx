@@ -58,13 +58,13 @@ export default function LogsPage() {
       <SplitWorkspaceLayout
         sidebarWidthClassName="xl:grid-cols-[minmax(0,1fr)_320px]"
         main={
-          <Box className="space-y-6">
+          <Box className="space-y-[var(--stack-gap)]">
             <OpsSectionCard
               title="로그 분석"
               description="서버 로그, 콘솔 에러, Sentry JSON을 자동 그룹핑/요약합니다."
             >
-              <form className="grid gap-4" onSubmit={form.handleSubmit((values) => analyzeMutation.mutate(values))}>
-                <Grid className="gap-3 md:grid-cols-3">
+              <form className="grid gap-[var(--space-4)]" onSubmit={form.handleSubmit((values) => analyzeMutation.mutate(values))}>
+                <Grid className="gap-[var(--space-3)] md:grid-cols-3">
                   <FormField label="로그 소스" htmlFor="logs-source" size="sm">
                     <Select
                       options={[
@@ -116,7 +116,7 @@ export default function LogsPage() {
                   />
                 </FormField>
 
-                <Flex className="flex-wrap items-center gap-2">
+                <Flex className="flex-wrap items-center gap-[var(--space-2)]">
                   <Button type="submit" variant="primary" loading={analyzeMutation.isPending ? true : undefined}>
                     로그 분석 실행
                   </Button>
@@ -143,21 +143,21 @@ export default function LogsPage() {
               {clusters.length === 0 ? (
                 <StateView variant="empty" size="sm" title="분석 결과가 없습니다." />
               ) : (
-                <Box className="space-y-3">
+                <Box className="space-y-[var(--space-3)]">
                   {clusters.map((cluster) => (
-                    <article key={cluster.normalizedMessage} className="border-default rounded-xl border p-3.5">
-                      <Flex className="flex-wrap items-center justify-between gap-2">
+                    <article key={cluster.normalizedMessage} className="border-default rounded-xl border p-[var(--space-3-5)]">
+                      <Flex className="flex-wrap items-center justify-between gap-[var(--space-2)]">
                         <Box as="p" className="text-foreground font-semibold">{cluster.title}</Box>
-                        <Flex className="items-center gap-2">
+                        <Flex className="items-center gap-[var(--space-2)]">
                           <SeverityBadge severity={cluster.severity} />
                           <Box as="span" className="text-muted text-caption">{formatNumber(cluster.count)}회</Box>
                         </Flex>
                       </Flex>
-                      <Box as="p" className="text-muted mt-1 text-caption">{cluster.normalizedMessage}</Box>
-                      <Box as="p" className="text-muted-foreground mt-2 text-caption">
+                      <Box as="p" className="text-muted mt-[var(--space-1)] text-caption">{cluster.normalizedMessage}</Box>
+                      <Box as="p" className="text-muted-foreground mt-[var(--space-2)] text-caption">
                         최초 {formatDateTime(cluster.firstSeen)} · 최근 {formatDateTime(cluster.lastSeen)}
                       </Box>
-                      <ul className="text-muted mt-2 list-disc space-y-1 pl-5 text-caption">
+                      <ul className="text-muted mt-[var(--space-2)] list-disc space-y-[var(--space-1)] pl-[var(--space-5)] text-caption">
                         {cluster.suggestedActions.map((action) => (
                           <li key={action}>{action}</li>
                         ))}
@@ -171,7 +171,7 @@ export default function LogsPage() {
         }
         sidebar={
           summary ? (
-            <Box className="space-y-3">
+            <Box className="space-y-[var(--space-3)]">
               <StateView
                 variant="success"
                 size="sm"

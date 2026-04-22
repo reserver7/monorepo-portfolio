@@ -13,10 +13,11 @@ export type MarketingGlassNavProps = {
   product: string;
   subtitle?: string;
   actions?: MarketingGlassNavAction[];
+  rightSlot?: React.ReactNode;
   className?: string;
 };
 
-export function MarketingGlassNav({ product, subtitle, actions = [], className }: MarketingGlassNavProps) {
+export function MarketingGlassNav({ product, subtitle, actions = [], rightSlot, className }: MarketingGlassNavProps) {
   const navigateByHref = (href: string) => {
     if (typeof window === "undefined") {
       return;
@@ -31,8 +32,9 @@ export function MarketingGlassNav({ product, subtitle, actions = [], className }
           <p className="text-foreground truncate text-body-sm font-semibold">{product}</p>
           {subtitle ? <p className="text-micro text-muted-foreground truncate">{subtitle}</p> : null}
         </div>
-        {actions.length > 0 ? (
+        {actions.length > 0 || rightSlot ? (
           <div className="flex items-center gap-2">
+            {rightSlot}
             {actions.map((action) => (
               <Button
                 key={action.label}

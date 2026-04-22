@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useAppForm } from "@repo/forms";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge, Button, Card, Textarea, confirm, Typography } from "@repo/ui";
 import { formatExactTime } from "@/features/docs/collaboration/model";
 import { DocumentComment, Participant } from "@/features/docs/collaboration/model";
+import { normalizeGuestDisplayName } from "@/lib/i18n/display-name";
 
 interface CommentsPanelProps {
   comments: DocumentComment[];
@@ -32,6 +34,8 @@ export const CommentsPanel = ({
   onUpdateComment,
   onDeleteComment
 }: CommentsPanelProps) => {
+  const t = useTranslations("collab.docsPanels.comments");
+  const locale = useLocale();
   const createForm = useAppForm<{ draftComment: string }>({
     defaultValues: { draftComment: "" }
   });
@@ -43,8 +47,8 @@ export const CommentsPanel = ({
   const editingDraft = editForm.watch("editingDraft");
 
   const mentionCandidates = useMemo(() => {
-    return participants.map((participant) => participant.displayName).slice(0, 8);
-  }, [participants]);
+    return participants.map((participant) => normalizeGuestDisplayName(participant.displayName, locale)).slice(0, 8);
+  }, [locale, participants]);
 
   const visibleComments = comments.slice(0, 40);
   const panelItemClass = "rounded-lg border border-default/70 bg-surface-elevated/65 px-3.5 py-3";
@@ -54,10 +58,11 @@ export const CommentsPanel = ({
     <Card className="border border-default/80 bg-surface p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <Typography as="h3" variant="title" className="text-body-md font-semibold">
-          댓글 / 멘션
+          {t("title")}
         </Typography>
         <Badge variant="outline" size="sm">
-          {comments.length}개
+          {comments.length}
+          {t("countSuffix")}
         </Badge>
       </div>
 
@@ -66,12 +71,12 @@ export const CommentsPanel = ({
           control={createForm.control}
           name="draftComment"
           className="border-default bg-surface text-body-sm text-foreground min-h-24 leading-6"
-          placeholder="댓글을 입력하세요. 예) @Luke 확인 부탁드립니다"
+          placeholder={t("inputPlaceholder")}
         />
 
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
           <Typography variant="caption" color="subtle" className="mr-1">
-            멘션:
+            {t("mentionLabel")}
           </Typography>
           {mentionCandidates.length > 0 ? (
             mentionCandidates.map((name) => (
@@ -81,7 +86,7 @@ export const CommentsPanel = ({
             ))
           ) : (
             <Typography variant="caption" color="subtle">
-              없음
+              {t("none")}
             </Typography>
           )}
         </div>
@@ -98,7 +103,7 @@ export const CommentsPanel = ({
               createForm.setValue("draftComment", "");
             }}
           >
-            댓글 등록
+            {t("submit")}
           </Button>
         </div>
       </div>
@@ -106,7 +111,7 @@ export const CommentsPanel = ({
       <div className="max-h-[32rem] space-y-3 overflow-auto">
         {comments.length === 0 ? (
           <Typography variant="bodySm" color="subtle">
-            아직 등록된 댓글이 없습니다.
+            {t("empty")}
           </Typography>
         ) : (
           visibleComments.map((comment) => {
@@ -117,11 +122,11 @@ export const CommentsPanel = ({
               <div key={comment.id} className={panelItemClass}>
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <Typography as="p" variant="bodySm" className="text-foreground font-semibold">
-                    {comment.authorName}
-                    {isMine ? " (나)" : ""}
+                    {normalizeGuestDisplayName(comment.authorName, locale)}
+                    {isMine ? t("meSuffix") : ""}
                   </Typography>
                   <Typography as="p" variant="caption" color="subtle">
-                    {formatExactTime(comment.updatedAt)}
+                    {formatExactTime(comment.updatedAt, locale)}
                   </Typography>
                 </div>
 
@@ -141,7 +146,7 @@ export const CommentsPanel = ({
                           editForm.setValue("editingDraft", "");
                         }}
                       >
-                        취소
+                        {t("commonCancel")}
                       </Button>
                       <Button
                         size="sm"
@@ -156,7 +161,7 @@ export const CommentsPanel = ({
                           editForm.setValue("editingDraft", "");
                         }}
                       >
-                        저장
+                        {t("commonSave")}
                       </Button>
                     </div>
                   </div>
@@ -191,18 +196,18 @@ export const CommentsPanel = ({
                             editForm.setValue("editingDraft", comment.body);
                           }}
                         >
-                          수정
+                          {t("edit")}
                         </Button>
                         <Button
                           size="sm"
                           variant="danger"
                           onClick={async () => {
                             const shouldDelete = await confirm({
-                              title: "댓글을 삭제할까요?",
-                              description: "삭제된 댓글은 되돌릴 수 없습니다. 정말 삭제하시겠습니까?",
-                              confirmText: "삭제",
+                              title: t("deleteDialog.title"),
+                              description: t("deleteDialog.description"),
+                              confirmText: t("deleteDialog.confirm"),
                               confirmVariant: "danger",
-                              cancelText: "취소"
+                              cancelText: t("commonCancel")
                             });
 
                             if (!shouldDelete) {
@@ -212,7 +217,7 @@ export const CommentsPanel = ({
                             onDeleteComment(comment.id);
                           }}
                         >
-                          삭제
+                          {t("delete")}
                         </Button>
                       </div>
                     ) : null}

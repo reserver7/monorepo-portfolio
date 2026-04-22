@@ -47,7 +47,7 @@ export const DropdownMenuSubTrigger = React.forwardRef<
       {...props}
     >
       {children}
-      <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted" />
+      <ChevronRight className="ml-auto h-[var(--size-icon-md)] w-[var(--size-icon-md)] shrink-0 text-muted" />
     </DropdownMenuPrimitive.SubTrigger>
   );
 });
@@ -57,13 +57,13 @@ export const DropdownMenuSubContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
 >(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.SubContent
-    ref={ref}
-    className={cn(
-      "border-default bg-surface z-50 min-w-[11rem] overflow-hidden rounded-[var(--radius-lg)] border p-1 shadow-card",
-      className
-    )}
-    {...props}
+    <DropdownMenuPrimitive.SubContent
+      ref={ref}
+      className={cn(
+        "border-default bg-surface z-50 min-w-[var(--size-dropdown-min-w)] overflow-hidden rounded-[var(--radius-lg)] border p-[var(--space-1)] shadow-card",
+        className
+      )}
+      {...props}
   />
 ));
 DropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayName;
@@ -79,7 +79,7 @@ export const DropdownMenuContent = React.forwardRef<
         ref={ref}
         sideOffset={sideOffset}
         className={cn(
-          "border-default bg-surface z-50 overflow-hidden rounded-[var(--radius-lg)] border p-1 shadow-card",
+          "border-default bg-surface z-50 overflow-hidden rounded-[var(--radius-lg)] border p-[var(--space-1)] shadow-card",
           DROPDOWN_MENU_CONTENT_SIZE_CLASS[resolvedSize],
           className
         )}
@@ -135,7 +135,7 @@ export const DropdownMenuItem = React.forwardRef<
         style={tokenColorValue ? { color: tokenColorValue } : undefined}
         {...props}
       >
-        {leftSlot ? <span className="inline-flex h-4 w-4 items-center justify-center text-muted">{leftSlot}</span> : null}
+        {leftSlot ? <span className="inline-flex h-[var(--size-icon-md)] w-[var(--size-icon-md)] items-center justify-center text-muted">{leftSlot}</span> : null}
         <span className="min-w-0 flex-1 truncate">{children}</span>
         {rightSlot ? <span className="ml-auto inline-flex items-center text-muted">{rightSlot}</span> : null}
       </DropdownMenuPrimitive.Item>
@@ -188,9 +188,9 @@ export const DropdownMenuCheckboxItem = React.forwardRef<
         style={tokenColorValue ? { color: tokenColorValue } : undefined}
         {...props}
       >
-        <span className="absolute left-2 inline-flex h-4 w-4 items-center justify-center text-muted">
+        <span className="absolute left-2 inline-flex h-[var(--size-icon-md)] w-[var(--size-icon-md)] items-center justify-center text-muted">
           <DropdownMenuPrimitive.ItemIndicator>
-            <Check className="h-4 w-4" />
+            <Check className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />
           </DropdownMenuPrimitive.ItemIndicator>
         </span>
         <span className="truncate">{children}</span>
@@ -242,7 +242,7 @@ export const DropdownMenuRadioItem = React.forwardRef<
         style={tokenColorValue ? { color: tokenColorValue } : undefined}
         {...props}
       >
-        <span className="absolute left-2 inline-flex h-4 w-4 items-center justify-center text-muted">
+        <span className="absolute left-2 inline-flex h-[var(--size-icon-md)] w-[var(--size-icon-md)] items-center justify-center text-muted">
           <DropdownMenuPrimitive.ItemIndicator>
             <Circle className="h-2.5 w-2.5 fill-current" />
           </DropdownMenuPrimitive.ItemIndicator>

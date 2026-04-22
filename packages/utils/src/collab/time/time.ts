@@ -1,17 +1,15 @@
-const relativeFormatter = new Intl.RelativeTimeFormat("ko", {
-  numeric: "auto"
-});
+const resolveLocale = (locale?: string) => {
+  return locale && locale.trim().length > 0 ? locale : "ko";
+};
 
-const exactFormatter = new Intl.DateTimeFormat("ko-KR", {
-  dateStyle: "medium",
-  timeStyle: "short"
-});
-
-export const formatRelativeTime = (isoString: string): string => {
+export const formatRelativeTime = (isoString: string, locale?: string): string => {
+  const relativeFormatter = new Intl.RelativeTimeFormat(resolveLocale(locale), {
+    numeric: "auto"
+  });
   const diffMinutes = Math.round((new Date(isoString).getTime() - Date.now()) / 60000);
 
   if (Math.abs(diffMinutes) < 1) {
-    return "방금";
+    return relativeFormatter.format(0, "second");
   }
 
   if (Math.abs(diffMinutes) < 60) {
@@ -26,6 +24,10 @@ export const formatRelativeTime = (isoString: string): string => {
   return relativeFormatter.format(Math.round(diffHours / 24), "day");
 };
 
-export const formatExactTime = (isoString: string): string => {
+export const formatExactTime = (isoString: string, locale?: string): string => {
+  const exactFormatter = new Intl.DateTimeFormat(resolveLocale(locale), {
+    dateStyle: "medium",
+    timeStyle: "short"
+  });
   return exactFormatter.format(new Date(isoString));
 };

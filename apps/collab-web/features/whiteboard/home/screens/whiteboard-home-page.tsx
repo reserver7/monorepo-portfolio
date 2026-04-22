@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useAppForm } from "@repo/forms";
 import { invalidateQueryKeys, notifyUiError, useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import {
@@ -21,10 +22,10 @@ import {
   promptConfirm,
   Typography
 } from "@repo/ui";
+import { CollabLocaleFilter } from "@/features/common/components/collab-locale-filter";
 import { createBoard, deleteBoardById, listBoards, whiteboardQueryKeys } from "@/features/whiteboard/boards/api";
 import { whiteboardClientEnv } from "@/lib/config";
 import {
-  createGuestName,
   getStoredDisplayName,
   getStoredRole,
   setStoredEditorAccessKey,
@@ -33,39 +34,17 @@ import {
 } from "@/features/whiteboard/collaboration/model";
 import { getDocsPath } from "@/lib/navigation";
 import { formatExactTime, formatRelativeTime } from "@/features/whiteboard/collaboration/model";
-import { coerceAccessRole, collabFieldCopy } from "@repo/utils/collab";
-
-const EMPTY_TITLE = "(제목 없음)";
-
-const resolveProtectedDeleteFieldError = (error: unknown) => {
-  if (!(error instanceof Error)) {
-    return "삭제 비밀번호를 확인해 주세요.";
-  }
-
-  const message = error.message.trim();
-  if (message.length === 0) {
-    return "삭제 비밀번호를 확인해 주세요.";
-  }
-
-  const normalized = message.toLowerCase();
-  if (
-    normalized.includes("비밀번호") ||
-    normalized.includes("access key") ||
-    normalized.includes("editor") ||
-    normalized.includes("forbidden") ||
-    normalized.includes("unauthorized") ||
-    normalized.includes("403") ||
-    normalized.includes("401")
-  ) {
-    return "삭제 비밀번호가 올바르지 않습니다.";
-  }
-
-  return message;
-};
+import { coerceAccessRole } from "@repo/utils/collab";
+import { createLocaleGuestName, normalizeGuestDisplayName } from "@/lib/i18n/display-name";
 
 export default function WhiteboardHomePage() {
+  const t = useTranslations("collab.whiteboardHome");
+  const tFields = useTranslations("collab.fields");
+  const locale = useLocale();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const emptyTitle = t("emptyTitle");
+  const resolveGuestName = () => createLocaleGuestName(locale);
 
   const createForm = useAppForm<{
     displayName: string;
@@ -75,7 +54,7 @@ export default function WhiteboardHomePage() {
   }>({
     defaultValues: {
       displayName: "",
-      boardTitle: "팀 아이디어 보드",
+      boardTitle: "",
       role: whiteboardClientEnv.defaultRole,
       editorAccessKey: ""
     }
@@ -99,15 +78,14 @@ export default function WhiteboardHomePage() {
   useEffect(() => {
     const stored = getStoredDisplayName();
     const storedRole = getStoredRole();
-    const fallback = createGuestName();
-    const nextName = stored?.trim() ? stored : fallback;
+    const nextName = stored?.trim() ? normalizeGuestDisplayName(stored, locale) : resolveGuestName();
     createForm.setValue("displayName", nextName);
     setStoredDisplayName(nextName);
     createForm.setValue("role", storedRole ?? whiteboardClientEnv.defaultRole);
     shouldPreserveAccessKeyForRoomRef.current = false;
     createForm.setValue("editorAccessKey", "");
     setStoredEditorAccessKey("");
-  }, []);
+  }, [createForm, locale]);
 
   useEffect(() => {
     const handlePageHide = () => {
@@ -165,7 +143,7 @@ export default function WhiteboardHomePage() {
     onSuccess: async ({ board }) => {
       createForm.reset({
         displayName: createForm.getValues("displayName"),
-        boardTitle: "팀 아이디어 보드",
+        boardTitle: "",
         role: whiteboardClientEnv.defaultRole,
         editorAccessKey: ""
       });
@@ -196,21 +174,47 @@ export default function WhiteboardHomePage() {
     role: "viewer" | "editor";
     editorAccessKey: string;
   }) => {
-    setStoredDisplayName(values.displayName.trim() || createGuestName());
+    setStoredDisplayName(values.displayName.trim() || resolveGuestName());
     setStoredRole(values.role);
     const normalizedAccessKey = keepAccessKeyForRoomEntry();
     createBoardMutation.mutate({
-      title: values.boardTitle.trim() || EMPTY_TITLE,
-      actor: values.displayName.trim() || createGuestName(),
+      title: values.boardTitle.trim() || emptyTitle,
+      actor: values.displayName.trim() || resolveGuestName(),
       editorAccessKey: normalizedAccessKey || undefined
     });
   };
 
   const openBoard = (boardId: string) => {
     keepAccessKeyForRoomEntry();
-    setStoredDisplayName(createForm.getValues("displayName").trim() || createGuestName());
+    setStoredDisplayName(createForm.getValues("displayName").trim() || resolveGuestName());
     createForm.setValue("editorAccessKey", "");
     router.push(`/whiteboard/${boardId}`);
+  };
+
+  const resolveProtectedDeleteFieldError = (error: unknown) => {
+    if (!(error instanceof Error)) {
+      return t("messages.deletePasswordCheck");
+    }
+
+    const message = error.message.trim();
+    if (message.length === 0) {
+      return t("messages.deletePasswordCheck");
+    }
+
+    const normalized = message.toLowerCase();
+    if (
+      normalized.includes("비밀번호") ||
+      normalized.includes("access key") ||
+      normalized.includes("editor") ||
+      normalized.includes("forbidden") ||
+      normalized.includes("unauthorized") ||
+      normalized.includes("403") ||
+      normalized.includes("401")
+    ) {
+      return t("messages.deletePasswordInvalid");
+    }
+
+    return message;
   };
 
   return (
@@ -218,9 +222,10 @@ export default function WhiteboardHomePage() {
       <MarketingGlassNav
         product="Realtime Whiteboard"
         subtitle="Collaborative visual workspace"
+        rightSlot={<CollabLocaleFilter />}
         actions={[
           {
-            label: "문서로 이동",
+            label: t("nav.toDocs"),
             onClick: () => {
               clearMainEditorAccessKey();
               router.push(getDocsPath("/"));
@@ -238,15 +243,15 @@ export default function WhiteboardHomePage() {
                 </Badge>
               </div>
               <Typography as="h1" variant="h2">
-                실시간 화이트보드 협업
+                {t("hero.title")}
               </Typography>
               <Typography as="p" variant="bodySm" color="muted" className="mt-2 max-w-2xl">
-                도형 추가, 텍스트 입력, 드래그 이동, 참여자 커서 공유, undo/redo를 실시간 동기화로 제공합니다.
+                {t("hero.description")}
               </Typography>
               <MarketingCtaPair
                 className="mt-5"
-                learnMoreLabel="목록으로 이동"
-                primaryLabel="새 보드 만들기"
+                learnMoreLabel={t("hero.learnMore")}
+                primaryLabel={t("hero.create")}
                 onLearnMoreClick={() => {
                   const listSection = document.getElementById("whiteboard-list-section");
                   listSection?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -259,37 +264,37 @@ export default function WhiteboardHomePage() {
                 <Input
                   control={createForm.control}
                   name="displayName"
-                  label={collabFieldCopy.displayNameLabel}
+                  label={tFields("displayName.label")}
                   onChange={(event) => {
-                    setStoredDisplayName(event.target.value.trim() || createGuestName());
+                    setStoredDisplayName(event.target.value.trim() || resolveGuestName());
                   }}
-                  placeholder={collabFieldCopy.displayNamePlaceholder}
+                  placeholder={tFields("displayName.placeholder")}
                   size="md"
                 />
                 <Input
                   control={createForm.control}
                   name="boardTitle"
-                  label="새 보드 제목"
-                  placeholder="보드 제목"
+                  label={t("form.titleLabel")}
+                  placeholder={t("form.titlePlaceholder")}
                   size="md"
                 />
                 <div>
                   <Label size="sm" className="mb-2 block">
-                    {collabFieldCopy.entryRoleLabel}
+                    {tFields("entryRole.label")}
                   </Label>
                   <Select
                     control={createForm.control}
                     name="role"
                     options={[
-                      { label: collabFieldCopy.roleOptionEditor, value: "editor" },
-                      { label: collabFieldCopy.roleOptionViewer, value: "viewer" }
+                      { label: tFields("entryRole.optionEditor"), value: "editor" },
+                      { label: tFields("entryRole.optionViewer"), value: "viewer" }
                     ]}
                     onChange={(value) => {
                       const nextRole = coerceAccessRole(String(value ?? ""), whiteboardClientEnv.defaultRole);
                       createForm.setValue("role", nextRole, { shouldDirty: true, shouldTouch: true });
                       setStoredRole(nextRole);
                     }}
-                    placeholder={collabFieldCopy.entryRolePlaceholder}
+                    placeholder={tFields("entryRole.placeholder")}
                     size="md"
                   />
                 </div>
@@ -297,9 +302,9 @@ export default function WhiteboardHomePage() {
                   control={createForm.control}
                   name="editorAccessKey"
                   data-testid="whiteboard-home-editor-access-key-input"
-                  label={collabFieldCopy.editorAccessKeyLabel}
+                  label={tFields("editorAccessKey.label")}
                   type="password"
-                  placeholder={collabFieldCopy.editorAccessKeyPlaceholder}
+                  placeholder={tFields("editorAccessKey.placeholder")}
                   size="md"
                 />
               </div>
@@ -307,15 +312,15 @@ export default function WhiteboardHomePage() {
 
             <Card className="border-default/80 bg-surface border p-6 shadow-[var(--shadow-card)] md:p-8" radius="lg">
               <Typography as="h2" variant="title">
-                협업 보드 현황
+                {t("overview.title")}
               </Typography>
               <Typography as="p" variant="bodySm" color="muted" className="mt-2">
-                보드 생성/보호/도형 규모를 한눈에 확인하고 필요한 보드로 빠르게 이동하세요.
+                {t("overview.description")}
               </Typography>
               <div className="mt-5 grid grid-cols-3 gap-2">
                 <Card className="border-default/70 bg-surface-elevated border p-3 text-center" radius="md">
                   <Typography as="p" variant="caption" color="subtle">
-                    보드
+                    {t("overview.stats.boards")}
                   </Typography>
                   <Typography as="p" variant="title" className="mt-1">
                     {boards.length}
@@ -323,7 +328,7 @@ export default function WhiteboardHomePage() {
                 </Card>
                 <Card className="border-default/70 bg-surface-elevated border p-3 text-center" radius="md">
                   <Typography as="p" variant="caption" color="subtle">
-                    보호됨
+                    {t("overview.stats.protected")}
                   </Typography>
                   <Typography as="p" variant="title" className="mt-1">
                     {protectedBoardCount}
@@ -331,7 +336,7 @@ export default function WhiteboardHomePage() {
                 </Card>
                 <Card className="border-default/70 bg-surface-elevated border p-3 text-center" radius="md">
                   <Typography as="p" variant="caption" color="subtle">
-                    도형
+                    {t("overview.stats.shapes")}
                   </Typography>
                   <Typography as="p" variant="title" className="mt-1">
                     {totalShapeCount}
@@ -340,16 +345,16 @@ export default function WhiteboardHomePage() {
               </div>
               <div className="border-default/70 bg-surface-elevated mt-5 space-y-2 rounded-xl border p-3.5">
                 <Typography as="p" variant="label">
-                  사용 가이드
+                  {t("overview.guide.title")}
                 </Typography>
                 <Typography as="p" variant="bodySm" color="muted">
-                  1) 보드 제목/권한을 설정하고 보드를 생성합니다.
+                  {t("overview.guide.step1")}
                 </Typography>
                 <Typography as="p" variant="bodySm" color="muted">
-                  2) 편집 키를 입력하면 보드 입장 시 기본으로 사용됩니다.
+                  {t("overview.guide.step2")}
                 </Typography>
                 <Typography as="p" variant="bodySm" color="muted">
-                  3) 삭제는 보드 카드에서 즉시 처리할 수 있습니다.
+                  {t("overview.guide.step3")}
                 </Typography>
               </div>
             </Card>
@@ -360,10 +365,10 @@ export default function WhiteboardHomePage() {
           <section>
             <div className="mb-4 flex items-center justify-between">
               <Typography as="h2" variant="headingMd" className="font-semibold">
-                보드 목록
+                {t("list.title")}
               </Typography>
               <Typography as="span" variant="bodySm" color="subtle">
-                자동 새로고침: 5초
+                {t("list.autoRefresh")}
               </Typography>
             </div>
             {boardsQuery.isLoading ? (
@@ -390,15 +395,15 @@ export default function WhiteboardHomePage() {
               <StateView
                 variant="error"
                 size="lg"
-                title="보드 목록 조회에 실패했습니다."
-                description="서버 상태를 확인해 주세요."
+                title={t("list.errorTitle")}
+                description={t("list.errorDescription")}
               />
             ) : boards.length === 0 ? (
               <StateView
                 variant="empty"
                 size="lg"
-                title="아직 보드가 없습니다."
-                description="첫 보드를 생성해보세요."
+                title={t("list.emptyTitle")}
+                description={t("list.emptyDescription")}
               />
             ) : (
               <div className="grid items-stretch gap-4 md:grid-cols-2">
@@ -416,7 +421,7 @@ export default function WhiteboardHomePage() {
                         variant="title"
                         className="line-clamp-2 min-h-[2.5rem] break-words pr-2 text-[1.18rem] font-semibold leading-[1.32] md:text-[1.26rem]"
                       >
-                        {board.title.trim() || EMPTY_TITLE}
+                        {board.title.trim() || emptyTitle}
                       </Typography>
                       <div className="flex items-center gap-1.5">
                         <Badge variant="outline" size="sm">
@@ -424,7 +429,7 @@ export default function WhiteboardHomePage() {
                         </Badge>
                         {board.isProtected ? (
                           <Badge variant="warning" size="sm">
-                            키 보호
+                            {t("list.card.badges.protected")}
                           </Badge>
                         ) : null}
                       </div>
@@ -432,10 +437,10 @@ export default function WhiteboardHomePage() {
 
                     <div className="border-default/70 mt-2 min-h-[3.2rem] space-y-1 rounded-xl border bg-surface-elevated/60 p-3">
                       <Typography as="p" variant="bodySm" color="subtle">
-                        최근 수정: {formatRelativeTime(board.updatedAt)}
+                        {t("list.card.updatedRelative")}: {formatRelativeTime(board.updatedAt, locale)}
                       </Typography>
                       <Typography as="p" variant="bodySm" color="subtle">
-                        수정 일시: {formatExactTime(board.updatedAt)}
+                        {t("list.card.updatedAt")}: {formatExactTime(board.updatedAt, locale)}
                       </Typography>
                     </div>
 
@@ -448,18 +453,17 @@ export default function WhiteboardHomePage() {
                           event.stopPropagation();
                           if (board.isProtected) {
                             const accessKey = await promptConfirm({
-                              title: "화이트보드를 삭제할까요?",
-                              description:
-                                "이 화이트보드는 편집 키로 보호되어 있습니다. 삭제 비밀번호를 입력해 주세요.",
-                              inputLabel: "삭제 비밀번호",
-                              inputPlaceholder: "삭제 비밀번호",
+                              title: t("deleteDialog.protected.title"),
+                              description: t("deleteDialog.protected.description"),
+                              inputLabel: t("deleteDialog.passwordLabel"),
+                              inputPlaceholder: t("deleteDialog.passwordPlaceholder"),
                               inputType: "password",
-                              confirmText: "화이트보드 삭제",
+                              confirmText: t("deleteDialog.confirmDeleteBoard"),
                               confirmVariant: "danger",
-                              cancelText: "취소",
+                              cancelText: t("common.cancel"),
                               validator: (value) => {
                                 if (value.trim().length === 0) {
-                                  return "삭제 비밀번호를 입력해 주세요.";
+                                  return t("messages.deletePasswordRequired");
                                 }
                                 return null;
                               },
@@ -472,7 +476,7 @@ export default function WhiteboardHomePage() {
                                   });
                                   return null;
                                 } catch (error) {
-                                  notifyUiError("화이트보드 삭제에 실패했습니다.");
+                                  notifyUiError(t("messages.deleteFailed"));
                                   return resolveProtectedDeleteFieldError(error);
                                 }
                               }
@@ -484,11 +488,11 @@ export default function WhiteboardHomePage() {
                           }
 
                           const shouldDelete = await confirm({
-                            title: "화이트보드를 삭제할까요?",
-                            description: "삭제된 화이트보드는 복구할 수 없습니다.",
-                            confirmText: "화이트보드 삭제",
+                            title: t("deleteDialog.default.title"),
+                            description: t("deleteDialog.default.description"),
+                            confirmText: t("deleteDialog.confirmDeleteBoard"),
                             confirmVariant: "danger",
-                            cancelText: "취소"
+                            cancelText: t("common.cancel")
                           });
 
                           if (!shouldDelete) {
@@ -504,7 +508,7 @@ export default function WhiteboardHomePage() {
                           }
                         }}
                       >
-                        삭제
+                        {t("common.delete")}
                       </Button>
                       <Button
                         variant="outline"
@@ -514,7 +518,7 @@ export default function WhiteboardHomePage() {
                           openBoard(board.id);
                         }}
                       >
-                        보드 입장
+                        {t("list.card.enter")}
                       </Button>
                     </div>
                   </Card>

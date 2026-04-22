@@ -1,0 +1,75 @@
+{
+  "common": {
+    "headerTitle": "運用状況",
+    "searchPlaceholder": "サービス・課題・ログを検索",
+    "recentSearch": "最近の検索",
+    "recentSearchEmpty": "最近の検索語はありません。",
+    "clearAll": "すべて削除",
+    "openAlerts": "通知を表示",
+    "openFilters": "フィルターを表示",
+    "openSidebar": "サイドバーを開く",
+    "profileMenu": "プロフィールメニュー",
+    "brandEyebrow": "Operations AI",
+    "brandTitle": "OpsLens"
+  },
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "logs": "ログ",
+    "issues": "課題",
+    "qaAssistant": "QA アシスタント",
+    "deployments": "デプロイ",
+    "reports": "レポート",
+    "settings": "設定"
+  },
+  "filter": {
+    "title": "運用フィルター",
+    "description": "サービスと期間で結果範囲を絞り込みます。",
+    "language": "言語",
+    "service": "サービス",
+    "period": "期間",
+    "selectPeriod": "期間を選択",
+    "selectPlaceholder": "選択してください",
+    "selectSearchPlaceholder": "検索",
+    "selectEmptyMessage": "結果がありません。",
+    "resetFilters": "フィルターをリセット",
+    "apply": "適用"
+  },
+  "alerts": {
+    "title": "運用通知",
+    "description": "未読通知を優先して確認してください。",
+    "unread": "未読",
+    "markAllRead": "すべて既読",
+    "remove": "通知を削除",
+    "none": "新しい通知はありません。"
+  },
+  "profile": {
+    "myProfile": "プロフィール",
+    "workspaceSettings": "ワークスペース設定",
+    "logout": "ログアウト"
+  },
+  "dashboard": {
+    "title": "運用ダッシュボード",
+    "badgeService": "サービス",
+    "badgeLanguage": "言語",
+    "badgePeriod": "期間",
+    "badgeSearch": "検索"
+  },
+  "locale": {
+    "ko": "韓国語",
+    "en": "英語",
+    "ja": "日本語"
+  },
+  "service": {
+    "all": "すべて",
+    "docs": "ドキュメント",
+    "whiteboard": "ホワイトボード",
+    "billing": "請求",
+    "checkout": "チェックアウト"
+  },
+  "settings": {
+    "language": "言語",
+    "service": "サービス",
+    "search": "検索",
+    "none": "(なし)"
+  }
+}

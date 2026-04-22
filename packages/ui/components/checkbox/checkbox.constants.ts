@@ -11,13 +11,13 @@ export const CHECKBOX_DEFAULTS = {
 };
 
 export const CHECKBOX_SIZE_CLASS: Record<CheckboxSize, string> = {
-  sm: "h-4 w-4",
-  md: "h-5 w-5"
+  sm: "h-[var(--size-icon-md)] w-[var(--size-icon-md)]",
+  md: "h-[var(--size-icon-lg)] w-[var(--size-icon-lg)]"
 };
 
 export const CHECKBOX_ICON_SIZE_CLASS: Record<CheckboxSize, string> = {
-  sm: "h-3.5 w-3.5",
-  md: "h-4 w-4"
+  sm: "h-[var(--size-icon-sm)] w-[var(--size-icon-sm)]",
+  md: "h-[var(--size-icon-md)] w-[var(--size-icon-md)]"
 };
 
 export const CHECKBOX_BASE_CLASS =

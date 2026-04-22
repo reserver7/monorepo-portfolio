@@ -24,7 +24,7 @@ interface WhiteboardStore {
   upsertParticipant: (participant: Participant) => void;
   setConnection: (connection: ConnectionState) => void;
   setConflictMessage: (message: string | null) => void;
-  pushEvent: (message: string) => void;
+  pushEvent: (message: string, locale?: string) => void;
 }
 
 const MAX_LOG = 36;
@@ -51,7 +51,7 @@ const whiteboardStore = createAppStore<WhiteboardStore>(
       set({
         activeBoardId: boardId,
         role: "editor",
-        title: seed?.title ?? "화이트보드",
+        title: seed?.title ?? "Whiteboard",
         shapes: seed?.shapes ?? [],
         version: seed?.version ?? 0,
         updatedAt: seed?.updatedAt ?? null,
@@ -171,8 +171,8 @@ const whiteboardStore = createAppStore<WhiteboardStore>(
     setConflictMessage: (message) => {
       set({ conflictMessage: message });
     },
-    pushEvent: (message) => {
-      set({ eventLog: appendEventLog(get().eventLog, message, MAX_LOG) });
+    pushEvent: (message, locale) => {
+      set({ eventLog: appendEventLog(get().eventLog, message, MAX_LOG, locale) });
     }
   }),
   { name: "whiteboard-store" }

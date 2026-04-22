@@ -48,9 +48,9 @@ export const useCalendarChevronComponents = (components: DayPickerProps["compone
   React.useMemo(
     () => ({
       IconLeft: (iconProps: DayPickerIconProps) =>
-        React.createElement(ChevronLeft, { className: "h-4 w-4", ...(iconProps as object) }),
+        React.createElement(ChevronLeft, { className: "h-[var(--size-icon-md)] w-[var(--size-icon-md)]", ...(iconProps as object) }),
       IconRight: (iconProps: DayPickerIconProps) =>
-        React.createElement(ChevronRight, { className: "h-4 w-4", ...(iconProps as object) }),
+        React.createElement(ChevronRight, { className: "h-[var(--size-icon-md)] w-[var(--size-icon-md)]", ...(iconProps as object) }),
       ...components
     }),
     [components]

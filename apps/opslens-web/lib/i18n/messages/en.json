@@ -1,0 +1,75 @@
+{
+  "common": {
+    "headerTitle": "Operations",
+    "searchPlaceholder": "Search services, issues, logs",
+    "recentSearch": "Recent searches",
+    "recentSearchEmpty": "No recent searches.",
+    "clearAll": "Clear all",
+    "openAlerts": "Open alerts",
+    "openFilters": "Open filters",
+    "openSidebar": "Open sidebar",
+    "profileMenu": "Profile menu",
+    "brandEyebrow": "Operations AI",
+    "brandTitle": "OpsLens"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "logs": "Logs",
+    "issues": "Issues",
+    "qaAssistant": "QA Assistant",
+    "deployments": "Deployments",
+    "reports": "Reports",
+    "settings": "Settings"
+  },
+  "filter": {
+    "title": "Filters",
+    "description": "Narrow results by service and date range.",
+    "language": "Language",
+    "service": "Service",
+    "period": "Period",
+    "selectPeriod": "Select period",
+    "selectPlaceholder": "Select",
+    "selectSearchPlaceholder": "Search",
+    "selectEmptyMessage": "No results found.",
+    "resetFilters": "Reset filters",
+    "apply": "Apply"
+  },
+  "alerts": {
+    "title": "Alerts",
+    "description": "Review unread alerts first.",
+    "unread": "Unread",
+    "markAllRead": "Mark all read",
+    "remove": "Remove alert",
+    "none": "No new alerts."
+  },
+  "profile": {
+    "myProfile": "My profile",
+    "workspaceSettings": "Workspace settings",
+    "logout": "Sign out"
+  },
+  "dashboard": {
+    "title": "Operations Dashboard",
+    "badgeService": "Service",
+    "badgeLanguage": "Language",
+    "badgePeriod": "Period",
+    "badgeSearch": "Search"
+  },
+  "locale": {
+    "ko": "Korean",
+    "en": "English",
+    "ja": "Japanese"
+  },
+  "service": {
+    "all": "All",
+    "docs": "Docs",
+    "whiteboard": "Whiteboard",
+    "billing": "Billing",
+    "checkout": "Checkout"
+  },
+  "settings": {
+    "language": "Language",
+    "service": "Service",
+    "search": "Search",
+    "none": "(none)"
+  }
+}

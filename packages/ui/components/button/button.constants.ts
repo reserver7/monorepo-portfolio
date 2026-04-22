@@ -28,9 +28,9 @@ export const BUTTON_VARIANT_CLASS: Record<ButtonVariant, string> = {
 };
 
 export const BUTTON_SIZE_CLASS: Record<ButtonSize, string> = {
-  sm: "h-9 px-3 text-caption",
-  md: "h-10 px-4 py-2 text-body-sm",
-  lg: "h-11 px-6 text-body-md"
+  sm: "h-[var(--size-control-md)] px-[var(--space-3)] text-caption",
+  md: "h-[var(--size-control-lg)] px-[var(--space-4)] py-[var(--space-2)] text-body-sm",
+  lg: "h-[var(--size-control-xl)] px-[var(--space-6)] text-body-md"
 };
 
 export const BUTTON_SHAPE_CLASS: Record<ButtonShape, string> = {
@@ -41,7 +41,7 @@ export const BUTTON_SHAPE_CLASS: Record<ButtonShape, string> = {
 };
 
 export const BUTTON_ICON_ONLY_SIZE_CLASS: Record<ButtonSize, string> = {
-  sm: "h-9 w-9 shrink-0 p-0",
-  md: "h-10 w-10 shrink-0 p-0",
-  lg: "h-11 w-11 shrink-0 p-0"
+  sm: "h-[var(--size-control-md)] w-[var(--size-control-md)] shrink-0 p-0",
+  md: "h-[var(--size-control-lg)] w-[var(--size-control-lg)] shrink-0 p-0",
+  lg: "h-[var(--size-control-xl)] w-[var(--size-control-xl)] shrink-0 p-0"
 };

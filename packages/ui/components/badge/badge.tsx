@@ -76,7 +76,7 @@ const BadgeComponent = React.forwardRef<HTMLSpanElement, BadgeProps>(
           <button
             type="button"
             aria-label={removeLabel}
-            className="ml-0.5 inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full opacity-80 transition hover:bg-black/10 hover:opacity-100"
+            className="ml-0.5 inline-flex h-[var(--size-icon-sm)] w-[var(--size-icon-sm)] shrink-0 items-center justify-center rounded-full opacity-80 transition hover:bg-black/10 hover:opacity-100"
             onClick={(event) => {
               event.stopPropagation();
               if (typeof onRemove === "function") {
@@ -86,7 +86,7 @@ const BadgeComponent = React.forwardRef<HTMLSpanElement, BadgeProps>(
               setDismissed(true);
             }}
           >
-            <X className="h-3 w-3" />
+            <X className="h-[var(--size-icon-sm)] w-[var(--size-icon-sm)]" />
           </button>
         ) : null}
       </span>

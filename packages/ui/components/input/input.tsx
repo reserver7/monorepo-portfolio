@@ -41,6 +41,8 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
       suffix,
       clearable = INPUT_DEFAULTS.clearable,
       onClear,
+      onEnter,
+      onEscape,
       id,
       type = "text",
       value,
@@ -103,6 +105,25 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
       [isControlled, onChange, setCurrentValue]
     );
 
+    const handleKeyDown = React.useCallback(
+      (event: React.KeyboardEvent<HTMLInputElement>) => {
+        props.onKeyDown?.(event);
+        if (event.defaultPrevented) {
+          return;
+        }
+
+        if (event.key === "Enter") {
+          onEnter?.(event.currentTarget.value, event);
+          return;
+        }
+
+        if (event.key === "Escape") {
+          onEscape?.(event.currentTarget.value, event);
+        }
+      },
+      [onEnter, onEscape, props]
+    );
+
     const handleClear = React.useCallback(() => {
       const element = localRef.current;
       if (!element || disabled || readOnly) {
@@ -128,6 +149,7 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
         value={controlledValue}
         defaultValue={uncontrolledDefaultValue}
         onChange={handleChange}
+        onKeyDown={handleKeyDown}
         onBlur={onBlur}
         name={name}
         maxLength={maxLength}
@@ -152,12 +174,12 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
     }
 
     return (
-      <div className={cn("grid gap-1.5", containerClassName)}>
+      <div className={cn("grid gap-[var(--space-1-5)]", containerClassName)}>
         {label ? (
           <Label
             htmlFor={resolvedId}
             size={size === "lg" ? "md" : "sm"}
-            className={cn("inline-flex items-center gap-1", labelClassName)}
+            className={cn("inline-flex items-center gap-[var(--space-1)]", labelClassName)}
           >
             <span>{label}</span>
             {required ? <span className="text-danger">*</span> : null}
@@ -189,7 +211,7 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
                 aria-label="입력값 비우기"
                 className="text-muted hover:bg-surface-elevated hover:text-foreground inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[var(--radius-round)] transition-colors"
               >
-                <X aria-hidden className="h-3.5 w-3.5" />
+                <X aria-hidden className="h-[var(--size-icon-sm)] w-[var(--size-icon-sm)]" />
               </button>
             ) : null}
             {suffix ? <span className="text-muted flex shrink-0 items-center">{suffix}</span> : null}

@@ -11,7 +11,7 @@ export function getSheetContentClassName({
   const isHorizontal = !isVertical;
 
   return [
-    "bg-surface border-default fixed z-50 flex gap-4 border p-6 shadow-[var(--shadow-card)]",
+    "bg-surface border-default fixed z-50 flex gap-[var(--space-4)] border p-[var(--space-6)] shadow-[var(--shadow-card)]",
     resolvedSide === "left"
       ? "rounded-r-[var(--radius-xl)]"
       : resolvedSide === "right"

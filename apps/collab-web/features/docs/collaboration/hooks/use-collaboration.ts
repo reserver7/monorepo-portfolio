@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { io, Socket } from "socket.io-client";
 import * as Y from "yjs";
 import type {
@@ -28,7 +29,6 @@ import { socketEventName } from "@repo/utils/collab";
 import { notifyUiSuccess } from "@repo/react-query";
 import { API_BASE_URL } from "@/features/docs/documents/api";
 import {
-  createGuestName,
   getStoredEditorAccessKey,
   getOrCreateSessionId,
   getStoredSessionToken,
@@ -38,6 +38,7 @@ import {
 } from "@/features/docs/collaboration/model";
 import { AccessRole, DocumentRecord, Participant } from "@/features/docs/collaboration/model";
 import { useCollabStore } from "@/features/docs/collaboration/stores/use-collab-store";
+import { createLocaleGuestName, normalizeGuestDisplayName } from "@/lib/i18n/display-name";
 
 interface UseCollaborationOptions {
   documentId: string;
@@ -136,6 +137,8 @@ export const useCollaboration = ({
   updateComment: (commentId: string, commentBody: string, mentions?: string[]) => void;
   deleteComment: (commentId: string) => void;
 } => {
+  const t = useTranslations("collab.realtime.docs");
+  const locale = useLocale();
   const storeRole = useCollabStore.use.role();
 
   const resetForDocument = useCollabStore.use.resetForDocument();
@@ -207,7 +210,7 @@ export const useCollaboration = ({
         documentId,
         sessionId: sessionIdRef.current,
         sessionToken: sessionTokenRef.current || undefined,
-        displayName: displayNameRef.current.trim() || createGuestName(),
+        displayName: normalizeGuestDisplayName(displayNameRef.current.trim() || createLocaleGuestName(locale), locale),
         role: requestedRoleRef.current,
         editorAccessKey: editorAccessKeyRef.current ?? getStoredEditorAccessKey() ?? undefined,
         clientYjsState
@@ -336,20 +339,20 @@ export const useCollaboration = ({
     socket.on("connect", () => {
       setConnection("online");
       setConflictMessage(null);
-      pushEvent("실시간 연결이 활성화되었습니다.");
+      pushEvent(t("connection.connected"), locale);
       emitDocumentJoin(socket);
     });
 
     socket.on("disconnect", () => {
       setConnection("offline");
       setSaveState("offline");
-      pushEvent("연결이 끊어져 오프라인 상태입니다.");
+      pushEvent(t("connection.disconnected"), locale);
     });
 
     socket.on("connect_error", () => {
       setConnection("offline");
       setSaveState("offline");
-      pushEvent("서버 연결 실패. 자동 재시도 중입니다.");
+      pushEvent(t("connection.connectError"), locale);
     });
 
     socket.on(
@@ -377,7 +380,7 @@ export const useCollaboration = ({
 
         dirtyRef.current = false;
 
-        pushEvent(`문서 최신 상태를 수신했습니다. (권한: ${nextRole})`);
+        pushEvent(t("document.stateReceived", { role: nextRole }), locale);
       }
     );
 
@@ -396,7 +399,7 @@ export const useCollaboration = ({
       markSavedCheckpoint(payload.updatedAt, payload.version);
 
       if (payload.editor && payload.editor.sessionId !== sessionIdRef.current) {
-        pushEvent(`${payload.editor.displayName} 님의 변경사항이 동기화되었습니다.`);
+        pushEvent(t("document.syncedByEditor", { name: normalizeGuestDisplayName(payload.editor.displayName, locale) }), locale);
       }
 
       dirtyRef.current = false;
@@ -448,26 +451,26 @@ export const useCollaboration = ({
       );
 
       if (mentionHit && comment.authorSessionId !== sessionIdRef.current) {
-        pushEvent(`${comment.authorName} 님이 회원님을 멘션했습니다.`);
+        pushEvent(t("comment.mentionedYou", { name: normalizeGuestDisplayName(comment.authorName, locale) }), locale);
         return;
       }
 
       if (comment.authorSessionId !== sessionIdRef.current) {
-        pushEvent(`${comment.authorName} 님이 댓글을 남겼습니다.`);
+        pushEvent(t("comment.addedBy", { name: normalizeGuestDisplayName(comment.authorName, locale) }), locale);
       }
     });
 
     socket.on(socketEventName.documentCommentUpdate, ({ comment }: DocumentCommentEventPayload) => {
       updateCommentInStore(comment);
       if (comment.authorSessionId !== sessionIdRef.current) {
-        pushEvent(`${comment.authorName} 님이 댓글을 수정했습니다.`);
+        pushEvent(t("comment.updatedBy", { name: normalizeGuestDisplayName(comment.authorName, locale) }), locale);
       }
     });
 
     socket.on(socketEventName.documentCommentDelete, ({ commentId }: DocumentCommentDeleteEventPayload) => {
       removeCommentFromStore(commentId);
-      pushEvent("댓글이 삭제되었습니다.");
-      notifyUiSuccess("댓글이 삭제되었습니다.");
+      pushEvent(t("comment.deleted"), locale);
+      notifyUiSuccess(t("comment.deleted"));
     });
 
     socket.on(
@@ -491,7 +494,7 @@ export const useCollaboration = ({
       roleRef.current = currentRole;
       setRole(currentRole);
       setSaveState("idle");
-      pushEvent("읽기 전용 권한으로 전환되어 편집이 제한됩니다.");
+      pushEvent(t("permission.viewerMode"), locale);
 
       if (wasRequestingEditor && currentRole !== "editor") {
         requestedRoleRef.current = currentRole;
@@ -507,16 +510,14 @@ export const useCollaboration = ({
           return;
         }
 
-        setConflictMessage(
-          `동시 수정 충돌이 감지되어 서버 기준(last-write-wins)으로 정리되었습니다. (서버 버전 ${serverVersion})`
-        );
-        pushEvent("충돌이 감지되어 서버 기준으로 병합되었습니다.");
+        setConflictMessage(t("conflict.detail", { version: serverVersion }));
+        pushEvent(t("conflict.merged"), locale);
       }
     );
 
     socket.on(socketEventName.socketError, ({ message }: SocketErrorPayload) => {
       if (message) {
-        pushEvent(message);
+        pushEvent(message, locale);
       }
     });
 
@@ -536,6 +537,7 @@ export const useCollaboration = ({
     documentId,
     emitDocumentJoin,
     hydrateFromServer,
+    locale,
     markSavedCheckpoint,
     pushEvent,
     removeCommentFromStore,
@@ -544,6 +546,7 @@ export const useCollaboration = ({
     setParticipants,
     setRole,
     setSaveState,
+    t,
     updateCommentInStore,
     upsertParticipant
   ]);
@@ -638,7 +641,7 @@ export const useCollaboration = ({
     (commentBody: string, mentions: string[] = []) => {
       const socket = socketRef.current;
       if (!socket || !socket.connected) {
-        pushEvent("오프라인 상태에서는 댓글을 전송할 수 없습니다.");
+        pushEvent(t("comment.offlineAdd"), locale);
         return;
       }
 
@@ -649,14 +652,14 @@ export const useCollaboration = ({
       };
       socket.emit(socketEventName.documentCommentAdd, payload);
     },
-    [documentId, pushEvent]
+    [documentId, locale, pushEvent, t]
   );
 
   const updateComment = useCallback(
     (commentId: string, commentBody: string, mentions: string[] = []) => {
       const socket = socketRef.current;
       if (!socket || !socket.connected) {
-        pushEvent("오프라인 상태에서는 댓글을 수정할 수 없습니다.");
+        pushEvent(t("comment.offlineUpdate"), locale);
         return;
       }
 
@@ -668,14 +671,14 @@ export const useCollaboration = ({
       };
       socket.emit(socketEventName.documentCommentUpdate, payload);
     },
-    [documentId, pushEvent]
+    [documentId, locale, pushEvent, t]
   );
 
   const deleteComment = useCallback(
     (commentId: string) => {
       const socket = socketRef.current;
       if (!socket || !socket.connected) {
-        pushEvent("오프라인 상태에서는 댓글을 삭제할 수 없습니다.");
+        pushEvent(t("comment.offlineDelete"), locale);
         return;
       }
 
@@ -685,7 +688,7 @@ export const useCollaboration = ({
       };
       socket.emit(socketEventName.documentCommentDelete, payload);
     },
-    [documentId, pushEvent]
+    [documentId, locale, pushEvent, t]
   );
 
   useEffect(() => {
