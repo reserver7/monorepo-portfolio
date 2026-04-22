@@ -45,6 +45,29 @@ type ToastApi = ((input: ToastInput) => void) & {
   warning: (input: ToastInput, durationMs?: number) => void;
 };
 
+const TOAST_SOLID_STYLE_BY_COLOR = {
+  success: {
+    background: "rgb(var(--color-feedback-success))",
+    color: "rgb(var(--color-fg-on-success))",
+    borderColor: "rgb(var(--color-feedback-success))"
+  },
+  error: {
+    background: "rgb(var(--color-feedback-danger))",
+    color: "rgb(var(--color-fg-on-danger))",
+    borderColor: "rgb(var(--color-feedback-danger))"
+  },
+  warning: {
+    background: "rgb(var(--color-feedback-warning))",
+    color: "rgb(var(--color-fg-on-warning))",
+    borderColor: "rgb(var(--color-feedback-warning))"
+  },
+  info: {
+    background: "rgb(var(--color-feedback-info))",
+    color: "rgb(var(--color-fg-on-info))",
+    borderColor: "rgb(var(--color-feedback-info))"
+  }
+} as const;
+
 export const toast = Object.assign(
   (input: ToastInput) => emitToast(input),
   {
@@ -115,15 +138,35 @@ export function Toast({
           });
         }
         if (color === "success") {
-          return sonnerToast.success(detail.message, { id, duration: resolvedDurationMs, closeButton: false });
+          return sonnerToast.success(detail.message, {
+            id,
+            duration: resolvedDurationMs,
+            closeButton: false,
+            style: TOAST_SOLID_STYLE_BY_COLOR.success
+          });
         }
         if (color === "error") {
-          return sonnerToast.error(detail.message, { id, duration: resolvedDurationMs, closeButton: false });
+          return sonnerToast.error(detail.message, {
+            id,
+            duration: resolvedDurationMs,
+            closeButton: false,
+            style: TOAST_SOLID_STYLE_BY_COLOR.error
+          });
         }
         if (color === "warning") {
-          return sonnerToast.warning(detail.message, { id, duration: resolvedDurationMs, closeButton: false });
+          return sonnerToast.warning(detail.message, {
+            id,
+            duration: resolvedDurationMs,
+            closeButton: false,
+            style: TOAST_SOLID_STYLE_BY_COLOR.warning
+          });
         }
-        return sonnerToast.info(detail.message, { id, duration: resolvedDurationMs, closeButton: false });
+        return sonnerToast.info(detail.message, {
+          id,
+          duration: resolvedDurationMs,
+          closeButton: false,
+          style: TOAST_SOLID_STYLE_BY_COLOR.info
+        });
       };
 
       showToast();

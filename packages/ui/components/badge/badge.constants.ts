@@ -19,14 +19,15 @@ export const BADGE_VARIANT_CLASS: Record<BadgeVariant, string> = {
   success: "bg-success/15 text-success",
   warning: "bg-warning/15 text-warning",
   danger: "bg-danger/15 text-danger",
+  dangerSolid: "border border-danger bg-danger !text-danger-foreground",
   destructive: "bg-danger/15 text-danger",
   info: "bg-info/15 text-info"
 };
 
 export const BADGE_SIZE_CLASS: Record<BadgeSize, string> = {
-  sm: "h-6 px-2.5 text-micro",
-  md: "h-7 px-3 text-caption",
-  lg: "h-8 px-3.5 text-body-sm"
+  sm: "h-[var(--size-chip-sm)] px-[var(--space-2-5)] text-micro",
+  md: "h-[var(--size-chip-md)] px-[var(--space-3)] text-caption",
+  lg: "h-[var(--size-chip-lg)] px-[var(--space-3-5)] text-body-sm"
 };
 
 export const BADGE_SHAPE_CLASS: Record<BadgeShape, string> = {
@@ -36,7 +37,7 @@ export const BADGE_SHAPE_CLASS: Record<BadgeShape, string> = {
 };
 
 export const BADGE_DOT_SIZE_CLASS: Record<BadgeSize, string> = {
-  sm: "h-1.5 w-1.5",
-  md: "h-2 w-2",
-  lg: "h-2 w-2"
+  sm: "h-[var(--space-1-5)] w-[var(--space-1-5)]",
+  md: "h-[var(--space-2)] w-[var(--space-2)]",
+  lg: "h-[var(--space-2)] w-[var(--space-2)]"
 };

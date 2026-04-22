@@ -24,34 +24,34 @@ export const CALENDAR_VARIANT_CLASS: Record<CalendarVariant, string> = {
 };
 
 export const CALENDAR_WRAPPER_PADDING_CLASS: Record<CalendarDensity, string> = {
-  comfortable: "p-3",
-  compact: "p-2"
+  comfortable: "p-[var(--space-3)]",
+  compact: "p-[var(--space-2)]"
 };
 
 export const CALENDAR_GAP_CLASS: Record<CalendarDensity, { months: string; month: string; row: string }> = {
-  comfortable: { months: "gap-4", month: "space-y-3", row: "mt-1" },
-  compact: { months: "gap-3", month: "space-y-2", row: "mt-0.5" }
+  comfortable: { months: "gap-[var(--space-4)]", month: "space-y-[var(--space-3)]", row: "mt-[var(--space-1)]" },
+  compact: { months: "gap-[var(--space-3)]", month: "space-y-[var(--space-2)]", row: "mt-[var(--size-border-hairline)]" }
 };
 
 export const CALENDAR_SIZE_CLASS: Record<CalendarSize, { headCell: string; cell: string; day: string; navButton: string }> =
   {
     sm: {
-      headCell: "w-8 text-[11px]",
-      cell: "h-8 w-8",
-      day: "h-8 w-8 text-caption",
-      navButton: "h-7 w-7"
+      headCell: "w-[var(--size-control-sm)] text-[11px]",
+      cell: "h-[var(--size-control-sm)] w-[var(--size-control-sm)]",
+      day: "h-[var(--size-control-sm)] w-[var(--size-control-sm)] text-caption",
+      navButton: "h-[var(--size-chip-md)] w-[var(--size-chip-md)]"
     },
     md: {
-      headCell: "w-9 text-caption",
-      cell: "h-9 w-9",
-      day: "h-9 w-9 text-body-sm",
-      navButton: "h-8 w-8"
+      headCell: "w-[var(--size-control-md)] text-caption",
+      cell: "h-[var(--size-control-md)] w-[var(--size-control-md)]",
+      day: "h-[var(--size-control-md)] w-[var(--size-control-md)] text-body-sm",
+      navButton: "h-[var(--size-control-sm)] w-[var(--size-control-sm)]"
     },
     lg: {
-      headCell: "w-10 text-body-sm",
-      cell: "h-10 w-10",
-      day: "h-10 w-10 text-body-md",
-      navButton: "h-9 w-9"
+      headCell: "w-[var(--size-control-lg)] text-body-sm",
+      cell: "h-[var(--size-control-lg)] w-[var(--size-control-lg)]",
+      day: "h-[var(--size-control-lg)] w-[var(--size-control-lg)] text-body-md",
+      navButton: "h-[var(--size-control-md)] w-[var(--size-control-md)]"
     }
   };
 
@@ -64,14 +64,14 @@ export const createCalendarClassNames = (size: CalendarSize, density: CalendarDe
     month: cn("mx-auto w-fit", gapClass.month),
     caption: "relative flex items-center justify-center pt-1",
     caption_label: "text-body-md font-semibold",
-    nav: "flex items-center gap-1",
+    nav: "flex items-center gap-[var(--space-1)]",
     nav_button: cn(
       buttonVariants({ variant: "ghost", size: "sm" }),
       sizeClass.navButton,
       "rounded-[var(--radius-md)] p-0 text-muted hover:text-foreground"
     ),
-    nav_button_previous: "absolute left-1",
-    nav_button_next: "absolute right-1",
+    nav_button_previous: "absolute left-[var(--space-1)]",
+    nav_button_next: "absolute right-[var(--space-1)]",
     table: "w-fit border-collapse",
     head_row: "flex",
     head_cell: cn("text-muted text-center font-medium", sizeClass.headCell),

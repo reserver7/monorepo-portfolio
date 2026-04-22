@@ -9,9 +9,9 @@ export const POPOVER_DEFAULTS = {
 } as const;
 
 export const POPOVER_SIZE_CLASS: Record<PopoverSize, string> = {
-  sm: "w-56",
-  md: "w-72",
-  lg: "w-96"
+  sm: "w-[var(--size-popover-sm)]",
+  md: "w-[var(--size-popover-md)]",
+  lg: "w-[var(--size-popover-lg)]"
 };
 
 export const POPOVER_VARIANT_CLASS: Record<PopoverVariant, string> = {

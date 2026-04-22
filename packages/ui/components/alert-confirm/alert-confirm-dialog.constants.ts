@@ -19,9 +19,9 @@ export const ALERT_CONFIRM_FOOTER_DEFAULTS = {
 };
 
 export const ALERT_CONFIRM_CONTENT_SIZE_CLASS: Record<AlertConfirmContentSize, string> = {
-  sm: "max-w-sm",
-  md: "max-w-lg",
-  lg: "max-w-2xl"
+  sm: "max-w-[var(--size-modal-sm)]",
+  md: "max-w-[var(--size-modal-md)]",
+  lg: "max-w-[var(--size-modal-lg)]"
 };
 
 export const ALERT_CONFIRM_CONTENT_INTENT_CLASS: Record<AlertConfirmContentIntent, string> = {

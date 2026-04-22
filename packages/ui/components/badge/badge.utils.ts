@@ -17,7 +17,7 @@ export const getBadgeRootClassName = (params: {
   const resolvedShape = resolveOption(shape, BADGE_SHAPE_CLASS, BADGE_DEFAULTS.shape);
 
   return cn(
-    "inline-flex max-w-full items-center gap-1 whitespace-nowrap font-medium leading-[1.1]",
+    "inline-flex max-w-full items-center gap-[var(--space-1)] whitespace-nowrap font-medium leading-[1.1]",
     BADGE_VARIANT_CLASS[resolvedVariant],
     BADGE_SIZE_CLASS[resolvedSize],
     BADGE_SHAPE_CLASS[resolvedShape],

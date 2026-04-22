@@ -8,9 +8,9 @@ export const SPINNER_DEFAULTS = {
 } as const;
 
 export const SPINNER_SIZE_CLASS: Record<SpinnerSize, string> = {
-  sm: "h-4 w-4",
-  md: "h-6 w-6",
-  lg: "h-8 w-8"
+  sm: "h-[var(--size-icon-md)] w-[var(--size-icon-md)]",
+  md: "h-[var(--size-control-sm)] w-[var(--size-control-sm)]",
+  lg: "h-[var(--size-control-lg)] w-[var(--size-control-lg)]"
 };
 
 export const SPINNER_COLOR_CLASS = {

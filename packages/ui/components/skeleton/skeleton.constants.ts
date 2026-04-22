@@ -43,27 +43,27 @@ export const SKELETON_SPEED_CLASS: Record<SkeletonAnimationSpeed, string> = {
 
 export const SKELETON_SIZE_CLASS: Record<SkeletonVariant, Record<SkeletonSize, string>> = {
   text: {
-    xs: "h-3",
-    sm: "h-4",
-    md: "h-5",
-    lg: "h-6"
+    xs: "h-[var(--space-3)]",
+    sm: "h-[var(--space-4)]",
+    md: "h-[var(--size-control-sm)]",
+    lg: "h-[var(--size-control-lg)]"
   },
   circular: {
-    xs: "h-6 w-6",
-    sm: "h-8 w-8",
-    md: "h-10 w-10",
-    lg: "h-12 w-12"
+    xs: "h-[var(--size-chip-sm)] w-[var(--size-chip-sm)]",
+    sm: "h-[var(--size-control-sm)] w-[var(--size-control-sm)]",
+    md: "h-[var(--size-control-lg)] w-[var(--size-control-lg)]",
+    lg: "h-[var(--size-control-2xl)] w-[var(--size-control-2xl)]"
   },
   rounded: {
-    xs: "h-6",
-    sm: "h-8",
-    md: "h-10",
-    lg: "h-12"
+    xs: "h-[var(--size-chip-sm)]",
+    sm: "h-[var(--size-control-sm)]",
+    md: "h-[var(--size-control-lg)]",
+    lg: "h-[var(--size-control-2xl)]"
   },
   rectangular: {
-    xs: "h-12",
-    sm: "h-16",
-    md: "h-20",
-    lg: "h-24"
+    xs: "h-[var(--size-control-2xl)]",
+    sm: "h-[var(--space-16)]",
+    md: "h-[var(--space-20)]",
+    lg: "h-[var(--space-24)]"
   }
 };

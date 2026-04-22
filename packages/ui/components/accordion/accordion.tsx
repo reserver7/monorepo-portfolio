@@ -87,7 +87,7 @@ const AccordionTriggerComponent = React.forwardRef<
     const chevronNode = hideChevron ? null : (
       <ChevronDown
         className={cn(
-          "h-4 w-4 shrink-0 text-muted transition-transform duration-200",
+          "h-[var(--size-icon-md)] w-[var(--size-icon-md)] shrink-0 text-muted transition-transform duration-200",
           shouldRotateChevron ? "group-data-[state=open]:rotate-180" : null
         )}
       />
@@ -106,7 +106,7 @@ const AccordionTriggerComponent = React.forwardRef<
           {...props}
         >
           {resolvedChevronPosition === "left" ? chevronNode : null}
-          {leftSlot ? <span className="inline-flex h-4 w-4 items-center justify-center text-muted">{leftSlot}</span> : null}
+          {leftSlot ? <span className="inline-flex h-[var(--size-icon-md)] w-[var(--size-icon-md)] items-center justify-center text-muted">{leftSlot}</span> : null}
           <span className="min-w-0 flex-1 truncate">{children}</span>
           {rightSlot ? <span className="ml-auto inline-flex items-center text-muted">{rightSlot}</span> : null}
           {resolvedChevronPosition === "right" ? chevronNode : null}

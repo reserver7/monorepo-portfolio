@@ -19,15 +19,15 @@ export const SHEET_SIDE_CLASS: Record<SheetSide, string> = {
 };
 
 export const SHEET_SIZE_CLASS: Record<SheetSize, string> = {
-  sm: "w-3/4 sm:max-w-sm",
-  md: "w-3/4 sm:max-w-md",
-  lg: "w-4/5 sm:max-w-lg",
-  xl: "w-5/6 sm:max-w-xl"
+  sm: "w-full max-w-[min(var(--size-sheet-sm),calc(100vw-var(--space-4)))]",
+  md: "w-full max-w-[min(var(--size-sheet-md),calc(100vw-var(--space-4)))]",
+  lg: "w-full max-w-[min(var(--size-sheet-lg),calc(100vw-var(--space-4)))]",
+  xl: "w-full max-w-[min(var(--size-sheet-xl),calc(100vw-var(--space-4)))]"
 };
 
 export const SHEET_HEIGHT_CLASS: Record<SheetSize, string> = {
-  sm: "max-h-[40vh]",
-  md: "max-h-[50vh]",
-  lg: "max-h-[60vh]",
-  xl: "max-h-[70vh]"
+  sm: "max-h-[var(--size-sheet-max-h-sm)]",
+  md: "max-h-[var(--size-sheet-max-h-md)]",
+  lg: "max-h-[var(--size-sheet-max-h-lg)]",
+  xl: "max-h-[var(--size-sheet-max-h-xl)]"
 };

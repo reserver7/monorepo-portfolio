@@ -6,15 +6,15 @@ export const SCROLL_AREA_DEFAULTS = {
 
 export const SCROLLBAR_SIZE_CLASS: Record<ScrollBarSize, { vertical: string; horizontal: string }> = {
   sm: {
-    vertical: "w-2 p-[1px]",
-    horizontal: "h-2 p-[1px]"
+    vertical: "w-[var(--size-scrollbar-sm)] p-[var(--size-border-hairline)]",
+    horizontal: "h-[var(--size-scrollbar-sm)] p-[var(--size-border-hairline)]"
   },
   md: {
-    vertical: "w-2.5 p-[1px]",
-    horizontal: "h-2.5 p-[1px]"
+    vertical: "w-[var(--size-scrollbar-md)] p-[var(--size-border-hairline)]",
+    horizontal: "h-[var(--size-scrollbar-md)] p-[var(--size-border-hairline)]"
   },
   lg: {
-    vertical: "w-3 p-[2px]",
-    horizontal: "h-3 p-[2px]"
+    vertical: "w-[var(--size-scrollbar-lg)] p-[var(--size-border-thin)]",
+    horizontal: "h-[var(--size-scrollbar-lg)] p-[var(--size-border-thin)]"
   }
 };

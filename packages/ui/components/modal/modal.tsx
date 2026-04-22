@@ -68,9 +68,9 @@ export const ModalContent = React.forwardRef<React.ElementRef<typeof DialogPrimi
           onPointerDownOutside?.(event);
         }}
         className={cn(
-          "border-default bg-surface fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-xl)] border p-6 shadow-[var(--shadow-card)]",
+          "border-default bg-surface fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-xl)] border p-[var(--space-6)] shadow-[var(--shadow-card)]",
           resolvedScrollBehavior === "inside" &&
-            "max-h-[calc(100vh-2rem)] overflow-hidden [&_[data-modal-body]]:max-h-[calc(100vh-14rem)] [&_[data-modal-body]]:overflow-y-auto",
+            "max-h-[calc(100vh-var(--size-modal-viewport-inset))] overflow-hidden [&_[data-modal-body]]:max-h-[calc(100vh-var(--size-modal-body-offset))] [&_[data-modal-body]]:overflow-y-auto",
           MODAL_CONTENT_SIZE_CLASS[resolvedSize],
           MODAL_CONTENT_INTENT_CLASS[resolvedIntent],
           className
@@ -81,9 +81,9 @@ export const ModalContent = React.forwardRef<React.ElementRef<typeof DialogPrimi
         {!hideCloseButton ? (
           <DialogPrimitive.Close
             aria-label={closeAriaLabel}
-            className="text-muted focus:ring-primary absolute right-4 top-4 rounded-[var(--radius-sm)] opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2"
+            className="text-muted focus:ring-primary absolute right-[var(--space-4)] top-[var(--space-4)] rounded-[var(--radius-sm)] opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2"
           >
-            <X className="h-4 w-4" />
+            <X className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />
           </DialogPrimitive.Close>
         ) : null}
       </DialogPrimitive.Content>
@@ -94,7 +94,7 @@ export const ModalContent = React.forwardRef<React.ElementRef<typeof DialogPrimi
 ModalContent.displayName = DialogPrimitive.Content.displayName;
 
 export function ModalHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("mb-4 flex flex-col space-y-1.5", className)} {...props} />;
+  return <div className={cn("mb-[var(--space-4)] flex flex-col space-y-[var(--space-1-5)]", className)} {...props} />;
 }
 
 export function ModalFooter({
@@ -136,9 +136,10 @@ export function ModalFooter({
   return (
     <div
       className={cn(
-        "mt-6 flex flex-col-reverse gap-2 sm:flex-row",
+        "mt-[var(--space-6)] flex flex-col-reverse gap-[var(--space-2)] sm:flex-row",
         footerAlignClass,
-        sticky && "bg-surface border-default sticky bottom-0 -mx-6 -mb-6 border-t px-6 py-4",
+        sticky &&
+          "bg-surface border-default sticky bottom-0 -mx-[var(--space-6)] -mb-[var(--space-6)] border-t px-[var(--space-6)] py-[var(--space-4)]",
         className
       )}
       {...props}
@@ -208,6 +209,6 @@ export const ModalDescription = React.forwardRef<
 ModalDescription.displayName = DialogPrimitive.Description.displayName;
 
 export const ModalBody = React.memo(function ModalBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div data-modal-body className={cn("space-y-4", className)} {...props} />;
+  return <div data-modal-body className={cn("space-y-[var(--space-4)]", className)} {...props} />;
 });
 ModalBody.displayName = "ModalBody";

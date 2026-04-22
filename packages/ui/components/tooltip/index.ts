@@ -1,4 +1,5 @@
 export { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "./tooltip";
+export { AutoEllipsisTooltip } from "./auto-ellipsis-tooltip";
 export type {
   TooltipContentProps,
   TooltipSize,

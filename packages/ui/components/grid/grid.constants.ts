@@ -6,7 +6,7 @@ export const GRID_DEFAULTS = {
   rowGap: "none" as GridGap,
   columnGap: "none" as GridGap,
   align: "stretch" as GridAlign,
-  justify: "start" as GridJustify,
+  justify: "between" as GridJustify,
   autoFit: false,
   minColumnWidth: "md" as GridMinColumnWidth,
   dense: false,
@@ -41,29 +41,29 @@ export const GRID_JUSTIFY_CLASS: Record<GridJustify, string> = {
 
 export const GRID_GAP_CLASS: Record<GridGap, string> = {
   none: "",
-  xs: "gap-1",
-  sm: "gap-2",
-  md: "gap-3",
-  lg: "gap-4",
-  xl: "gap-6"
+  xs: "gap-[var(--space-1)]",
+  sm: "gap-[var(--space-2)]",
+  md: "gap-[var(--space-3)]",
+  lg: "gap-[var(--space-4)]",
+  xl: "gap-[var(--space-6)]"
 };
 
 export const GRID_ROW_GAP_CLASS: Record<GridGap, string> = {
   none: "",
-  xs: "gap-y-1",
-  sm: "gap-y-2",
-  md: "gap-y-3",
-  lg: "gap-y-4",
-  xl: "gap-y-6"
+  xs: "gap-y-[var(--space-1)]",
+  sm: "gap-y-[var(--space-2)]",
+  md: "gap-y-[var(--space-3)]",
+  lg: "gap-y-[var(--space-4)]",
+  xl: "gap-y-[var(--space-6)]"
 };
 
 export const GRID_COLUMN_GAP_CLASS: Record<GridGap, string> = {
   none: "",
-  xs: "gap-x-1",
-  sm: "gap-x-2",
-  md: "gap-x-3",
-  lg: "gap-x-4",
-  xl: "gap-x-6"
+  xs: "gap-x-[var(--space-1)]",
+  sm: "gap-x-[var(--space-2)]",
+  md: "gap-x-[var(--space-3)]",
+  lg: "gap-x-[var(--space-4)]",
+  xl: "gap-x-[var(--space-6)]"
 };
 
 export const GRID_MIN_COLUMN_WIDTH_VALUE: Record<GridMinColumnWidth, string> = {
@@ -73,4 +73,3 @@ export const GRID_MIN_COLUMN_WIDTH_VALUE: Record<GridMinColumnWidth, string> = {
   lg: "280px",
   xl: "320px"
 };
-

@@ -17,9 +17,9 @@ export const TEXTAREA_DEFAULTS = {
 };
 
 export const TEXTAREA_SIZE_CLASS: Record<TextareaSize, string> = {
-  sm: "min-h-[84px] text-body-sm",
-  md: "min-h-[120px] text-body-md",
-  lg: "min-h-[150px] text-body-md"
+  sm: "min-h-[var(--size-textarea-sm-min-h)] text-body-sm",
+  md: "min-h-[var(--size-textarea-md-min-h)] text-body-md",
+  lg: "min-h-[var(--size-textarea-lg-min-h)] text-body-md"
 };
 
 export const TEXTAREA_VARIANT_CLASS: Record<TextareaVariant, string> = {

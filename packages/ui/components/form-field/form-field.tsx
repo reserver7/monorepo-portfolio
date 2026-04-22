@@ -23,7 +23,7 @@ export function FormField({
   return (
     <div className={cn("grid", bySize.gap, className)} style={style}>
       {label ? (
-        <Label htmlFor={htmlFor} size={bySize.label} required={requiredMark} className="inline-flex items-center gap-1">
+        <Label htmlFor={htmlFor} size={bySize.label} required={requiredMark} className="inline-flex items-center gap-[var(--space-1)]">
           <span>{label}</span>
           {!requiredMark && optionalLabel ? <span className="text-muted">({optionalLabel})</span> : null}
         </Label>

@@ -11,19 +11,19 @@ export const FORM_FIELD_SIZE_CONFIG: Record<
 > = {
   sm: {
     label: "sm",
-    gap: "gap-1",
+    gap: "gap-[var(--space-1)]",
     description: "text-[11px]",
     error: "text-[11px]"
   },
   md: {
     label: "md",
-    gap: "gap-1.5",
+    gap: "gap-[var(--space-1-5)]",
     description: "text-xs",
     error: "text-xs"
   },
   lg: {
     label: "lg",
-    gap: "gap-2",
+    gap: "gap-[var(--space-2)]",
     description: "text-sm",
     error: "text-sm"
   }

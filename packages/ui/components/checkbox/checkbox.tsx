@@ -91,7 +91,7 @@ function CheckboxBase(
   }
 
   return (
-    <div className={cn("grid gap-1", containerClassName)}>
+    <div className={cn("grid gap-[var(--space-1)]", containerClassName)}>
       <div className={cn("gap-2", orientation === "vertical" ? "flex flex-col items-start" : "flex items-center")}>
         {checkboxNode}
         {label ? (

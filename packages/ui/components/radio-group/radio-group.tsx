@@ -105,7 +105,7 @@ function RadioGroupBase(
   );
 
   return (
-    <div className={cn("grid gap-1", containerClassName)}>
+    <div className={cn("grid gap-[var(--space-1)]", containerClassName)}>
       {required ? (
         <RequiredMark />
       ) : null}

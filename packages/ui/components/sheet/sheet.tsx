@@ -82,7 +82,7 @@ const SheetContent = React.forwardRef<
               aria-label={closeAriaLabel}
               className="text-muted focus:ring-primary absolute right-4 top-4 rounded-[var(--radius-sm)] opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2"
             >
-              <X className="h-4 w-4" />
+              <X className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />
             </DialogPrimitive.Close>
           ) : null}
         </DialogPrimitive.Content>

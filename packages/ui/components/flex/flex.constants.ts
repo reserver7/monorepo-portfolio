@@ -42,10 +42,9 @@ export const FLEX_WRAP_CLASS: Record<FlexWrap, string> = {
 
 export const FLEX_GAP_CLASS: Record<FlexGap, string> = {
   none: "",
-  xs: "gap-1",
-  sm: "gap-2",
-  md: "gap-3",
-  lg: "gap-4",
-  xl: "gap-6"
+  xs: "gap-[var(--space-1)]",
+  sm: "gap-[var(--space-2)]",
+  md: "gap-[var(--space-3)]",
+  lg: "gap-[var(--space-4)]",
+  xl: "gap-[var(--space-6)]"
 };
-

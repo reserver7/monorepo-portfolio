@@ -180,7 +180,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
         if (selectedRangeFrom) {
           return `${formatDateText(selectedRangeFrom, locale)} ~`;
         }
-        return DATE_PICKER_DEFAULTS.rangePlaceholder;
+        return placeholder;
       }
 
       return selectedDate ? formatDateText(selectedDate, locale) : placeholder;
@@ -207,12 +207,12 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
     const triggerClassName = React.useMemo(
       () =>
         cn(
-          "h-10 w-full justify-between px-3 py-0 font-normal leading-none",
+          "h-[var(--size-control-lg)] w-full justify-between px-[var(--space-3)] py-0 font-normal leading-none",
           "focus-visible:ring-0 focus-visible:ring-offset-0",
           INPUT_SIZE_CLASS[resolvedSize],
           INPUT_VARIANT_CLASS[resolvedVariant],
           INPUT_STATUS_CLASS[resolvedStatus],
-          triggerLabel !== placeholder && triggerLabel !== DATE_PICKER_DEFAULTS.rangePlaceholder
+          triggerLabel !== placeholder
             ? "text-foreground"
             : "text-muted",
           readOnly ? "cursor-default bg-surface text-muted hover:bg-surface active:bg-surface" : null,
@@ -222,12 +222,12 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
     );
 
     return (
-      <div className={cn("grid gap-1.5", containerClassName)}>
+      <div className={cn("grid gap-[var(--space-1-5)]", containerClassName)}>
         {label ? (
           <Label
             htmlFor={resolvedId}
             size={resolvedSize === "lg" ? "md" : "sm"}
-            className={cn("inline-flex items-center gap-1", labelClassName)}
+            className={cn("inline-flex items-center gap-[var(--space-1)]", labelClassName)}
           >
             <span>{label}</span>
             {required ? <span className="text-danger">*</span> : null}
@@ -252,7 +252,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
               className={triggerClassName}
             >
               <span className="truncate text-left">{triggerLabel}</span>
-              <span className="flex shrink-0 items-center gap-1">
+              <span className="flex shrink-0 items-center gap-[var(--space-1)]">
                 {showClearButton ? (
                   <span
                     role="button"
@@ -267,12 +267,12 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
                       handleClear();
                     }}
                     aria-label="선택한 날짜 지우기"
-                    className="text-muted hover:bg-surface-elevated hover:text-foreground inline-flex h-5 w-5 items-center justify-center rounded-[var(--radius-round)] transition-colors"
+                    className="text-muted hover:bg-surface-elevated hover:text-foreground inline-flex h-[var(--size-icon-lg)] w-[var(--size-icon-lg)] items-center justify-center rounded-[var(--radius-round)] transition-colors"
                   >
-                    <X className="h-3.5 w-3.5" aria-hidden />
+                    <X className="h-[var(--size-icon-sm)] w-[var(--size-icon-sm)]" aria-hidden />
                   </span>
                 ) : null}
-                {showIcon ? (icon ?? <CalendarDays className="h-4 w-4" aria-hidden />) : null}
+                {showIcon ? (icon ?? <CalendarDays className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" aria-hidden />) : null}
               </span>
             </Button>
           </PopoverTrigger>

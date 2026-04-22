@@ -11,8 +11,16 @@ export const SWITCH_DEFAULTS = {
 };
 
 export const SWITCH_SIZE_CLASS: Record<SwitchSize, { root: string; thumb: string; checked: string }> = {
-  sm: { root: "h-5 w-9", thumb: "h-4 w-4", checked: "data-[state=checked]:translate-x-4" },
-  md: { root: "h-6 w-11", thumb: "h-5 w-5", checked: "data-[state=checked]:translate-x-5" }
+  sm: {
+    root: "h-[var(--size-switch-sm-track-h)] w-[var(--size-switch-sm-track-w)]",
+    thumb: "h-[var(--size-switch-sm-thumb)] w-[var(--size-switch-sm-thumb)]",
+    checked: "data-[state=checked]:translate-x-[var(--size-switch-sm-translate)]"
+  },
+  md: {
+    root: "h-[var(--size-switch-md-track-h)] w-[var(--size-switch-md-track-w)]",
+    thumb: "h-[var(--size-switch-md-thumb)] w-[var(--size-switch-md-thumb)]",
+    checked: "data-[state=checked]:translate-x-[var(--size-switch-md-translate)]"
+  }
 };
 
 export const SWITCH_COLOR_CLASS = {

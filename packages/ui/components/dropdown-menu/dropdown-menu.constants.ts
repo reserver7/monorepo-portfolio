@@ -14,21 +14,21 @@ export const DROPDOWN_MENU_DEFAULTS = {
 };
 
 export const DROPDOWN_MENU_CONTENT_SIZE_CLASS: Record<DropdownMenuContentSize, string> = {
-  sm: "min-w-[10rem]",
-  md: "min-w-[12rem]",
-  lg: "min-w-[14rem]"
+  sm: "min-w-[var(--size-dropdown-content-sm)]",
+  md: "min-w-[var(--size-dropdown-content-md)]",
+  lg: "min-w-[var(--size-dropdown-content-lg)]"
 };
 
 export const DROPDOWN_MENU_ITEM_SIZE_CLASS: Record<DropdownMenuItemSize, string> = {
-  sm: "h-8 px-2 text-caption",
-  md: "h-9 px-2 text-body-sm",
-  lg: "h-10 px-3 text-body-sm"
+  sm: "h-[var(--size-control-sm)] px-[var(--space-2)] text-caption",
+  md: "h-[var(--size-control-md)] px-[var(--space-2)] text-body-sm",
+  lg: "h-[var(--size-control-lg)] px-[var(--space-3)] text-body-sm"
 };
 
 export const DROPDOWN_MENU_LABEL_SIZE_CLASS: Record<DropdownMenuLabelSize, string> = {
-  sm: "px-2 py-1 text-caption font-semibold",
-  md: "px-2 py-1.5 text-body-sm font-semibold",
-  lg: "px-3 py-2 text-body-sm font-semibold"
+  sm: "px-[var(--space-2)] py-[var(--space-1)] text-caption font-semibold",
+  md: "px-[var(--space-2)] py-[var(--space-1-5)] text-body-sm font-semibold",
+  lg: "px-[var(--space-3)] py-[var(--space-2)] text-body-sm font-semibold"
 };
 
 export const DROPDOWN_MENU_ITEM_COLOR_CLASS = {

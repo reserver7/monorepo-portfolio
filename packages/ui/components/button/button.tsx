@@ -33,7 +33,7 @@ export const buttonVariants = ({
   const resolvedSize = resolveOption(size, BUTTON_SIZE_CLASS, BUTTON_DEFAULTS.size);
   const resolvedShape = resolveOption(shape, BUTTON_SHAPE_CLASS, BUTTON_DEFAULTS.shape);
   return cn(
-    "ui-button inline-flex cursor-pointer items-center justify-center gap-2 font-normal transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:pointer-events-none disabled:opacity-50 [&_svg]:h-4 [&_svg]:w-4",
+    "ui-button inline-flex cursor-pointer items-center justify-center gap-2 font-normal transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:pointer-events-none disabled:opacity-50 [&_svg]:h-[var(--size-icon-md)] [&_svg]:w-[var(--size-icon-md)]",
     BUTTON_VARIANT_CLASS[resolvedVariant],
     iconOnly ? BUTTON_ICON_ONLY_SIZE_CLASS[resolvedSize] : BUTTON_SIZE_CLASS[resolvedSize],
     BUTTON_SHAPE_CLASS[resolvedShape],
@@ -46,7 +46,7 @@ const ButtonSpinner = React.memo(function ButtonSpinner() {
   return (
     <span
       aria-hidden
-      className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+      className="inline-block h-[var(--size-icon-md)] w-[var(--size-icon-md)] animate-spin rounded-full border-2 border-current border-t-transparent"
     />
   );
 });

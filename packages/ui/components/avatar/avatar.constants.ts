@@ -11,11 +11,11 @@ export const AVATAR_DEFAULTS = {
 };
 
 export const AVATAR_SIZE_CLASS: Record<AvatarSize, string> = {
-  xs: "h-6 w-6 text-caption",
-  sm: "h-8 w-8 text-body-xs",
-  md: "h-10 w-10 text-body-sm",
-  lg: "h-12 w-12 text-body-md",
-  xl: "h-16 w-16 text-body-lg"
+  xs: "h-[var(--size-chip-sm)] w-[var(--size-chip-sm)] text-caption",
+  sm: "h-[var(--size-control-sm)] w-[var(--size-control-sm)] text-body-xs",
+  md: "h-[var(--size-control-lg)] w-[var(--size-control-lg)] text-body-sm",
+  lg: "h-[var(--size-control-2xl)] w-[var(--size-control-2xl)] text-body-md",
+  xl: "h-[var(--space-16)] w-[var(--space-16)] text-body-lg"
 };
 
 export const AVATAR_SHAPE_CLASS: Record<AvatarShape, string> = {
@@ -40,9 +40,9 @@ export const AVATAR_STATUS_COLOR_CLASS: Record<AvatarStatus, string> = {
 };
 
 export const AVATAR_STATUS_SIZE_CLASS: Record<AvatarSize, string> = {
-  xs: "h-2 w-2",
-  sm: "h-2.5 w-2.5",
-  md: "h-3 w-3",
-  lg: "h-3.5 w-3.5",
-  xl: "h-4 w-4"
+  xs: "h-[var(--space-2)] w-[var(--space-2)]",
+  sm: "h-[var(--space-2-5)] w-[var(--space-2-5)]",
+  md: "h-[var(--space-3)] w-[var(--space-3)]",
+  lg: "h-[var(--space-3-5)] w-[var(--space-3-5)]",
+  xl: "h-[var(--space-4)] w-[var(--space-4)]"
 };

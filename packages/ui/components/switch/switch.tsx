@@ -97,7 +97,7 @@ function SwitchFieldBase(
   const supportText = errorMessage ?? helperText ?? (required && !label ? "필수 설정 항목입니다." : undefined);
 
   return (
-    <div className={cn("grid gap-1.5", containerClassName)}>
+    <div className={cn("grid gap-[var(--space-1-5)]", containerClassName)}>
       <div className="flex items-start justify-between gap-3">
         <div className="grid gap-0.5">
           {label ? (

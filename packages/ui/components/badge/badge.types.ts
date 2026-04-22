@@ -7,6 +7,7 @@ export type BadgeVariant =
   | "success"
   | "warning"
   | "danger"
+  | "dangerSolid"
   | "destructive"
   | "info";
 

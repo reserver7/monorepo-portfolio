@@ -2,7 +2,7 @@
 
 import type { PropsWithChildren } from "react";
 import { QueryClientProvider, createAppQueryClient, type QueryClientConfig } from "@repo/react-query";
-import { AlertConfirmProvider, ErrorBoundary, Toast, useStableValue } from "@repo/ui";
+import { AlertConfirmProvider, AutoEllipsisTooltip, ErrorBoundary, Toast, useStableValue } from "@repo/ui";
 import type { ToastProps } from "@repo/ui";
 import { AppThemeProvider } from "./theme-provider";
 import { ThemeToggle } from "./theme-toggle";
@@ -39,6 +39,7 @@ export function AppProviders({
         >
           {children}
           <AlertConfirmProvider />
+          <AutoEllipsisTooltip />
         </ErrorBoundary>
         {showThemeToggle ? <ThemeToggle /> : null}
         {showToaster ? <Toast {...toasterOptions} /> : null}

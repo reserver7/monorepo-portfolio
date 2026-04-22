@@ -28,12 +28,12 @@ export const MODAL_FOOTER_DEFAULTS = {
 };
 
 export const MODAL_CONTENT_SIZE_CLASS: Record<ModalContentSize, string> = {
-  xs: "max-w-xs",
-  sm: "max-w-sm",
-  md: "max-w-lg",
-  lg: "max-w-2xl",
-  xl: "max-w-4xl",
-  full: "h-[calc(100vh-2rem)] max-w-none w-[calc(100vw-2rem)]"
+  xs: "max-w-[var(--size-modal-xs)]",
+  sm: "max-w-[var(--size-modal-sm)]",
+  md: "max-w-[var(--size-modal-md)]",
+  lg: "max-w-[var(--size-modal-lg)]",
+  xl: "max-w-[var(--size-modal-xl)]",
+  full: "h-[calc(100vh-var(--size-modal-viewport-inset))] max-w-none w-[calc(100vw-var(--size-modal-viewport-inset))]"
 };
 
 export const MODAL_CONTENT_INTENT_CLASS: Record<ModalContentIntent, string> = {
