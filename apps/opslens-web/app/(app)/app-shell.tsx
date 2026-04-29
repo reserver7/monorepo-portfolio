@@ -54,6 +54,11 @@ const isDateOnlyValue = (value: string | null): value is string => {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 };
 
+const toStableQueryString = (params: URLSearchParams): string => {
+  const sortedEntries = Array.from(params.entries()).sort(([a], [b]) => a.localeCompare(b));
+  return new URLSearchParams(sortedEntries).toString();
+};
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const tCommon = useTranslations("common");
   const tNav = useTranslations("nav");
@@ -262,9 +267,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (resolvedEnvironment !== environment) {
       setEnvironment(resolvedEnvironment);
     }
-    const resolvedLocale = isLocale(nextLocale) ? nextLocale : "ko";
-    if (resolvedLocale !== locale) {
-      setLocale(resolvedLocale);
+    // locale은 cookie + 사용자 설정을 기준으로 관리하되,
+    // 기존 공유 링크(?lang=xx)는 1회만 흡수한다.
+    if (nextLocale !== null && isLocale(nextLocale) && nextLocale !== locale) {
+      setLocale(nextLocale);
     }
     const resolvedServiceName =
       typeof nextServiceName === "string" && nextServiceName.trim().length > 0 ? nextServiceName : "all";
@@ -313,11 +319,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       params.set("env", environment);
     }
 
-    if (locale === "ko") {
-      params.delete("lang");
-    } else {
-      params.set("lang", locale);
-    }
+    // locale은 URL 쿼리에 싣지 않고 cookie + 사용자 설정으로만 관리한다.
+    params.delete("lang");
 
     if (!serviceName || serviceName === "all") {
       params.delete("service");
@@ -344,7 +347,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     const nextQuery = params.toString();
-    if (nextQuery === querySnapshot) return;
+    if (toStableQueryString(params) === toStableQueryString(new URLSearchParams(querySnapshot))) return;
     router.replace(nextQuery.length > 0 ? `${pathname}?${nextQuery}` : pathname);
   }, [
     environment,
