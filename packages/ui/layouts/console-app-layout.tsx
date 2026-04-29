@@ -3,7 +3,7 @@
 import type { ComponentType, ReactNode } from "react";
 import Link from "next/link";
 import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
-import { Button, Typography } from "../components";
+import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Typography } from "../components";
 import { cn } from "../components/cn";
 
 export type ConsoleNavItem = {
@@ -27,6 +27,7 @@ export type ConsoleAppLayoutProps = {
   filterContent?: ReactNode;
   brandTitle: string;
   brandEyebrow?: string;
+  brandSlot?: ReactNode;
   className?: string;
 };
 
@@ -45,6 +46,7 @@ export function ConsoleAppLayout({
   filterContent,
   brandTitle,
   brandEyebrow,
+  brandSlot,
   className
 }: ConsoleAppLayoutProps) {
   const sidebarExpandedWidthClass = "md:w-64";
@@ -57,7 +59,7 @@ export function ConsoleAppLayout({
       {mobileOpen ? (
         <Button
           variant="secondary"
-          className="bg-foreground/30 fixed inset-0 z-30 h-auto w-auto rounded-none md:hidden"
+          className="bg-foreground/30 hover:bg-foreground/30 active:bg-foreground/30 fixed inset-0 z-30 h-auto w-auto rounded-none border-0 shadow-none md:hidden"
           onClick={onCloseMobile}
           aria-label="사이드바 닫기"
         />
@@ -74,39 +76,49 @@ export function ConsoleAppLayout({
         <div
           className={cn(
             "border-default flex h-16 items-center overflow-hidden border-b",
-            sidebarCollapsed ? "justify-center px-0" : "justify-between px-3"
+            sidebarCollapsed
+              ? "justify-between px-3 md:justify-center md:px-0"
+              : "justify-between px-3 md:justify-center"
           )}
         >
-          <div className={cn("min-w-0 overflow-hidden", sidebarCollapsed ? "md:hidden" : "block")}>
-            <Typography
-              as="p"
-              variant="bodySm"
-              className="truncate text-lg font-semibold leading-none tracking-tight"
-            >
-              {brandTitle}
-            </Typography>
-            {brandEyebrow ? (
-              <Typography
-                as="p"
-                variant="caption"
-                color="muted"
-                className="mt-1 truncate text-[11px] font-semibold uppercase leading-none tracking-[0.08em]"
-              >
-                {brandEyebrow}
-              </Typography>
-            ) : null}
+          <div
+            data-disable-auto-ellipsis-tooltip="true"
+            className={cn(
+              "min-w-0 overflow-hidden",
+              sidebarCollapsed ? "flex items-center justify-center" : "block"
+            )}
+          >
+            {brandSlot ? (
+              brandSlot
+            ) : (
+              <>
+                <Typography
+                  as="p"
+                  variant="bodySm"
+                  className="truncate text-lg font-semibold leading-none tracking-tight"
+                >
+                  {brandTitle}
+                </Typography>
+                {brandEyebrow ? (
+                  <Typography
+                    as="p"
+                    variant="caption"
+                    color="muted"
+                    className="mt-1 truncate text-[11px] font-semibold uppercase leading-none tracking-[0.08em]"
+                  >
+                    {brandEyebrow}
+                  </Typography>
+                ) : null}
+              </>
+            )}
           </div>
 
-          <div className={cn("flex items-center gap-1", sidebarCollapsed && "w-full justify-center")}>
-            <Button
-              variant="secondary"
-              size="sm"
-              iconOnly
-              leftIcon={sidebarCollapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
-              onClick={onToggleSidebar}
-              className={cn("hidden md:inline-flex")}
-              aria-label="사이드바 접기/펼치기"
-            />
+          <div
+            className={cn(
+              "absolute right-3 flex items-center gap-1",
+              sidebarCollapsed && "w-auto justify-center"
+            )}
+          >
             <Button
               variant="secondary"
               size="sm"
@@ -119,29 +131,61 @@ export function ConsoleAppLayout({
           </div>
         </div>
 
-        <nav className={cn("flex-1 space-y-1 overflow-y-auto", sidebarCollapsed ? "p-1.5" : "p-2")}>
-          {navItems.map((item) => {
-            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onCloseMobile}
-                className={cn(
-                  "focus-visible:ring-primary focus-visible:ring-offset-surface flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-                  sidebarCollapsed && "mx-auto h-9 w-9 justify-center gap-0 px-0 py-0",
-                  active
-                    ? "bg-surface-elevated text-foreground border-border-default border"
-                    : "text-muted hover:bg-surface-elevated hover:text-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span className={cn(sidebarCollapsed ? "md:hidden" : "inline")}>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        <TooltipProvider>
+          <nav className={cn("flex-1 space-y-1 overflow-y-auto", sidebarCollapsed ? "p-1.5" : "p-2")}>
+            {navItems.map((item) => {
+              const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+              const Icon = item.icon;
+              const navLink = (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onCloseMobile}
+                  className={cn(
+                    "focus-visible:ring-primary focus-visible:ring-offset-surface hover:border-primary/35 hover:bg-primary/10 flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+                    sidebarCollapsed && "mx-auto h-9 w-9 justify-center gap-0 px-0 py-0",
+                    active
+                      ? "bg-surface-elevated text-foreground border-border-default border"
+                      : "text-muted hover:bg-surface-elevated hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className={cn(sidebarCollapsed ? "md:hidden" : "inline")}>{item.label}</span>
+                </Link>
+              );
+
+              if (sidebarCollapsed && item.href !== "/") {
+                return (
+                  <Tooltip key={item.href}>
+                    <TooltipTrigger asChild>{navLink}</TooltipTrigger>
+                    <TooltipContent placement="right" size="sm" color="default">
+                      {item.label}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              return navLink;
+            })}
+          </nav>
+        </TooltipProvider>
+
+        <div
+          className={cn(
+            "border-default hidden border-t p-2 md:block md:flex",
+            sidebarCollapsed ? "p-1.5 md:justify-center" : "md:justify-end"
+          )}
+        >
+          <Button
+            variant="secondary"
+            size="sm"
+            iconOnly
+            leftIcon={sidebarCollapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+            onClick={onToggleSidebar}
+            className="h-9 w-9 p-0"
+            aria-label="사이드바 접기/펼치기"
+          />
+        </div>
       </aside>
 
       <div

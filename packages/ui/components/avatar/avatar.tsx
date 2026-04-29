@@ -33,7 +33,7 @@ export const AvatarFallback = React.forwardRef<
   const resolvedColor: AvatarFallbackPresetColor = hasPresetColor
     ? (color as AvatarFallbackPresetColor)
     : AVATAR_DEFAULTS.color;
-  const tokenColorValue = hasPresetColor ? undefined : resolveUiColorValue(color);
+  const tokenColorValue = hasPresetColor ? undefined : (resolveUiColorValue(color) ?? color);
 
   return (
     <AvatarPrimitive.Fallback

@@ -1,0 +1,13 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OpsLens icon">
+  <circle cx="30" cy="30" r="25" fill="#FFFFFF" stroke="#2F6FEB" stroke-width="4"/>
+  <path d="M46 46L56 56" stroke="#2F6FEB" stroke-width="6" stroke-linecap="round"/>
+  <path d="M14 42H46" stroke="#2F6FEB" stroke-width="3.5" stroke-linecap="round" opacity="0.95"/>
+  <path d="M16.5 42V33" stroke="#2F6FEB" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M25.5 42V21.5" stroke="#2F6FEB" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M34.5 42V15.5" stroke="#2F6FEB" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M43.5 42V27" stroke="#2F6FEB" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="16.5" cy="33" r="2.8" fill="#EAF1FF" stroke="#2F6FEB" stroke-width="2"/>
+  <circle cx="25.5" cy="21.5" r="2.8" fill="#EAF1FF" stroke="#2F6FEB" stroke-width="2"/>
+  <circle cx="34.5" cy="15.5" r="2.8" fill="#EAF1FF" stroke="#2F6FEB" stroke-width="2"/>
+  <circle cx="43.5" cy="27" r="2.8" fill="#EAF1FF" stroke="#2F6FEB" stroke-width="2"/>
+</svg>

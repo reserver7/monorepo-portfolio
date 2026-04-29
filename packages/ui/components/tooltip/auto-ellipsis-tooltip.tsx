@@ -40,7 +40,13 @@ const resolveCandidate = (eventTarget: EventTarget | null) => {
     return null;
   }
   const matched = eventTarget.closest(ELLIPSIS_SELECTOR);
-  return matched instanceof HTMLElement ? matched : null;
+  if (!(matched instanceof HTMLElement)) {
+    return null;
+  }
+  if (matched.closest('[data-disable-auto-ellipsis-tooltip="true"]')) {
+    return null;
+  }
+  return matched;
 };
 
 export function AutoEllipsisTooltip() {

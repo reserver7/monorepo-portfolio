@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useAppForm } from "@repo/forms";
+import { subscribeHttpUnauthorized } from "@repo/react-query";
 import {
   Badge,
   Box,
@@ -18,7 +21,14 @@ import {
 import { Bell, Menu, Search, SlidersHorizontal } from "lucide-react";
 import { OPS_ALERT_EVENT_NAME, useOpsAlertStore, type CreateOpsAlertInput } from "@/features/alerts";
 import { AlertsModal, OpsFilterSheet, type OpsFilterFormValues, ProfileMenu } from "@/features/modals";
-import { useOpsFilterStore } from "@/features/stores";
+import { useOpsFilterStore, useOpsFilterStoreApi } from "@/features/stores";
+import {
+  OPS_AVATAR_COLOR_CHANGED_EVENT,
+  clearAuthSession,
+  logoutCurrentSession,
+  readAuthAvatarColor,
+  readAuthSession
+} from "@/lib/auth";
 import { opsNavItems } from "@/lib/navigation";
 import { toCalendarLocale } from "@/lib/i18n/messages";
 
@@ -32,11 +42,26 @@ const NAV_LABEL_KEYS: Record<string, string> = {
   "/settings": "settings"
 };
 
+const isEnvironment = (value: string | null): value is "dev" | "stage" | "prod" => {
+  return value === "dev" || value === "stage" || value === "prod";
+};
+
+const isLocale = (value: string | null): value is "ko" | "en" | "ja" => {
+  return value === "ko" || value === "en" || value === "ja";
+};
+
+const isDateOnlyValue = (value: string | null): value is string => {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+};
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const tCommon = useTranslations("common");
   const tNav = useTranslations("nav");
+  const tAuth = useTranslations("auth");
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const querySnapshot = searchParams.toString();
   const { isOpen: mobileOpen, onOpen: openMobile, onClose: closeMobile } = useDisclosure();
   const { isOpen: alertModalOpen, onOpen: openAlertModal, onClose: closeAlertModal } = useDisclosure();
   const { isOpen: filterSheetOpen, onOpen: openFilterSheet, onClose: closeFilterSheet } = useDisclosure();
@@ -54,6 +79,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const setSearch = useOpsFilterStore((state) => state.setSearch);
   const setRange = useOpsFilterStore((state) => state.setRange);
   const toggleSidebar = useOpsFilterStore((state) => state.toggleSidebar);
+  const filterStoreApi = useOpsFilterStoreApi();
+  const [authReady, setAuthReady] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [authProfile, setAuthProfile] = useState<{
+    name: string;
+    email: string;
+    role: string;
+    authProvider: "local" | "google" | "github";
+  } | null>(null);
+  const [avatarColor, setAvatarColor] = useState<string>("#64748B");
+
+  useEffect(() => {
+    setAvatarColor(readAuthAvatarColor());
+  }, [pathname]);
+
+  useEffect(() => {
+    const listener = (event: Event) => {
+      const custom = event as CustomEvent<{ avatarColor?: string }>;
+      if (custom.detail?.avatarColor) {
+        setAvatarColor(custom.detail.avatarColor);
+      }
+    };
+    window.addEventListener(OPS_AVATAR_COLOR_CHANGED_EVENT, listener as EventListener);
+    return () => window.removeEventListener(OPS_AVATAR_COLOR_CHANGED_EVENT, listener as EventListener);
+  }, []);
 
   const alerts = useOpsAlertStore((state) => state.alerts);
   const addAlert = useOpsAlertStore((state) => state.addAlert);
@@ -107,6 +157,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [searchPanelOpen, setSearchPanelOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>(["결제 오류", "API 500", "socket timeout"]);
   const searchWrapRef = useRef<HTMLDivElement | null>(null);
+  const urlFilterSyncInitializedRef = useRef(false);
 
   const unreadAlertCount = alerts.filter((item) => !item.readAt).length;
   const draftSheetLocale = watchLocaleDraft ?? locale;
@@ -123,9 +174,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       }),
     [tNav]
   );
-  const activeFilterCount = [locale !== "ko", serviceName !== "all", Boolean(fromDateFromStore), Boolean(toDateFromStore)].filter(
-    Boolean
-  ).length;
+  const activeFilterCount = [
+    locale !== "ko",
+    serviceName !== "all",
+    Boolean(fromDateFromStore),
+    Boolean(toDateFromStore)
+  ].filter(Boolean).length;
   const visibleRecent = useMemo(() => recentSearches.slice(0, 5), [recentSearches]);
 
   const pushRecentSearch = (term: string) => {
@@ -196,6 +250,115 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [environment, filterForm, filterSheetOpen, fromDateFromStore, locale, serviceName, toDateFromStore]);
 
   useEffect(() => {
+    const params = new URLSearchParams(querySnapshot);
+    const nextEnvironment = params.get("env");
+    const nextLocale = params.get("lang");
+    const nextServiceName = params.get("service");
+    const nextSearch = params.get("q");
+    const nextFromDate = params.get("from");
+    const nextToDate = params.get("to");
+
+    const resolvedEnvironment = isEnvironment(nextEnvironment) ? nextEnvironment : "prod";
+    if (resolvedEnvironment !== environment) {
+      setEnvironment(resolvedEnvironment);
+    }
+    const resolvedLocale = isLocale(nextLocale) ? nextLocale : "ko";
+    if (resolvedLocale !== locale) {
+      setLocale(resolvedLocale);
+    }
+    const resolvedServiceName =
+      typeof nextServiceName === "string" && nextServiceName.trim().length > 0 ? nextServiceName : "all";
+    if (resolvedServiceName !== serviceName) {
+      setServiceName(resolvedServiceName);
+    }
+
+    const normalizedSearchFromUrl = nextSearch?.trim() ?? "";
+    if (normalizedSearchFromUrl !== search) {
+      setSearch(normalizedSearchFromUrl);
+    }
+
+    const normalizedFrom = isDateOnlyValue(nextFromDate) ? `${nextFromDate}T00:00:00.000Z` : undefined;
+    const normalizedTo = isDateOnlyValue(nextToDate) ? `${nextToDate}T23:59:59.999Z` : undefined;
+    if (normalizedFrom !== from || normalizedTo !== to) {
+      setRange(normalizedFrom, normalizedTo);
+    }
+
+    if (!urlFilterSyncInitializedRef.current) {
+      urlFilterSyncInitializedRef.current = true;
+    }
+  }, [
+    environment,
+    from,
+    locale,
+    querySnapshot,
+    search,
+    serviceName,
+    setEnvironment,
+    setLocale,
+    setRange,
+    setSearch,
+    setServiceName,
+    to
+  ]);
+
+  useEffect(() => {
+    if (!urlFilterSyncInitializedRef.current) return;
+
+    const params = new URLSearchParams(querySnapshot);
+    const normalizedSearch = search.trim();
+
+    if (environment === "prod") {
+      params.delete("env");
+    } else {
+      params.set("env", environment);
+    }
+
+    if (locale === "ko") {
+      params.delete("lang");
+    } else {
+      params.set("lang", locale);
+    }
+
+    if (!serviceName || serviceName === "all") {
+      params.delete("service");
+    } else {
+      params.set("service", serviceName);
+    }
+
+    if (normalizedSearch.length === 0) {
+      params.delete("q");
+    } else {
+      params.set("q", normalizedSearch);
+    }
+
+    if (fromDateFromStore) {
+      params.set("from", fromDateFromStore);
+    } else {
+      params.delete("from");
+    }
+
+    if (toDateFromStore) {
+      params.set("to", toDateFromStore);
+    } else {
+      params.delete("to");
+    }
+
+    const nextQuery = params.toString();
+    if (nextQuery === querySnapshot) return;
+    router.replace(nextQuery.length > 0 ? `${pathname}?${nextQuery}` : pathname);
+  }, [
+    environment,
+    fromDateFromStore,
+    locale,
+    pathname,
+    querySnapshot,
+    router,
+    search,
+    serviceName,
+    toDateFromStore
+  ]);
+
+  useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
       if (!searchWrapRef.current) return;
       if (!searchWrapRef.current.contains(event.target as Node)) {
@@ -206,6 +369,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     document.addEventListener("mousedown", onPointerDown);
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, []);
+
+  useEffect(() => {
+    const session = readAuthSession();
+    if (!session?.accessToken) {
+      const nextPath = `${pathname}${querySnapshot.length > 0 ? `?${querySnapshot}` : ""}`;
+      router.replace(`/login?next=${encodeURIComponent(nextPath)}`);
+      setAuthenticated(false);
+      setAuthProfile(null);
+      setAuthReady(true);
+      return;
+    }
+
+    setAuthProfile({
+      name: session.user.name,
+      email: session.user.email,
+      role: session.user.role,
+      authProvider: session.user.authProvider ?? "local"
+    });
+    setAvatarColor(readAuthAvatarColor());
+    setAuthenticated(true);
+    setAuthReady(true);
+  }, [pathname, querySnapshot, router]);
+
+  useEffect(
+    () =>
+      subscribeHttpUnauthorized(() => {
+        clearAuthSession();
+        setAuthenticated(false);
+        setAuthProfile(null);
+        toast.error(tAuth("sessionExpired"));
+        const nextPath = `${pathname}${querySnapshot.length > 0 ? `?${querySnapshot}` : ""}`;
+        router.replace(`/login?next=${encodeURIComponent(nextPath)}`);
+      }),
+    [pathname, querySnapshot, router, tAuth]
+  );
 
   useEffect(() => {
     const listener = (event: Event) => {
@@ -221,6 +419,44 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     window.addEventListener(OPS_ALERT_EVENT_NAME, listener as EventListener);
     return () => window.removeEventListener(OPS_ALERT_EVENT_NAME, listener as EventListener);
   }, [addAlert]);
+
+  const handleLogout = async () => {
+    await logoutCurrentSession();
+    await signOut({ redirect: false }).catch(() => undefined);
+    setAuthenticated(false);
+    setAuthProfile(null);
+    toast.success(tAuth("logoutSuccess"));
+    router.replace("/login");
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const media = window.matchMedia("(max-width: 767.98px)");
+    const syncResponsiveSidebarState = (isMobile: boolean) => {
+      if (isMobile) {
+        if (filterStoreApi.getState().sidebarCollapsed) {
+          filterStoreApi.setState({ sidebarCollapsed: false });
+        }
+        return;
+      }
+
+      closeMobile();
+    };
+
+    syncResponsiveSidebarState(media.matches);
+
+    const onChange = (event: MediaQueryListEvent) => {
+      syncResponsiveSidebarState(event.matches);
+    };
+
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, [closeMobile, filterStoreApi]);
+
+  if (!authReady || !authenticated) {
+    return <Box className="bg-surface min-h-screen" />;
+  }
 
   return (
     <ConsoleAppLayout
@@ -292,7 +528,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                           removable
                           removeLabel={`${term} 삭제`}
                           onRemove={() => deleteRecentSearch(term)}
-                          className="text-foreground h-[var(--chip-height)] hover:bg-surface-elevated cursor-pointer"
+                          className="text-foreground hover:bg-surface-elevated h-[var(--chip-height)] cursor-pointer"
                           onClick={() => applySearchTerm(term)}
                         >
                           {term}
@@ -359,12 +595,54 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ) : null}
             </Box>
 
-            <ProfileMenu onMoveToSettings={() => router.push("/settings")} />
+            <ProfileMenu
+              userName={authProfile?.name ?? "User"}
+              userEmail={authProfile?.email ?? "-"}
+              userRole={authProfile?.role ?? "viewer"}
+              avatarColor={avatarColor}
+              onMoveToSettings={() => router.push("/settings")}
+              onLogout={handleLogout}
+            />
           </Flex>
         </Flex>
       }
       brandEyebrow={tCommon("brandEyebrow")}
       brandTitle={tCommon("brandTitle")}
+      brandSlot={
+        sidebarCollapsed ? (
+          <Box
+            className="flex h-10 w-10 items-center justify-center"
+            role="button"
+            tabIndex={0}
+            aria-label="대시보드로 이동"
+            onClick={() => router.push("/")}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                router.push("/");
+              }
+            }}
+          >
+            <Image src="/icons/opslens-icon.svg" alt="OpsLens" width={40} height={40} priority />
+          </Box>
+        ) : (
+          <Box
+            className="flex h-10 w-[148px] items-center justify-start"
+            role="button"
+            tabIndex={0}
+            aria-label="대시보드로 이동"
+            onClick={() => router.push("/")}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                router.push("/");
+              }
+            }}
+          >
+            <Image src="/icons/opslens-logo.svg" alt="OpsLens" width={148} height={32} priority />
+          </Box>
+        )
+      }
     >
       <>
         {children}

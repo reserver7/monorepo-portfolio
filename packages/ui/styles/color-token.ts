@@ -81,7 +81,13 @@ export const resolveUiColorValue = (token?: string): string | undefined => {
   }
 
   const match = primitiveTokenRegex.exec(token);
-  if (!match) return undefined;
+  if (!match) {
+    const trimmed = token.trim();
+    if (/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(trimmed)) return trimmed;
+    if (/^(rgb|rgba|hsl|hsla)\(/i.test(trimmed)) return trimmed;
+    if (/^var\(--.+\)$/i.test(trimmed)) return trimmed;
+    return undefined;
+  }
 
   const [, hue, scale] = match;
   if (!hue || !scale) return undefined;
