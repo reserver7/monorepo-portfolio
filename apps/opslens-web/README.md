@@ -67,6 +67,17 @@ pnpm --filter @repo/opslens-server build
 - `NEXT_PUBLIC_APP_TITLE`
 - `NEXT_PUBLIC_APP_URL`
 - `NEXT_PUBLIC_API_URL`
+- `AUTH_SECRET` (Auth.js 세션 서명용)
+- `AUTH_GOOGLE_CLIENT_ID`
+- `AUTH_GOOGLE_CLIENT_SECRET`
+- `AUTH_GITHUB_CLIENT_ID`
+- `AUTH_GITHUB_CLIENT_SECRET`
+- `OPSLENS_AUTH_BRIDGE_SECRET` (서버 `AUTH_BRIDGE_SECRET`과 동일해야 함)
+
+## 로그인(로컬 시드 기준)
+
+- `admin@opslens.local / opslens1234!`
+- `operator@opslens.local / opslens1234!`
 
 ## 관련 문서
 
