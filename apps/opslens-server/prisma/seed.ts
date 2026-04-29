@@ -1,21 +1,49 @@
 import "dotenv/config";
-import { IssueSeverity, IssueStatus, LogSource, OpsEnvironment, PrismaClient } from "@prisma/client";
+import { scryptSync } from "node:crypto";
+import { AuthRole, IssueSeverity, IssueStatus, LogSource, OpsEnvironment, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 const hoursAgo = (hours: number): Date => new Date(Date.now() - hours * 60 * 60 * 1000);
 const minutesAgo = (minutes: number): Date => new Date(Date.now() - minutes * 60 * 1000);
+const hashPassword = (password: string): string => {
+  const salt = "opslens-seed-salt";
+  const digest = scryptSync(password, salt, 64).toString("base64url");
+  return `scrypt$${salt}$${digest}`;
+};
 
 async function main(): Promise<void> {
   console.log("[seed] OpsLens 샘플 데이터 입력 시작");
 
   await prisma.$transaction([
+    prisma.user.deleteMany(),
     prisma.issueComment.deleteMany(),
     prisma.logEvent.deleteMany(),
     prisma.qaScenario.deleteMany(),
     prisma.issue.deleteMany(),
     prisma.deployment.deleteMany()
   ]);
+
+  await prisma.user.createMany({
+    data: [
+      {
+        id: "usr-admin-001",
+        email: "admin@opslens.local",
+        passwordHash: hashPassword("opslens1234!"),
+        name: "OpsLens Admin",
+        role: AuthRole.admin,
+        isActive: true
+      },
+      {
+        id: "usr-operator-001",
+        email: "operator@opslens.local",
+        passwordHash: hashPassword("opslens1234!"),
+        name: "OpsLens Operator",
+        role: AuthRole.operator,
+        isActive: true
+      }
+    ]
+  });
 
   await prisma.deployment.createMany({
     data: [
@@ -161,6 +189,94 @@ async function main(): Promise<void> {
         deploymentId: "dep-stage-2026-03-25",
         createdAt: hoursAgo(48),
         updatedAt: new Date()
+      },
+      {
+        id: "iss-docs-001",
+        title: "문서 권한 강등 후 재요청 루프",
+        signature: "DocsPermissionLoop:403-retry",
+        severity: IssueSeverity.high,
+        status: IssueStatus.analyzing,
+        summary: "권한 강등 이벤트 이후 문서 접근 재시도가 반복됩니다.",
+        probableCauses: ["권한 캐시 만료 처리 누락", "403 응답 재시도 정책 과도"],
+        suggestedActions: ["권한 캐시 무효화 시점 점검", "재시도 백오프 적용"],
+        reproductionGuide: "1) 문서 권한을 viewer로 변경 2) 기존 탭에서 편집 요청",
+        assignee: "BE-한지훈",
+        serviceName: "docs-api",
+        environment: OpsEnvironment.prod,
+        occurrenceCount: 76,
+        firstOccurredAt: hoursAgo(13),
+        lastOccurredAt: minutesAgo(11),
+        affectedArea: "permission",
+        deploymentCorrelation: "중간",
+        deploymentId: "dep-prod-2026-03-26",
+        createdAt: hoursAgo(13),
+        updatedAt: new Date()
+      },
+      {
+        id: "iss-wb-001",
+        title: "화이트보드 재연결 지연",
+        signature: "WhiteboardReconnect:socket-delay",
+        severity: IssueSeverity.medium,
+        status: IssueStatus.in_progress,
+        summary: "네트워크 복구 직후 화이트보드 소켓 재연결이 지연됩니다.",
+        probableCauses: ["재연결 타이머 중복 등록", "heartbeat 간격 과도"],
+        suggestedActions: ["재연결 타이머 단일화", "heartbeat 간격 조정"],
+        reproductionGuide: "1) 화이트보드 접속 2) 네트워크 off/on 3) 재연결 소요시간 확인",
+        assignee: "FE-민서윤",
+        serviceName: "whiteboard-gateway",
+        environment: OpsEnvironment.prod,
+        occurrenceCount: 43,
+        firstOccurredAt: hoursAgo(20),
+        lastOccurredAt: minutesAgo(29),
+        affectedArea: "realtime",
+        deploymentCorrelation: "낮음",
+        deploymentId: "dep-prod-2026-03-24",
+        createdAt: hoursAgo(20),
+        updatedAt: new Date()
+      },
+      {
+        id: "iss-billing-001",
+        title: "정산 배치 완료 지연",
+        signature: "BillingBatchDelay:cron-latency",
+        severity: IssueSeverity.low,
+        status: IssueStatus.new,
+        summary: "정산 배치 완료 시점이 SLA 대비 지연됩니다.",
+        probableCauses: ["배치 큐 적체", "리포트 집계 쿼리 비용 증가"],
+        suggestedActions: ["배치 병렬도 상향 검토", "집계 쿼리 인덱스 점검"],
+        reproductionGuide: "1) 배치 시작 후 완료 시각 비교 2) 큐 길이 확인",
+        assignee: null,
+        serviceName: "billing-worker",
+        environment: OpsEnvironment.prod,
+        occurrenceCount: 18,
+        firstOccurredAt: hoursAgo(26),
+        lastOccurredAt: hoursAgo(2),
+        affectedArea: "batch",
+        deploymentCorrelation: "낮음",
+        deploymentId: "dep-prod-2026-03-24",
+        createdAt: hoursAgo(26),
+        updatedAt: new Date()
+      },
+      {
+        id: "iss-api-002",
+        title: "API 500 재발 (주문 취소)",
+        signature: "Http500:/api/orders/{id}/cancel",
+        severity: IssueSeverity.critical,
+        status: IssueStatus.new,
+        summary: "주문 취소 API에서 500 에러가 간헐적으로 재발합니다.",
+        probableCauses: ["트랜잭션 락 경합", "환불 상태 전이 불일치"],
+        suggestedActions: ["취소 트랜잭션 로깅 강화", "상태 전이 가드 추가"],
+        reproductionGuide: "1) 동시 취소 요청 2) 취소 API 응답 확인",
+        assignee: "BE-김도윤",
+        serviceName: "orders-api",
+        environment: OpsEnvironment.prod,
+        occurrenceCount: 64,
+        firstOccurredAt: hoursAgo(6),
+        lastOccurredAt: minutesAgo(6),
+        affectedArea: "order-cancel",
+        deploymentCorrelation: "높음",
+        deploymentId: "dep-prod-2026-03-26",
+        createdAt: hoursAgo(6),
+        updatedAt: new Date()
       }
     ]
   });
@@ -193,8 +309,71 @@ async function main(): Promise<void> {
     createdAt: new Date()
   }));
 
+  const orderApiLogs = Array.from({ length: 22 }).map((_, index) => ({
+    id: `log-api-500-${index + 1}`,
+    issueId: "iss-api-001",
+    rawMessage: "HttpError: 500 Internal Server Error at /api/orders/{id}",
+    normalizedMessage: "orders detail api 500",
+    source: LogSource.api,
+    level: "error",
+    occurredAt: hoursAgo((index % 12) + 1),
+    endpoint: "/api/orders/{id}",
+    page: "/orders/detail",
+    userId: null,
+    createdAt: new Date()
+  }));
+
+  const orderCancelApiLogs = Array.from({ length: 30 }).map((_, index) => ({
+    id: `log-api-cancel-500-${index + 1}`,
+    issueId: "iss-api-002",
+    rawMessage: "HttpError: 500 Internal Server Error at /api/orders/{id}/cancel",
+    normalizedMessage: "orders cancel api 500",
+    source: LogSource.api,
+    level: "error",
+    occurredAt: minutesAgo(index * 3 + 2),
+    endpoint: "/api/orders/{id}/cancel",
+    page: "/orders/detail",
+    userId: null,
+    createdAt: new Date()
+  }));
+
+  const docsPermissionLogs = Array.from({ length: 16 }).map((_, index) => ({
+    id: `log-docs-perm-${index + 1}`,
+    issueId: "iss-docs-001",
+    rawMessage: "403 Forbidden with repeated retry after permission downgrade",
+    normalizedMessage: "docs permission retry loop",
+    source: LogSource.server,
+    level: "warn",
+    occurredAt: minutesAgo(index * 5 + 8),
+    endpoint: "/api/documents/{id}/content",
+    page: "/docs",
+    userId: null,
+    createdAt: new Date()
+  }));
+
+  const whiteboardReconnectLogs = Array.from({ length: 14 }).map((_, index) => ({
+    id: `log-wb-reconnect-${index + 1}`,
+    issueId: "iss-wb-001",
+    rawMessage: "WebSocket reconnect took longer than threshold",
+    normalizedMessage: "whiteboard reconnect delay",
+    source: LogSource.console,
+    level: "warn",
+    occurredAt: hoursAgo((index % 18) + 2),
+    endpoint: "/ws/whiteboard",
+    page: "/whiteboard",
+    userId: null,
+    createdAt: new Date()
+  }));
+
   await prisma.logEvent.createMany({
-    data: [...paymentLogs, ...authLogs]
+    data: [
+      ...paymentLogs,
+      ...authLogs,
+      ...orderApiLogs,
+      ...orderCancelApiLogs,
+      ...docsPermissionLogs,
+      ...whiteboardReconnectLogs
+    ]
   });
 
   await prisma.issueComment.createMany({
@@ -219,6 +398,20 @@ async function main(): Promise<void> {
         author: "BE-정우석",
         body: "토큰 갱신 경쟁 조건 의심. 로그 샘플 추가 수집중",
         createdAt: hoursAgo(3)
+      },
+      {
+        id: "cmt-docs-1",
+        issueId: "iss-docs-001",
+        author: "SRE-한지훈",
+        body: "권한 강등 직후 재요청 루프 패턴 확인. 캐시 무효화 로직 점검 필요",
+        createdAt: hoursAgo(4)
+      },
+      {
+        id: "cmt-wb-1",
+        issueId: "iss-wb-001",
+        author: "FE-민서윤",
+        body: "네트워크 복구 시 재연결 지연 재현 완료. heartbeat interval 조정 예정",
+        createdAt: hoursAgo(5)
       }
     ]
   });
@@ -251,6 +444,7 @@ async function main(): Promise<void> {
   });
 
   console.log("[seed] OpsLens 샘플 데이터 입력 완료");
+  console.log("[seed] 로그인 계정: admin@opslens.local / opslens1234!");
 }
 
 main()

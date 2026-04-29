@@ -1,4 +1,6 @@
 import { Args, Mutation, Query, Resolver } from "@nestjs/graphql";
+import { UseGuards } from "@nestjs/common";
+import { OpsAuthGuard } from "../auth/auth.guard.js";
 import {
   AddIssueCommentInput,
   AnalyzeLogsInputModel,
@@ -22,6 +24,7 @@ import {
 import { OpsService } from "./ops.service.js";
 
 @Resolver()
+@UseGuards(OpsAuthGuard)
 export class OpsResolver {
   constructor(private readonly opsService: OpsService) {}
 

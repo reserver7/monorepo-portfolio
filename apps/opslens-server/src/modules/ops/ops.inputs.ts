@@ -34,6 +34,12 @@ export class AnalyzeLogsInputModel {
 
   @Field(() => String, { nullable: true })
   deploymentVersion?: string;
+
+  @Field(() => Int, { nullable: true, defaultValue: 12 })
+  clusterLimit?: number;
+
+  @Field(() => String, { nullable: true })
+  requestedBy?: string;
 }
 
 @InputType()

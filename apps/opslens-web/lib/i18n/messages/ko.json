@@ -47,12 +47,113 @@
     "workspaceSettings": "워크스페이스 설정",
     "logout": "로그아웃"
   },
+  "auth": {
+    "title": "OpsLens 로그인",
+    "description": "운영 대시보드 접근을 위해 계정으로 로그인하세요.",
+    "signupDescription": "새 계정을 생성하고 운영 워크스페이스를 시작하세요.",
+    "securedAccess": "보안 인증",
+    "modeLogin": "로그인",
+    "modeSignup": "회원가입",
+    "socialHint": "Google/GitHub 계정으로 빠르게 시작할 수 있습니다.",
+    "keepLoggedIn": "로그인 상태 유지",
+    "needAccount": "계정이 없으신가요?",
+    "createOne": "가입하기",
+    "alreadyHaveAccount": "이미 계정이 있으신가요?",
+    "name": "이름",
+    "email": "이메일",
+    "password": "비밀번호",
+    "namePlaceholder": "홍길동",
+    "emailPlaceholder": "admin@opslens.local",
+    "passwordPlaceholder": "비밀번호를 입력하세요",
+    "confirmPassword": "비밀번호 확인",
+    "confirmPasswordPlaceholder": "비밀번호를 다시 입력하세요",
+    "submit": "로그인",
+    "signupSubmit": "회원가입",
+    "loggingIn": "로그인 중...",
+    "signingUp": "가입 중...",
+    "passwordMismatch": "비밀번호가 일치하지 않습니다.",
+    "passwordHelp": "비밀번호를 분실한 경우 운영 관리자에게 재설정을 요청하세요.",
+    "loginSuccess": "로그인되었습니다.",
+    "signupSuccess": "회원가입이 완료되었습니다.",
+    "loginErrorFallback": "로그인에 실패했습니다.",
+    "signupErrorFallback": "회원가입에 실패했습니다.",
+    "oauthLoginErrorFallback": "소셜 로그인 처리에 실패했습니다.",
+    "oauthProviderError": "소셜 로그인 인증에 실패했습니다. 다시 시도해 주세요.",
+    "orContinueWith": "또는",
+    "continueWithGoogle": "Google로 계속하기",
+    "continueWithGithub": "GitHub로 계속하기",
+    "sessionExpired": "세션이 만료되었습니다. 다시 로그인해 주세요.",
+    "logoutSuccess": "로그아웃되었습니다."
+  },
   "dashboard": {
     "title": "운영 대시보드",
+    "lastUpdated": "최종 갱신",
+    "statsSummary": "좌측부터 발생량, 긴급도, 활동량, 릴리즈 리스크를 확인합니다.",
     "badgeService": "서비스",
     "badgeLanguage": "언어",
     "badgePeriod": "기간",
-    "badgeSearch": "검색"
+    "badgeSearch": "검색",
+    "errorLoadFailed": "대시보드 조회에 실패했습니다.",
+    "stats": {
+      "todayIssues": {
+        "label": "오늘 발생량",
+        "helperTopPrefix": "최다 반복",
+        "helperNone": "반복 이슈 없음"
+      },
+      "criticalHigh": {
+        "label": "긴급 이슈(Critical/High)",
+        "helperAlert": "즉시 대응이 필요한 상태",
+        "helperStable": "긴급 경보 안정 상태"
+      },
+      "total24h": {
+        "label": "24시간 활동량",
+        "helper": "최근 24시간 누적 이벤트"
+      },
+      "newAfterDeploy": {
+        "label": "배포 후 리스크",
+        "helperHasRisk": "배포 이후 신규 이슈 감지",
+        "helperNoRisk": "배포 이후 신규 이슈 없음"
+      }
+    },
+    "sections": {
+      "errorPatternByHour": "시간대별 에러 패턴",
+      "severityDistribution": "심각도 분포",
+      "topRepeatedErrors": "반복 에러 TOP 5",
+      "recentDeployImpact": "최근 배포 영향",
+      "priorityQueue": "우선 대응 큐",
+      "priorityQueueDescription": "즉시 확인이 필요한 순서입니다.",
+      "errorPatternByHourDescription": "시간대별 이벤트 흐름과 변동폭을 확인합니다.",
+      "severityDistributionDescription": "심각도별 비중과 건수를 한눈에 확인합니다.",
+      "topRepeatedErrorsDescription": "반복 발생 상위 항목을 우선 순위로 확인합니다."
+    },
+    "empty": {
+      "noNewAfterDeploy": "배포 이후 신규 이슈가 없습니다.",
+      "noQueue": "현재 대응할 항목이 없습니다.",
+      "noSeverityData": "심각도 데이터가 없습니다.",
+      "noTrendData": "시간대별 데이터가 없습니다.",
+      "noTopRepeatedErrors": "반복 에러 데이터가 없습니다."
+    },
+    "queue": {
+      "itemPrefix": "Queue",
+      "countPrefix": "발생",
+      "countSuffix": "회",
+      "viewDetail": "상세 보기"
+    },
+    "issueKeys": {
+      "runtimeTypeError": "런타임 TypeError",
+      "apiHttp500": "API 500 오류",
+      "networkTimeout": "네트워크 타임아웃",
+      "loginSessionIssue": "로그인 세션 이슈",
+      "renderLatency": "렌더링 지연",
+      "qaRegression": "QA 회귀",
+      "discountDisplayMissing": "할인금액 표시 누락",
+      "docsPermissionLoop": "문서 권한 루프",
+      "whiteboardReconnectDelay": "화이트보드 재연결 지연"
+    },
+    "units": {
+      "events": "건",
+      "delta": "증감"
+    }
   },
   "locale": {
     "ko": "한국어",

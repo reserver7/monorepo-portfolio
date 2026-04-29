@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { RotateCcw } from "lucide-react";
-import { Button, DatePicker, Flex, Select, Sheet, SheetBody, SheetContent, SheetDescription, SheetHeader, SheetTitle, Typography } from "@repo/ui";
+import { Box, Button, DatePicker, Flex, Select, Sheet, SheetBody, SheetContent, SheetDescription, SheetHeader, SheetTitle, Typography } from "@repo/ui";
 import { opslensMessages, type OpsLocale } from "@/lib/i18n/messages";
 
 export type OpsFilterFormValues = {
@@ -130,16 +130,18 @@ function FilterSheetContent({
         <Typography as="p" variant="caption" color="muted" className="pt-[var(--space-1)]">
           {tFilter("period")}
         </Typography>
-        <DatePicker
-          id="filter-period"
-          mode="range"
-          range={{ from: fromDate, to: toDate }}
-          onRangeChange={onRangeChange}
-          locale={calendarLocale}
-          size="md"
-          placeholder={tFilter("selectPeriod")}
-          className="bg-surface h-[var(--toolbar-height)] shadow-none focus-visible:ring-0"
-        />
+        <Box data-disable-auto-ellipsis-tooltip="true">
+          <DatePicker
+            id="filter-period"
+            mode="range"
+            range={{ from: fromDate, to: toDate }}
+            onRangeChange={onRangeChange}
+            locale={calendarLocale}
+            size="md"
+            placeholder={tFilter("selectPeriod")}
+            className="bg-surface h-[var(--toolbar-height)] shadow-none focus-visible:ring-0"
+          />
+        </Box>
 
         <Flex className="justify-between pt-[var(--space-2)]">
           <Button

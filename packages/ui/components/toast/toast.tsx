@@ -16,7 +16,11 @@ const TOASTER_PORTAL_STYLE: React.CSSProperties = {
   "--toast-close-button-transform": "translate(0, 0)"
 } as React.CSSProperties;
 
-const toToastPayload = (input: ToastInput, color?: ToastPayload["color"], durationMs?: number): ToastPayload => {
+const toToastPayload = (
+  input: ToastInput,
+  color?: ToastPayload["color"],
+  durationMs?: number
+): ToastPayload => {
   if (typeof input === "string") {
     return {
       message: input,
@@ -45,38 +49,12 @@ type ToastApi = ((input: ToastInput) => void) & {
   warning: (input: ToastInput, durationMs?: number) => void;
 };
 
-const TOAST_SOLID_STYLE_BY_COLOR = {
-  success: {
-    background: "rgb(var(--color-feedback-success))",
-    color: "rgb(var(--color-fg-on-success))",
-    borderColor: "rgb(var(--color-feedback-success))"
-  },
-  error: {
-    background: "rgb(var(--color-feedback-danger))",
-    color: "rgb(var(--color-fg-on-danger))",
-    borderColor: "rgb(var(--color-feedback-danger))"
-  },
-  warning: {
-    background: "rgb(var(--color-feedback-warning))",
-    color: "rgb(var(--color-fg-on-warning))",
-    borderColor: "rgb(var(--color-feedback-warning))"
-  },
-  info: {
-    background: "rgb(var(--color-feedback-info))",
-    color: "rgb(var(--color-fg-on-info))",
-    borderColor: "rgb(var(--color-feedback-info))"
-  }
-} as const;
-
-export const toast = Object.assign(
-  (input: ToastInput) => emitToast(input),
-  {
-    success: (input: ToastInput, durationMs?: number) => emitToast(input, "success", durationMs),
-    error: (input: ToastInput, durationMs?: number) => emitToast(input, "error", durationMs),
-    info: (input: ToastInput, durationMs?: number) => emitToast(input, "info", durationMs),
-    warning: (input: ToastInput, durationMs?: number) => emitToast(input, "warning", durationMs)
-  }
-) as ToastApi;
+export const toast = Object.assign((input: ToastInput) => emitToast(input), {
+  success: (input: ToastInput, durationMs?: number) => emitToast(input, "success", durationMs),
+  error: (input: ToastInput, durationMs?: number) => emitToast(input, "error", durationMs),
+  info: (input: ToastInput, durationMs?: number) => emitToast(input, "info", durationMs),
+  warning: (input: ToastInput, durationMs?: number) => emitToast(input, "warning", durationMs)
+}) as ToastApi;
 
 export function Toast({
   position = TOAST_DEFAULTS.position,
@@ -141,32 +119,20 @@ export function Toast({
           return sonnerToast.success(detail.message, {
             id,
             duration: resolvedDurationMs,
-            closeButton: false,
-            style: TOAST_SOLID_STYLE_BY_COLOR.success
+            closeButton: false
           });
         }
         if (color === "error") {
-          return sonnerToast.error(detail.message, {
-            id,
-            duration: resolvedDurationMs,
-            closeButton: false,
-            style: TOAST_SOLID_STYLE_BY_COLOR.error
-          });
+          return sonnerToast.error(detail.message, { id, duration: resolvedDurationMs, closeButton: false });
         }
         if (color === "warning") {
           return sonnerToast.warning(detail.message, {
             id,
             duration: resolvedDurationMs,
-            closeButton: false,
-            style: TOAST_SOLID_STYLE_BY_COLOR.warning
+            closeButton: false
           });
         }
-        return sonnerToast.info(detail.message, {
-          id,
-          duration: resolvedDurationMs,
-          closeButton: false,
-          style: TOAST_SOLID_STYLE_BY_COLOR.info
-        });
+        return sonnerToast.info(detail.message, { id, duration: resolvedDurationMs, closeButton: false });
       };
 
       showToast();

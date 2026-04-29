@@ -47,12 +47,113 @@
     "workspaceSettings": "Workspace settings",
     "logout": "Sign out"
   },
+  "auth": {
+    "title": "OpsLens Sign in",
+    "description": "Sign in with your account to access the operations workspace.",
+    "signupDescription": "Create an account and start using the operations workspace.",
+    "securedAccess": "Secure Access",
+    "modeLogin": "Sign in",
+    "modeSignup": "Sign up",
+    "socialHint": "Start quickly with your Google or GitHub account.",
+    "keepLoggedIn": "Keep me logged in",
+    "needAccount": "Need an account?",
+    "createOne": "Create one",
+    "alreadyHaveAccount": "Already have an account?",
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "namePlaceholder": "Jane Doe",
+    "emailPlaceholder": "admin@opslens.local",
+    "passwordPlaceholder": "Enter your password",
+    "confirmPassword": "Confirm password",
+    "confirmPasswordPlaceholder": "Re-enter your password",
+    "submit": "Sign in",
+    "signupSubmit": "Sign up",
+    "loggingIn": "Signing in...",
+    "signingUp": "Signing up...",
+    "passwordMismatch": "Passwords do not match.",
+    "passwordHelp": "If you forgot your password, contact your operations admin.",
+    "loginSuccess": "Signed in successfully.",
+    "signupSuccess": "Account created successfully.",
+    "loginErrorFallback": "Failed to sign in.",
+    "signupErrorFallback": "Failed to sign up.",
+    "oauthLoginErrorFallback": "Failed to complete social sign-in.",
+    "oauthProviderError": "Social provider authentication failed. Please try again.",
+    "orContinueWith": "OR",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithGithub": "Continue with GitHub",
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "logoutSuccess": "Signed out successfully."
+  },
   "dashboard": {
     "title": "Operations Dashboard",
+    "lastUpdated": "Last update",
+    "statsSummary": "From left: volume, urgency, activity, and release risk.",
     "badgeService": "Service",
     "badgeLanguage": "Language",
     "badgePeriod": "Period",
-    "badgeSearch": "Search"
+    "badgeSearch": "Search",
+    "errorLoadFailed": "Failed to load dashboard.",
+    "stats": {
+      "todayIssues": {
+        "label": "Today's Volume",
+        "helperTopPrefix": "Top repeat",
+        "helperNone": "No repeated issue"
+      },
+      "criticalHigh": {
+        "label": "Urgent Issues (Critical/High)",
+        "helperAlert": "Immediate response required",
+        "helperStable": "Urgent alerts are stable"
+      },
+      "total24h": {
+        "label": "24h Activity",
+        "helper": "Total events in the last 24h"
+      },
+      "newAfterDeploy": {
+        "label": "Post-deploy Risk",
+        "helperHasRisk": "New issues detected after deploy",
+        "helperNoRisk": "No new issues after deploy"
+      }
+    },
+    "sections": {
+      "errorPatternByHour": "Error Pattern by Hour",
+      "severityDistribution": "Severity Distribution",
+      "topRepeatedErrors": "Top 5 Repeated Errors",
+      "recentDeployImpact": "Recent Deployment Impact",
+      "priorityQueue": "Priority Queue",
+      "priorityQueueDescription": "Order of items that require immediate check.",
+      "errorPatternByHourDescription": "Track hourly event flow and volatility.",
+      "severityDistributionDescription": "See severity mix and counts at a glance.",
+      "topRepeatedErrorsDescription": "Review top recurring issues by priority."
+    },
+    "empty": {
+      "noNewAfterDeploy": "No new issues since deployment.",
+      "noQueue": "No items to respond to right now.",
+      "noSeverityData": "No severity data.",
+      "noTrendData": "No hourly trend data.",
+      "noTopRepeatedErrors": "No repeated error data."
+    },
+    "queue": {
+      "itemPrefix": "Queue",
+      "countPrefix": "Occurred",
+      "countSuffix": " times",
+      "viewDetail": "View details"
+    },
+    "issueKeys": {
+      "runtimeTypeError": "Runtime TypeError",
+      "apiHttp500": "API 500 error",
+      "networkTimeout": "Network timeout",
+      "loginSessionIssue": "Login session issue",
+      "renderLatency": "Rendering latency",
+      "qaRegression": "QA regression",
+      "discountDisplayMissing": "Discount display missing",
+      "docsPermissionLoop": "Document permission loop",
+      "whiteboardReconnectDelay": "Whiteboard reconnect delay"
+    },
+    "units": {
+      "events": " events",
+      "delta": "Delta"
+    }
   },
   "locale": {
     "ko": "Korean",

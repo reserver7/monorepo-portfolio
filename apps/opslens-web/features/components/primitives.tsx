@@ -3,11 +3,11 @@
 import { Badge, ConsoleInfoItem, ConsolePageStack, ConsoleSectionCard } from "@repo/ui";
 import type { IssueStatus, Severity } from "@repo/opslens";
 
-const severityVariantMap: Record<Severity, "danger" | "warning" | "info"> = {
+const severityVariantMap: Record<Severity, "danger" | "warning" | "info" | "success"> = {
   critical: "danger",
-  high: "danger",
-  medium: "warning",
-  low: "info"
+  high: "warning",
+  medium: "info",
+  low: "success"
 };
 
 const statusVariantMap: Record<IssueStatus, "outline" | "warning" | "info" | "success"> = {

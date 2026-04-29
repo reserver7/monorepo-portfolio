@@ -7,6 +7,7 @@ export { Grid } from "./grid";
 export type { GridProps, GridColumns, GridAlign, GridJustify, GridGap, GridMinColumnWidth } from "./grid";
 export { Button, buttonVariants, type ButtonProps } from "./button";
 export { Input, type InputProps } from "./input";
+export { ColorPicker } from "./color-picker";
 export { Textarea, type TextareaProps } from "./textarea";
 export { Label, type LabelProps } from "./label";
 export {

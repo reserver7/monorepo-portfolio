@@ -47,12 +47,113 @@
     "workspaceSettings": "ワークスペース設定",
     "logout": "ログアウト"
   },
+  "auth": {
+    "title": "OpsLens ログイン",
+    "description": "運用ワークスペースにアクセスするにはログインしてください。",
+    "signupDescription": "新規アカウントを作成して運用ワークスペースを開始します。",
+    "securedAccess": "セキュア認証",
+    "modeLogin": "ログイン",
+    "modeSignup": "新規登録",
+    "socialHint": "Google/GitHub アカウントで素早く開始できます。",
+    "keepLoggedIn": "ログイン状態を維持",
+    "needAccount": "アカウントをお持ちでないですか？",
+    "createOne": "アカウント作成",
+    "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
+    "name": "名前",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "namePlaceholder": "山田 太郎",
+    "emailPlaceholder": "admin@opslens.local",
+    "passwordPlaceholder": "パスワードを入力してください",
+    "confirmPassword": "パスワード確認",
+    "confirmPasswordPlaceholder": "パスワードを再入力してください",
+    "submit": "ログイン",
+    "signupSubmit": "新規登録",
+    "loggingIn": "ログイン中...",
+    "signingUp": "登録中...",
+    "passwordMismatch": "パスワードが一致しません。",
+    "passwordHelp": "パスワードを忘れた場合は運用管理者に再設定を依頼してください。",
+    "loginSuccess": "ログインしました。",
+    "signupSuccess": "アカウント登録が完了しました。",
+    "loginErrorFallback": "ログインに失敗しました。",
+    "signupErrorFallback": "アカウント登録に失敗しました。",
+    "oauthLoginErrorFallback": "ソーシャルログイン処理に失敗しました。",
+    "oauthProviderError": "ソーシャル認証に失敗しました。再度お試しください。",
+    "orContinueWith": "または",
+    "continueWithGoogle": "Googleで続行",
+    "continueWithGithub": "GitHubで続行",
+    "sessionExpired": "セッションの有効期限が切れました。再度ログインしてください。",
+    "logoutSuccess": "ログアウトしました。"
+  },
   "dashboard": {
     "title": "運用ダッシュボード",
+    "lastUpdated": "最終更新",
+    "statsSummary": "左から発生量、緊急度、活動量、リリースリスクを確認します。",
     "badgeService": "サービス",
     "badgeLanguage": "言語",
     "badgePeriod": "期間",
-    "badgeSearch": "検索"
+    "badgeSearch": "検索",
+    "errorLoadFailed": "ダッシュボードの取得に失敗しました。",
+    "stats": {
+      "todayIssues": {
+        "label": "本日の発生量",
+        "helperTopPrefix": "最多反復",
+        "helperNone": "反復課題なし"
+      },
+      "criticalHigh": {
+        "label": "緊急課題(重大/高)",
+        "helperAlert": "即時対応が必要な状態",
+        "helperStable": "緊急アラートは安定"
+      },
+      "total24h": {
+        "label": "24時間の活動量",
+        "helper": "直近24時間の累計イベント"
+      },
+      "newAfterDeploy": {
+        "label": "デプロイ後リスク",
+        "helperHasRisk": "デプロイ後に新規課題を検知",
+        "helperNoRisk": "デプロイ後の新規課題なし"
+      }
+    },
+    "sections": {
+      "errorPatternByHour": "時間帯別エラーパターン",
+      "severityDistribution": "重大度分布",
+      "topRepeatedErrors": "反復エラー TOP 5",
+      "recentDeployImpact": "最近のデプロイ影響",
+      "priorityQueue": "優先対応キュー",
+      "priorityQueueDescription": "即時確認が必要な順序です。",
+      "errorPatternByHourDescription": "時間帯ごとのイベント推移と変動幅を確認します。",
+      "severityDistributionDescription": "重大度の構成比と件数を一目で確認します。",
+      "topRepeatedErrorsDescription": "反復発生の上位項目を優先順で確認します。"
+    },
+    "empty": {
+      "noNewAfterDeploy": "デプロイ以降の新規課題はありません。",
+      "noQueue": "現在対応すべき項目はありません。",
+      "noSeverityData": "重大度データがありません。",
+      "noTrendData": "時間帯別データがありません。",
+      "noTopRepeatedErrors": "反復エラーデータがありません。"
+    },
+    "queue": {
+      "itemPrefix": "Queue",
+      "countPrefix": "発生",
+      "countSuffix": "回",
+      "viewDetail": "詳細を見る"
+    },
+    "issueKeys": {
+      "runtimeTypeError": "ランタイム TypeError",
+      "apiHttp500": "API 500 エラー",
+      "networkTimeout": "ネットワークタイムアウト",
+      "loginSessionIssue": "ログインセッション問題",
+      "renderLatency": "レンダリング遅延",
+      "qaRegression": "QA 回帰",
+      "discountDisplayMissing": "割引金額表示の欠落",
+      "docsPermissionLoop": "ドキュメント権限ループ",
+      "whiteboardReconnectDelay": "ホワイトボード再接続遅延"
+    },
+    "units": {
+      "events": "件",
+      "delta": "増減"
+    }
   },
   "locale": {
     "ko": "韓国語",

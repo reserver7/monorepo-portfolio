@@ -2,10 +2,12 @@
 
 import { useEffect } from "react";
 import { configureOpslensClient } from "@repo/opslens";
+import { configureHttpAuth, setHttpAccessToken } from "@repo/react-query";
 import { AppProviders } from "@repo/theme";
 import { NextIntlClientProvider } from "next-intl";
 import { OpsAlertStoreProvider } from "@/features/alerts";
 import { OpsFilterStoreProvider, useOpsFilterStore } from "@/features/stores";
+import { getAuthAccessToken } from "@/lib/auth";
 import { opslensClientEnv } from "@/lib/config";
 import { OPS_DEFAULT_LOCALE, opslensMessages, type OpsLocale } from "@/lib/i18n/messages";
 
@@ -21,10 +23,21 @@ function OpsI18nProvider({ children }: { children: React.ReactNode }) {
   }, [resolvedLocale]);
 
   return (
-    <NextIntlClientProvider locale={resolvedLocale} messages={messages}>
+    <NextIntlClientProvider locale={resolvedLocale} messages={messages} timeZone="Asia/Seoul">
       {children}
     </NextIntlClientProvider>
   );
+}
+
+function OpsHttpAuthBridge() {
+  useEffect(() => {
+    configureHttpAuth({
+      getAccessToken: () => getAuthAccessToken()
+    });
+    setHttpAccessToken(getAuthAccessToken());
+  }, []);
+
+  return null;
 }
 
 export function Providers({
@@ -42,10 +55,8 @@ export function Providers({
           }}
           fallbackTitle="OpsLens AI 화면에서 오류가 발생했습니다."
           fallbackDescription="잠시 후 다시 시도하거나 새로고침해 주세요."
-          toasterOptions={{
-            position: "top-center"
-          }}
         >
+          <OpsHttpAuthBridge />
           <OpsAlertStoreProvider>
             {children}
           </OpsAlertStoreProvider>

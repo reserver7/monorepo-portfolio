@@ -11,6 +11,7 @@ import {
   SplitWorkspaceLayout,
   StatCard,
   StateView,
+  Skeleton,
   Typography
 } from "@repo/ui";
 import { useQuery } from "@repo/react-query";
@@ -25,22 +26,30 @@ import { useOpsFilters } from "@/features/stores";
 import { formatNumber } from "@repo/utils";
 import { toCalendarLocale } from "@/lib/i18n/messages";
 
-const SeverityDistributionChart = dynamic(
-  () => import("@/features/components/dashboard-charts").then((mod) => mod.SeverityDistributionChart),
-  { ssr: false }
-);
-const ErrorTrendChart = dynamic(
-  () => import("@/features/components/dashboard-charts").then((mod) => mod.ErrorTrendChart),
-  { ssr: false }
-);
-const TopRepeatedErrorsChart = dynamic(
-  () => import("@/features/components/dashboard-charts").then((mod) => mod.TopRepeatedErrorsChart),
-  { ssr: false }
-);
+function OpsChartSkeleton({ heightClassName }: { heightClassName: string }) {
+  return (
+    <Box className={`w-full ${heightClassName} space-y-[var(--space-2)]`}>
+      <Skeleton className="h-4 w-1/3 rounded-[var(--radius-md)]" />
+      <Skeleton className="h-[calc(100%-1.5rem)] w-full rounded-[var(--radius-lg)]" />
+    </Box>
+  );
+}
+
+const SeverityDistributionChart = dynamic(() => import("@/features/components/dashboard-charts").then((mod) => mod.SeverityDistributionChart), {
+  ssr: false,
+  loading: () => <OpsChartSkeleton heightClassName="h-[232px]" />
+});
+const ErrorTrendChart = dynamic(() => import("@/features/components/dashboard-charts").then((mod) => mod.ErrorTrendChart), {
+  ssr: false,
+  loading: () => <OpsChartSkeleton heightClassName="h-[232px]" />
+});
+const TopRepeatedErrorsChart = dynamic(() => import("@/features/components/dashboard-charts").then((mod) => mod.TopRepeatedErrorsChart), {
+  ssr: false,
+  loading: () => <OpsChartSkeleton heightClassName="h-[248px]" />
+});
 
 export default function DashboardPage() {
   const tDashboard = useTranslations("dashboard");
-  const tLocale = useTranslations("locale");
   const tService = useTranslations("service");
   const router = useRouter();
   const { environment, locale, serviceName, search, from, to } = useOpsFilters();
@@ -61,24 +70,44 @@ export default function DashboardPage() {
 
   if (summaryQuery.isLoading) return <OpsDashboardSkeleton />;
   if (summaryQuery.isError || !summaryQuery.data) {
-    return <StateView variant="error" size="lg" title="대시보드 조회에 실패했습니다." />;
+    return <StateView variant="error" size="lg" title={tDashboard("errorLoadFailed")} />;
   }
 
   const summary = summaryQuery.data;
+  const localizeIssueTitle = (title: string, titleKey?: string) => {
+    if (!titleKey) return title;
+    try {
+      return tDashboard(`issueKeys.${titleKey}`);
+    } catch {
+      return title;
+    }
+  };
+  const topRepeatedErrors = summary.topRepeatedErrors.map((item) => ({
+    ...item,
+    title: localizeIssueTitle(item.title, item.titleKey)
+  }));
+  const newAfterLatestDeployment = summary.newAfterLatestDeployment.map((item) => ({
+    ...item,
+    title: localizeIssueTitle(item.title, item.titleKey)
+  }));
+  const localizedSummary = {
+    ...summary,
+    topRepeatedErrors,
+    newAfterLatestDeployment
+  };
   const criticalCount = summary.severityDistribution.find((item) => item.severity === "critical")?.count ?? 0;
   const highCount = summary.severityDistribution.find((item) => item.severity === "high")?.count ?? 0;
   const total24h = summary.errorTrend24h.reduce((acc, item) => acc + item.count, 0);
-  const topIssue = summary.topRepeatedErrors[0];
+  const topIssue = topRepeatedErrors[0];
 
-  const responseQueue = summary.newAfterLatestDeployment.length > 0
-    ? summary.newAfterLatestDeployment
-    : summary.topRepeatedErrors.map((item) => ({
+  const responseQueue = newAfterLatestDeployment.length > 0
+    ? newAfterLatestDeployment
+    : topRepeatedErrors.map((item) => ({
         issueId: item.issueId,
         title: item.title,
         severity: item.severity,
         count: item.count
       }));
-  const localeLabel = tLocale(locale);
   const serviceLabel = serviceName === "all"
     ? tService("all")
     : serviceName === "docs"
@@ -98,114 +127,107 @@ export default function DashboardPage() {
     return new Intl.DateTimeFormat(dateLocale, { year: "numeric", month: "short", day: "numeric" }).format(date);
   };
   const rangeLabel = from || to ? `${formatDateByLocale(from)} ~ ${formatDateByLocale(to)}` : undefined;
+  const lastUpdatedLabel = new Intl.DateTimeFormat(dateLocale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(summaryQuery.dataUpdatedAt));
 
   return (
     <OpsPageShell>
-      <Flex className="items-center justify-between gap-[var(--space-3)]">
-        <Typography as="h2" variant="headingMd">{tDashboard("title")}</Typography>
-        <Flex className="flex-wrap items-center gap-[var(--space-2)]">
-          <Badge variant="outline" size="sm">{tDashboard("badgeService")}: {serviceLabel}</Badge>
-          <Badge variant="outline" size="sm">{tDashboard("badgeLanguage")}: {localeLabel}</Badge>
-          {rangeLabel ? <Badge variant="outline" size="sm">{tDashboard("badgePeriod")}: {rangeLabel}</Badge> : null}
-          {search ? <Badge variant="outline" size="sm">{tDashboard("badgeSearch")}: {search}</Badge> : null}
+      <Box className="border-default bg-surface rounded-[var(--radius-xl)] border px-[var(--space-4)] py-[var(--space-3)] md:px-[var(--space-5)]">
+        <Flex className="items-center justify-between gap-[var(--space-3)]">
+          <Typography as="h2" variant="headingMd" className="tracking-[-0.01em]">{tDashboard("title")}</Typography>
+          <Flex className="flex-wrap items-center gap-[var(--space-2)]">
+            <Typography as="p" variant="caption" color="subtle" className="mr-[var(--space-1)]">
+              {tDashboard("lastUpdated")}: {lastUpdatedLabel}
+            </Typography>
+            <Badge variant="secondary" size="sm">{tDashboard("badgeService")}: {serviceLabel}</Badge>
+            {rangeLabel ? <Badge variant="outline" size="sm">{tDashboard("badgePeriod")}: {rangeLabel}</Badge> : null}
+          </Flex>
         </Flex>
-      </Flex>
+      </Box>
 
-      <Grid className="justify-items-stretch gap-[var(--space-4)] md:grid-cols-2 xl:grid-cols-4">
+      <Grid className="justify-items-stretch gap-[var(--space-3)] md:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="오늘 발생 이슈"
+          label={tDashboard("stats.todayIssues.label")}
           value={formatNumber(summary.todayIssueCount)}
-          helper={topIssue ? `최다 반복: ${topIssue.title}` : "반복 이슈 없음"}
-          size="lg"
+          helper={topIssue ? tDashboard("stats.todayIssues.helperTopPrefix") : tDashboard("stats.todayIssues.helperNone")}
+          className="h-full rounded-[var(--radius-lg)] [&>p:nth-of-type(2)]:text-[1.625rem] [&>p:nth-of-type(2)]:leading-[1.1] [&>p:last-child]:line-clamp-1 [&>p:last-child]:text-[11px]"
+          size="md"
         />
         <StatCard
-          label="Critical / High"
+          label={tDashboard("stats.criticalHigh.label")}
           value={`${formatNumber(criticalCount)} / ${formatNumber(highCount)}`}
-          helper={criticalCount > 0 ? "긴급 대응 필요" : "핵심 경보 안정"}
+          helper={criticalCount > 0 ? tDashboard("stats.criticalHigh.helperAlert") : tDashboard("stats.criticalHigh.helperStable")}
           color="danger"
-          size="lg"
+          className="h-full rounded-[var(--radius-lg)] [&>p:nth-of-type(2)]:text-[1.625rem] [&>p:nth-of-type(2)]:leading-[1.1] [&>p:last-child]:line-clamp-1 [&>p:last-child]:text-[11px]"
+          size="md"
         />
         <StatCard
-          label="24시간 총 에러 이벤트"
-          value={formatNumber(total24h)}
-          helper="최근 24시간 누적"
-          color="warning"
-          size="lg"
-        />
-        <StatCard
-          label="배포 후 신규"
+          label={tDashboard("stats.newAfterDeploy.label")}
           value={formatNumber(summary.newAfterLatestDeployment.length)}
-          helper={summary.newAfterLatestDeployment.length > 0 ? "릴리즈 확인 필요" : "신규 리스크 없음"}
+          helper={summary.newAfterLatestDeployment.length > 0 ? tDashboard("stats.newAfterDeploy.helperHasRisk") : tDashboard("stats.newAfterDeploy.helperNoRisk")}
+          color="warning"
+          className="h-full rounded-[var(--radius-lg)] [&>p:nth-of-type(2)]:text-[1.625rem] [&>p:nth-of-type(2)]:leading-[1.1] [&>p:last-child]:line-clamp-1 [&>p:last-child]:text-[11px]"
+          size="md"
+        />
+        <StatCard
+          label={tDashboard("stats.total24h.label")}
+          value={formatNumber(total24h)}
+          helper={tDashboard("stats.total24h.helper")}
           color="primary"
-          size="lg"
+          className="h-full rounded-[var(--radius-lg)] [&>p:nth-of-type(2)]:text-[1.625rem] [&>p:nth-of-type(2)]:leading-[1.1] [&>p:last-child]:line-clamp-1 [&>p:last-child]:text-[11px]"
+          size="md"
         />
       </Grid>
 
       <SplitWorkspaceLayout
-        sidebarWidthClassName="xl:grid-cols-[minmax(0,1fr)_360px]"
+        sidebarWidthClassName="xl:grid-cols-[minmax(0,1fr)_372px]"
         main={
-          <Box className="space-y-[var(--stack-gap)]">
-            <Grid className="justify-items-stretch gap-[var(--space-6)] xl:grid-cols-12">
-              <OpsSectionCard title="시간대별 에러 패턴" className="xl:col-span-8" contentClassName="pt-[var(--space-4)]">
-                <ErrorTrendChart summary={summary} />
+          <Box className="space-y-[var(--space-5)]">
+            <Grid className="justify-items-stretch gap-[var(--space-5)] xl:grid-cols-12">
+              <OpsSectionCard title={tDashboard("sections.errorPatternByHour")} className="xl:col-span-8" contentClassName="pt-[var(--space-2)]">
+                <ErrorTrendChart summary={localizedSummary} />
               </OpsSectionCard>
-              <OpsSectionCard title="심각도 분포" className="xl:col-span-4" contentClassName="pt-[var(--space-4)]">
-                <SeverityDistributionChart summary={summary} />
+              <OpsSectionCard title={tDashboard("sections.severityDistribution")} className="xl:col-span-4" contentClassName="pt-[var(--space-2)]">
+                <SeverityDistributionChart summary={localizedSummary} />
               </OpsSectionCard>
             </Grid>
 
-            <Grid className="justify-items-stretch gap-[var(--space-6)] xl:grid-cols-12">
-              <OpsSectionCard title="반복 에러 TOP 5" className="xl:col-span-7" contentClassName="pt-[var(--space-4)]">
-                <TopRepeatedErrorsChart summary={summary} />
-              </OpsSectionCard>
-              <OpsSectionCard title="최근 배포 영향" className="xl:col-span-5">
-                {summary.newAfterLatestDeployment.length === 0 ? (
-                  <StateView variant="empty" size="sm" title="배포 이후 신규 이슈가 없습니다." />
-                ) : (
-                  <Box className="space-y-[var(--space-2)]">
-                    {summary.newAfterLatestDeployment.slice(0, 5).map((item) => (
-                      <Flex
-                        key={item.issueId}
-                        className="border-default bg-surface-elevated rounded-xl border px-[var(--space-3)] py-[var(--space-2-5)]"
-                      >
-                        <Flex className="min-w-0 flex-1 items-center justify-between gap-[var(--space-2)]">
-                          <Typography as="p" variant="bodySm" className="truncate font-medium">
-                            {item.title}
-                          </Typography>
-                          <SeverityBadge severity={item.severity} />
-                        </Flex>
-                      </Flex>
-                    ))}
-                  </Box>
-                )}
+            <Grid className="justify-items-stretch gap-[var(--space-5)] xl:grid-cols-12">
+              <OpsSectionCard title={tDashboard("sections.topRepeatedErrors")} className="xl:col-span-12" contentClassName="pt-[var(--space-2)]">
+                <TopRepeatedErrorsChart summary={localizedSummary} />
               </OpsSectionCard>
             </Grid>
           </Box>
         }
         sidebar={
-          <Box className="space-y-[var(--stack-gap)]">
-            <OpsSectionCard title="우선 대응 큐" description="즉시 확인이 필요한 순서입니다.">
+          <Box className="space-y-[var(--space-5)]">
+            <OpsSectionCard title={tDashboard("sections.priorityQueue")} description={tDashboard("sections.priorityQueueDescription")}>
               {responseQueue.length === 0 ? (
-                <StateView variant="empty" size="sm" title="현재 대응할 항목이 없습니다." />
+                <StateView variant="empty" size="sm" title={tDashboard("empty.noQueue")} />
               ) : (
-                <Box className="space-y-[var(--space-2-5)]">
+                <Box className="space-y-[var(--space-2)]">
                   {responseQueue.slice(0, 6).map((item, index) => (
                     <Box
                       key={item.issueId}
                       role="button"
                       tabIndex={0}
-                      onClick={() => router.push("/issues")}
+                      onClick={() => router.push(`/issues/${item.issueId}`)}
                       onKeyDown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
-                          router.push("/issues");
+                          router.push(`/issues/${item.issueId}`);
                         }
                       }}
-                      className="border-default bg-surface-elevated hover:border-primary/40 cursor-pointer rounded-xl border p-[var(--space-3)] transition-colors"
+                      className="border-default bg-surface-elevated hover:border-primary/40 hover:bg-surface cursor-pointer rounded-[var(--radius-lg)] border p-[var(--space-3)] transition-colors"
                     >
                       <Flex className="mb-[var(--space-1)] items-center justify-between gap-[var(--space-2)]">
                         <Typography as="p" variant="caption" color="subtle" className="font-semibold">
-                          Queue {index + 1}
+                          {tDashboard("queue.itemPrefix")} {index + 1}
                         </Typography>
                         <SeverityBadge severity={item.severity} />
                       </Flex>
@@ -213,8 +235,8 @@ export default function DashboardPage() {
                         {item.title}
                       </Box>
                       <Flex className="text-muted mt-[var(--space-2)] items-center justify-between gap-[var(--space-2)] text-caption">
-                        <Box as="p" className="text-muted text-caption">발생 {formatNumber(item.count)}회</Box>
-                        <Typography as="p" variant="caption" className="font-medium">상세 보기</Typography>
+                        <Box as="p" className="text-muted text-caption">{tDashboard("queue.countPrefix")} {formatNumber(item.count)}{tDashboard("queue.countSuffix")}</Box>
+                        <Typography as="p" variant="caption" className="font-medium">{tDashboard("queue.viewDetail")}</Typography>
                       </Flex>
                     </Box>
                   ))}
