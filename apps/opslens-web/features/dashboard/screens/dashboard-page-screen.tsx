@@ -76,10 +76,27 @@ export default function DashboardPage() {
   const summary = summaryQuery.data;
   const localizeIssueTitle = (title: string, titleKey?: string) => {
     if (!titleKey) return title;
-    try {
-      return tDashboard(`issueKeys.${titleKey}`);
-    } catch {
-      return title;
+    switch (titleKey) {
+      case "runtimeTypeError":
+        return tDashboard("issueKeys.runtimeTypeError");
+      case "apiHttp500":
+        return tDashboard("issueKeys.apiHttp500");
+      case "networkTimeout":
+        return tDashboard("issueKeys.networkTimeout");
+      case "loginSessionIssue":
+        return tDashboard("issueKeys.loginSessionIssue");
+      case "renderLatency":
+        return tDashboard("issueKeys.renderLatency");
+      case "qaRegression":
+        return tDashboard("issueKeys.qaRegression");
+      case "discountDisplayMissing":
+        return tDashboard("issueKeys.discountDisplayMissing");
+      case "docsPermissionLoop":
+        return tDashboard("issueKeys.docsPermissionLoop");
+      case "whiteboardReconnectDelay":
+        return tDashboard("issueKeys.whiteboardReconnectDelay");
+      default:
+        return title;
     }
   };
   const topRepeatedErrors = summary.topRepeatedErrors.map((item) => ({

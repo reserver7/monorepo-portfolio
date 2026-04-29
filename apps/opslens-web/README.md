@@ -79,6 +79,11 @@ pnpm --filter @repo/opslens-server build
 - `admin@opslens.local / opslens1234!`
 - `operator@opslens.local / opslens1234!`
 
+## i18n 키 규칙
+
+- `pnpm i18n:extract:check`를 통과하려면 UI 코드의 번역 키는 정적으로 분석 가능해야 합니다.
+- `t(\`dashboard.issueKeys.${titleKey}\`)` 형태 대신, `titleKey`를 정적 키로 매핑(`switch`/객체)해서 호출해야 합니다.
+
 ## 관련 문서
 
 - API: [`../opslens-server/README.md`](../opslens-server/README.md)

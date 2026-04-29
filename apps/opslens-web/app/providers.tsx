@@ -23,7 +23,7 @@ function OpsI18nProvider({ children }: { children: React.ReactNode }) {
   }, [resolvedLocale]);
 
   return (
-    <NextIntlClientProvider locale={resolvedLocale} messages={messages} timeZone="Asia/Seoul">
+    <NextIntlClientProvider key={resolvedLocale} locale={resolvedLocale} messages={messages} timeZone="Asia/Seoul">
       {children}
     </NextIntlClientProvider>
   );
