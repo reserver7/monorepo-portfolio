@@ -1,4 +1,5 @@
 import axios, { AxiosHeaders, type AxiosInstance, type InternalAxiosRequestConfig } from "axios";
+import { notifyHttpUnauthorized, resolveHttpAccessToken } from "./http-auth";
 
 const clientRegistry = new Map<string, AxiosInstance>();
 
@@ -9,12 +10,25 @@ type RequestConfigWithAuth = InternalAxiosRequestConfig;
 const registerInterceptors = (client: AxiosInstance) => {
   client.interceptors.request.use((config) => {
     const headers = AxiosHeaders.from(config.headers);
+    const accessToken = resolveHttpAccessToken();
+    if (accessToken && !headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${accessToken}`);
+    }
     config.headers = headers;
     return config as RequestConfigWithAuth;
   });
   client.interceptors.response.use(
     (response) => response,
-    (error: unknown) => Promise.reject(error)
+    (error: unknown) => {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        notifyHttpUnauthorized({
+          status: 401,
+          method: error.config?.method?.toUpperCase(),
+          url: error.config?.url
+        });
+      }
+      return Promise.reject(error);
+    }
   );
 };
 

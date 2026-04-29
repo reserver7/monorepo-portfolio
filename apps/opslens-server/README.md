@@ -15,7 +15,7 @@ OpsLens용 GraphQL 서버입니다.
 - `src/index.ts`: 애플리케이션 엔트리/부트스트랩
 - `src/config/*`: 런타임 환경변수/설정
 - `src/integration/*`: DB/외부 연동 인프라
-- `src/modules/*`: 도메인 모듈(health/ops/ai)
+- `src/modules/*`: 도메인 모듈(health/auth/ops/ai)
 
 ## 실행
 
@@ -54,6 +54,7 @@ pnpm --filter @repo/opslens-server build
 ```
 
 - 운영에서는 `DATABASE_URL`, `DIRECT_DATABASE_URL`, `AI_*` 값을 런타임 환경변수로 주입합니다.
+- 인증 사용 시 `AUTH_JWT_SECRET`, `AUTH_ACCESS_TOKEN_TTL_SEC`, `AUTH_BRIDGE_SECRET`도 함께 설정합니다.
 
 ## 관련 문서
 

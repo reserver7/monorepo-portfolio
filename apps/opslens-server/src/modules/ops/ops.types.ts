@@ -26,6 +26,9 @@ export class RepeatedErrorType {
   @Field(() => String)
   title!: string;
 
+  @Field(() => String, { nullable: true })
+  titleKey?: string;
+
   @Field(() => String)
   severity!: string;
 
@@ -97,6 +100,12 @@ export class AnalyzeLogsPayloadType {
 
   @Field(() => Int)
   updatedIssues!: number;
+
+  @Field(() => Int)
+  clusterTotalCount!: number;
+
+  @Field(() => Int)
+  clusterDisplayedCount!: number;
 
   @Field(() => [ErrorClusterType])
   clusters!: ErrorClusterType[];

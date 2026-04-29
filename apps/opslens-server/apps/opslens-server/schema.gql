@@ -9,14 +9,18 @@ input AddIssueCommentInput {
 }
 
 input AnalyzeLogsInputModel {
+  clusterLimit: Int = 12
   deploymentVersion: String
   environment: String!
   rawLogs: String!
+  requestedBy: String
   serviceName: String!
   source: String!
 }
 
 type AnalyzeLogsPayloadType {
+  clusterDisplayedCount: Int!
+  clusterTotalCount: Int!
   clusters: [ErrorClusterType!]!
   createdIssues: Int!
   updatedIssues: Int!
@@ -205,6 +209,7 @@ type RepeatedErrorType {
   issueId: String!
   severity: String!
   title: String!
+  titleKey: String
 }
 
 type SeverityCountType {

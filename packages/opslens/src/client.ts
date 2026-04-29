@@ -8,9 +8,177 @@ export function configureOpslensClient(options: { apiUrl?: string }): void {
   opslensApiUrl = nextApiUrl && nextApiUrl.length > 0 ? nextApiUrl : DEFAULT_OPSLENS_API_URL;
 }
 
+const resolveAuthApiUrl = (): string => {
+  const trimmed = opslensApiUrl.trim().replace(/\/+$/, "");
+  if (trimmed.endsWith("/graphql")) {
+    return trimmed.slice(0, -"/graphql".length);
+  }
+  return trimmed;
+};
+
 export type Severity = "critical" | "high" | "medium" | "low";
 export type IssueStatus = "new" | "analyzing" | "in_progress" | "resolved";
 export type Environment = "dev" | "stage" | "prod";
+export type AuthRole = "admin" | "operator" | "viewer";
+export type AvatarColor = string;
+
+export type OpsAuthUser = {
+  id: string;
+  email: string;
+  name: string;
+  role: AuthRole;
+  authProvider: "local" | "google" | "github";
+  avatarColor: AvatarColor;
+};
+
+export type OpsLoginResponse = {
+  accessToken: string;
+  tokenType: "Bearer";
+  expiresIn: number;
+  user: OpsAuthUser;
+};
+
+const parseErrorMessage = async (response: Response): Promise<string> => {
+  try {
+    const payload = (await response.json()) as { message?: string | string[] };
+    const message = payload?.message;
+    if (Array.isArray(message)) {
+      const joined = message.filter((entry) => typeof entry === "string").join(", ");
+      if (joined.length > 0) {
+        return joined;
+      }
+    }
+    if (typeof message === "string" && message.trim().length > 0) {
+      return message;
+    }
+  } catch {
+    // noop
+  }
+  return response.status === 401 ? "로그인이 필요합니다." : "요청 처리 중 오류가 발생했습니다.";
+};
+
+export async function loginOpslens(input: { email: string; password: string }): Promise<OpsLoginResponse> {
+  const response = await fetch(`${resolveAuthApiUrl()}/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify(input)
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response));
+  }
+  return (await response.json()) as OpsLoginResponse;
+}
+
+export async function signupOpslens(input: { email: string; name: string; password: string }): Promise<OpsLoginResponse> {
+  const response = await fetch(`${resolveAuthApiUrl()}/auth/signup`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify(input)
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response));
+  }
+  return (await response.json()) as OpsLoginResponse;
+}
+
+export async function requestPasswordResetOpslens(input: { email: string }): Promise<{ success: true }> {
+  const response = await fetch(`${resolveAuthApiUrl()}/auth/forgot-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify(input)
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response));
+  }
+
+  return (await response.json()) as { success: true };
+}
+
+export async function logoutOpslens(accessToken: string): Promise<void> {
+  await fetch(`${resolveAuthApiUrl()}/auth/logout`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json"
+    }
+  }).catch(() => undefined);
+}
+
+export async function getOpslensMe(accessToken: string): Promise<OpsAuthUser> {
+  const response = await fetch(`${resolveAuthApiUrl()}/auth/me`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json"
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response));
+  }
+
+  return (await response.json()) as OpsAuthUser;
+}
+
+export async function updateOpslensProfile(
+  accessToken: string,
+  input: {
+    name: string;
+    avatarColor?: AvatarColor;
+  }
+): Promise<OpsAuthUser> {
+  const response = await fetch(`${resolveAuthApiUrl()}/auth/profile`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify(input)
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response));
+  }
+
+  return (await response.json()) as OpsAuthUser;
+}
+
+export async function changeOpslensPassword(
+  accessToken: string,
+  input: {
+    currentPassword: string;
+    newPassword: string;
+  }
+): Promise<{ success: true }> {
+  const response = await fetch(`${resolveAuthApiUrl()}/auth/password`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify(input)
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response));
+  }
+
+  return (await response.json()) as { success: true };
+}
 
 export type OpsFilterParams = {
   environment: Environment;
@@ -102,8 +270,8 @@ export type DashboardSummary = {
   todayIssueCount: number;
   severityDistribution: Array<{ severity: Severity; count: number }>;
   errorTrend24h: Array<{ hour: string; count: number }>;
-  topRepeatedErrors: Array<{ issueId: string; title: string; severity: Severity; count: number }>;
-  newAfterLatestDeployment: Array<{ issueId: string; title: string; severity: Severity; count: number }>;
+  topRepeatedErrors: Array<{ issueId: string; title: string; titleKey?: string; severity: Severity; count: number }>;
+  newAfterLatestDeployment: Array<{ issueId: string; title: string; titleKey?: string; severity: Severity; count: number }>;
   aiBriefing: string;
 };
 
@@ -211,8 +379,8 @@ export async function getDashboardSummary(filter: {
         todayIssueCount
         severityDistribution { severity count }
         errorTrend24h { hour count }
-        topRepeatedErrors { issueId title severity count }
-        newAfterLatestDeployment { issueId title severity count }
+        topRepeatedErrors { issueId title titleKey severity count }
+        newAfterLatestDeployment { issueId title titleKey severity count }
         aiBriefing
       }
     }
@@ -237,9 +405,23 @@ export async function analyzeLogs(input: {
   environment: Environment;
   serviceName: string;
   deploymentVersion?: string;
-}): Promise<{ createdIssues: number; updatedIssues: number; clusters: ErrorCluster[] }> {
+  clusterLimit?: number;
+  requestedBy?: string;
+}): Promise<{
+  createdIssues: number;
+  updatedIssues: number;
+  clusterTotalCount: number;
+  clusterDisplayedCount: number;
+  clusters: ErrorCluster[];
+}> {
   const data = await graphqlRequest<{
-    analyzeLogs: { createdIssues: number; updatedIssues: number; clusters: ErrorCluster[] };
+    analyzeLogs: {
+      createdIssues: number;
+      updatedIssues: number;
+      clusterTotalCount: number;
+      clusterDisplayedCount: number;
+      clusters: ErrorCluster[];
+    };
   }>(
     opslensApiUrl,
     `
@@ -247,6 +429,8 @@ export async function analyzeLogs(input: {
       analyzeLogs(input: $input) {
         createdIssues
         updatedIssues
+        clusterTotalCount
+        clusterDisplayedCount
         clusters {
           title
           normalizedMessage
@@ -262,9 +446,12 @@ export async function analyzeLogs(input: {
         }
       }
     }
-  `,
+    `,
     { input },
-    { successMessage: "로그 분석이 완료되었습니다." }
+    {
+      notifyOnSuccess: false,
+      notifyOnError: false
+    }
   );
 
   return data.analyzeLogs;

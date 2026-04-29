@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import {
   IssueSeverity,
   IssueStatus,
@@ -36,6 +36,9 @@ import type {
 
 @Injectable()
 export class OpsService {
+  private readonly dashboardBriefingCache = new Map<string, { value: string; expiresAt: number }>();
+  private readonly logger = new Logger(OpsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AiService
@@ -99,6 +102,46 @@ export class OpsService {
   private parseArray(value: Prisma.JsonValue): string[] {
     if (Array.isArray(value)) return value.map((item) => String(item));
     return [];
+  }
+
+  private toIssueTitleKey(title: string): string | undefined {
+    const normalized = title.toLowerCase();
+    if (normalized.includes("typeerror")) return "runtimeTypeError";
+    if (normalized.includes("api 500") || normalized.includes("http 500") || normalized.includes("5xx")) {
+      return "apiHttp500";
+    }
+    if (normalized.includes("timeout") || normalized.includes("time out") || normalized.includes("타임아웃")) {
+      return "networkTimeout";
+    }
+    if (
+      (normalized.includes("로그인") && normalized.includes("세션")) ||
+      (normalized.includes("login") && normalized.includes("session"))
+    ) {
+      return "loginSessionIssue";
+    }
+    if (
+      (normalized.includes("렌더링") && normalized.includes("지연")) ||
+      (normalized.includes("render") && normalized.includes("latency")) ||
+      (normalized.includes("rendering") && normalized.includes("delay"))
+    ) {
+      return "renderLatency";
+    }
+    if (
+      normalized.includes("qa 회귀") ||
+      normalized.includes("qa-regression") ||
+      normalized.includes("qa regression")
+    ) {
+      return "qaRegression";
+    }
+    if (
+      (normalized.includes("할인금액") && normalized.includes("누락")) ||
+      (normalized.includes("discount") && (normalized.includes("missing") || normalized.includes("omitted")))
+    ) {
+      return "discountDisplayMissing";
+    }
+    if (normalized.includes("권한") && normalized.includes("루프")) return "docsPermissionLoop";
+    if (normalized.includes("화이트보드") && normalized.includes("재연결")) return "whiteboardReconnectDelay";
+    return undefined;
   }
 
   private toIssueType(
@@ -170,6 +213,72 @@ export class OpsService {
     );
   }
 
+  private getDashboardBriefingCacheKey(input: {
+    todayIssueCount: number;
+    criticalCount: number;
+    topIssueTitle?: string;
+    newAfterDeployCount: number;
+  }): string {
+    return [
+      input.todayIssueCount,
+      input.criticalCount,
+      input.topIssueTitle ?? "-",
+      input.newAfterDeployCount
+    ].join("|");
+  }
+
+  private readDashboardBriefingCache(key: string): string | null {
+    const hit = this.dashboardBriefingCache.get(key);
+    if (!hit) return null;
+    if (hit.expiresAt <= Date.now()) {
+      this.dashboardBriefingCache.delete(key);
+      return null;
+    }
+    return hit.value;
+  }
+
+  private writeDashboardBriefingCache(key: string, value: string): void {
+    this.dashboardBriefingCache.set(key, { value, expiresAt: Date.now() + 90_000 });
+    if (this.dashboardBriefingCache.size > 200) {
+      const oldest = this.dashboardBriefingCache.keys().next().value as string | undefined;
+      if (oldest) this.dashboardBriefingCache.delete(oldest);
+    }
+  }
+
+  private wait(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  private async generateBriefingTextFast(input: {
+    todayIssueCount: number;
+    criticalCount: number;
+    topIssueTitle?: string;
+    newAfterDeployCount: number;
+  }): Promise<string> {
+    const key = this.getDashboardBriefingCacheKey(input);
+    const cached = this.readDashboardBriefingCache(key);
+    if (cached) {
+      return cached;
+    }
+
+    const fallback = `오늘 이슈 ${input.todayIssueCount}건, 치명도 critical ${input.criticalCount}건입니다. ${
+      input.topIssueTitle
+        ? `가장 반복된 이슈는 '${input.topIssueTitle}' 입니다.`
+        : "반복 이슈 상위를 우선 확인해 주세요."
+    } 배포 이후 신규 증가 이슈는 ${input.newAfterDeployCount}건입니다.`;
+
+    const aiTask = this.generateBriefingText(input).catch(() => fallback);
+    const fastResult = await Promise.race([
+      aiTask,
+      this.wait(450).then(() => fallback)
+    ]);
+
+    this.writeDashboardBriefingCache(key, fastResult);
+    return fastResult;
+  }
+
   async getDashboardSummary(filter?: DashboardFilterInput): Promise<DashboardSummaryType> {
     const issueWhere = this.buildIssueWhere(filter);
 
@@ -177,70 +286,90 @@ export class OpsService {
     const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
 
-    const todayIssueCount = await this.prisma.issue.count({
-      where: {
-        ...issueWhere,
-        updatedAt: { gte: startOfDay }
-      }
-    });
+    const to = filter?.to ? new Date(filter.to) : now;
+    const from = filter?.from ? new Date(filter.from) : new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const deploymentWhere: Prisma.DeploymentWhereInput = {};
+    const environment = this.toEnvironment(filter?.environment);
+    if (environment) deploymentWhere.environment = environment;
 
-    const severityRows = await this.prisma.issue.groupBy({
-      by: ["severity"],
-      where: issueWhere,
-      _count: { severity: true }
-    });
+    const trendConditions: Prisma.Sql[] = [Prisma.sql`le."occurredAt" >= ${from}`, Prisma.sql`le."occurredAt" <= ${to}`];
+    if (environment) {
+      trendConditions.push(Prisma.sql`i."environment" = ${environment}::"OpsEnvironment"`);
+    }
+    if (filter?.serviceName) {
+      trendConditions.push(Prisma.sql`i."serviceName" ILIKE ${`%${filter.serviceName}%`}`);
+    }
+    if (filter?.query) {
+      const queryValue = `%${filter.query}%`;
+      trendConditions.push(
+        Prisma.sql`(
+          i."title" ILIKE ${queryValue}
+          OR i."summary" ILIKE ${queryValue}
+          OR i."serviceName" ILIKE ${queryValue}
+        )`
+      );
+    }
+
+    const trendWhereSql = trendConditions.length > 0 ? Prisma.join(trendConditions, " AND ") : Prisma.sql`TRUE`;
+
+    const [todayIssueCount, severityRows, trendRows, topRepeatedIssues, latestDeployment] = await Promise.all([
+      this.prisma.issue.count({
+        where: {
+          ...issueWhere,
+          updatedAt: { gte: startOfDay }
+        }
+      }),
+      this.prisma.issue.groupBy({
+        by: ["severity"],
+        where: issueWhere,
+        _count: { severity: true }
+      }),
+      this.prisma.$queryRaw<Array<{ hour_bucket: Date; count: bigint }>>(Prisma.sql`
+        SELECT
+          date_trunc('hour', le."occurredAt") AS hour_bucket,
+          COUNT(*)::bigint AS count
+        FROM "LogEvent" le
+        INNER JOIN "Issue" i ON i."id" = le."issueId"
+        WHERE ${trendWhereSql}
+        GROUP BY 1
+      `),
+      this.prisma.issue.findMany({
+        where: issueWhere,
+        orderBy: [{ occurrenceCount: "desc" }, { lastOccurredAt: "desc" }],
+        take: 5
+      }),
+      this.prisma.deployment.findFirst({
+        where: deploymentWhere,
+        orderBy: { deployedAt: "desc" }
+      })
+    ]);
 
     const severityDistribution = ["critical", "high", "medium", "low"].map((severity) => ({
       severity,
       count: severityRows.find((row) => row.severity === severity)?._count.severity ?? 0
     }));
 
-    const to = filter?.to ? new Date(filter.to) : now;
-    const from = filter?.from ? new Date(filter.from) : new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    const trendLogs = await this.prisma.logEvent.findMany({
-      where: {
-        occurredAt: { gte: from, lte: to },
-        issue: issueWhere
-      },
-      select: { occurredAt: true }
-    });
-
     const hourlyMap = new Map<string, number>();
     for (let i = 23; i >= 0; i -= 1) {
-      const d = new Date(now.getTime() - i * 60 * 60 * 1000);
+      const d = new Date(to.getTime() - i * 60 * 60 * 1000);
       const key = `${d.getHours().toString().padStart(2, "0")}:00`;
       hourlyMap.set(key, 0);
     }
 
-    for (const log of trendLogs) {
-      const key = `${log.occurredAt.getHours().toString().padStart(2, "0")}:00`;
+    for (const row of trendRows) {
+      const key = `${new Date(row.hour_bucket).getHours().toString().padStart(2, "0")}:00`;
       if (hourlyMap.has(key)) hourlyMap.set(key, (hourlyMap.get(key) ?? 0) + 1);
     }
 
     const errorTrend24h = Array.from(hourlyMap.entries()).map(([hour, count]) => ({ hour, count }));
 
-    const topRepeatedIssues = await this.prisma.issue.findMany({
-      where: issueWhere,
-      orderBy: [{ occurrenceCount: "desc" }, { lastOccurredAt: "desc" }],
-      take: 5
-    });
-
     const topRepeatedErrors = topRepeatedIssues.map((issue) => ({
       issueId: issue.id,
       title: issue.title,
+      titleKey: this.toIssueTitleKey(issue.title),
       severity: issue.severity,
       count: issue.occurrenceCount
     }));
-
-    const deploymentWhere: Prisma.DeploymentWhereInput = {};
-    const environment = this.toEnvironment(filter?.environment);
-    if (environment) deploymentWhere.environment = environment;
-
-    const latestDeployment = await this.prisma.deployment.findFirst({
-      where: deploymentWhere,
-      orderBy: { deployedAt: "desc" }
-    });
 
     const newAfterIssues = latestDeployment
       ? await this.prisma.issue.findMany({
@@ -256,11 +385,12 @@ export class OpsService {
     const newAfterLatestDeployment = newAfterIssues.map((issue) => ({
       issueId: issue.id,
       title: issue.title,
+      titleKey: this.toIssueTitleKey(issue.title),
       severity: issue.severity,
       count: issue.occurrenceCount
     }));
 
-    const aiBriefing = await this.generateBriefingText({
+    const aiBriefing = await this.generateBriefingTextFast({
       todayIssueCount,
       criticalCount: severityDistribution.find((item) => item.severity === "critical")?.count ?? 0,
       topIssueTitle: topRepeatedErrors[0]?.title,
@@ -284,12 +414,22 @@ export class OpsService {
 
     const parsed = parseLogLines(input.rawLogs);
     const clusters = clusterLogs(parsed);
+    const clusterTotalCount = clusters.length;
+    const clusterLimit = Math.min(Math.max(input.clusterLimit ?? 12, 1), 50);
+    const requestedBy = input.requestedBy?.trim() || "unknown";
+    if (requestedBy.toLowerCase().startsWith("viewer")) {
+      throw new BadRequestException("viewer 권한에서는 로그 분석을 실행할 수 없습니다.");
+    }
 
     const source = this.toLogSource(input.source);
     const environment = this.toEnvironment(input.environment);
     if (!environment) {
       throw new BadRequestException("environment 값이 필요합니다.");
     }
+
+    this.logger.log(
+      `[audit] analyzeLogs requestedBy=${requestedBy} environment=${environment} service=${input.serviceName} source=${source} parsedLines=${parsed.length} clusterLimit=${clusterLimit}`
+    );
 
     let deploymentId: string | undefined;
     if (input.deploymentVersion?.trim()) {
@@ -380,10 +520,18 @@ export class OpsService {
       }
     }
 
+    const displayedClusters = clusters.slice(0, clusterLimit);
+
+    this.logger.log(
+      `[audit] analyzeLogs completed requestedBy=${requestedBy} createdIssues=${createdIssues} updatedIssues=${updatedIssues} clusterTotalCount=${clusterTotalCount} clusterDisplayedCount=${displayedClusters.length}`
+    );
+
     return {
       createdIssues,
       updatedIssues,
-      clusters: clusters.map((cluster) => ({
+      clusterTotalCount,
+      clusterDisplayedCount: displayedClusters.length,
+      clusters: displayedClusters.map((cluster) => ({
         title: cluster.title,
         normalizedMessage: cluster.normalizedMessage,
         severity: cluster.severity,
