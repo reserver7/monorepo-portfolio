@@ -80,6 +80,7 @@ pnpm audit:workspace
 - 키 추출 자동화:
   - `pnpm i18n:extract` : 코드(`useTranslations` + `t(...)`)에서 신규 키를 찾아 `ko.json`에 추가
   - `pnpm i18n:extract:check` : PR fail-fast (코드에 신규 키가 있는데 기준 로케일에 없으면 실패)
+  - 주의: 템플릿 동적 키(`t(\`x.${value}\`)`)는 추출기가 정적으로 인식하지 못하므로, 화면 코드에서는 정적 키 매핑(`switch`/맵 객체)으로 호출해야 합니다.
 - 누락 자동 채움:
   - `pnpm i18n:sync` : 기준 로케일(`ko`)에서 타 로케일로 누락 키 복제
   - `pnpm i18n:sync:check` : PR fail-fast
