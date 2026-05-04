@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3002",
     "build": "next build",
+    "analyze": "ANALYZE=true next build",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit"
   },
@@ -27,6 +28,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^15.5.13",
     "@repo/configs": "workspace:*",
     "@repo/eslint-config": "workspace:*",
     "@types/node": "^22.13.5",

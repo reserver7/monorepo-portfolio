@@ -2,11 +2,14 @@
 
 import {
   changeOpslensPassword,
+  getOpslensNotificationPolicy,
   getOpslensMe,
   loginOpslens,
   logoutOpslens,
+  refreshOpslens,
   requestPasswordResetOpslens,
   signupOpslens,
+  updateOpslensNotificationPolicy,
   updateOpslensProfile,
   type OpsAuthUser,
   type OpsLoginResponse
@@ -16,16 +19,39 @@ import { setHttpAccessToken } from "@repo/react-query";
 const ACCESS_TOKEN_KEY = "opslens.auth.access-token";
 const EXPIRES_AT_KEY = "opslens.auth.expires-at";
 const USER_KEY = "opslens.auth.user";
+const REFRESH_TOKEN_KEY = "opslens.auth.refresh-token";
 const LEGACY_ROLE_KEY = "opslens.role";
 export const OPS_AVATAR_COLOR_CHANGED_EVENT = "opslens:avatar-color-changed";
 const DEFAULT_AVATAR_COLOR = "#64748B";
+const NOTIFICATION_POLICY_KEY = "opslens.notification-policy";
 type SessionStorageMode = "local" | "session";
 export type OpsAvatarColor = string;
 
 export type OpsAuthSession = {
   accessToken: string;
+  refreshToken: string;
   expiresAt: number;
   user: OpsAuthUser;
+};
+
+export type OpsNotificationPolicy = {
+  inAppEnabled: boolean;
+  emailEnabled: boolean;
+  slackEnabled: boolean;
+  minLevel: "all" | "high" | "critical";
+  quietHoursEnabled: boolean;
+  quietFrom: string;
+  quietTo: string;
+};
+
+const DEFAULT_NOTIFICATION_POLICY: OpsNotificationPolicy = {
+  inAppEnabled: true,
+  emailEnabled: false,
+  slackEnabled: false,
+  minLevel: "all",
+  quietHoursEnabled: false,
+  quietFrom: "22:00",
+  quietTo: "08:00"
 };
 
 const isBrowser = (): boolean => typeof window !== "undefined";
@@ -34,7 +60,8 @@ const parseSessionFrom = (storage: Storage): OpsAuthSession | null => {
   const accessToken = storage.getItem(ACCESS_TOKEN_KEY);
   const expiresAtRaw = storage.getItem(EXPIRES_AT_KEY);
   const userRaw = storage.getItem(USER_KEY);
-  if (!accessToken || !expiresAtRaw || !userRaw) {
+  const refreshToken = storage.getItem(REFRESH_TOKEN_KEY);
+  if (!accessToken || !expiresAtRaw || !userRaw || !refreshToken) {
     return null;
   }
 
@@ -48,7 +75,7 @@ const parseSessionFrom = (storage: Storage): OpsAuthSession | null => {
     if (!user?.id || !user?.email || !user?.name || !user?.role) {
       return null;
     }
-    return { accessToken, expiresAt, user };
+    return { accessToken, refreshToken, expiresAt, user };
   } catch {
     return null;
   }
@@ -68,10 +95,12 @@ const writeSession = (session: OpsAuthSession, storageMode: SessionStorageMode =
   otherStorage.removeItem(ACCESS_TOKEN_KEY);
   otherStorage.removeItem(EXPIRES_AT_KEY);
   otherStorage.removeItem(USER_KEY);
+  otherStorage.removeItem(REFRESH_TOKEN_KEY);
 
   storage.setItem(ACCESS_TOKEN_KEY, session.accessToken);
   storage.setItem(EXPIRES_AT_KEY, String(session.expiresAt));
   storage.setItem(USER_KEY, JSON.stringify(session.user));
+  storage.setItem(REFRESH_TOKEN_KEY, session.refreshToken);
   window.localStorage.setItem(LEGACY_ROLE_KEY, session.user.role);
 };
 
@@ -80,9 +109,11 @@ export const clearAuthSession = (): void => {
     window.localStorage.removeItem(ACCESS_TOKEN_KEY);
     window.localStorage.removeItem(EXPIRES_AT_KEY);
     window.localStorage.removeItem(USER_KEY);
+    window.localStorage.removeItem(REFRESH_TOKEN_KEY);
     window.sessionStorage.removeItem(ACCESS_TOKEN_KEY);
     window.sessionStorage.removeItem(EXPIRES_AT_KEY);
     window.sessionStorage.removeItem(USER_KEY);
+    window.sessionStorage.removeItem(REFRESH_TOKEN_KEY);
     window.localStorage.removeItem(LEGACY_ROLE_KEY);
   }
   setHttpAccessToken(null);
@@ -121,6 +152,64 @@ export const getAuthAccessToken = (): string | null => {
   return readAuthSession()?.accessToken ?? null;
 };
 
+const isValidTime = (value: unknown): value is string => {
+  return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+};
+
+const normalizeNotificationPolicy = (value: unknown): OpsNotificationPolicy => {
+  if (!value || typeof value !== "object") return DEFAULT_NOTIFICATION_POLICY;
+  const policy = value as Partial<OpsNotificationPolicy>;
+  return {
+    inAppEnabled: policy.inAppEnabled ?? DEFAULT_NOTIFICATION_POLICY.inAppEnabled,
+    emailEnabled: policy.emailEnabled ?? DEFAULT_NOTIFICATION_POLICY.emailEnabled,
+    slackEnabled: policy.slackEnabled ?? DEFAULT_NOTIFICATION_POLICY.slackEnabled,
+    minLevel:
+      policy.minLevel === "all" || policy.minLevel === "high" || policy.minLevel === "critical"
+        ? policy.minLevel
+        : DEFAULT_NOTIFICATION_POLICY.minLevel,
+    quietHoursEnabled: policy.quietHoursEnabled ?? DEFAULT_NOTIFICATION_POLICY.quietHoursEnabled,
+    quietFrom: isValidTime(policy.quietFrom) ? policy.quietFrom : DEFAULT_NOTIFICATION_POLICY.quietFrom,
+    quietTo: isValidTime(policy.quietTo) ? policy.quietTo : DEFAULT_NOTIFICATION_POLICY.quietTo
+  };
+};
+
+export const readNotificationPolicy = (): OpsNotificationPolicy => {
+  if (!isBrowser()) return DEFAULT_NOTIFICATION_POLICY;
+  const raw = window.localStorage.getItem(NOTIFICATION_POLICY_KEY);
+  if (!raw) return DEFAULT_NOTIFICATION_POLICY;
+  try {
+    return normalizeNotificationPolicy(JSON.parse(raw));
+  } catch {
+    return DEFAULT_NOTIFICATION_POLICY;
+  }
+};
+
+export const saveNotificationPolicy = (policy: OpsNotificationPolicy): OpsNotificationPolicy => {
+  const normalized = normalizeNotificationPolicy(policy);
+  if (isBrowser()) {
+    window.localStorage.setItem(NOTIFICATION_POLICY_KEY, JSON.stringify(normalized));
+  }
+  return normalized;
+};
+
+export const fetchNotificationPolicy = async (): Promise<OpsNotificationPolicy> => {
+  const session = readAuthSession();
+  if (!session) {
+    throw new Error("로그인이 필요합니다.");
+  }
+  const policy = await getOpslensNotificationPolicy(session.accessToken);
+  return saveNotificationPolicy(policy);
+};
+
+export const updateNotificationPolicy = async (policy: OpsNotificationPolicy): Promise<OpsNotificationPolicy> => {
+  const session = readAuthSession();
+  if (!session) {
+    throw new Error("로그인이 필요합니다.");
+  }
+  const saved = await updateOpslensNotificationPolicy(session.accessToken, policy);
+  return saveNotificationPolicy(saved);
+};
+
 export const saveAuthSession = (
   response: OpsLoginResponse,
   options?: { storageMode?: SessionStorageMode }
@@ -128,6 +217,7 @@ export const saveAuthSession = (
   const expiresAt = Date.now() + response.expiresIn * 1000;
   const session: OpsAuthSession = {
     accessToken: response.accessToken,
+    refreshToken: response.refreshToken,
     expiresAt,
     user: response.user
   };
@@ -192,9 +282,9 @@ export const requestPasswordReset = async (input: { email: string }): Promise<vo
 };
 
 export const logoutCurrentSession = async (): Promise<void> => {
-  const accessToken = getAuthAccessToken();
-  if (accessToken) {
-    await logoutOpslens(accessToken);
+  const session = readAuthSession();
+  if (session) {
+    await logoutOpslens(session.accessToken, session.refreshToken);
   }
   clearAuthSession();
 };
@@ -209,8 +299,14 @@ export const validateCurrentSession = async (): Promise<OpsAuthSession | null> =
     writeSession(verifiedSession);
     return verifiedSession;
   } catch {
-    clearAuthSession();
-    return null;
+    try {
+      const refreshed = await refreshOpslens(session.refreshToken);
+      const next = saveAuthSession(refreshed);
+      return next;
+    } catch {
+      clearAuthSession();
+      return null;
+    }
   }
 };
 

@@ -29,6 +29,9 @@ export interface DatePickerProps
   showIcon?: boolean;
   icon?: React.ReactNode;
   locale?: string;
+  withTime?: boolean;
+  showSeconds?: boolean;
+  minuteStep?: number;
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onValueChange?: (nextValue: string) => void;
   onRangeChange?: (nextRange: DateRangeStringValue) => void;

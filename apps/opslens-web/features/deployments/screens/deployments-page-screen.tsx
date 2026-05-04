@@ -7,6 +7,7 @@ import { useAppForm } from "@repo/forms";
 import { getDeploymentImpact, getDeployments, registerDeployment } from "@repo/opslens";
 import { OpsCardListSkeleton, OpsInfoItem, OpsPageShell, OpsSectionCard, SeverityBadge } from "@/features";
 import { useOpsFilters } from "@/features/stores";
+import { useOpsQueryOptions } from "@/features/query/use-ops-query-options";
 import { formatDateTime, formatNumber } from "@repo/utils";
 import { opslensQueryKeys } from "@repo/opslens";
 
@@ -26,21 +27,19 @@ export default function DeploymentsPage() {
     }
   });
 
-  const deploymentsQuery = useQuery({
+  const deploymentsQuery = useQuery(useOpsQueryOptions("list", {
     queryKey: opslensQueryKeys.deployments(environment),
-    staleTime: 10 * 1000,
     queryFn: () => getDeployments(environment)
-  });
+  }));
 
   const latestVersion = useMemo(() => deploymentsQuery.data?.[0]?.version, [deploymentsQuery.data]);
   const [selectedVersion, setSelectedVersion] = useState<string | undefined>(undefined);
 
-  const impactQuery = useQuery({
+  const impactQuery = useQuery(useOpsQueryOptions("default", {
     queryKey: opslensQueryKeys.deploymentImpact(environment, selectedVersion),
-    staleTime: 10 * 1000,
     queryFn: () => getDeploymentImpact(selectedVersion!, environment),
     enabled: Boolean(selectedVersion)
-  });
+  }));
 
   const createMutation = useMutation({
     mutationFn: (values: DeploymentFormValues) =>

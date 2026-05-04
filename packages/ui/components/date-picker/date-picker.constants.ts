@@ -4,5 +4,8 @@ export const DATE_PICKER_DEFAULTS = {
   placeholder: "날짜를 선택하세요",
   rangePlaceholder: "기간을 선택하세요",
   showIcon: true,
-  locale: "ko-KR"
+  locale: "ko-KR",
+  withTime: false,
+  showSeconds: false,
+  minuteStep: 1
 } as const;

@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { RotateCcw } from "lucide-react";
 import { Box, Button, DatePicker, Flex, Select, Sheet, SheetBody, SheetContent, SheetDescription, SheetHeader, SheetTitle, Typography } from "@repo/ui";
-import { opslensMessages, type OpsLocale } from "@/lib/i18n/messages";
+import { type OpsLocale } from "@/lib/i18n/messages";
+import ko from "@/lib/i18n/messages/ko.json";
 
 export type OpsFilterFormValues = {
   environment: "dev" | "stage" | "prod";
@@ -40,7 +41,33 @@ export function OpsFilterSheet({
   onReset,
   onApply
 }: OpsFilterSheetProps) {
-  const messages = opslensMessages[locale] ?? opslensMessages.ko;
+  const [messages, setMessages] = useState<Record<string, unknown>>(ko as Record<string, unknown>);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      if (locale === "en") {
+        const mod = await import("@/lib/i18n/messages/en.json");
+        if (!active) return;
+        setMessages(mod.default as Record<string, unknown>);
+        return;
+      }
+      if (locale === "ja") {
+        const mod = await import("@/lib/i18n/messages/ja.json");
+        if (!active) return;
+        setMessages(mod.default as Record<string, unknown>);
+        return;
+      }
+      const mod = await import("@/lib/i18n/messages/ko.json");
+      if (!active) return;
+      setMessages(mod.default as Record<string, unknown>);
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [locale]);
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>

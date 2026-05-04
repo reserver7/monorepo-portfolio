@@ -14,10 +14,14 @@ import { INPUT_DEFAULTS, INPUT_SIZE_CLASS, INPUT_STATUS_CLASS, INPUT_VARIANT_CLA
 import { resolveInputStatus } from "../input/input.utils";
 import { Label } from "../label";
 import { Popover, PopoverContent, PopoverTrigger } from "../popover";
+import { TimePicker } from "../time-picker";
 import { DATE_PICKER_DEFAULTS } from "./date-picker.constants";
 import {
+  applyTimeToDate,
   formatDateInputValue,
+  formatDateTimeInputValue,
   formatDateText,
+  parseTimeValue,
   parseDateValue,
   toDateInputValue,
   toDateRangeValue
@@ -47,6 +51,9 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
       clearable = DATE_PICKER_DEFAULTS.clearable,
       placeholder = DATE_PICKER_DEFAULTS.placeholder,
       locale = DATE_PICKER_DEFAULTS.locale,
+      withTime = DATE_PICKER_DEFAULTS.withTime,
+      showSeconds = DATE_PICKER_DEFAULTS.showSeconds,
+      minuteStep = DATE_PICKER_DEFAULTS.minuteStep,
       showIcon = DATE_PICKER_DEFAULTS.showIcon,
       icon,
       id,
@@ -69,12 +76,20 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
     const [isOpen, setIsOpen] = React.useState(false);
     const minDateValue = React.useMemo(() => parseDateValue(minDate), [minDate]);
     const maxDateValue = React.useMemo(() => parseDateValue(maxDate), [maxDate]);
+    const timeStepValue = Math.max(1, Math.min(60, Number(minuteStep) || 1));
 
     const [currentSingleValue, setCurrentSingleValue] = useControlledValue<string | undefined>({
       value: toDateInputValue(value),
       defaultValue: toDateInputValue(defaultValue)
     });
     const selectedDate = React.useMemo(() => parseDateValue(currentSingleValue), [currentSingleValue]);
+    const [singleTimeValue, setSingleTimeValue] = React.useState<string>(() => {
+      const parsed = parseTimeValue(typeof currentSingleValue === "string" && currentSingleValue.includes("T") ? currentSingleValue.split("T")[1] : "");
+      if (!parsed) return showSeconds ? "00:00:00" : "00:00";
+      return showSeconds
+        ? `${String(parsed.hour).padStart(2, "0")}:${String(parsed.minute).padStart(2, "0")}:${String(parsed.second).padStart(2, "0")}`
+        : `${String(parsed.hour).padStart(2, "0")}:${String(parsed.minute).padStart(2, "0")}`;
+    });
 
     const [currentRangeValue, setCurrentRangeValue] = useControlledValue<DateRangeStringValue>({
       value: range === undefined ? undefined : toDateRangeValue(range),
@@ -90,6 +105,8 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
     }, [currentRangeValue.from, currentRangeValue.to, isRangeMode]);
     const selectedRangeFrom = selectedRange?.from;
     const selectedRangeTo = selectedRange?.to;
+    const [rangeFromTimeValue, setRangeFromTimeValue] = React.useState<string>(showSeconds ? "00:00:00" : "00:00");
+    const [rangeToTimeValue, setRangeToTimeValue] = React.useState<string>(showSeconds ? "23:59:59" : "23:59");
 
     const activeStatus = resolveInputStatus(status ?? state, Boolean(errorMessage));
     const resolvedSize = resolveOption(size, INPUT_SIZE_CLASS, INPUT_DEFAULTS.size);
@@ -141,27 +158,41 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
 
     const handleSingleSelect = React.useCallback(
       (nextDate: Date | undefined) => {
-        const nextValue = nextDate ? formatDateInputValue(nextDate) : "";
+        const nextValue = nextDate
+          ? withTime
+            ? formatDateTimeInputValue(applyTimeToDate(nextDate, singleTimeValue), showSeconds)
+            : formatDateInputValue(nextDate)
+          : "";
         emitSingleChange(nextValue);
-        if (nextDate) {
+        if (nextDate && !withTime) {
           setIsOpen(false);
         }
       },
-      [emitSingleChange]
+      [emitSingleChange, showSeconds, singleTimeValue, withTime]
     );
 
     const handleRangeSelect = React.useCallback(
       (nextRange: DateRange | undefined) => {
+        const fromWithTime = nextRange?.from ? applyTimeToDate(nextRange.from, rangeFromTimeValue) : undefined;
+        const toWithTime = nextRange?.to ? applyTimeToDate(nextRange.to, rangeToTimeValue) : undefined;
         const nextValue: DateRangeStringValue = {
-          from: nextRange?.from ? formatDateInputValue(nextRange.from) : undefined,
-          to: nextRange?.to ? formatDateInputValue(nextRange.to) : undefined
+          from: fromWithTime
+            ? withTime
+              ? formatDateTimeInputValue(fromWithTime, showSeconds)
+              : formatDateInputValue(fromWithTime)
+            : undefined,
+          to: toWithTime
+            ? withTime
+              ? formatDateTimeInputValue(toWithTime, showSeconds)
+              : formatDateInputValue(toWithTime)
+            : undefined
         };
         emitRangeChange(nextValue);
-        if (nextRange?.from && nextRange?.to) {
+        if (nextRange?.from && nextRange?.to && !withTime) {
           setIsOpen(false);
         }
       },
-      [emitRangeChange]
+      [emitRangeChange, rangeFromTimeValue, rangeToTimeValue, showSeconds, withTime]
     );
 
     const handleClear = React.useCallback(() => {
@@ -173,18 +204,81 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
     }, [emitRangeChange, emitSingleChange, isRangeMode]);
 
     const triggerLabel = React.useMemo(() => {
+      const dateTimeFormatter = new Intl.DateTimeFormat(locale, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        ...(showSeconds ? { second: "2-digit" as const } : {})
+      });
       if (isRangeMode) {
         if (selectedRangeFrom && selectedRangeTo) {
+          if (withTime) {
+            return `${dateTimeFormatter.format(applyTimeToDate(selectedRangeFrom, rangeFromTimeValue))} ~ ${dateTimeFormatter.format(applyTimeToDate(selectedRangeTo, rangeToTimeValue))}`;
+          }
           return `${formatDateText(selectedRangeFrom, locale)} ~ ${formatDateText(selectedRangeTo, locale)}`;
         }
         if (selectedRangeFrom) {
+          if (withTime) {
+            return `${dateTimeFormatter.format(applyTimeToDate(selectedRangeFrom, rangeFromTimeValue))} ~`;
+          }
           return `${formatDateText(selectedRangeFrom, locale)} ~`;
         }
         return placeholder;
       }
 
-      return selectedDate ? formatDateText(selectedDate, locale) : placeholder;
-    }, [isRangeMode, locale, placeholder, selectedDate, selectedRangeFrom, selectedRangeTo]);
+      if (!selectedDate) return placeholder;
+      return withTime ? dateTimeFormatter.format(applyTimeToDate(selectedDate, singleTimeValue)) : formatDateText(selectedDate, locale);
+    }, [
+      isRangeMode,
+      locale,
+      placeholder,
+      rangeFromTimeValue,
+      rangeToTimeValue,
+      selectedDate,
+      selectedRangeFrom,
+      selectedRangeTo,
+      showSeconds,
+      singleTimeValue,
+      withTime
+    ]);
+
+    React.useEffect(() => {
+      if (!withTime) return;
+      if (!currentSingleValue || !currentSingleValue.includes("T")) return;
+      const nextTime = currentSingleValue.split("T")[1] ?? "";
+      const parsed = parseTimeValue(nextTime);
+      if (!parsed) return;
+      const next = showSeconds
+        ? `${String(parsed.hour).padStart(2, "0")}:${String(parsed.minute).padStart(2, "0")}:${String(parsed.second).padStart(2, "0")}`
+        : `${String(parsed.hour).padStart(2, "0")}:${String(parsed.minute).padStart(2, "0")}`;
+      setSingleTimeValue(next);
+    }, [currentSingleValue, showSeconds, withTime]);
+
+    React.useEffect(() => {
+      if (!withTime) return;
+      if (currentRangeValue.from?.includes("T")) {
+        const parsed = parseTimeValue(currentRangeValue.from.split("T")[1] ?? "");
+        if (parsed) {
+          setRangeFromTimeValue(
+            showSeconds
+              ? `${String(parsed.hour).padStart(2, "0")}:${String(parsed.minute).padStart(2, "0")}:${String(parsed.second).padStart(2, "0")}`
+              : `${String(parsed.hour).padStart(2, "0")}:${String(parsed.minute).padStart(2, "0")}`
+          );
+        }
+      }
+      if (currentRangeValue.to?.includes("T")) {
+        const parsed = parseTimeValue(currentRangeValue.to.split("T")[1] ?? "");
+        if (parsed) {
+          setRangeToTimeValue(
+            showSeconds
+              ? `${String(parsed.hour).padStart(2, "0")}:${String(parsed.minute).padStart(2, "0")}:${String(parsed.second).padStart(2, "0")}`
+              : `${String(parsed.hour).padStart(2, "0")}:${String(parsed.minute).padStart(2, "0")}`
+          );
+        }
+      }
+    }, [currentRangeValue.from, currentRangeValue.to, showSeconds, withTime]);
 
     const handleOpenChange = React.useCallback(
       (nextOpen: boolean) => {
@@ -278,26 +372,103 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
           </PopoverTrigger>
           <PopoverContent align="start" sideOffset={0} className="w-auto p-0">
             {shouldRenderCalendar && isRangeMode ? (
-              <Calendar
-                mode="range"
-                selected={selectedRange}
-                onSelect={handleRangeSelect as (value: unknown) => void}
-                disabled={disabled || readOnly}
-                fromDate={minDateValue}
-                toDate={maxDateValue}
-                initialFocus
-              />
+              <div className="grid gap-[var(--space-2)] p-[var(--space-2)]">
+                <Calendar
+                  mode="range"
+                  selected={selectedRange}
+                  onSelect={handleRangeSelect as (value: unknown) => void}
+                  disabled={disabled || readOnly}
+                  fromDate={minDateValue}
+                  toDate={maxDateValue}
+                  initialFocus
+                />
+                {withTime ? (
+                  <div className="grid gap-[var(--space-2)] border-default border-t pt-[var(--space-2)] md:grid-cols-2">
+                    <div className="grid gap-[var(--space-1)]">
+                      <Label size="sm">시작 시간</Label>
+                      <TimePicker
+                        value={rangeFromTimeValue}
+                        showSeconds={showSeconds}
+                        minuteStep={timeStepValue}
+                        onChange={(event) => {
+                          const next = event.target.value;
+                          setRangeFromTimeValue(next);
+                          if (selectedRangeFrom) {
+                            emitRangeChange({
+                              from: formatDateTimeInputValue(applyTimeToDate(selectedRangeFrom, next), showSeconds),
+                              to: selectedRangeTo
+                                ? formatDateTimeInputValue(applyTimeToDate(selectedRangeTo, rangeToTimeValue), showSeconds)
+                                : undefined
+                            });
+                          }
+                        }}
+                        size={resolvedSize}
+                        variant={resolvedVariant}
+                        status={resolvedStatus}
+                        disabled={disabled || readOnly}
+                      />
+                    </div>
+                    <div className="grid gap-[var(--space-1)]">
+                      <Label size="sm">종료 시간</Label>
+                      <TimePicker
+                        value={rangeToTimeValue}
+                        showSeconds={showSeconds}
+                        minuteStep={timeStepValue}
+                        onChange={(event) => {
+                          const next = event.target.value;
+                          setRangeToTimeValue(next);
+                          if (selectedRangeFrom) {
+                            emitRangeChange({
+                              from: formatDateTimeInputValue(applyTimeToDate(selectedRangeFrom, rangeFromTimeValue), showSeconds),
+                              to: selectedRangeTo
+                                ? formatDateTimeInputValue(applyTimeToDate(selectedRangeTo, next), showSeconds)
+                                : undefined
+                            });
+                          }
+                        }}
+                        size={resolvedSize}
+                        variant={resolvedVariant}
+                        status={resolvedStatus}
+                        disabled={disabled || readOnly}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             ) : null}
             {shouldRenderCalendar && !isRangeMode ? (
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={handleSingleSelect as (value: unknown) => void}
-                disabled={disabled || readOnly}
-                fromDate={minDateValue}
-                toDate={maxDateValue}
-                initialFocus
-              />
+              <div className="grid gap-[var(--space-2)] p-[var(--space-2)]">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={handleSingleSelect as (value: unknown) => void}
+                  disabled={disabled || readOnly}
+                  fromDate={minDateValue}
+                  toDate={maxDateValue}
+                  initialFocus
+                />
+                {withTime ? (
+                  <div className="grid gap-[var(--space-1)] border-default border-t pt-[var(--space-2)]">
+                    <Label size="sm">시간</Label>
+                    <TimePicker
+                      value={singleTimeValue}
+                      showSeconds={showSeconds}
+                      minuteStep={timeStepValue}
+                      onChange={(event) => {
+                        const next = event.target.value;
+                        setSingleTimeValue(next);
+                        if (selectedDate) {
+                          emitSingleChange(formatDateTimeInputValue(applyTimeToDate(selectedDate, next), showSeconds));
+                        }
+                      }}
+                      size={resolvedSize}
+                      variant={resolvedVariant}
+                      status={resolvedStatus}
+                      disabled={disabled || readOnly}
+                    />
+                  </div>
+                ) : null}
+              </div>
             ) : null}
           </PopoverContent>
         </Popover>

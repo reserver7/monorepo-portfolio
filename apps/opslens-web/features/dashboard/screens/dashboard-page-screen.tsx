@@ -22,7 +22,9 @@ import {
   toOptionalServiceName
 } from "@repo/opslens";
 import { OpsDashboardSkeleton, OpsPageShell, OpsSectionCard, SeverityBadge } from "@/features";
+import { formatDateRangeLabel, resolveServiceLabel } from "@/features/utils/ops-display";
 import { useOpsFilters } from "@/features/stores";
+import { useOpsQueryOptions } from "@/features/query/use-ops-query-options";
 import { formatNumber } from "@repo/utils";
 import { toCalendarLocale } from "@/lib/i18n/messages";
 
@@ -48,6 +50,18 @@ const TopRepeatedErrorsChart = dynamic(() => import("@/features/components/dashb
   loading: () => <OpsChartSkeleton heightClassName="h-[248px]" />
 });
 
+const ISSUE_KEY_TO_I18N_MAP = {
+  runtimeTypeError: "issueKeys.runtimeTypeError",
+  apiHttp500: "issueKeys.apiHttp500",
+  networkTimeout: "issueKeys.networkTimeout",
+  loginSessionIssue: "issueKeys.loginSessionIssue",
+  renderLatency: "issueKeys.renderLatency",
+  qaRegression: "issueKeys.qaRegression",
+  discountDisplayMissing: "issueKeys.discountDisplayMissing",
+  docsPermissionLoop: "issueKeys.docsPermissionLoop",
+  whiteboardReconnectDelay: "issueKeys.whiteboardReconnectDelay"
+} as const;
+
 export default function DashboardPage() {
   const tDashboard = useTranslations("dashboard");
   const tService = useTranslations("service");
@@ -55,9 +69,8 @@ export default function DashboardPage() {
   const { environment, locale, serviceName, search, from, to } = useOpsFilters();
   const filter = { environment, locale, serviceName, search, from, to };
 
-  const summaryQuery = useQuery({
+  const summaryQuery = useQuery(useOpsQueryOptions("default", {
     queryKey: opslensQueryKeys.dashboard(filter),
-    staleTime: 10 * 1000,
     queryFn: () =>
       getDashboardSummary({
         environment,
@@ -66,7 +79,7 @@ export default function DashboardPage() {
         from,
         to
       })
-  });
+  }));
 
   if (summaryQuery.isLoading) return <OpsDashboardSkeleton />;
   if (summaryQuery.isError || !summaryQuery.data) {
@@ -76,28 +89,8 @@ export default function DashboardPage() {
   const summary = summaryQuery.data;
   const localizeIssueTitle = (title: string, titleKey?: string) => {
     if (!titleKey) return title;
-    switch (titleKey) {
-      case "runtimeTypeError":
-        return tDashboard("issueKeys.runtimeTypeError");
-      case "apiHttp500":
-        return tDashboard("issueKeys.apiHttp500");
-      case "networkTimeout":
-        return tDashboard("issueKeys.networkTimeout");
-      case "loginSessionIssue":
-        return tDashboard("issueKeys.loginSessionIssue");
-      case "renderLatency":
-        return tDashboard("issueKeys.renderLatency");
-      case "qaRegression":
-        return tDashboard("issueKeys.qaRegression");
-      case "discountDisplayMissing":
-        return tDashboard("issueKeys.discountDisplayMissing");
-      case "docsPermissionLoop":
-        return tDashboard("issueKeys.docsPermissionLoop");
-      case "whiteboardReconnectDelay":
-        return tDashboard("issueKeys.whiteboardReconnectDelay");
-      default:
-        return title;
-    }
+    const i18nKey = ISSUE_KEY_TO_I18N_MAP[titleKey as keyof typeof ISSUE_KEY_TO_I18N_MAP];
+    return i18nKey ? tDashboard(i18nKey) : title;
   };
   const topRepeatedErrors = summary.topRepeatedErrors.map((item) => ({
     ...item,
@@ -125,25 +118,9 @@ export default function DashboardPage() {
         severity: item.severity,
         count: item.count
       }));
-  const serviceLabel = serviceName === "all"
-    ? tService("all")
-    : serviceName === "docs"
-      ? tService("docs")
-      : serviceName === "whiteboard"
-        ? tService("whiteboard")
-        : serviceName === "billing"
-          ? tService("billing")
-          : serviceName === "checkout"
-            ? tService("checkout")
-            : serviceName;
+  const serviceLabel = resolveServiceLabel(serviceName, tService);
   const dateLocale = toCalendarLocale(locale);
-  const formatDateByLocale = (value?: string) => {
-    if (!value) return "-";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "-";
-    return new Intl.DateTimeFormat(dateLocale, { year: "numeric", month: "short", day: "numeric" }).format(date);
-  };
-  const rangeLabel = from || to ? `${formatDateByLocale(from)} ~ ${formatDateByLocale(to)}` : undefined;
+  const rangeLabel = formatDateRangeLabel(from, to, locale);
   const lastUpdatedLabel = new Intl.DateTimeFormat(dateLocale, {
     year: "numeric",
     month: "short",
@@ -240,7 +217,7 @@ export default function DashboardPage() {
                           router.push(`/issues/${item.issueId}`);
                         }
                       }}
-                      className="border-default bg-surface-elevated hover:border-primary/40 hover:bg-surface cursor-pointer rounded-[var(--radius-lg)] border p-[var(--space-3)] transition-colors"
+                      className="border-default bg-surface hover:border-primary/40 hover:bg-surface-elevated cursor-pointer rounded-[var(--radius-lg)] border p-[var(--space-3)] transition-colors"
                     >
                       <Flex className="mb-[var(--space-1)] items-center justify-between gap-[var(--space-2)]">
                         <Typography as="p" variant="caption" color="subtle" className="font-semibold">

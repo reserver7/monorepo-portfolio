@@ -4,7 +4,9 @@ import {
   AuthForgotPasswordDto,
   AuthLoginDto,
   AuthOAuthLoginDto,
+  AuthRefreshDto,
   AuthSignupDto,
+  AuthUpdateNotificationPolicyDto,
   AuthUpdateProfileDto
 } from "./auth.dto.js";
 import { OpsAuthGuard, type AuthenticatedRequest } from "./auth.guard.js";
@@ -15,8 +17,8 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post("login")
-  login(@Body() input: AuthLoginDto) {
-    return this.authService.login(input.email, input.password);
+  login(@Body() input: AuthLoginDto, @Req() request: { ip?: string }) {
+    return this.authService.login(input.email, input.password, request?.ip);
   }
 
   @Post("signup")
@@ -40,6 +42,11 @@ export class AuthController {
     return this.authService.oauthLogin(input);
   }
 
+  @Post("refresh")
+  refresh(@Body() input: AuthRefreshDto) {
+    return this.authService.refresh(input.refreshToken);
+  }
+
   @UseGuards(OpsAuthGuard)
   @Get("me")
   me(@Req() request: AuthenticatedRequest) {
@@ -60,7 +67,19 @@ export class AuthController {
 
   @UseGuards(OpsAuthGuard)
   @Post("logout")
-  logout() {
-    return { success: true };
+  logout(@Req() request: AuthenticatedRequest, @Body() input?: Partial<AuthRefreshDto>) {
+    return this.authService.logout(request.authUser!, input?.refreshToken);
+  }
+
+  @UseGuards(OpsAuthGuard)
+  @Get("notification-policy")
+  notificationPolicy(@Req() request: AuthenticatedRequest) {
+    return this.authService.getNotificationPolicy(request.authUser!);
+  }
+
+  @UseGuards(OpsAuthGuard)
+  @Patch("notification-policy")
+  updateNotificationPolicy(@Req() request: AuthenticatedRequest, @Body() input: AuthUpdateNotificationPolicyDto) {
+    return this.authService.updateNotificationPolicy(request.authUser!, input);
   }
 }

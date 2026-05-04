@@ -6,6 +6,7 @@ import { useQuery } from "@repo/react-query";
 import { getAiBriefing, getDashboardSummary, listIssues } from "@repo/opslens";
 import { OpsCardListSkeleton, OpsPageShell, OpsSectionCard, SeverityBadge, StatusBadge } from "@/features";
 import { useOpsFilters } from "@/features/stores";
+import { useOpsQueryOptions } from "@/features/query/use-ops-query-options";
 import { formatDateTime, formatNumber } from "@repo/utils";
 import { opslensQueryKeys, toOptionalSearch, toOptionalServiceName } from "@repo/opslens";
 
@@ -15,9 +16,8 @@ export default function ReportsPage() {
 
   const [audience, setAudience] = useState<"developer" | "stakeholder">("developer");
 
-  const summaryQuery = useQuery({
+  const summaryQuery = useQuery(useOpsQueryOptions("default", {
     queryKey: opslensQueryKeys.reportsSummary(filter),
-    staleTime: 10 * 1000,
     queryFn: () =>
       getDashboardSummary({
         environment,
@@ -26,11 +26,10 @@ export default function ReportsPage() {
         from,
         to
       })
-  });
+  }));
 
-  const briefingQuery = useQuery({
+  const briefingQuery = useQuery(useOpsQueryOptions("default", {
     queryKey: opslensQueryKeys.reportsBriefing(filter),
-    staleTime: 10 * 1000,
     queryFn: () =>
       getAiBriefing({
         environment,
@@ -39,11 +38,10 @@ export default function ReportsPage() {
         from,
         to
       })
-  });
+  }));
 
-  const issuesQuery = useQuery({
+  const issuesQuery = useQuery(useOpsQueryOptions("list", {
     queryKey: opslensQueryKeys.reportsIssues(filter),
-    staleTime: 10 * 1000,
     queryFn: () =>
       listIssues({
         environment,
@@ -52,7 +50,7 @@ export default function ReportsPage() {
         page: 1,
         pageSize: 5
       })
-  });
+  }));
 
   const reportText = useMemo(() => {
     const summary = summaryQuery.data;

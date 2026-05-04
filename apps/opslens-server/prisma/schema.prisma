@@ -56,9 +56,25 @@ model User {
   role         AuthRole @default(operator)
   authProvider AuthProvider @default(local)
   avatarColor  String @default("#3B82F6")
+  notificationPolicy Json?
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String   @unique
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?
+  createdAt    DateTime @default(now())
+  lastUsedAt   DateTime?
+
+  @@index([userId, expiresAt])
 }
 
 model Deployment {
@@ -101,6 +117,9 @@ model Issue {
 
   @@index([environment, serviceName])
   @@index([severity, status])
+  @@index([environment, lastOccurredAt])
+  @@index([environment, updatedAt])
+  @@index([serviceName, lastOccurredAt])
 }
 
 model LogEvent {
@@ -118,6 +137,7 @@ model LogEvent {
   createdAt         DateTime  @default(now())
 
   @@index([occurredAt])
+  @@index([issueId, occurredAt])
 }
 
 model IssueComment {

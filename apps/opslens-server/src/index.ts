@@ -2,6 +2,7 @@ import "dotenv/config";
 import "reflect-metadata";
 import { Logger } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import { HttpMetricsInterceptor } from "./common/interceptors/http-metrics.interceptor.js";
 import { env } from "./config/env.js";
 import { AppModule } from "./app.module.js";
 
@@ -12,6 +13,7 @@ async function bootstrap(): Promise<void> {
     origin: true,
     credentials: true
   });
+  app.useGlobalInterceptors(new HttpMetricsInterceptor());
 
   await app.listen(env.PORT);
 

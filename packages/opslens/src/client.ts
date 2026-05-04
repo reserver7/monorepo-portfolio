@@ -16,6 +16,14 @@ const resolveAuthApiUrl = (): string => {
   return trimmed;
 };
 
+const resolveOpsApiUrl = (): string => {
+  const trimmed = opslensApiUrl.trim().replace(/\/+$/, "");
+  if (trimmed.endsWith("/graphql")) {
+    return trimmed.slice(0, -"/graphql".length);
+  }
+  return trimmed;
+};
+
 export type Severity = "critical" | "high" | "medium" | "low";
 export type IssueStatus = "new" | "analyzing" | "in_progress" | "resolved";
 export type Environment = "dev" | "stage" | "prod";
@@ -33,10 +41,46 @@ export type OpsAuthUser = {
 
 export type OpsLoginResponse = {
   accessToken: string;
+  refreshToken: string;
   tokenType: "Bearer";
   expiresIn: number;
   user: OpsAuthUser;
 };
+
+export type OpsNotificationPolicy = {
+  inAppEnabled: boolean;
+  emailEnabled: boolean;
+  slackEnabled: boolean;
+  minLevel: "all" | "high" | "critical";
+  quietHoursEnabled: boolean;
+  quietFrom: string;
+  quietTo: string;
+};
+
+export type OpsLogTailEvent = {
+  id: string;
+  rawMessage: string;
+  normalizedMessage: string;
+  source: string;
+  level: string;
+  occurredAt: string;
+  issueId: string;
+};
+
+export function createOpsLogTailEventSource(input: {
+  environment?: string;
+  serviceName?: string;
+  source?: string;
+}): EventSource {
+  const params = new URLSearchParams();
+  if (input.environment) params.set("environment", input.environment);
+  if (input.serviceName) params.set("serviceName", input.serviceName);
+  if (input.source) params.set("source", input.source);
+  const query = params.toString();
+  const base = resolveOpsApiUrl();
+  const url = query.length > 0 ? `${base}/ops/log-tail?${query}` : `${base}/ops/log-tail`;
+  return new EventSource(url, { withCredentials: false });
+}
 
 const parseErrorMessage = async (response: Response): Promise<string> => {
   try {
@@ -106,14 +150,31 @@ export async function requestPasswordResetOpslens(input: { email: string }): Pro
   return (await response.json()) as { success: true };
 }
 
-export async function logoutOpslens(accessToken: string): Promise<void> {
+export async function logoutOpslens(accessToken: string, refreshToken?: string): Promise<void> {
   await fetch(`${resolveAuthApiUrl()}/auth/logout`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
       Accept: "application/json"
-    }
+    },
+    body: JSON.stringify(refreshToken ? { refreshToken } : {})
   }).catch(() => undefined);
+}
+
+export async function refreshOpslens(refreshToken: string): Promise<OpsLoginResponse> {
+  const response = await fetch(`${resolveAuthApiUrl()}/auth/refresh`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify({ refreshToken })
+  });
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response));
+  }
+  return (await response.json()) as OpsLoginResponse;
 }
 
 export async function getOpslensMe(accessToken: string): Promise<OpsAuthUser> {
@@ -178,6 +239,43 @@ export async function changeOpslensPassword(
   }
 
   return (await response.json()) as { success: true };
+}
+
+export async function getOpslensNotificationPolicy(accessToken: string): Promise<OpsNotificationPolicy> {
+  const response = await fetch(`${resolveAuthApiUrl()}/auth/notification-policy`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json"
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response));
+  }
+
+  return (await response.json()) as OpsNotificationPolicy;
+}
+
+export async function updateOpslensNotificationPolicy(
+  accessToken: string,
+  input: OpsNotificationPolicy
+): Promise<OpsNotificationPolicy> {
+  const response = await fetch(`${resolveAuthApiUrl()}/auth/notification-policy`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify(input)
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response));
+  }
+
+  return (await response.json()) as OpsNotificationPolicy;
 }
 
 export type OpsFilterParams = {

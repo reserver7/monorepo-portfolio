@@ -1,4 +1,4 @@
-import { IsEmail, IsHexColor, IsOptional, IsString, MinLength } from "class-validator";
+import { IsBoolean, IsEmail, IsHexColor, IsIn, IsOptional, IsString, Matches, MinLength } from "class-validator";
 
 export class AuthLoginDto {
   @IsEmail()
@@ -7,6 +7,12 @@ export class AuthLoginDto {
   @IsString()
   @MinLength(8)
   password!: string;
+}
+
+export class AuthRefreshDto {
+  @IsString()
+  @MinLength(32)
+  refreshToken!: string;
 }
 
 export class AuthSignupDto {
@@ -63,4 +69,27 @@ export class AuthChangePasswordDto {
   @IsString()
   @MinLength(8)
   newPassword!: string;
+}
+
+export class AuthUpdateNotificationPolicyDto {
+  @IsBoolean()
+  inAppEnabled!: boolean;
+
+  @IsBoolean()
+  emailEnabled!: boolean;
+
+  @IsBoolean()
+  slackEnabled!: boolean;
+
+  @IsIn(["all", "high", "critical"])
+  minLevel!: "all" | "high" | "critical";
+
+  @IsBoolean()
+  quietHoursEnabled!: boolean;
+
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
+  quietFrom!: string;
+
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
+  quietTo!: string;
 }
