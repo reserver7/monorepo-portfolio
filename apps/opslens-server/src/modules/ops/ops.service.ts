@@ -10,6 +10,7 @@ import {
   type IssueComment,
   type LogEvent
 } from "@prisma/client";
+import { env } from "../../config/env.js";
 import { PrismaService } from "../../integration/db/prisma.service.js";
 import { AiService } from "../ai/ai.service.js";
 import {
@@ -37,12 +38,47 @@ import type {
 @Injectable()
 export class OpsService {
   private readonly dashboardBriefingCache = new Map<string, { value: string; expiresAt: number }>();
+  private readonly dashboardSummaryCache = new Map<string, { value: DashboardSummaryType; expiresAt: number }>();
+  private readonly deploymentImpactCache = new Map<string, { value: DeploymentImpactReportType; expiresAt: number }>();
+  private readonly issueListCache = new Map<string, { value: IssueListPayloadType; expiresAt: number }>();
+  private readonly qaScenarioListCache = new Map<string, { value: QaScenarioType[]; expiresAt: number }>();
   private readonly logger = new Logger(OpsService.name);
+  private readonly cacheStats = {
+    dashboardSummaryHit: 0,
+    dashboardSummaryMiss: 0,
+    deploymentImpactHit: 0,
+    deploymentImpactMiss: 0,
+    issueListHit: 0,
+    issueListMiss: 0,
+    qaScenarioHit: 0,
+    qaScenarioMiss: 0
+  };
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AiService
   ) {}
+
+  private logCacheStats(): void {
+    if (process.env.NODE_ENV !== "development") return;
+    const total =
+      this.cacheStats.dashboardSummaryHit +
+      this.cacheStats.dashboardSummaryMiss +
+      this.cacheStats.deploymentImpactHit +
+      this.cacheStats.deploymentImpactMiss +
+      this.cacheStats.issueListHit +
+      this.cacheStats.issueListMiss +
+      this.cacheStats.qaScenarioHit +
+      this.cacheStats.qaScenarioMiss;
+    if (total % 50 !== 0) return;
+
+    this.logger.debug(
+      `[cache] dashboardSummary h/m=${this.cacheStats.dashboardSummaryHit}/${this.cacheStats.dashboardSummaryMiss} ` +
+        `deploymentImpact h/m=${this.cacheStats.deploymentImpactHit}/${this.cacheStats.deploymentImpactMiss} ` +
+        `issueList h/m=${this.cacheStats.issueListHit}/${this.cacheStats.issueListMiss} ` +
+        `qaScenario h/m=${this.cacheStats.qaScenarioHit}/${this.cacheStats.qaScenarioMiss}`
+    );
+  }
 
   private toEnvironment(value?: string): OpsEnvironment | undefined {
     if (!value) return undefined;
@@ -238,8 +274,8 @@ export class OpsService {
   }
 
   private writeDashboardBriefingCache(key: string, value: string): void {
-    this.dashboardBriefingCache.set(key, { value, expiresAt: Date.now() + 90_000 });
-    if (this.dashboardBriefingCache.size > 200) {
+    this.dashboardBriefingCache.set(key, { value, expiresAt: Date.now() + env.OPS_CACHE_DASHBOARD_BRIEFING_TTL_MS });
+    if (this.dashboardBriefingCache.size > env.OPS_CACHE_DASHBOARD_BRIEFING_MAX) {
       const oldest = this.dashboardBriefingCache.keys().next().value as string | undefined;
       if (oldest) this.dashboardBriefingCache.delete(oldest);
     }
@@ -279,7 +315,124 @@ export class OpsService {
     return fastResult;
   }
 
+  private getDashboardSummaryCacheKey(filter?: DashboardFilterInput): string {
+    return JSON.stringify({
+      environment: filter?.environment ?? null,
+      serviceName: filter?.serviceName ?? null,
+      query: filter?.query ?? null,
+      from: filter?.from ?? null,
+      to: filter?.to ?? null
+    });
+  }
+
+  private readDashboardSummaryCache(key: string): DashboardSummaryType | null {
+    const hit = this.dashboardSummaryCache.get(key);
+    if (!hit) return null;
+    if (hit.expiresAt <= Date.now()) {
+      this.dashboardSummaryCache.delete(key);
+      return null;
+    }
+    return hit.value;
+  }
+
+  private writeDashboardSummaryCache(key: string, value: DashboardSummaryType): void {
+    this.dashboardSummaryCache.set(key, { value, expiresAt: Date.now() + env.OPS_CACHE_DASHBOARD_SUMMARY_TTL_MS });
+    if (this.dashboardSummaryCache.size > env.OPS_CACHE_DASHBOARD_SUMMARY_MAX) {
+      const oldest = this.dashboardSummaryCache.keys().next().value as string | undefined;
+      if (oldest) this.dashboardSummaryCache.delete(oldest);
+    }
+  }
+
+  private clearDashboardCaches(): void {
+    this.dashboardSummaryCache.clear();
+    this.dashboardBriefingCache.clear();
+  }
+
+  private getDeploymentImpactCacheKey(input: DeploymentImpactInput): string {
+    return `${input.environment}|${input.version}`;
+  }
+
+  private readDeploymentImpactCache(key: string): DeploymentImpactReportType | null {
+    const hit = this.deploymentImpactCache.get(key);
+    if (!hit) return null;
+    if (hit.expiresAt <= Date.now()) {
+      this.deploymentImpactCache.delete(key);
+      return null;
+    }
+    return hit.value;
+  }
+
+  private writeDeploymentImpactCache(key: string, value: DeploymentImpactReportType): void {
+    this.deploymentImpactCache.set(key, { value, expiresAt: Date.now() + env.OPS_CACHE_DEPLOYMENT_IMPACT_TTL_MS });
+    if (this.deploymentImpactCache.size > env.OPS_CACHE_DEPLOYMENT_IMPACT_MAX) {
+      const oldest = this.deploymentImpactCache.keys().next().value as string | undefined;
+      if (oldest) this.deploymentImpactCache.delete(oldest);
+    }
+  }
+
+  private clearDerivedCaches(): void {
+    this.clearDashboardCaches();
+    this.deploymentImpactCache.clear();
+    this.issueListCache.clear();
+    this.qaScenarioListCache.clear();
+  }
+
+  private readQaScenarioListCache(): QaScenarioType[] | null {
+    const key = "recent";
+    const hit = this.qaScenarioListCache.get(key);
+    if (!hit) return null;
+    if (hit.expiresAt <= Date.now()) {
+      this.qaScenarioListCache.delete(key);
+      return null;
+    }
+    return hit.value;
+  }
+
+  private writeQaScenarioListCache(value: QaScenarioType[]): void {
+    this.qaScenarioListCache.set("recent", { value, expiresAt: Date.now() + env.OPS_CACHE_QA_SCENARIO_TTL_MS });
+  }
+
+  private getIssueListCacheKey(filter?: IssueFilterInput): string {
+    return JSON.stringify({
+      environment: filter?.environment ?? null,
+      serviceName: filter?.serviceName ?? null,
+      query: filter?.query ?? null,
+      severity: filter?.severity ?? null,
+      status: filter?.status ?? null,
+      page: filter?.page ?? 1,
+      pageSize: filter?.pageSize ?? 20
+    });
+  }
+
+  private readIssueListCache(key: string): IssueListPayloadType | null {
+    const hit = this.issueListCache.get(key);
+    if (!hit) return null;
+    if (hit.expiresAt <= Date.now()) {
+      this.issueListCache.delete(key);
+      return null;
+    }
+    return hit.value;
+  }
+
+  private writeIssueListCache(key: string, value: IssueListPayloadType): void {
+    this.issueListCache.set(key, { value, expiresAt: Date.now() + env.OPS_CACHE_ISSUE_LIST_TTL_MS });
+    if (this.issueListCache.size > env.OPS_CACHE_ISSUE_LIST_MAX) {
+      const oldest = this.issueListCache.keys().next().value as string | undefined;
+      if (oldest) this.issueListCache.delete(oldest);
+    }
+  }
+
   async getDashboardSummary(filter?: DashboardFilterInput): Promise<DashboardSummaryType> {
+    const cacheKey = this.getDashboardSummaryCacheKey(filter);
+    const cached = this.readDashboardSummaryCache(cacheKey);
+    if (cached) {
+      this.cacheStats.dashboardSummaryHit += 1;
+      this.logCacheStats();
+      return cached;
+    }
+    this.cacheStats.dashboardSummaryMiss += 1;
+    this.logCacheStats();
+
     const issueWhere = this.buildIssueWhere(filter);
 
     const now = new Date();
@@ -397,7 +550,7 @@ export class OpsService {
       newAfterDeployCount: newAfterLatestDeployment.length
     });
 
-    return {
+    const summary: DashboardSummaryType = {
       todayIssueCount,
       severityDistribution,
       errorTrend24h,
@@ -405,6 +558,9 @@ export class OpsService {
       newAfterLatestDeployment,
       aiBriefing
     };
+
+    this.writeDashboardSummaryCache(cacheKey, summary);
+    return summary;
   }
 
   async analyzeLogs(input: AnalyzeLogsInputModel): Promise<AnalyzeLogsPayloadType> {
@@ -525,6 +681,7 @@ export class OpsService {
     this.logger.log(
       `[audit] analyzeLogs completed requestedBy=${requestedBy} createdIssues=${createdIssues} updatedIssues=${updatedIssues} clusterTotalCount=${clusterTotalCount} clusterDisplayedCount=${displayedClusters.length}`
     );
+    this.clearDerivedCaches();
 
     return {
       createdIssues,
@@ -547,10 +704,77 @@ export class OpsService {
     };
   }
 
+  async listRecentLogEvents(input?: {
+    environment?: string;
+    serviceName?: string;
+    source?: string;
+    take?: number;
+  }): Promise<
+    Array<{
+      id: string;
+      rawMessage: string;
+      normalizedMessage: string;
+      source: string;
+      level: string;
+      occurredAt: string;
+      issueId: string;
+    }>
+  > {
+    const take = Math.min(Math.max(input?.take ?? 20, 1), 100);
+    const where: Prisma.LogEventWhereInput = {};
+
+    const source = this.toLogSource(input?.source);
+    if (input?.source) {
+      where.source = source;
+    }
+
+    const issueWhere: Prisma.IssueWhereInput = {};
+    const environment = this.toEnvironment(input?.environment);
+    if (environment) {
+      issueWhere.environment = environment;
+    }
+    if (input?.serviceName && input.serviceName !== "all") {
+      issueWhere.serviceName = input.serviceName;
+    }
+    if (Object.keys(issueWhere).length > 0) {
+      where.issue = issueWhere;
+    }
+
+    const rows = await this.prisma.logEvent.findMany({
+      where,
+      orderBy: { occurredAt: "desc" },
+      take
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      rawMessage: row.rawMessage,
+      normalizedMessage: row.normalizedMessage,
+      source: row.source,
+      level: row.level,
+      occurredAt: row.occurredAt.toISOString(),
+      issueId: row.issueId
+    }));
+  }
+
   async listIssues(filter?: IssueFilterInput): Promise<IssueListPayloadType> {
+    const pageSizeForCache = Math.min(Math.max(filter?.pageSize ?? 20, 1), 100);
+    const shouldUseCache = pageSizeForCache <= 10;
+    const cacheKey = shouldUseCache ? this.getIssueListCacheKey(filter) : null;
+    if (cacheKey) {
+      const cached = this.readIssueListCache(cacheKey);
+      if (cached) {
+        this.cacheStats.issueListHit += 1;
+        this.logCacheStats();
+        return cached;
+      }
+      this.cacheStats.issueListMiss += 1;
+      this.logCacheStats();
+    }
+
     const where = this.buildIssueWhere(filter);
     const page = Math.max(filter?.page ?? 1, 1);
-    const pageSize = Math.min(Math.max(filter?.pageSize ?? 20, 1), 100);
+    const pageSize = pageSizeForCache;
 
     const [totalCount, items] = await this.prisma.$transaction([
       this.prisma.issue.count({ where }),
@@ -563,12 +787,14 @@ export class OpsService {
       })
     ]);
 
-    return {
+    const payload: IssueListPayloadType = {
       items: items.map((issue) => this.toIssueType({ ...issue, logs: [], comments: [] })),
       totalCount,
       page,
       pageSize
     };
+    if (cacheKey) this.writeIssueListCache(cacheKey, payload);
+    return payload;
   }
 
   async getIssueDetail(issueId: string): Promise<IssueType> {
@@ -600,6 +826,8 @@ export class OpsService {
       include: { deployment: true }
     });
 
+    this.clearDerivedCaches();
+
     return this.toIssueType({ ...updated, logs: [], comments: [] });
   }
 
@@ -609,6 +837,8 @@ export class OpsService {
       data: { assignee: input.assignee.trim() || null },
       include: { deployment: true }
     });
+
+    this.clearDerivedCaches();
 
     return this.toIssueType({ ...updated, logs: [], comments: [] });
   }
@@ -652,6 +882,8 @@ export class OpsService {
       }
     });
 
+    this.clearDerivedCaches();
+
     return deployment;
   }
 
@@ -665,6 +897,16 @@ export class OpsService {
   }
 
   async deploymentImpact(input: DeploymentImpactInput): Promise<DeploymentImpactReportType> {
+    const cacheKey = this.getDeploymentImpactCacheKey(input);
+    const cached = this.readDeploymentImpactCache(cacheKey);
+    if (cached) {
+      this.cacheStats.deploymentImpactHit += 1;
+      this.logCacheStats();
+      return cached;
+    }
+    this.cacheStats.deploymentImpactMiss += 1;
+    this.logCacheStats();
+
     const environment = this.toEnvironment(input.environment);
     if (!environment) {
       throw new BadRequestException("environment 값이 필요합니다.");
@@ -696,25 +938,39 @@ export class OpsService {
       },
       take: 40
     });
+    const issueIds = candidateIssues.map((item) => item.id);
+
+    const [beforeGrouped, afterGrouped] = await Promise.all([
+      issueIds.length === 0
+        ? Promise.resolve([])
+        : this.prisma.logEvent.groupBy({
+            by: ["issueId"],
+            where: {
+              issueId: { in: issueIds },
+              occurredAt: { gte: beforeStart, lt: deployment.deployedAt }
+            },
+            _count: { _all: true }
+          }),
+      issueIds.length === 0
+        ? Promise.resolve([])
+        : this.prisma.logEvent.groupBy({
+            by: ["issueId"],
+            where: {
+              issueId: { in: issueIds },
+              occurredAt: { gte: deployment.deployedAt, lte: afterEnd }
+            },
+            _count: { _all: true }
+          })
+    ]);
+    const beforeCountMap = new Map(beforeGrouped.map((row) => [row.issueId, row._count._all]));
+    const afterCountMap = new Map(afterGrouped.map((row) => [row.issueId, row._count._all]));
 
     const increasedIssues: DeploymentImpactReportType["increasedIssues"] = [];
     let totalAfterErrorCount = 0;
 
     for (const issue of candidateIssues) {
-      const [beforeCount, afterCount] = await this.prisma.$transaction([
-        this.prisma.logEvent.count({
-          where: {
-            issueId: issue.id,
-            occurredAt: { gte: beforeStart, lt: deployment.deployedAt }
-          }
-        }),
-        this.prisma.logEvent.count({
-          where: {
-            issueId: issue.id,
-            occurredAt: { gte: deployment.deployedAt, lte: afterEnd }
-          }
-        })
-      ]);
+      const beforeCount = beforeCountMap.get(issue.id) ?? 0;
+      const afterCount = afterCountMap.get(issue.id) ?? 0;
 
       totalAfterErrorCount += afterCount;
 
@@ -738,7 +994,7 @@ export class OpsService {
       ? "배포 전후 24시간 비교에서 유의미한 증가 이슈가 발견되지 않았습니다."
       : `배포 이후 증가 이슈 ${increasedIssues.length}건이 감지되었고, 가장 큰 증가 이슈는 '${topIncreasedIssue.title}' 입니다.`;
 
-    return {
+    const report: DeploymentImpactReportType = {
       version: deployment.version,
       environment: deployment.environment,
       deployedAt: deployment.deployedAt,
@@ -747,6 +1003,9 @@ export class OpsService {
       increasedIssues: increasedIssues.slice(0, 10),
       summary
     };
+
+    this.writeDeploymentImpactCache(cacheKey, report);
+    return report;
   }
 
   async generateQaScenario(input: QaAssistantInputModel): Promise<QaScenarioType> {
@@ -796,6 +1055,8 @@ export class OpsService {
       }
     });
 
+    this.qaScenarioListCache.clear();
+
     return {
       id: created.id,
       featureName: created.featureName,
@@ -808,12 +1069,21 @@ export class OpsService {
   }
 
   async recentQaScenarios(): Promise<QaScenarioType[]> {
+    const cached = this.readQaScenarioListCache();
+    if (cached) {
+      this.cacheStats.qaScenarioHit += 1;
+      this.logCacheStats();
+      return cached;
+    }
+    this.cacheStats.qaScenarioMiss += 1;
+    this.logCacheStats();
+
     const scenarios = await this.prisma.qaScenario.findMany({
       orderBy: { createdAt: "desc" },
       take: 20
     });
 
-    return scenarios.map((scenario) => ({
+    const mapped = scenarios.map((scenario) => ({
       id: scenario.id,
       featureName: scenario.featureName,
       generatedCases: this.parseArray(scenario.generatedCases),
@@ -822,6 +1092,8 @@ export class OpsService {
       audience: scenario.audience,
       createdAt: scenario.createdAt
     }));
+    this.writeQaScenarioListCache(mapped);
+    return mapped;
   }
 
   async aiBriefing(filter?: DashboardFilterInput): Promise<string> {
