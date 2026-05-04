@@ -14,6 +14,7 @@ import {
   updateIssueStatus
 } from "@repo/opslens";
 import { OpsInfoItem, OpsIssueDetailSkeleton, OpsPageShell, OpsSectionCard } from "@/features";
+import { useOpsQueryOptions } from "@/features/query/use-ops-query-options";
 import { formatDateTime, formatNumber } from "@repo/utils";
 import { opslensQueryKeys } from "@repo/opslens";
 
@@ -44,12 +45,11 @@ export default function IssueDetailPage() {
   const assignee = assigneeForm.watch("assignee");
   const commentBody = commentForm.watch("body");
 
-  const issueQuery = useQuery({
+  const issueQuery = useQuery(useOpsQueryOptions("detail", {
     queryKey: opslensQueryKeys.issueDetail(issueId),
-    staleTime: 10 * 1000,
     queryFn: () => getIssueDetail(issueId),
     enabled: Boolean(issueId)
-  });
+  }));
 
   const issue = issueQuery.data;
 

@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Box, Button, ConsolePageStack, ConsoleSectionCard, Flex, FormField, Grid, Input, Select, SplitWorkspaceLayout, StateView, Textarea, Badge, StatCard, Typography, toast } from "@repo/ui";
 import { useMutation } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
-import { analyzeLogs } from "@repo/opslens";
+import { analyzeLogs, createOpsLogTailEventSource, type OpsLogTailEvent } from "@repo/opslens";
+import { resolveServiceLabel } from "@/features/utils/ops-display";
 import { useOpsFilters } from "@/features/stores";
 import { formatDateTime, formatNumber } from "@repo/utils";
 
@@ -16,6 +17,25 @@ type FormValues = {
   rawLogs: string;
 };
 
+type SeverityFilter = "all" | "critical" | "high" | "medium" | "low";
+type SortKey = "countDesc" | "latestDesc" | "severityDesc";
+type SavedView = {
+  id: string;
+  name: string;
+  severity: SeverityFilter;
+  query: string;
+  sort: SortKey;
+};
+type SavedViewsState = {
+  items: SavedView[];
+  activeId: string | null;
+};
+
+type CorrelationToken = {
+  key: "traceId" | "requestId";
+  value: string;
+};
+
 const severityVariantMap = {
   critical: "danger",
   high: "warning",
@@ -24,6 +44,13 @@ const severityVariantMap = {
 } as const;
 
 const DEFAULT_CLUSTER_LIMIT = 12;
+const SAVED_VIEWS_KEY = "opslens.logs.savedViews.v1";
+const createSavedViewId = (): string => {
+  if (typeof globalThis !== "undefined" && "crypto" in globalThis && typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
 
 const getAnalyzeErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message.trim().length > 0) {
@@ -44,7 +71,15 @@ export default function LogsPage() {
   const [clusterMeta, setClusterMeta] = useState<{ totalCount: number; displayedCount: number } | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const [analyzedAt, setAnalyzedAt] = useState<Date | null>(null);
+  const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("countDesc");
+  const [savedViewsState, setSavedViewsState] = useState<SavedViewsState>({ items: [], activeId: null });
+  const [selectedClusterKey, setSelectedClusterKey] = useState<string | null>(null);
+  const [liveTailEnabled, setLiveTailEnabled] = useState(false);
+  const [dismissedCorrelationKeys, setDismissedCorrelationKeys] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryInputRef = useRef<HTMLInputElement>(null);
   const lastSubmittedRef = useRef<FormValues | null>(null);
   const sampleLogs = `2026-03-25T10:14:11Z ERROR checkout-api Payment timeout while calling gateway
 2026-03-25T10:14:43Z ERROR checkout-api Payment timeout while calling gateway
@@ -59,6 +94,44 @@ export default function LogsPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(SAVED_VIEWS_KEY) ?? "[]");
+      if (Array.isArray(parsed)) {
+        const normalized = parsed.filter((item): item is SavedView => (
+          typeof item?.id === "string" &&
+          typeof item?.name === "string" &&
+          typeof item?.severity === "string" &&
+          typeof item?.query === "string" &&
+          typeof item?.sort === "string"
+        ));
+        setSavedViewsState((prev) => ({ ...prev, items: normalized }));
+      }
+    } catch {
+      setSavedViewsState((prev) => ({ ...prev, items: [] }));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(savedViewsState.items));
+  }, [savedViewsState.items]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "/" && !(event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)) {
+        event.preventDefault();
+        queryInputRef.current?.focus();
+      }
+      if (event.key === "Escape") {
+        setSearchQuery("");
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   const form = useAppForm<FormValues>({
     defaultValues: {
       source: "server",
@@ -67,6 +140,36 @@ export default function LogsPage() {
       rawLogs: ""
     }
   });
+  const watchedSource = form.watch("source");
+
+  useEffect(() => {
+    if (!liveTailEnabled) return;
+    const eventSource = createOpsLogTailEventSource({
+      environment,
+      serviceName,
+      source: watchedSource
+    });
+
+    eventSource.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data) as OpsLogTailEvent;
+        const line = `${payload.occurredAt} ${payload.level.toUpperCase()} ${payload.source} ${payload.rawMessage}`;
+        const current = form.getValues("rawLogs");
+        const merged = current.trim().length === 0 ? line : `${current}\n${line}`;
+        form.setValue("rawLogs", merged, { shouldDirty: true });
+      } catch {
+        // noop
+      }
+    };
+    eventSource.onerror = () => {
+      toast.warning("Live Tail 연결이 일시적으로 끊겼습니다.");
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [environment, form, liveTailEnabled, serviceName, watchedSource]);
 
   const analyzeMutation = useMutation({
     mutationFn: (values: FormValues) =>
@@ -83,6 +186,7 @@ export default function LogsPage() {
     retryDelay: (attempt) => Math.min(800 * 2 ** attempt, 2400),
     onSuccess: (result) => {
       setClusters(result.clusters);
+      setSelectedClusterKey(result.clusters[0]?.normalizedMessage ?? null);
       setClusterMeta({ totalCount: result.clusterTotalCount, displayedCount: result.clusterDisplayedCount });
       setSummary({ createdIssues: result.createdIssues, updatedIssues: result.updatedIssues });
       setAnalyzedAt(new Date());
@@ -104,18 +208,95 @@ export default function LogsPage() {
   const rawLogsValue = form.watch("rawLogs");
   const rawLineCount = rawLogsValue.trim().length === 0 ? 0 : rawLogsValue.split("\n").filter((line) => line.trim().length > 0).length;
   const totalClusterCount = clusters.reduce((acc, cluster) => acc + cluster.count, 0);
-  const serviceLabel = serviceName === "all"
-    ? tService("all")
-    : serviceName === "docs"
-      ? tService("docs")
-      : serviceName === "whiteboard"
-        ? tService("whiteboard")
-        : serviceName === "billing"
-          ? tService("billing")
-          : serviceName === "checkout"
-            ? tService("checkout")
-            : serviceName;
+  const serviceLabel = resolveServiceLabel(serviceName, tService);
   const analyzedAtLabel = analyzedAt ? formatDateTime(analyzedAt.toISOString()) : "-";
+  const correlationTokens = useMemo(() => {
+    const matches = rawLogsValue.matchAll(/\b(traceId|requestId)=([a-zA-Z0-9_-]+)\b/g);
+    const unique = new Map<string, CorrelationToken>();
+    for (const match of matches) {
+      const key = match[1] as "traceId" | "requestId";
+      const value = match[2] ?? "";
+      if (value.length === 0) continue;
+      const id = `${key}:${value}`;
+      if (!unique.has(id)) unique.set(id, { key, value });
+      if (unique.size >= 10) break;
+    }
+    return Array.from(unique.values());
+  }, [rawLogsValue]);
+  const visibleCorrelationTokens = useMemo(
+    () => correlationTokens.filter((token) => !dismissedCorrelationKeys.includes(`${token.key}:${token.value}`)),
+    [correlationTokens, dismissedCorrelationKeys]
+  );
+  const filteredClusters = useMemo(() => {
+    const keyword = searchQuery.trim().toLowerCase();
+    const bySeverity = severityFilter === "all"
+      ? clusters
+      : clusters.filter((cluster) => cluster.severity === severityFilter);
+    const byKeyword = keyword.length === 0
+      ? bySeverity
+      : bySeverity.filter((cluster) =>
+          `${cluster.title} ${cluster.normalizedMessage} ${cluster.suggestedActions.join(" ")}`
+            .toLowerCase()
+            .includes(keyword)
+        );
+
+    const severityRank: Record<"critical" | "high" | "medium" | "low", number> = {
+      critical: 4,
+      high: 3,
+      medium: 2,
+      low: 1
+    };
+
+    return [...byKeyword].sort((a, b) => {
+      if (sortKey === "countDesc") return b.count - a.count;
+      if (sortKey === "latestDesc") return new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
+      return severityRank[b.severity] - severityRank[a.severity];
+    });
+  }, [clusters, searchQuery, severityFilter, sortKey]);
+
+  const selectedCluster = useMemo(
+    () => filteredClusters.find((cluster) => cluster.normalizedMessage === selectedClusterKey) ?? filteredClusters[0] ?? null,
+    [filteredClusters, selectedClusterKey]
+  );
+
+  const saveCurrentView = () => {
+    const baseName = `View ${savedViewsState.items.length + 1}`;
+    const nextId = createSavedViewId();
+    const next: SavedView = {
+      id: nextId,
+      name: baseName,
+      severity: severityFilter,
+      query: searchQuery,
+      sort: sortKey
+    };
+    setSavedViewsState((prev) => ({
+      items: [next, ...prev.items].slice(0, 8),
+      activeId: nextId
+    }));
+    toast.success("현재 필터 구성을 저장했습니다.");
+  };
+
+  const removeSavedView = (id: string) => {
+    setSavedViewsState((prev) => ({
+      items: prev.items.filter((view) => view.id !== id),
+      activeId: prev.activeId === id ? null : prev.activeId
+    }));
+  };
+
+  const clearSavedViews = () => {
+    setSavedViewsState({ items: [], activeId: null });
+    toast.success("저장된 뷰를 모두 삭제했습니다.");
+  };
+
+  const applySavedView = (id: string) => {
+    const target = savedViewsState.items.find((view) => view.id === id);
+    if (!target) return;
+    setSeverityFilter(target.severity);
+    setSearchQuery(target.query);
+    setSortKey(target.sort);
+    setSavedViewsState((prev) => ({ ...prev, activeId: id }));
+  };
+
   const runAnalyze = (values: FormValues) => {
     if (operatorRole === "viewer") {
       toast.error("viewer 권한에서는 로그 분석을 실행할 수 없습니다.");
@@ -123,6 +304,11 @@ export default function LogsPage() {
     }
     lastSubmittedRef.current = values;
     analyzeMutation.mutate(values);
+  };
+
+  const createIssueFromCluster = () => {
+    if (!selectedCluster) return;
+    toast.success(`이슈 생성 요청: ${selectedCluster.title}`);
   };
 
   return (
@@ -234,8 +420,17 @@ export default function LogsPage() {
                       <Flex className="items-center gap-[var(--space-1-5)]">
                         <Badge size="sm" variant="secondary">라인 {formatNumber(rawLineCount)}</Badge>
                         {uploadedFileName ? <Badge size="sm" variant="outline">{uploadedFileName}</Badge> : null}
+                        <Badge size="sm" variant={liveTailEnabled ? "info" : "outline"}>Live Tail {liveTailEnabled ? "On" : "Off"}</Badge>
                       </Flex>
                       <Flex className="items-center gap-[var(--space-1-5)]">
+                        <Button
+                          type="button"
+                          variant={liveTailEnabled ? "secondary" : "ghost"}
+                          size="sm"
+                          onClick={() => setLiveTailEnabled((prev) => !prev)}
+                        >
+                          {liveTailEnabled ? "Live Tail 중지" : "Live Tail 시작"}
+                        </Button>
                         <Button
                           type="button"
                           variant="ghost"
@@ -262,6 +457,37 @@ export default function LogsPage() {
                         </Button>
                       </Flex>
                     </Flex>
+                    {visibleCorrelationTokens.length > 0 ? (
+                      <Flex className="flex-wrap items-center gap-[var(--space-1-5)]">
+                        {visibleCorrelationTokens.map((token) => {
+                          const key = `${token.key}:${token.value}`;
+                          return (
+                            <Badge
+                              key={key}
+                              size="sm"
+                              variant="secondary"
+                              interactive
+                              removable
+                              onClick={() => setSearchQuery(token.value)}
+                              onRemove={() => setDismissedCorrelationKeys((prev) => (prev.includes(key) ? prev : [...prev, key]))}
+                              removeLabel="토큰 숨기기"
+                              className="cursor-pointer"
+                            >
+                              {token.key}:{token.value}
+                            </Badge>
+                          );
+                        })}
+                        <Badge
+                          size="sm"
+                          variant="outline"
+                          interactive
+                          onClick={() => setDismissedCorrelationKeys([])}
+                          className="cursor-pointer"
+                        >
+                          숨김 해제
+                        </Badge>
+                      </Flex>
+                    ) : null}
                   </Box>
                 </FormField>
 
@@ -296,9 +522,73 @@ export default function LogsPage() {
             </ConsoleSectionCard>
 
             <ConsoleSectionCard title="분석 결과 클러스터" description="중복 패턴과 심각도를 기준으로 정리된 결과입니다.">
+              <Box className="mb-[var(--space-3)]">
+                <Grid className="gap-[var(--space-2)] md:grid-cols-[minmax(0,1fr)_180px_180px_auto]">
+                  <Input
+                    ref={queryInputRef}
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="클러스터 검색 (/)"
+                    size="md"
+                  />
+                  <Select
+                    value={severityFilter}
+                    onChange={(value) => setSeverityFilter(String(value) as SeverityFilter)}
+                    options={[
+                      { label: "심각도: 전체", value: "all" },
+                      { label: "Critical", value: "critical" },
+                      { label: "High", value: "high" },
+                      { label: "Medium", value: "medium" },
+                      { label: "Low", value: "low" }
+                    ]}
+                  />
+                  <Select
+                    value={sortKey}
+                    onChange={(value) => setSortKey(String(value) as SortKey)}
+                    options={[
+                      { label: "정렬: 발생량", value: "countDesc" },
+                      { label: "정렬: 최근순", value: "latestDesc" },
+                      { label: "정렬: 심각도", value: "severityDesc" }
+                    ]}
+                  />
+                  <Flex className="items-center justify-end gap-[var(--space-1-5)]">
+                    <Button type="button" size="sm" variant="outline" onClick={saveCurrentView}>뷰 저장</Button>
+                  </Flex>
+                </Grid>
+                {savedViewsState.items.length > 0 ? (
+                  <Flex className="mt-[var(--space-2)] flex-wrap items-center gap-[var(--space-1-5)]">
+                    {savedViewsState.items.map((view) => (
+                      <Badge
+                        key={view.id}
+                        size="sm"
+                        variant={savedViewsState.activeId === view.id ? "info" : "secondary"}
+                        interactive
+                        removable
+                        onClick={() => applySavedView(view.id)}
+                        onRemove={() => removeSavedView(view.id)}
+                        removeLabel={`${view.name} 삭제`}
+                        className={`cursor-pointer transition-[background-color,border-color,box-shadow,color] duration-150 ease-out ${
+                          savedViewsState.activeId === view.id ? "ring-1 ring-primary/35 shadow-none" : "ring-0 shadow-none"
+                        }`}
+                      >
+                        {view.name}
+                      </Badge>
+                    ))}
+                    <Badge
+                      size="sm"
+                      variant="outline"
+                      interactive
+                      onClick={clearSavedViews}
+                      className="cursor-pointer"
+                    >
+                      전체 삭제
+                    </Badge>
+                  </Flex>
+                ) : null}
+              </Box>
               {clusterMeta ? (
                 <Flex className="mb-[var(--space-2)] items-center gap-[var(--space-1-5)]">
-                  <Badge variant="secondary" size="sm">표시 {formatNumber(clusterMeta.displayedCount)}건</Badge>
+                  <Badge variant="secondary" size="sm">표시 {formatNumber(filteredClusters.length)}건</Badge>
                   <Badge variant="outline" size="sm">전체 {formatNumber(clusterMeta.totalCount)}건</Badge>
                 </Flex>
               ) : null}
@@ -325,14 +615,17 @@ export default function LogsPage() {
                   />
                 </Box>
               ) : null}
-              {clusters.length === 0 ? (
+              {filteredClusters.length === 0 ? (
                 <StateView variant="empty" size="sm" title="분석 결과가 없습니다." />
               ) : (
                 <Box className="space-y-[var(--space-2)]">
-                  {clusters.map((cluster) => (
+                  {filteredClusters.map((cluster) => (
                     <Box
                       key={cluster.normalizedMessage}
-                      className="border-default bg-surface-elevated rounded-[var(--radius-lg)] border p-[var(--space-3)]"
+                      className={`border-default bg-surface rounded-[var(--radius-lg)] border p-[var(--space-3)] ${
+                        selectedCluster?.normalizedMessage === cluster.normalizedMessage ? "ring-1 ring-primary/35" : ""
+                      }`}
+                      onClick={() => setSelectedClusterKey(cluster.normalizedMessage)}
                     >
                       <Flex className="flex-wrap items-center justify-between gap-[var(--space-2)]">
                         <Typography as="p" variant="bodySm" className="font-semibold">{cluster.title}</Typography>
@@ -381,6 +674,24 @@ export default function LogsPage() {
                 size="sm"
                 className="rounded-[var(--radius-lg)]"
               />
+              {selectedCluster ? (
+                <ConsoleSectionCard title="선택 클러스터 상세" description="우선 처리 대상을 빠르게 확인합니다." contentClassName="pt-[var(--space-2)]">
+                  <Box className="space-y-[var(--space-2)]">
+                    <Flex className="items-center justify-between gap-[var(--space-2)]">
+                      <Badge variant={severityVariantMap[selectedCluster.severity]} size="sm">{selectedCluster.severity}</Badge>
+                      <Badge variant="secondary" size="sm">{formatNumber(selectedCluster.count)}건</Badge>
+                    </Flex>
+                    <Typography as="p" variant="bodySm" className="font-semibold">{selectedCluster.title}</Typography>
+                    <Typography as="p" variant="caption" color="muted">{selectedCluster.normalizedMessage}</Typography>
+                    <Typography as="p" variant="caption" color="subtle">
+                      최초 {formatDateTime(selectedCluster.firstSeen)} · 최근 {formatDateTime(selectedCluster.lastSeen)}
+                    </Typography>
+                    <Button type="button" size="sm" variant="outline" onClick={createIssueFromCluster}>
+                      이슈 생성
+                    </Button>
+                  </Box>
+                </ConsoleSectionCard>
+              ) : null}
             </Box>
           ) : (
             <StateView variant="info" size="sm" title="로그를 분석하면 요약 카드가 표시됩니다." />

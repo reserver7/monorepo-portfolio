@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
 import { generateQaScenario, getRecentQaScenarios } from "@repo/opslens";
 import { OpsCardListSkeleton, OpsPageShell, OpsSectionCard } from "@/features";
+import { useOpsQueryOptions } from "@/features/query/use-ops-query-options";
 import { formatDateTime } from "@repo/utils";
 import { opslensQueryKeys } from "@repo/opslens";
 
@@ -29,11 +30,10 @@ export default function QaAssistantPage() {
     }
   });
 
-  const scenariosQuery = useQuery({
+  const scenariosQuery = useQuery(useOpsQueryOptions("list", {
     queryKey: opslensQueryKeys.qaScenarios(),
-    staleTime: 10 * 1000,
     queryFn: getRecentQaScenarios
-  });
+  }));
 
   const generateMutation = useMutation({
     mutationFn: (values: QaFormValues) =>

@@ -3,7 +3,7 @@
 import type { ComponentType, ReactNode } from "react";
 import Link from "next/link";
 import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
-import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Typography } from "../components";
+import { Button, Typography } from "../components";
 import { cn } from "../components/cn";
 
 export type ConsoleNavItem = {
@@ -131,44 +131,30 @@ export function ConsoleAppLayout({
           </div>
         </div>
 
-        <TooltipProvider>
-          <nav className={cn("flex-1 space-y-1 overflow-y-auto", sidebarCollapsed ? "p-1.5" : "p-2")}>
-            {navItems.map((item) => {
-              const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-              const Icon = item.icon;
-              const navLink = (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onCloseMobile}
-                  className={cn(
-                    "focus-visible:ring-primary focus-visible:ring-offset-surface hover:border-primary/35 hover:bg-primary/10 flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-                    sidebarCollapsed && "mx-auto h-9 w-9 justify-center gap-0 px-0 py-0",
-                    active
-                      ? "bg-surface-elevated text-foreground border-border-default border"
-                      : "text-muted hover:bg-surface-elevated hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span className={cn(sidebarCollapsed ? "md:hidden" : "inline")}>{item.label}</span>
-                </Link>
-              );
-
-              if (sidebarCollapsed && item.href !== "/") {
-                return (
-                  <Tooltip key={item.href}>
-                    <TooltipTrigger asChild>{navLink}</TooltipTrigger>
-                    <TooltipContent placement="right" size="sm" color="default">
-                      {item.label}
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              }
-
-              return navLink;
-            })}
-          </nav>
-        </TooltipProvider>
+        <nav className={cn("flex-1 space-y-1 overflow-y-auto", sidebarCollapsed ? "p-1.5" : "p-2")}>
+          {navItems.map((item) => {
+            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onCloseMobile}
+                title={sidebarCollapsed && item.href !== "/" ? item.label : undefined}
+                className={cn(
+                  "focus-visible:ring-primary focus-visible:ring-offset-surface hover:border-primary/35 hover:bg-primary/10 flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+                  sidebarCollapsed && "mx-auto h-9 w-9 justify-center gap-0 px-0 py-0",
+                  active
+                    ? "bg-surface-elevated text-foreground border-border-default border"
+                    : "text-muted hover:bg-surface-elevated hover:text-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className={cn(sidebarCollapsed ? "md:hidden" : "inline")}>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
 
         <div
           className={cn(

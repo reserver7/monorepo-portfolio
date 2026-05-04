@@ -3,7 +3,7 @@ import { AppHead, appFont, createAppMetadata } from "@repo/theme";
 import "./globals.css";
 import { Providers } from "@/app/providers";
 import { opslensClientEnv } from "@/lib/config";
-import { getOpsMetadataText, resolveRequestLocale } from "@/lib/i18n/server";
+import { getOpsMessages, getOpsMetadataText, resolveRequestLocale } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await resolveRequestLocale();
@@ -20,6 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await resolveRequestLocale();
+  const initialMessages = await getOpsMessages(locale);
 
   return (
     <html lang={locale} suppressHydrationWarning>
@@ -27,7 +28,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <AppHead />
       </head>
       <body className={`${appFont.className} font-body text-foreground dark:text-foreground min-h-screen antialiased`}>
-        <Providers initialLocale={locale}>{children}</Providers>
+        <Providers initialLocale={locale} initialMessages={initialMessages}>{children}</Providers>
       </body>
     </html>
   );

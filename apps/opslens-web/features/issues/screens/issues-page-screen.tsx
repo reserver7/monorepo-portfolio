@@ -18,6 +18,7 @@ import { keepPreviousData, useQuery } from "@repo/react-query";
 import { listIssues, type Issue, type IssueStatus, type Severity } from "@repo/opslens";
 import { OpsPageShell, OpsSectionCard, SeverityBadge, StatusBadge } from "@/features";
 import { useOpsFilters } from "@/features/stores";
+import { useOpsQueryOptions } from "@/features/query/use-ops-query-options";
 import { formatDateTime, formatNumber } from "@repo/utils";
 import {
   opslensQueryKeys,
@@ -57,10 +58,9 @@ export default function IssuesPage() {
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
-  const issuesQuery = useQuery({
+  const issuesQuery = useQuery(useOpsQueryOptions("list", {
     queryKey: opslensQueryKeys.issues({ environment, serviceName, search, status, severity, page }),
     placeholderData: keepPreviousData,
-    staleTime: 10 * 1000,
     queryFn: () =>
       listIssues({
         environment,
@@ -71,7 +71,7 @@ export default function IssuesPage() {
         page,
         pageSize
       })
-  });
+  }));
 
   const totalPages = useMemo(() => {
     const total = issuesQuery.data?.totalCount ?? 0;
@@ -175,7 +175,7 @@ export default function IssuesPage() {
                   size="md"
                 />
               </Grid>
-              <Box className="border-default bg-surface-elevated rounded-xl border p-[var(--space-3)]">
+              <Box className="border-default bg-surface rounded-xl border p-[var(--space-3)]">
                 <Typography as="p" variant="caption" color="subtle" className="font-semibold">
                   현재 결과
                 </Typography>

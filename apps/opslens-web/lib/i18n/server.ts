@@ -59,3 +59,16 @@ export const getOpsMetadataText = (locale: OpsLocale) => {
 
   return dictionary[locale] ?? dictionary[OPS_DEFAULT_LOCALE];
 };
+
+export const getOpsMessages = async (locale: OpsLocale): Promise<Record<string, unknown>> => {
+  if (locale === "en") {
+    const mod = await import("./messages/en.json");
+    return mod.default as Record<string, unknown>;
+  }
+  if (locale === "ja") {
+    const mod = await import("./messages/ja.json");
+    return mod.default as Record<string, unknown>;
+  }
+  const mod = await import("./messages/ko.json");
+  return mod.default as Record<string, unknown>;
+};

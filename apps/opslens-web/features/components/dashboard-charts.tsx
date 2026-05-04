@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useMemo } from "react";
 import {
   ArcElement,
   BarElement,
@@ -118,7 +119,7 @@ const createBarValueLabelPlugin = (unit: string): Plugin<"bar"> => ({
   }
 });
 
-export function SeverityDistributionChart({ summary }: { summary: Summary }) {
+export const SeverityDistributionChart = memo(function SeverityDistributionChart({ summary }: { summary: Summary }) {
   const tDashboard = useTranslations("dashboard");
   const eventUnit = tDashboard("units.events");
   const total = summary.severityDistribution.reduce((acc, item) => acc + item.count, 0);
@@ -131,18 +132,21 @@ export function SeverityDistributionChart({ summary }: { summary: Summary }) {
     );
   }
 
-  const data: ChartData<"doughnut"> = {
-    labels: summary.severityDistribution.map((item) => formatSeverityLabel(item.severity)),
-    datasets: [
-      {
-        data: summary.severityDistribution.map((item) => item.count),
-        backgroundColor: summary.severityDistribution.map((item) => getSeverityColor(item.severity)),
-        borderColor: getCssVar("--color-bg-surface", "#ffffff"),
-        borderWidth: 2,
-        hoverOffset: 4
-      }
-    ]
-  };
+  const data: ChartData<"doughnut"> = useMemo(
+    () => ({
+      labels: summary.severityDistribution.map((item) => formatSeverityLabel(item.severity)),
+      datasets: [
+        {
+          data: summary.severityDistribution.map((item) => item.count),
+          backgroundColor: summary.severityDistribution.map((item) => getSeverityColor(item.severity)),
+          borderColor: getCssVar("--color-bg-surface", "#ffffff"),
+          borderWidth: 2,
+          hoverOffset: 4
+        }
+      ]
+    }),
+    [summary.severityDistribution]
+  );
 
   const options: ChartOptions<"doughnut"> = {
     responsive: true,
@@ -204,9 +208,9 @@ export function SeverityDistributionChart({ summary }: { summary: Summary }) {
       <Doughnut data={data} options={options} />
     </Box>
   );
-}
+});
 
-export function ErrorTrendChart({ summary }: { summary: Summary }) {
+export const ErrorTrendChart = memo(function ErrorTrendChart({ summary }: { summary: Summary }) {
   const tDashboard = useTranslations("dashboard");
   const eventUnit = tDashboard("units.events");
   const deltaLabel = tDashboard("units.delta");
@@ -221,41 +225,48 @@ export function ErrorTrendChart({ summary }: { summary: Summary }) {
     );
   }
 
-  const movingAverage = counts.map((_, index) => {
-    const start = Math.max(0, index - 2);
-    const chunk = counts.slice(start, index + 1);
-    return Math.round(chunk.reduce((acc, value) => acc + value, 0) / chunk.length);
-  });
+  const movingAverage = useMemo(
+    () =>
+      counts.map((_, index) => {
+        const start = Math.max(0, index - 2);
+        const chunk = counts.slice(start, index + 1);
+        return Math.round(chunk.reduce((acc, value) => acc + value, 0) / chunk.length);
+      }),
+    [counts]
+  );
   const peak = Math.max(0, ...counts);
 
-  const data: ChartData<"line"> = {
-    labels: summary.errorTrend24h.map((item) => item.hour),
-    datasets: [
-      {
-        label: "Error events",
-        data: counts,
-        borderColor: resolveCanvasColor(chartColorTokens.trend, "#2563eb"),
-        borderWidth: 2.75,
-        pointRadius: (ctx) => ((ctx.parsed.y as number) === peak && peak > 0 ? 3 : 0),
-        pointHoverRadius: 5,
-        pointHoverBorderWidth: 2,
-        pointHoverBorderColor: getCssVar("--color-bg-surface", "#ffffff"),
-        pointHoverBackgroundColor: resolveCanvasColor(chartColorTokens.trend, "#2563eb"),
-        tension: 0.35,
-        fill: true,
-        backgroundColor: (context) => getBlueGradient(context, 0.28, 0.03)
-      },
-      {
-        label: "Moving avg",
-        data: movingAverage,
-        borderColor: trendToRgba(0.5),
-        borderWidth: 1.5,
-        pointRadius: 0,
-        tension: 0.28,
-        borderDash: [6, 4]
-      }
-    ]
-  };
+  const data: ChartData<"line"> = useMemo(
+    () => ({
+      labels: summary.errorTrend24h.map((item) => item.hour),
+      datasets: [
+        {
+          label: "Error events",
+          data: counts,
+          borderColor: resolveCanvasColor(chartColorTokens.trend, "#2563eb"),
+          borderWidth: 2.75,
+          pointRadius: (ctx) => ((ctx.parsed.y as number) === peak && peak > 0 ? 3 : 0),
+          pointHoverRadius: 5,
+          pointHoverBorderWidth: 2,
+          pointHoverBorderColor: getCssVar("--color-bg-surface", "#ffffff"),
+          pointHoverBackgroundColor: resolveCanvasColor(chartColorTokens.trend, "#2563eb"),
+          tension: 0.35,
+          fill: true,
+          backgroundColor: (context) => getBlueGradient(context, 0.28, 0.03)
+        },
+        {
+          label: "Moving avg",
+          data: movingAverage,
+          borderColor: trendToRgba(0.5),
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.28,
+          borderDash: [6, 4]
+        }
+      ]
+    }),
+    [summary.errorTrend24h, counts, peak, movingAverage]
+  );
 
   const options: ChartOptions<"line"> = {
     responsive: true,
@@ -312,9 +323,9 @@ export function ErrorTrendChart({ summary }: { summary: Summary }) {
       <Line data={data} options={options} />
     </Box>
   );
-}
+});
 
-export function TopRepeatedErrorsChart({ summary }: { summary: Summary }) {
+export const TopRepeatedErrorsChart = memo(function TopRepeatedErrorsChart({ summary }: { summary: Summary }) {
   const tDashboard = useTranslations("dashboard");
   const eventUnit = tDashboard("units.events");
   const total = summary.topRepeatedErrors.reduce((acc, item) => acc + item.count, 0);
@@ -327,26 +338,32 @@ export function TopRepeatedErrorsChart({ summary }: { summary: Summary }) {
     );
   }
 
-  const labels = summary.topRepeatedErrors.map((item, index) => `${index + 1}. ${truncateLabel(item.title)}`);
+  const labels = useMemo(
+    () => summary.topRepeatedErrors.map((item, index) => `${index + 1}. ${truncateLabel(item.title)}`),
+    [summary.topRepeatedErrors]
+  );
   const peak = Math.max(0, ...summary.topRepeatedErrors.map((item) => item.count));
-  const data: ChartData<"bar"> = {
-    labels,
-    datasets: [
-      {
-        label: "Count",
-        data: summary.topRepeatedErrors.map((item) => item.count),
-        borderRadius: 8,
-        borderSkipped: false,
-        backgroundColor: (context) => {
-          if (context.dataIndex === 0) return getBlueGradient(context, 1, 0.58);
-          return getBlueGradient(context, 0.86, 0.42);
-        },
-        hoverBackgroundColor: resolveCanvasColor(chartColorTokens.bar, "#2563eb"),
-        barThickness: 12,
-        maxBarThickness: 12
-      }
-    ]
-  };
+  const data: ChartData<"bar"> = useMemo(
+    () => ({
+      labels,
+      datasets: [
+        {
+          label: "Count",
+          data: summary.topRepeatedErrors.map((item) => item.count),
+          borderRadius: 8,
+          borderSkipped: false,
+          backgroundColor: (context) => {
+            if (context.dataIndex === 0) return getBlueGradient(context, 1, 0.58);
+            return getBlueGradient(context, 0.86, 0.42);
+          },
+          hoverBackgroundColor: resolveCanvasColor(chartColorTokens.bar, "#2563eb"),
+          barThickness: 12,
+          maxBarThickness: 12
+        }
+      ]
+    }),
+    [labels, summary.topRepeatedErrors]
+  );
 
   const options: ChartOptions<"bar"> = {
     indexAxis: "y",
@@ -388,4 +405,4 @@ export function TopRepeatedErrorsChart({ summary }: { summary: Summary }) {
       <Bar data={data} options={options} plugins={[createBarValueLabelPlugin(eventUnit)]} />
     </Box>
   );
-}
+});
