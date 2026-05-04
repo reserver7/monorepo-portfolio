@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { DatePicker } from "../../../../index";
+import { TimePicker } from "../../../../index";
 
 const isRenderableNode = (value: unknown): boolean => {
   if (value == null) return true;
@@ -18,9 +18,9 @@ const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknow
   return next;
 };
 
-const meta: Meta<typeof DatePicker> = {
-  title: "Components/DatePicker",
-  component: DatePicker,
+const meta: Meta<typeof TimePicker> = {
+  title: "Components/TimePicker",
+  component: TimePicker,
   tags: ["autodocs"],
   parameters: {
     layout: "padded",
@@ -39,30 +39,36 @@ const meta: Meta<typeof DatePicker> = {
 ] }
   },
   args: {
-    mode: "single",
-    clearable: true,
-    placeholder: "날짜를 선택하세요",
-    rangePlaceholder: "기간을 선택하세요",
-    showIcon: true,
-    locale: "ko-KR",
-    withTime: false,
-    showSeconds: false,
+    format: "HH:mm:ss",
+    use12Hours: false,
+    showSeconds: true,
+    hourStep: 1,
     minuteStep: 1,
-    label: "",
-    disabled: false,
-    required: false,
-    readOnly: false,
-    minDate: "2026-01-01",
-    maxDate: "2026-12-31"
+    secondStep: 1,
+    hideDisabledOptions: false,
+    needConfirm: true,
+    showNow: true,
+    changeOnScroll: false,
+    placement: "bottomLeft",
+    allowClear: true,
+    clearable: true,
+    placeholder: "Select time"
   },
   argTypes: {
-    mode: {control:"select",options:["single","range"],table:{defaultValue:{summary:"single"}}},
-    label: {control:"text",table:{defaultValue:{summary:""}}},
-    placeholder: {control:"text",table:{defaultValue:{summary:"날짜를 선택하세요"}}},
-    showIcon: {control:"boolean",table:{defaultValue:{summary:true}}},
-    withTime: {control:"boolean",table:{defaultValue:{summary:false}}},
-    showSeconds: {control:"boolean",table:{defaultValue:{summary:false}}},
+    variant: {control:"select",options:["outlined","filled","borderless","underlined","default","outline","ghost"],table:{}},
+    status: {control:"select",options:["error","warning","success","validating","default"],table:{}},
+    format: {control:"select",options:["HH:mm","HH:mm:ss","h:mm A","h:mm:ss A"],table:{defaultValue:{summary:"HH:mm:ss"}}},
+    placement: {control:"select",options:["bottomLeft","bottomRight","topLeft","topRight"],table:{defaultValue:{summary:"bottomLeft"}}},
+    use12Hours: {control:"boolean",table:{defaultValue:{summary:false}}},
+    showSeconds: {control:"boolean",table:{defaultValue:{summary:true}}},
+    hideDisabledOptions: {control:"boolean",table:{defaultValue:{summary:false}}},
+    needConfirm: {control:"boolean",table:{defaultValue:{summary:true}}},
+    showNow: {control:"boolean",table:{defaultValue:{summary:true}}},
+    changeOnScroll: {control:"boolean",table:{defaultValue:{summary:false}}},
+    clearable: {control:"boolean",table:{defaultValue:{summary:true}}},
+    hourStep: {control:{type:"number"},table:{defaultValue:{summary:1}}},
     minuteStep: {control:{type:"number"},table:{defaultValue:{summary:1}}},
+    secondStep: {control:{type:"number"},table:{defaultValue:{summary:1}}},
     children: {control:false,table:{disable:true}},
     asChild: {control:false,table:{disable:true}},
     leftIcon: {control:false,table:{disable:true}},
@@ -92,11 +98,11 @@ const meta: Meta<typeof DatePicker> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof DatePicker>;
+type Story = StoryObj<typeof TimePicker>;
 
 export const Playground: Story = {
   render: (args) => (
-    <DatePicker
+    <TimePicker
       {...sanitizeStoryArgs(args as Record<string, unknown>)}
    />
   )
