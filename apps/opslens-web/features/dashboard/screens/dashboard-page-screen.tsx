@@ -22,11 +22,10 @@ import {
   toOptionalServiceName
 } from "@repo/opslens";
 import { OpsDashboardSkeleton, OpsPageShell, OpsSectionCard, SeverityBadge } from "@/features";
-import { formatDateRangeLabel, resolveServiceLabel } from "@/features/utils/ops-display";
+import { formatDateRangeLabel, formatDateTimeByLocale, resolveServiceLabel } from "@/features/utils/ops-display";
 import { useOpsFilters } from "@/features/stores";
 import { useOpsQueryOptions } from "@/features/query/use-ops-query-options";
 import { formatNumber } from "@repo/utils";
-import { toCalendarLocale } from "@/lib/i18n/messages";
 
 function OpsChartSkeleton({ heightClassName }: { heightClassName: string }) {
   return (
@@ -119,15 +118,8 @@ export default function DashboardPage() {
         count: item.count
       }));
   const serviceLabel = resolveServiceLabel(serviceName, tService);
-  const dateLocale = toCalendarLocale(locale);
   const rangeLabel = formatDateRangeLabel(from, to, locale);
-  const lastUpdatedLabel = new Intl.DateTimeFormat(dateLocale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date(summaryQuery.dataUpdatedAt));
+  const lastUpdatedLabel = formatDateTimeByLocale(new Date(summaryQuery.dataUpdatedAt).toISOString(), locale);
 
   return (
     <OpsPageShell>
