@@ -6,7 +6,7 @@ import { Box, Button, ConsolePageStack, ConsoleSectionCard, Flex, FormField, Gri
 import { useMutation } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
 import { analyzeLogs, createOpsLogTailEventSource, type OpsLogTailEvent } from "@repo/opslens";
-import { resolveServiceLabel } from "@/features/utils/ops-display";
+import { formatDateTimeByLocale, resolveServiceLabel } from "@/features/utils/ops-display";
 import { useOpsFilters } from "@/features/stores";
 import { formatDateTime, formatNumber } from "@repo/utils";
 
@@ -63,7 +63,7 @@ const getAnalyzeErrorMessage = (error: unknown): string => {
 };
 
 export default function LogsPage() {
-  const { environment, serviceName } = useOpsFilters();
+  const { environment, locale, serviceName } = useOpsFilters();
   const tService = useTranslations("service");
   const [operatorRole, setOperatorRole] = useState<"admin" | "operator" | "viewer">("admin");
   const [clusters, setClusters] = useState<Awaited<ReturnType<typeof analyzeLogs>>["clusters"]>([]);
@@ -209,7 +209,7 @@ export default function LogsPage() {
   const rawLineCount = rawLogsValue.trim().length === 0 ? 0 : rawLogsValue.split("\n").filter((line) => line.trim().length > 0).length;
   const totalClusterCount = clusters.reduce((acc, cluster) => acc + cluster.count, 0);
   const serviceLabel = resolveServiceLabel(serviceName, tService);
-  const analyzedAtLabel = analyzedAt ? formatDateTime(analyzedAt.toISOString()) : "-";
+  const analyzedAtLabel = analyzedAt ? formatDateTimeByLocale(analyzedAt.toISOString(), locale) : "-";
   const correlationTokens = useMemo(() => {
     const matches = rawLogsValue.matchAll(/\b(traceId|requestId)=([a-zA-Z0-9_-]+)\b/g);
     const unique = new Map<string, CorrelationToken>();

@@ -393,15 +393,15 @@ export default function AppShellHeaderControls({
                       <Badge
                         key={term}
                         variant="outline"
-                        size="md"
-                        shape="pill"
+                        size="sm"
+                        shape="rounded"
                         truncate
                         maxWidth={220}
                         interactive
                         removable
                         removeLabel={`${term} 삭제`}
                         onRemove={() => deleteRecentSearch(term)}
-                        className="text-foreground hover:bg-surface-elevated h-[var(--chip-height)] cursor-pointer"
+                        className="text-foreground text-caption hover:bg-surface-elevated [&_button_svg]:h-[var(--size-icon-sm)] [&_button_svg]:w-[var(--size-icon-sm)] cursor-pointer"
                         onClick={() => applySearchTerm(term)}
                       >
                         {term}

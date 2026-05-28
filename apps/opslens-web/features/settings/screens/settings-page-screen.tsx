@@ -357,7 +357,7 @@ export default function SettingsPage() {
                     <Typography as="p" color="muted" className="text-caption">대시보드/화면 내 알림을 표시합니다.</Typography>
                   </Box>
                   <Box className="flex items-center gap-[var(--space-2)]">
-                    <Badge variant={notificationPolicy.inAppEnabled ? "success" : "secondary"} size="sm">
+                    <Badge variant="outline" size="md" shape="pill">
                       {notificationPolicy.inAppEnabled ? "Enabled" : "Disabled"}
                     </Badge>
                     <Switch
@@ -375,7 +375,7 @@ export default function SettingsPage() {
                     <Typography as="p" color="muted" className="text-caption">중요 이벤트를 이메일로 발송합니다.</Typography>
                   </Box>
                   <Box className="flex items-center gap-[var(--space-2)]">
-                    <Badge variant={notificationPolicy.emailEnabled ? "success" : "secondary"} size="sm">
+                    <Badge variant="outline" size="md" shape="pill">
                       {notificationPolicy.emailEnabled ? "Enabled" : "Disabled"}
                     </Badge>
                     <Switch
@@ -393,7 +393,7 @@ export default function SettingsPage() {
                     <Typography as="p" color="muted" className="text-caption">운영 채널로 즉시 전파합니다.</Typography>
                   </Box>
                   <Box className="flex items-center gap-[var(--space-2)]">
-                    <Badge variant={notificationPolicy.slackEnabled ? "success" : "secondary"} size="sm">
+                    <Badge variant="outline" size="md" shape="pill">
                       {notificationPolicy.slackEnabled ? "Enabled" : "Disabled"}
                     </Badge>
                     <Switch
@@ -434,7 +434,7 @@ export default function SettingsPage() {
                     <Typography as="p" color="muted" className="text-caption">지정한 시간에는 알림을 억제합니다.</Typography>
                   </Box>
                   <Box className="flex items-center gap-[var(--space-2)]">
-                    <Badge variant={notificationPolicy.quietHoursEnabled ? "success" : "secondary"} size="sm">
+                    <Badge variant="outline" size="md" shape="pill">
                       {notificationPolicy.quietHoursEnabled ? "Enabled" : "Disabled"}
                     </Badge>
                     <Switch
