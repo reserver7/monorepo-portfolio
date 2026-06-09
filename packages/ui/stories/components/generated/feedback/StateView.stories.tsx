@@ -51,7 +51,6 @@ const meta: Meta<typeof StateView> = {
     size: {control:"select",options:["sm","md","lg"],table:{defaultValue:{summary:"md"}}},
     align: {control:"select",options:["left","center"],table:{defaultValue:{summary:"center"}}},
     layout: {control:"select",options:["inline","stacked"],table:{defaultValue:{summary:"inline"}}},
-    title: {control:"text",table:{defaultValue:{summary:"상태 제목"}}},
     description: {control:"text",table:{defaultValue:{summary:"상태 설명"}}},
     children: {control:false,table:{disable:true}},
     asChild: {control:false,table:{disable:true}},
@@ -77,7 +76,8 @@ const meta: Meta<typeof StateView> = {
     optionLabelClassName: {table:{disable:true}},
     optionDescriptionClassName: {table:{disable:true}},
     style: {table:{disable:true}},
-    id: {table:{disable:true}}
+    id: {table:{disable:true}},
+    title: {table:{disable:true}}
   },
 };
 
