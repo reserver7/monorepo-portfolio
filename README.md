@@ -37,6 +37,37 @@ pnpm dev:collab
 pnpm dev:opslens
 ```
 
+## OpsLens 로컬 확인
+
+OpsLens는 운영 분석용 mock 데이터가 seed에 포함되어 있습니다.
+
+```bash
+pnpm db:opslens:migrate:deploy
+pnpm db:opslens:generate
+pnpm db:opslens:seed
+pnpm dev:opslens
+```
+
+- Web: <http://localhost:3002>
+- API: <http://localhost:4100/graphql>
+
+### Mock 로그인 계정
+
+| 역할 | 이메일 | 비밀번호 | 용도 |
+| --- | --- | --- | --- |
+| Admin | `admin@opslens.local` | `opslens1234!` | 전체 화면/운영 설정 확인 |
+| Operator | `operator@opslens.local` | `opslens1234!` | 운영자 권한 흐름 확인 |
+
+### Mock 데이터 범위
+
+- 대시보드: severity 분포, 24시간 에러 추이, 반복 이슈, 배포 이후 증가 이슈
+- 로그: 분석 대상 로그 이벤트, 로그 분석 세션 이력
+- 이슈: 우선순위, SLA, 에스컬레이션, 담당자, 코멘트, 배포 연관성
+- 배포: 배포 상태, 담당자/승인자, 변경 범위, 체크리스트, 롤백 기준, 모니터링 윈도우
+- QA: 생성 산출물, 담당자/검토자, 실행 상태
+- 리포트: 운영 리포트 생성 결과와 저장 스냅샷
+- 알림/설정: 운영 알림 mock, 알림 정책/리포트 스케줄/배포 가드레일 설정
+
 ## 신규 앱 생성
 
 ```bash
@@ -97,12 +128,16 @@ pnpm audit:workspace
   - `VERCEL_TOKEN`
   - `VERCEL_ORG_ID`
   - `VERCEL_PROJECT_ID_COLLAB_WEB`
+  - `VERCEL_PROJECT_ID_OPSLENS_WEB` (OpsLens Web Vercel 배포용)
   - `VERCEL_PROJECT_ID_STORYBOOK` (Storybook Vercel 배포용)
   - `CHROMATIC_PROJECT_TOKEN` (Storybook 시각 회귀 검사용)
+  - `OPSLENS_RENDER_DEPLOY_HOOK_URL` (OpsLens Server Render 배포용)
+  - `OPSLENS_SERVER_HEALTHCHECK_URL` (OpsLens Server 배포 후 헬스체크용, 선택)
 - 릴리스 배포:
   - `main` 머지 후 태그 규칙에 따라 CD 워크플로우가 실행됩니다.
     - `collab-v*`: Collab Web + Collab Server 배포
     - `sb-v*`: Storybook 배포
+    - `opslens-v*`: OpsLens Web + OpsLens Server 배포
   - CI는 PR(`main` 대상)과 수동 실행에서 동작합니다.
 
 ## 태그 배포
@@ -113,6 +148,9 @@ git push origin collab-v0.2.x
 
 git tag -a sb-v0.2.x -m "release: storybook"
 git push origin sb-v0.2.x
+
+git tag -a opslens-v0.2.x -m "release: opslens"
+git push origin opslens-v0.2.x
 ```
 
 - 태그 접두사에 맞는 CD만 실행됩니다.

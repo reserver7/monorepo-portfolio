@@ -1,0 +1,134 @@
+name: CD - OpsLens Server (Render Tag Release)
+
+on:
+  push:
+    tags: ["opslens-v*"]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "배포 확인용 OpsLens 릴리스 태그 (예: opslens-v0.2.0)"
+        required: true
+        type: string
+
+concurrency:
+  group: cd-opslens-server-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify-tag-on-main:
+    name: Verify Release Tag Commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      release_sha: ${{ steps.resolve-release.outputs.release_sha }}
+      release_tag: ${{ steps.resolve-release.outputs.release_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release tag and ensure commit belongs to main
+        id: resolve-release
+        env:
+          MANUAL_RELEASE_TAG: ${{ github.event.inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            release_tag="${GITHUB_REF#refs/tags/}"
+            release_sha="${GITHUB_SHA}"
+          else
+            release_tag="$(printf '%s' "${MANUAL_RELEASE_TAG}" | xargs)"
+            if [ -z "${release_tag}" ]; then
+              echo "release_tag 입력값이 비어 있습니다."
+              exit 1
+            fi
+            git fetch --force --tags origin
+            if ! git rev-parse -q --verify "refs/tags/${release_tag}" >/dev/null; then
+              echo "태그를 찾을 수 없습니다: ${release_tag}"
+              exit 1
+            fi
+            release_sha="$(git rev-list -n 1 "refs/tags/${release_tag}")"
+          fi
+
+          git fetch --no-tags origin main --depth=1
+          if ! git merge-base --is-ancestor "${release_sha}" "origin/main"; then
+            echo "릴리스 태그는 main 이력 위 커밋만 허용됩니다: ${release_tag} (${release_sha})"
+            exit 1
+          fi
+
+          echo "release_tag=${release_tag}" >> "${GITHUB_OUTPUT}"
+          echo "release_sha=${release_sha}" >> "${GITHUB_OUTPUT}"
+          echo "검증 완료: ${release_tag} -> ${release_sha}"
+
+  deploy-opslens-server:
+    name: Trigger OpsLens Render Deploy Hook
+    runs-on: ubuntu-latest
+    needs: verify-tag-on-main
+    timeout-minutes: 12
+
+    steps:
+      - name: Validate deploy hook secret
+        id: hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.OPSLENS_RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${RENDER_DEPLOY_HOOK_URL}" ]; then
+            echo "has_hook=false" >> "${GITHUB_OUTPUT}"
+            echo "OPSLENS_RENDER_DEPLOY_HOOK_URL is missing. Skipping deploy trigger."
+            exit 0
+          fi
+
+          echo "has_hook=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Trigger Render deploy hook
+        if: ${{ steps.hook.outputs.has_hook == 'true' }}
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.OPSLENS_RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}" >/dev/null
+          echo "OpsLens Render deploy hook triggered."
+
+      - name: Validate health check URL
+        id: health
+        if: ${{ steps.hook.outputs.has_hook == 'true' }}
+        env:
+          SERVER_HEALTHCHECK_URL: ${{ secrets.OPSLENS_SERVER_HEALTHCHECK_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SERVER_HEALTHCHECK_URL}" ]; then
+            echo "has_health=false" >> "${GITHUB_OUTPUT}"
+            echo "OPSLENS_SERVER_HEALTHCHECK_URL is missing. Skipping health verification."
+            exit 0
+          fi
+
+          echo "has_health=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Verify server health (optional)
+        if: ${{ steps.hook.outputs.has_hook == 'true' && steps.health.outputs.has_health == 'true' }}
+        env:
+          SERVER_HEALTHCHECK_URL: ${{ secrets.OPSLENS_SERVER_HEALTHCHECK_URL }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 24); do
+            if curl -fsS "${SERVER_HEALTHCHECK_URL}" >/dev/null; then
+              echo "OpsLens server health check passed."
+              exit 0
+            fi
+
+            echo "Waiting for health check... (${attempt}/24)"
+            sleep 10
+          done
+
+          echo "OpsLens server health check failed."
+          exit 1
+
+      - name: Skip notice (missing deploy hook)
+        if: ${{ steps.hook.outputs.has_hook != 'true' }}
+        run: echo "Deployment skipped because OPSLENS_RENDER_DEPLOY_HOOK_URL is not configured."
