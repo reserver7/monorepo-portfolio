@@ -72,7 +72,8 @@ const meta: Meta<typeof Spinner> = {
     optionLabelClassName: {table:{disable:true}},
     optionDescriptionClassName: {table:{disable:true}},
     style: {table:{disable:true}},
-    id: {table:{disable:true}}
+    id: {table:{disable:true}},
+    title: {table:{disable:true}}
   },
 };
 
