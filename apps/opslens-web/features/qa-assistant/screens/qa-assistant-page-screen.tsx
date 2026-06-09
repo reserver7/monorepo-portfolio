@@ -1,177 +1,125 @@
 "use client";
 
-import { Box, Button, Flex, FormField, Grid, Input, Select, Spinner, SplitWorkspaceLayout, StateView, Textarea } from "@repo/ui";
-import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
+import { useMemo } from "react";
+import { Badge, Box, Flex, Grid, Spinner, SplitWorkspaceLayout, StatCard, Typography } from "@repo/ui";
 import { useAppForm } from "@repo/forms";
-import { generateQaScenario, getRecentQaScenarios } from "@repo/opslens";
-import { OpsCardListSkeleton, OpsPageShell, OpsSectionCard } from "@/features";
-import { useOpsQueryOptions } from "@/features/query/use-ops-query-options";
-import { formatDateTime } from "@repo/utils";
-import { opslensQueryKeys } from "@repo/opslens";
-
-type QaFormValues = {
-  featureName: string;
-  changedScreens: string;
-  relatedApis: string;
-  releaseNote: string;
-  audience: "developer" | "pm" | "qa";
-};
+import { formatNumber } from "@repo/utils";
+import { OpsPageShell, OpsSectionCard } from "@/features";
+import { QaAssistantForm, QaScenarioDetail, QaScenarioList } from "../components";
+import { QA_AUDIENCE_LABELS, QA_FORM_DEFAULT_VALUES, QA_NEUTRAL_BADGE_CLASS } from "../constants";
+import { useQaAssistantScenarios } from "../hooks/use-qa-assistant-scenarios";
+import type { QaFormValues } from "../types";
+import {
+  getQaReadinessItems,
+  getQaReadinessScore,
+  getQaScenarioItemCount,
+  splitQaInputLines
+} from "../utils/qa-assistant-utils";
 
 export default function QaAssistantPage() {
-  const queryClient = useQueryClient();
-
   const form = useAppForm<QaFormValues>({
-    defaultValues: {
-      featureName: "",
-      changedScreens: "",
-      relatedApis: "",
-      releaseNote: "",
-      audience: "qa"
-    }
+    defaultValues: QA_FORM_DEFAULT_VALUES
   });
+  const watchedValues = form.watch();
+  const changedScreenItems = useMemo(() => splitQaInputLines(watchedValues.changedScreens), [watchedValues.changedScreens]);
+  const relatedApiItems = useMemo(() => splitQaInputLines(watchedValues.relatedApis), [watchedValues.relatedApis]);
+  const readinessItems = useMemo(
+    () => getQaReadinessItems(watchedValues, changedScreenItems, relatedApiItems),
+    [changedScreenItems, relatedApiItems, watchedValues]
+  );
+  const readinessScore = getQaReadinessScore(readinessItems);
 
-  const scenariosQuery = useQuery(useOpsQueryOptions("list", {
-    queryKey: opslensQueryKeys.qaScenarios(),
-    queryFn: getRecentQaScenarios
-  }));
-
-  const generateMutation = useMutation({
-    mutationFn: (values: QaFormValues) =>
-      generateQaScenario({
-        featureName: values.featureName,
-        changedScreens: values.changedScreens,
-        relatedApis: values.relatedApis,
-        releaseNote: values.releaseNote,
-        audience: values.audience
-      }),
-    onSuccess: async () => {
-      form.reset({
-        featureName: "",
-        changedScreens: "",
-        relatedApis: "",
-        releaseNote: "",
-        audience: "qa"
-      });
-      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.qaScenarios() });
-    }
-  });
+  const {
+    deleteMutation,
+    generateMutation,
+    requestDeleteScenario,
+    scenarios,
+    scenariosQuery,
+    selectedScenario,
+    selectedScenarioId,
+    setSelectedScenarioId
+  } = useQaAssistantScenarios();
+  const selectedScenarioItemCount = selectedScenario ? getQaScenarioItemCount(selectedScenario) : 0;
 
   return (
     <OpsPageShell>
+      <Box className="border-default bg-surface rounded-[var(--radius-xl)] border px-[var(--space-4)] py-[var(--space-3)] md:px-[var(--space-5)]">
+        <Flex className="items-center justify-between gap-[var(--space-3)]">
+          <Typography as="h2" variant="headingMd" className="tracking-[-0.01em]">
+            QA 릴리즈 어시스턴트
+          </Typography>
+          <Flex className="flex-wrap items-center gap-[var(--space-2)]">
+            <Badge variant="secondary" size="sm" shape="rounded" className={QA_NEUTRAL_BADGE_CLASS}>
+              대상: {QA_AUDIENCE_LABELS[watchedValues.audience]}
+            </Badge>
+          </Flex>
+        </Flex>
+      </Box>
+
+      <Grid className="gap-[var(--space-3)] md:grid-cols-3">
+        <StatCard
+          label="준비도"
+          value={`${readinessScore}%`}
+          helper={`${readinessItems.filter((item) => item.ready).length}/${readinessItems.length} 조건 충족`}
+          color={readinessScore >= 75 ? "primary" : "default"}
+          size="sm"
+          className="h-full rounded-[var(--radius-lg)]"
+        />
+        <StatCard
+          label="입력 범위"
+          value={formatNumber(changedScreenItems.length + relatedApiItems.length)}
+          helper={`화면 ${formatNumber(changedScreenItems.length)} / API ${formatNumber(relatedApiItems.length)}`}
+          size="sm"
+          className="h-full rounded-[var(--radius-lg)]"
+        />
+        <StatCard
+          label="선택 산출물"
+          value={formatNumber(selectedScenarioItemCount)}
+          helper={`최근 산출물 ${formatNumber(scenarios.length)}건`}
+          size="sm"
+          className="h-full rounded-[var(--radius-lg)]"
+        />
+      </Grid>
+
       <SplitWorkspaceLayout
-        sidebarWidthClassName="xl:grid-cols-[minmax(0,1fr)_420px]"
+        sidebarWidthClassName="xl:grid-cols-[minmax(0,1fr)_392px]"
         main={
-          <OpsSectionCard
-            title="QA 자동화 지원"
-            description="기능 변경 정보를 입력하면 테스트 시나리오/위험 포인트/회귀 대상을 자동 생성합니다."
-          >
-            <form className="grid gap-[var(--space-3)]" onSubmit={form.handleSubmit((values) => generateMutation.mutate(values))}>
-              <FormField label="기능 설명" htmlFor="qa-feature-name" size="sm">
-                <Input
-                  id="qa-feature-name"
-                  {...form.register("featureName", { required: true })}
-                  placeholder="예: 주문 상세 페이지 할인금액 표시 추가"
-                  size="md"
-                />
-              </FormField>
+          <Box className="space-y-[var(--stack-gap)]">
+            <OpsSectionCard
+              title="릴리즈 변경 정보"
+              description="QA가 바로 실행할 수 있도록 화면, API, 변경 맥락을 함께 입력합니다."
+              contentClassName="pt-[var(--space-2)]"
+            >
+              <QaAssistantForm
+                form={form}
+                isGenerating={generateMutation.isPending}
+                onSubmit={(values) => generateMutation.mutate(values)}
+                onReset={() => form.reset(QA_FORM_DEFAULT_VALUES)}
+                readinessItems={readinessItems}
+              />
+            </OpsSectionCard>
 
-              <FormField label="변경 화면" htmlFor="qa-changed-screens" size="sm">
-                <Textarea
-                  id="qa-changed-screens"
-                  {...form.register("changedScreens", { required: true })}
-                  rows={3}
-                  placeholder="주문 상세, 결제 완료, 마이페이지"
-                />
-              </FormField>
-
-              <FormField label="관련 API" htmlFor="qa-related-apis" size="sm">
-                <Textarea
-                  id="qa-related-apis"
-                  {...form.register("relatedApis", { required: true })}
-                  rows={2}
-                  placeholder="GET /orders/{id}, GET /discounts/{id}"
-                />
-              </FormField>
-
-              <FormField label="배포 노트" htmlFor="qa-release-note" size="sm">
-                <Textarea
-                  id="qa-release-note"
-                  {...form.register("releaseNote", { required: true })}
-                  rows={4}
-                  placeholder="할인 금액 필드가 optional -> required로 변경"
-                />
-              </FormField>
-
-              <FormField label="요약 대상" htmlFor="qa-audience" size="sm">
-                <Select
-                  options={[
-                    { label: "QA 중심", value: "qa" },
-                    { label: "개발자 중심", value: "developer" },
-                    { label: "비개발자/PM 중심", value: "pm" }
-                  ]}
-                  control={form.control}
-                  name="audience"
-                  size="md"
-                />
-              </FormField>
-
-              <Button
-                type="submit"
-                variant="primary"
-                className="w-fit"
-                loading={generateMutation.isPending ? true : undefined}
-              >
-                QA 시나리오 생성
-              </Button>
-            </form>
-          </OpsSectionCard>
+            <QaScenarioDetail scenario={selectedScenario} />
+          </Box>
         }
         sidebar={
-          <OpsSectionCard title="최근 생성된 QA 시나리오">
-            {scenariosQuery.isLoading ? (
-              <OpsCardListSkeleton count={3} />
-            ) : scenariosQuery.isError ? (
-              <StateView variant="error" size="sm" title="시나리오 조회에 실패했습니다." className="mt-[var(--space-3)]" />
-            ) : (scenariosQuery.data?.length ?? 0) === 0 ? (
-              <StateView variant="empty" size="sm" title="아직 생성된 시나리오가 없습니다." className="mt-[var(--space-3)]" />
-            ) : (
-              <Box className="mt-[var(--space-3)] space-y-[var(--space-3)]">
-                {scenariosQuery.data?.map((scenario) => (
-                  <article key={scenario.id} className="border-default rounded-xl border p-[var(--space-4)]">
-                    <Flex className="flex-wrap items-center justify-between gap-[var(--space-2)]">
-                      <Box as="p" className="text-foreground font-semibold">{scenario.featureName}</Box>
-                      <Box as="p" className="text-muted-foreground text-caption">{formatDateTime(scenario.createdAt)}</Box>
-                    </Flex>
-
-                    <Box as="p" className="text-muted-foreground mt-[var(--space-1)] text-caption">대상: {scenario.audience}</Box>
-
-                    <Grid className="mt-[var(--space-3)] gap-[var(--space-3)]">
-                      <ListBlock title="테스트 케이스" items={scenario.generatedCases} />
-                      <ListBlock title="리스크 포인트" items={scenario.riskPoints} />
-                      <ListBlock title="회귀 대상" items={scenario.regressionTargets} />
-                    </Grid>
-                  </article>
-                ))}
-              </Box>
-            )}
+          <OpsSectionCard title="최근 QA 산출물" description="최신 생성 결과를 선택해 테스트 실행 단위로 검토합니다.">
+            <QaScenarioList
+              isError={scenariosQuery.isError}
+              isLoading={scenariosQuery.isLoading}
+              isDeleting={deleteMutation.isPending}
+              scenarios={scenarios}
+              selectedScenarioId={selectedScenarioId}
+              onSelectScenario={setSelectedScenarioId}
+              onDeleteScenario={(scenario) => {
+                void requestDeleteScenario(scenario);
+              }}
+            />
           </OpsSectionCard>
         }
       />
 
-      <Spinner open={generateMutation.isPending} fullscreen size="lg" color="primary" />
+      <Spinner open={generateMutation.isPending || deleteMutation.isPending} fullscreen size="lg" color="primary" />
     </OpsPageShell>
-  );
-}
-
-function ListBlock({ title, items }: { title: string; items: string[] }) {
-  return (
-    <Box className="border-default bg-surface-elevated rounded-lg border p-[var(--space-3)]">
-      <Box as="p" className="text-muted-foreground text-caption font-semibold uppercase tracking-wide">{title}</Box>
-      <ul className="text-foreground/85 mt-[var(--space-2)] list-disc space-y-[var(--space-1)] pl-[var(--space-4)] text-caption">
-        {items.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </ul>
-    </Box>
   );
 }

@@ -1,4 +1,4 @@
-import IssuesPageScreen from "@/features/issues/screens/issues-page-screen";
+import { IssuesPageScreen } from "@/features/issues";
 
 export default function Page() {
   return <IssuesPageScreen />;

@@ -1,4 +1,4 @@
-import IssueDetailPageScreen from "@/features/issues/screens/issue-detail-page-screen";
+import { IssueDetailPageScreen } from "@/features/issues";
 
 export default function Page() {
   return <IssueDetailPageScreen />;

@@ -19,6 +19,12 @@ import {
   setAuthAvatarColor,
   updateCurrentProfile
 } from "@/lib/auth";
+import {
+  SETTINGS_AVATAR_COLOR_PRESETS,
+  SETTINGS_DEFAULT_AVATAR_COLOR,
+  SETTINGS_IN_APP_NOTIFICATION_LEVEL_OPTIONS
+} from "../constants";
+import type { PasswordFormValues, ProfileFormValues } from "../types";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -26,17 +32,17 @@ export default function SettingsPage() {
   const [profileEmail, setProfileEmail] = useState("-");
   const [profileRole, setProfileRole] = useState("-");
   const [profileProvider, setProfileProvider] = useState<"local" | "google" | "github">("local");
-  const [avatarColor, setAvatarColor] = useState<string>("#64748B");
-  const [initialAvatarColor, setInitialAvatarColor] = useState<string>("#64748B");
+  const [avatarColor, setAvatarColor] = useState<string>(SETTINGS_DEFAULT_AVATAR_COLOR);
+  const [initialAvatarColor, setInitialAvatarColor] = useState<string>(SETTINGS_DEFAULT_AVATAR_COLOR);
   const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
   const [notificationPolicy, setNotificationPolicy] = useState<OpsNotificationPolicy>(() => readNotificationPolicy());
   const [initialNotificationPolicy, setInitialNotificationPolicy] = useState<OpsNotificationPolicy>(() => readNotificationPolicy());
-  const profileForm = useAppForm<{ name: string }>({
+  const profileForm = useAppForm<ProfileFormValues>({
     mode: "onSubmit",
     reValidateMode: "onChange",
     defaultValues: { name: "" }
   });
-  const passwordForm = useAppForm<{ currentPassword: string; newPassword: string; confirmPassword: string }>({
+  const passwordForm = useAppForm<PasswordFormValues>({
     mode: "onSubmit",
     reValidateMode: "onChange",
     defaultValues: {
@@ -113,7 +119,6 @@ export default function SettingsPage() {
   const securityLabel = profileProvider === "local" ? "비밀번호 로그인" : "소셜 로그인";
   const securityTone = profileProvider === "local" ? "success" : "secondary";
   const roleLabel = profileRole ? profileRole.charAt(0).toUpperCase() + profileRole.slice(1) : "-";
-  const avatarPresets = ["#3B82F6", "#64748B", "#22C55E", "#F59E0B", "#EF4444", "#A855F7"];
   const sessionTypeLabel = useMemo(() => {
     if (typeof window === "undefined") return "Persistent";
     return window.sessionStorage.getItem("opslens.auth.access-token") ? "Session" : "Persistent";
@@ -127,11 +132,6 @@ export default function SettingsPage() {
         minute: "2-digit"
       }).format(new Date(sessionExpiresAt))
     : "-";
-  const inAppOptions = [
-    { label: "모든 알림", value: "all" },
-    { label: "High 이상", value: "high" },
-    { label: "Critical만", value: "critical" }
-  ] as const;
 
   const saveNotificationMutation = useMutation({
     mutationFn: async () => updateNotificationPolicy(notificationPolicy),
@@ -275,7 +275,7 @@ export default function SettingsPage() {
               <ColorPicker
                 value={avatarColor}
                 onChange={setAvatarColor}
-                presets={avatarPresets}
+                presets={SETTINGS_AVATAR_COLOR_PRESETS}
                 label="Avatar color"
               />
             </FormField>
@@ -420,7 +420,7 @@ export default function SettingsPage() {
                         minLevel: next === "all" || next === "high" || next === "critical" ? next : "all"
                       }))
                     }
-                    options={[...inAppOptions]}
+                    options={[...SETTINGS_IN_APP_NOTIFICATION_LEVEL_OPTIONS]}
                   />
                 </FormField>
               </Grid>

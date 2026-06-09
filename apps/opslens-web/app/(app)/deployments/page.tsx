@@ -1,4 +1,4 @@
-import DeploymentsPageScreen from "@/features/deployments/screens/deployments-page-screen";
+import { DeploymentsPageScreen } from "@/features/deployments";
 
 export default function Page() {
   return <DeploymentsPageScreen />;

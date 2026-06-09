@@ -6,15 +6,7 @@ import { RotateCcw } from "lucide-react";
 import { Box, Button, DatePicker, Flex, Select, Sheet, SheetBody, SheetContent, SheetDescription, SheetHeader, SheetTitle, Typography } from "@repo/ui";
 import { type OpsLocale } from "@/lib/i18n/messages";
 import ko from "@/lib/i18n/messages/ko.json";
-
-export type OpsFilterFormValues = {
-  environment: "dev" | "stage" | "prod";
-  locale: "ko" | "en" | "ja";
-  serviceName: string;
-  fromDate: string;
-  toDate: string;
-  search: string;
-};
+import { OPS_FILTER_LOCALE_KEYS, OPS_FILTER_SERVICE_KEYS } from "../constants";
 
 type OpsFilterSheetProps = {
   locale: OpsLocale;
@@ -107,8 +99,12 @@ function FilterSheetContent({
   const tLocale = useTranslations("locale");
   const tService = useTranslations("service");
   const serviceOptions = useMemo(
-    () => ["all", "docs", "whiteboard", "billing", "checkout"].map((value) => ({ label: tService(value), value })),
+    () => OPS_FILTER_SERVICE_KEYS.map((value) => ({ label: tService(value), value })),
     [tService]
+  );
+  const localeOptions = useMemo(
+    () => OPS_FILTER_LOCALE_KEYS.map((value) => ({ label: tLocale(value), value })),
+    [tLocale]
   );
 
   return (
@@ -125,11 +121,7 @@ function FilterSheetContent({
           </Typography>
         </Flex>
         <Select
-          options={[
-            { label: tLocale("ko"), value: "ko" },
-            { label: tLocale("en"), value: "en" },
-            { label: tLocale("ja"), value: "ja" }
-          ]}
+          options={localeOptions}
           control={control}
           name="locale"
           placeholder={tFilter("selectPlaceholder")}

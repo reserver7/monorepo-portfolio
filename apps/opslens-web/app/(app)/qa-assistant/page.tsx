@@ -1,4 +1,4 @@
-import QaAssistantPageScreen from "@/features/qa-assistant/screens/qa-assistant-page-screen";
+import { QaAssistantPageScreen } from "@/features/qa-assistant";
 
 export default function Page() {
   return <QaAssistantPageScreen />;
