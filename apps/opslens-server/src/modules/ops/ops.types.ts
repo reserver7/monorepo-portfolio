@@ -58,6 +58,207 @@ export class DashboardSummaryType {
 }
 
 @ObjectType()
+export class ReportKpiType {
+  @Field(() => String)
+  label!: string;
+
+  @Field(() => String)
+  value!: string;
+
+  @Field(() => String)
+  helper!: string;
+
+  @Field(() => String)
+  tone!: string;
+}
+
+@ObjectType()
+export class ReportActionItemType {
+  @Field(() => String)
+  title!: string;
+
+  @Field(() => String)
+  description!: string;
+
+  @Field(() => String)
+  owner!: string;
+
+  @Field(() => String)
+  priority!: string;
+}
+
+@ObjectType()
+export class ReportIssueType {
+  @Field(() => String)
+  issueId!: string;
+
+  @Field(() => String)
+  title!: string;
+
+  @Field(() => String)
+  severity!: string;
+
+  @Field(() => String)
+  status!: string;
+
+  @Field(() => String)
+  serviceName!: string;
+
+  @Field(() => Int)
+  occurrenceCount!: number;
+}
+
+@ObjectType()
+export class OpsReportType {
+  @Field(() => String)
+  title!: string;
+
+  @Field(() => String)
+  generatedAt!: string;
+
+  @Field(() => String)
+  riskLevel!: string;
+
+  @Field(() => String)
+  executiveSummary!: string;
+
+  @Field(() => String)
+  technicalSummary!: string;
+
+  @Field(() => String)
+  shareText!: string;
+
+  @Field(() => [ReportKpiType])
+  kpis!: ReportKpiType[];
+
+  @Field(() => [ReportActionItemType])
+  actionItems!: ReportActionItemType[];
+
+  @Field(() => [ReportIssueType])
+  priorityIssues!: ReportIssueType[];
+}
+
+@ObjectType()
+export class OpsReportSnapshotType {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
+  title!: string;
+
+  @Field(() => String, { nullable: true })
+  environment?: string | null;
+
+  @Field(() => String)
+  riskLevel!: string;
+
+  @Field(() => String)
+  executiveSummary!: string;
+
+  @Field(() => String)
+  technicalSummary!: string;
+
+  @Field(() => String)
+  shareText!: string;
+
+  @Field(() => String)
+  generatedBy!: string;
+
+  @Field(() => GraphQLISODateTime)
+  generatedAt!: Date;
+}
+
+@ObjectType()
+export class OpsAlertType {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
+  level!: string;
+
+  @Field(() => String)
+  title!: string;
+
+  @Field(() => String)
+  message!: string;
+
+  @Field(() => String)
+  source!: string;
+
+  @Field(() => String, { nullable: true })
+  link?: string | null;
+
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  readAt?: Date | null;
+
+  @Field(() => GraphQLISODateTime)
+  createdAt!: Date;
+}
+
+@ObjectType()
+export class LogAnalysisSessionType {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
+  environment!: string;
+
+  @Field(() => String)
+  serviceName!: string;
+
+  @Field(() => String)
+  source!: string;
+
+  @Field(() => String)
+  requestedBy!: string;
+
+  @Field(() => String, { nullable: true })
+  deploymentVersion?: string | null;
+
+  @Field(() => Int)
+  rawLineCount!: number;
+
+  @Field(() => Int)
+  clusterTotalCount!: number;
+
+  @Field(() => Int)
+  clusterDisplayedCount!: number;
+
+  @Field(() => Int)
+  createdIssues!: number;
+
+  @Field(() => Int)
+  updatedIssues!: number;
+
+  @Field(() => String, { nullable: true })
+  topClusterTitle?: string | null;
+
+  @Field(() => GraphQLISODateTime)
+  createdAt!: Date;
+}
+
+@ObjectType()
+export class OpsSettingType {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
+  key!: string;
+
+  @Field(() => String)
+  value!: string;
+
+  @Field(() => String, { nullable: true })
+  description?: string | null;
+
+  @Field(() => String)
+  updatedBy!: string;
+
+  @Field(() => GraphQLISODateTime)
+  updatedAt!: Date;
+}
+
+@ObjectType()
 export class ErrorClusterType {
   @Field(() => String)
   title!: string;
@@ -171,6 +372,15 @@ export class IssueType {
   status!: string;
 
   @Field(() => String)
+  priority!: string;
+
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  slaDueAt?: Date | null;
+
+  @Field(() => Int)
+  escalationLevel!: number;
+
+  @Field(() => String)
   summary!: string;
 
   @Field(() => [String])
@@ -251,6 +461,27 @@ export class DeploymentType {
   @Field(() => String)
   changelog!: string;
 
+  @Field(() => String)
+  status!: string;
+
+  @Field(() => String)
+  owner!: string;
+
+  @Field(() => String, { nullable: true })
+  approver?: string | null;
+
+  @Field(() => [String])
+  scopeTags!: string[];
+
+  @Field(() => [String])
+  checklist!: string[];
+
+  @Field(() => String, { nullable: true })
+  rollbackCriteria?: string | null;
+
+  @Field(() => Int)
+  monitoringWindowMin!: number;
+
   @Field(() => GraphQLISODateTime)
   deployedAt!: Date;
 }
@@ -296,6 +527,15 @@ export class DeploymentImpactReportType {
   @Field(() => Int)
   totalAfterErrorCount!: number;
 
+  @Field(() => String)
+  riskLevel!: string;
+
+  @Field(() => String)
+  recommendedAction!: string;
+
+  @Field(() => Int)
+  monitoringWindowMin!: number;
+
   @Field(() => [DeploymentImpactItemType])
   increasedIssues!: DeploymentImpactItemType[];
 
@@ -322,6 +562,24 @@ export class QaScenarioType {
 
   @Field(() => String)
   audience!: string;
+
+  @Field(() => String)
+  status!: string;
+
+  @Field(() => String)
+  owner!: string;
+
+  @Field(() => String, { nullable: true })
+  reviewer?: string | null;
+
+  @Field(() => String)
+  executionStatus!: string;
+
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  executedAt?: Date | null;
+
+  @Field(() => String, { nullable: true })
+  notes?: string | null;
 
   @Field(() => GraphQLISODateTime)
   createdAt!: Date;

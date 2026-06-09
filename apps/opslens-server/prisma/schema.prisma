@@ -78,14 +78,21 @@ model RefreshToken {
 }
 
 model Deployment {
-  id          String         @id @default(cuid())
-  version     String
-  environment OpsEnvironment
-  changelog   String
-  deployedAt  DateTime       @default(now())
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  issues      Issue[]
+  id                  String         @id @default(cuid())
+  version             String
+  environment         OpsEnvironment
+  changelog           String
+  status              String         @default("completed")
+  owner               String         @default("운영담당자")
+  approver            String?
+  scopeTags           Json           @default("[]")
+  checklist           Json           @default("[]")
+  rollbackCriteria    String?
+  monitoringWindowMin Int            @default(60)
+  deployedAt          DateTime       @default(now())
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  issues              Issue[]
 
   @@unique([version, environment])
 }
@@ -96,6 +103,9 @@ model Issue {
   signature             String         @unique
   severity              IssueSeverity
   status                IssueStatus    @default(new)
+  priority              String         @default("P2")
+  slaDueAt              DateTime?
+  escalationLevel       Int            @default(0)
   summary               String
   probableCauses        Json
   suggestedActions      Json
@@ -140,6 +150,22 @@ model LogEvent {
   @@index([issueId, occurredAt])
 }
 
+model LogAnalysisSession {
+  id                    String         @id @default(cuid())
+  environment           OpsEnvironment
+  serviceName           String
+  source                LogSource
+  requestedBy           String         @default("unknown")
+  deploymentVersion     String?
+  rawLineCount          Int
+  clusterTotalCount     Int
+  clusterDisplayedCount Int
+  createdIssues         Int            @default(0)
+  updatedIssues         Int            @default(0)
+  topClusterTitle       String?
+  createdAt             DateTime       @default(now())
+}
+
 model IssueComment {
   id        String   @id @default(cuid())
   issueId   String
@@ -159,5 +185,46 @@ model QaScenario {
   riskPoints        Json
   regressionTargets Json
   audience          String
+  status            String   @default("draft")
+  owner             String   @default("QA 담당자")
+  reviewer          String?
+  executionStatus   String   @default("not_started")
+  executedAt        DateTime?
+  notes             String?
   createdAt         DateTime @default(now())
+}
+
+model OpsAlert {
+  id          String         @id @default(cuid())
+  level       IssueSeverity
+  title       String
+  message     String
+  source      String
+  link        String?
+  readAt      DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model OpsReportSnapshot {
+  id                String         @id @default(cuid())
+  title             String
+  environment       OpsEnvironment?
+  riskLevel         String
+  executiveSummary  String
+  technicalSummary  String
+  shareText         String
+  generatedBy       String         @default("system")
+  generatedAt       DateTime       @default(now())
+  createdAt         DateTime       @default(now())
+}
+
+model OpsSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       Json
+  description String?
+  updatedBy   String   @default("system")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

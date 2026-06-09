@@ -78,6 +78,27 @@ export class RegisterDeploymentInput {
   changelog!: string;
 
   @Field(() => String, { nullable: true })
+  status?: string;
+
+  @Field(() => String, { nullable: true })
+  owner?: string;
+
+  @Field(() => String, { nullable: true })
+  approver?: string;
+
+  @Field(() => [String], { nullable: true })
+  scopeTags?: string[];
+
+  @Field(() => [String], { nullable: true })
+  checklist?: string[];
+
+  @Field(() => String, { nullable: true })
+  rollbackCriteria?: string;
+
+  @Field(() => Int, { nullable: true })
+  monitoringWindowMin?: number;
+
+  @Field(() => String, { nullable: true })
   deployedAt?: string;
 }
 
@@ -136,4 +157,43 @@ export class QaAssistantInputModel {
 
   @Field(() => String)
   audience!: string;
+
+  @Field(() => String, { nullable: true })
+  owner?: string;
+
+  @Field(() => String, { nullable: true })
+  reviewer?: string;
+}
+
+@InputType()
+export class CreateOpsAlertInput {
+  @Field(() => String)
+  level!: string;
+
+  @Field(() => String)
+  title!: string;
+
+  @Field(() => String)
+  message!: string;
+
+  @Field(() => String)
+  source!: string;
+
+  @Field(() => String, { nullable: true })
+  link?: string;
+}
+
+@InputType()
+export class UpsertOpsSettingInput {
+  @Field(() => String)
+  key!: string;
+
+  @Field(() => String)
+  value!: string;
+
+  @Field(() => String, { nullable: true })
+  description?: string;
+
+  @Field(() => String, { nullable: true })
+  updatedBy?: string;
 }

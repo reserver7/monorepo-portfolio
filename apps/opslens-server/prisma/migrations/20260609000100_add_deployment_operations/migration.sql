@@ -1,0 +1,8 @@
+ALTER TABLE "Deployment"
+ADD COLUMN "status" TEXT NOT NULL DEFAULT 'completed',
+ADD COLUMN "owner" TEXT NOT NULL DEFAULT '운영담당자',
+ADD COLUMN "approver" TEXT,
+ADD COLUMN "scopeTags" JSONB NOT NULL DEFAULT '[]',
+ADD COLUMN "checklist" JSONB NOT NULL DEFAULT '[]',
+ADD COLUMN "rollbackCriteria" TEXT,
+ADD COLUMN "monitoringWindowMin" INTEGER NOT NULL DEFAULT 60;
