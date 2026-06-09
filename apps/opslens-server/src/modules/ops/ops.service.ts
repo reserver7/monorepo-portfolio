@@ -8,7 +8,8 @@ import {
   type Deployment,
   type Issue,
   type IssueComment,
-  type LogEvent
+  type LogEvent,
+  type QaScenario
 } from "@prisma/client";
 import { env } from "../../config/env.js";
 import { PrismaService } from "../../integration/db/prisma.service.js";
@@ -17,11 +18,13 @@ import {
   type AddIssueCommentInput,
   type AnalyzeLogsInputModel,
   type AssignIssueInput,
+  type CreateOpsAlertInput,
   type DashboardFilterInput,
   type DeploymentImpactInput,
   type IssueFilterInput,
   type QaAssistantInputModel,
   type RegisterDeploymentInput,
+  type UpsertOpsSettingInput,
   type UpdateIssueStatusInput
 } from "./ops.inputs.js";
 import { clusterLogs, parseLogLines } from "./log-parser.js";
@@ -32,6 +35,11 @@ import type {
   DeploymentType,
   IssueListPayloadType,
   IssueType,
+  LogAnalysisSessionType,
+  OpsAlertType,
+  OpsReportType,
+  OpsReportSnapshotType,
+  OpsSettingType,
   QaScenarioType
 } from "./ops.types.js";
 
@@ -188,6 +196,9 @@ export class OpsService {
       title: issue.title,
       severity: issue.severity,
       status: issue.status,
+      priority: issue.priority,
+      slaDueAt: issue.slaDueAt,
+      escalationLevel: issue.escalationLevel,
       summary: issue.summary,
       probableCauses: this.parseArray(issue.probableCauses),
       suggestedActions: this.parseArray(issue.suggestedActions),
@@ -220,6 +231,46 @@ export class OpsService {
         body: comment.body,
         createdAt: comment.createdAt
       }))
+    };
+  }
+
+  private toQaScenarioType(scenario: QaScenario): QaScenarioType {
+    return {
+      id: scenario.id,
+      featureName: scenario.featureName,
+      generatedCases: this.parseArray(scenario.generatedCases),
+      riskPoints: this.parseArray(scenario.riskPoints),
+      regressionTargets: this.parseArray(scenario.regressionTargets),
+      audience: scenario.audience,
+      status: scenario.status,
+      owner: scenario.owner,
+      reviewer: scenario.reviewer,
+      executionStatus: scenario.executionStatus,
+      executedAt: scenario.executedAt,
+      notes: scenario.notes,
+      createdAt: scenario.createdAt
+    };
+  }
+
+  private toOpsAlertType(alert: {
+    id: string;
+    level: IssueSeverity;
+    title: string;
+    message: string;
+    source: string;
+    link: string | null;
+    readAt: Date | null;
+    createdAt: Date;
+  }): OpsAlertType {
+    return {
+      id: alert.id,
+      level: alert.level,
+      title: alert.title,
+      message: alert.message,
+      source: alert.source,
+      link: alert.link,
+      readAt: alert.readAt,
+      createdAt: alert.createdAt
     };
   }
 
@@ -350,6 +401,36 @@ export class OpsService {
 
   private getDeploymentImpactCacheKey(input: DeploymentImpactInput): string {
     return `${input.environment}|${input.version}`;
+  }
+
+  private normalizeStringList(value: unknown): string[] {
+    if (!Array.isArray(value)) return [];
+    return value.map((item) => String(item).trim()).filter((item) => item.length > 0);
+  }
+
+  private toDeploymentType(deployment: Deployment): DeploymentType {
+    return {
+      ...deployment,
+      scopeTags: this.normalizeStringList(deployment.scopeTags),
+      checklist: this.normalizeStringList(deployment.checklist)
+    };
+  }
+
+  private getDeploymentRiskLevel(report: {
+    increasedIssues: DeploymentImpactReportType["increasedIssues"];
+    totalAfterErrorCount: number;
+  }): "normal" | "caution" | "rollback_review" {
+    const hasCriticalIncrease = report.increasedIssues.some((issue) => issue.severity === IssueSeverity.critical);
+    const hasHighVolume = report.totalAfterErrorCount >= 100;
+    if (hasCriticalIncrease || report.increasedIssues.length >= 5 || hasHighVolume) return "rollback_review";
+    if (report.increasedIssues.length > 0 || report.totalAfterErrorCount >= 30) return "caution";
+    return "normal";
+  }
+
+  private getDeploymentRecommendedAction(riskLevel: string): string {
+    if (riskLevel === "rollback_review") return "Critical 증가 또는 높은 에러량이 감지되었습니다. 담당자 확인 후 롤백 여부를 검토하세요.";
+    if (riskLevel === "caution") return "배포 후 증가 신호가 있습니다. 모니터링 윈도우 동안 관련 이슈를 우선 확인하세요.";
+    return "배포 후 증가 신호가 낮습니다. 설정한 모니터링 윈도우까지 추적을 유지하세요.";
   }
 
   private readDeploymentImpactCache(key: string): DeploymentImpactReportType | null {
@@ -563,6 +644,239 @@ export class OpsService {
     return summary;
   }
 
+  async getOpsReport(filter?: DashboardFilterInput): Promise<OpsReportType> {
+    const summary = await this.getDashboardSummary(filter);
+    const issues = await this.prisma.issue.findMany({
+      where: this.buildIssueWhere(filter),
+      orderBy: [{ severity: "asc" }, { occurrenceCount: "desc" }, { lastOccurredAt: "desc" }],
+      take: 5
+    });
+    const criticalCount = summary.severityDistribution.find((item) => item.severity === "critical")?.count ?? 0;
+    const highCount = summary.severityDistribution.find((item) => item.severity === "high")?.count ?? 0;
+    const deployRiskCount = summary.newAfterLatestDeployment.length;
+    const topIssue = issues[0];
+    const riskLevel = criticalCount > 0 || deployRiskCount >= 3 ? "critical" : highCount > 0 || deployRiskCount > 0 ? "warning" : "normal";
+    const environment = filter?.environment ?? "all";
+    const generatedAt = new Date().toISOString();
+    const title = `[${environment}] 운영 리포트`;
+    const executiveSummary = [
+      `오늘 이슈 ${summary.todayIssueCount}건, Critical ${criticalCount}건, High ${highCount}건입니다.`,
+      deployRiskCount > 0
+        ? `배포 이후 신규 증가 이슈 ${deployRiskCount}건이 있어 배포 영향 확인이 필요합니다.`
+        : "배포 이후 신규 증가 이슈는 감지되지 않았습니다.",
+      topIssue ? `최우선 확인 대상은 '${topIssue.title}'입니다.` : "현재 우선 대응 이슈는 없습니다."
+    ].join(" ");
+    const technicalSummary = [
+      `Top repeated errors: ${summary.topRepeatedErrors.map((item) => `${item.title}(${item.count})`).join(", ") || "없음"}`,
+      `Severity distribution: ${summary.severityDistribution.map((item) => `${item.severity}:${item.count}`).join(", ")}`
+    ].join("\n");
+    const actionItems = [
+      ...(topIssue
+        ? [{
+            title: "최우선 이슈 담당자 지정",
+            description: `${topIssue.title} 상태와 담당자를 확인하고 대응 계획을 남깁니다.`,
+            owner: topIssue.assignee || "운영담당자",
+            priority: topIssue.severity === IssueSeverity.critical ? "P0" : "P1"
+          }]
+        : []),
+      ...(deployRiskCount > 0
+        ? [{
+            title: "배포 영향 확인",
+            description: "최근 배포 이후 증가한 이슈를 배포 변경 범위와 대조합니다.",
+            owner: "배포담당자",
+            priority: "P1"
+          }]
+        : []),
+      {
+        title: "공유 리포트 전파",
+        description: "Slack/Jira에 요약과 액션 아이템을 공유하고 후속 상태를 갱신합니다.",
+        owner: "운영담당자",
+        priority: "P2"
+      }
+    ];
+    const shareText = [
+      title,
+      executiveSummary,
+      "",
+      "[KPI]",
+      `- 오늘 이슈: ${summary.todayIssueCount}`,
+      `- Critical/High: ${criticalCount}/${highCount}`,
+      `- 배포 이후 증가: ${deployRiskCount}`,
+      "",
+      "[Action]",
+      ...actionItems.map((item) => `- ${item.priority} ${item.title}: ${item.owner}`)
+    ].join("\n");
+
+    const report: OpsReportType = {
+      title,
+      generatedAt,
+      riskLevel,
+      executiveSummary,
+      technicalSummary,
+      shareText,
+      kpis: [
+        { label: "오늘 이슈", value: String(summary.todayIssueCount), helper: "현재 필터 기준", tone: summary.todayIssueCount > 0 ? "warning" : "default" },
+        { label: "Critical / High", value: `${criticalCount} / ${highCount}`, helper: "즉시 확인 대상", tone: criticalCount > 0 ? "danger" : highCount > 0 ? "warning" : "default" },
+        { label: "배포 이후 증가", value: String(deployRiskCount), helper: "최근 배포 영향", tone: deployRiskCount > 0 ? "warning" : "default" }
+      ],
+      actionItems,
+      priorityIssues: issues.map((issue) => ({
+        issueId: issue.id,
+        title: issue.title,
+        severity: issue.severity,
+        status: issue.status,
+        serviceName: issue.serviceName,
+        occurrenceCount: issue.occurrenceCount
+      }))
+    };
+
+    await this.prisma.opsReportSnapshot.create({
+      data: {
+        title,
+        environment: this.toEnvironment(filter?.environment),
+        riskLevel,
+        executiveSummary,
+        technicalSummary,
+        shareText,
+        generatedBy: filter?.serviceName && filter.serviceName !== "all" ? filter.serviceName : "system",
+        generatedAt: new Date(generatedAt)
+      }
+    });
+
+    return report;
+  }
+
+  async listReportSnapshots(): Promise<OpsReportSnapshotType[]> {
+    const snapshots = await this.prisma.opsReportSnapshot.findMany({
+      orderBy: { generatedAt: "desc" },
+      take: 20
+    });
+
+    return snapshots.map((snapshot) => ({
+      id: snapshot.id,
+      title: snapshot.title,
+      environment: snapshot.environment,
+      riskLevel: snapshot.riskLevel,
+      executiveSummary: snapshot.executiveSummary,
+      technicalSummary: snapshot.technicalSummary,
+      shareText: snapshot.shareText,
+      generatedBy: snapshot.generatedBy,
+      generatedAt: snapshot.generatedAt
+    }));
+  }
+
+  async listOpsAlerts(): Promise<OpsAlertType[]> {
+    const alerts = await this.prisma.opsAlert.findMany({
+      orderBy: [{ readAt: "asc" }, { createdAt: "desc" }],
+      take: 30
+    });
+    return alerts.map((alert) => this.toOpsAlertType(alert));
+  }
+
+  async createOpsAlert(input: CreateOpsAlertInput): Promise<OpsAlertType> {
+    const level = this.toSeverity(input.level);
+    if (!level) {
+      throw new BadRequestException("level 값이 필요합니다.");
+    }
+    const created = await this.prisma.opsAlert.create({
+      data: {
+        level,
+        title: input.title.trim(),
+        message: input.message.trim(),
+        source: input.source.trim() || "system",
+        link: input.link?.trim() || null
+      }
+    });
+    return this.toOpsAlertType(created);
+  }
+
+  async markOpsAlertRead(alertId: string): Promise<OpsAlertType> {
+    const updated = await this.prisma.opsAlert.update({
+      where: { id: alertId },
+      data: { readAt: new Date() }
+    });
+    return this.toOpsAlertType(updated);
+  }
+
+  async markAllOpsAlertsRead(): Promise<boolean> {
+    await this.prisma.opsAlert.updateMany({
+      where: { readAt: null },
+      data: { readAt: new Date() }
+    });
+    return true;
+  }
+
+  async listLogAnalysisSessions(): Promise<LogAnalysisSessionType[]> {
+    const sessions = await this.prisma.logAnalysisSession.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 20
+    });
+
+    return sessions.map((session) => ({
+      id: session.id,
+      environment: session.environment,
+      serviceName: session.serviceName,
+      source: session.source,
+      requestedBy: session.requestedBy,
+      deploymentVersion: session.deploymentVersion,
+      rawLineCount: session.rawLineCount,
+      clusterTotalCount: session.clusterTotalCount,
+      clusterDisplayedCount: session.clusterDisplayedCount,
+      createdIssues: session.createdIssues,
+      updatedIssues: session.updatedIssues,
+      topClusterTitle: session.topClusterTitle,
+      createdAt: session.createdAt
+    }));
+  }
+
+  async listOpsSettings(): Promise<OpsSettingType[]> {
+    const settings = await this.prisma.opsSetting.findMany({
+      orderBy: { key: "asc" }
+    });
+
+    return settings.map((setting) => ({
+      id: setting.id,
+      key: setting.key,
+      value: JSON.stringify(setting.value),
+      description: setting.description,
+      updatedBy: setting.updatedBy,
+      updatedAt: setting.updatedAt
+    }));
+  }
+
+  async upsertOpsSetting(input: UpsertOpsSettingInput): Promise<OpsSettingType> {
+    let value: Prisma.InputJsonValue;
+    try {
+      value = JSON.parse(input.value) as Prisma.InputJsonValue;
+    } catch {
+      throw new BadRequestException("value는 JSON 문자열이어야 합니다.");
+    }
+
+    const setting = await this.prisma.opsSetting.upsert({
+      where: { key: input.key },
+      update: {
+        value,
+        description: input.description?.trim() || null,
+        updatedBy: input.updatedBy?.trim() || "operator"
+      },
+      create: {
+        key: input.key,
+        value,
+        description: input.description?.trim() || null,
+        updatedBy: input.updatedBy?.trim() || "operator"
+      }
+    });
+
+    return {
+      id: setting.id,
+      key: setting.key,
+      value: JSON.stringify(setting.value),
+      description: setting.description,
+      updatedBy: setting.updatedBy,
+      updatedAt: setting.updatedAt
+    };
+  }
+
   async analyzeLogs(input: AnalyzeLogsInputModel): Promise<AnalyzeLogsPayloadType> {
     if (!input.rawLogs?.trim()) {
       throw new BadRequestException("rawLogs가 비어 있습니다.");
@@ -628,7 +942,15 @@ export class OpsService {
         lastOccurredAt: cluster.lastSeen,
         affectedArea: cluster.affectedArea,
         deploymentCorrelation: cluster.deploymentCorrelation,
-        deploymentId
+        deploymentId,
+        priority: cluster.severity === IssueSeverity.critical ? "P0" : cluster.severity === IssueSeverity.high ? "P1" : "P2",
+        slaDueAt:
+          cluster.severity === IssueSeverity.critical
+            ? new Date(cluster.lastSeen.getTime() + 60 * 60 * 1000)
+            : cluster.severity === IssueSeverity.high
+              ? new Date(cluster.lastSeen.getTime() + 4 * 60 * 60 * 1000)
+              : null,
+        escalationLevel: cluster.severity === IssueSeverity.critical ? 2 : cluster.severity === IssueSeverity.high ? 1 : 0
       };
 
       const existing = await this.prisma.issue.findUnique({ where: { signature } });
@@ -649,7 +971,10 @@ export class OpsService {
                 existing.lastOccurredAt > cluster.lastSeen ? existing.lastOccurredAt : cluster.lastSeen,
               affectedArea: cluster.affectedArea,
               deploymentCorrelation: cluster.deploymentCorrelation,
-              deploymentId: deploymentId ?? existing.deploymentId
+              deploymentId: deploymentId ?? existing.deploymentId,
+              priority: issueData.priority,
+              slaDueAt: issueData.slaDueAt,
+              escalationLevel: issueData.escalationLevel
             }
           })
         : await this.prisma.issue.create({ data: issueData });
@@ -681,6 +1006,23 @@ export class OpsService {
     this.logger.log(
       `[audit] analyzeLogs completed requestedBy=${requestedBy} createdIssues=${createdIssues} updatedIssues=${updatedIssues} clusterTotalCount=${clusterTotalCount} clusterDisplayedCount=${displayedClusters.length}`
     );
+
+    await this.prisma.logAnalysisSession.create({
+      data: {
+        environment,
+        serviceName: input.serviceName,
+        source,
+        requestedBy,
+        deploymentVersion: input.deploymentVersion?.trim() || null,
+        rawLineCount: parsed.length,
+        clusterTotalCount,
+        clusterDisplayedCount: displayedClusters.length,
+        createdIssues,
+        updatedIssues,
+        topClusterTitle: displayedClusters[0]?.title ?? null
+      }
+    });
+
     this.clearDerivedCaches();
 
     return {
@@ -862,6 +1204,18 @@ export class OpsService {
     }
 
     const deployedAt = input.deployedAt ? new Date(input.deployedAt) : new Date();
+    const monitoringWindowMin = Math.max(15, Math.min(1440, input.monitoringWindowMin ?? 60));
+    const deploymentData = {
+      changelog: input.changelog,
+      status: input.status?.trim() || "completed",
+      owner: input.owner?.trim() || "운영담당자",
+      approver: input.approver?.trim() || null,
+      scopeTags: this.normalizeStringList(input.scopeTags) as Prisma.JsonArray,
+      checklist: this.normalizeStringList(input.checklist) as Prisma.JsonArray,
+      rollbackCriteria: input.rollbackCriteria?.trim() || null,
+      monitoringWindowMin,
+      deployedAt
+    };
 
     const deployment = await this.prisma.deployment.upsert({
       where: {
@@ -870,30 +1224,27 @@ export class OpsService {
           environment
         }
       },
-      update: {
-        changelog: input.changelog,
-        deployedAt
-      },
+      update: deploymentData,
       create: {
         version: input.version,
         environment,
-        changelog: input.changelog,
-        deployedAt
+        ...deploymentData
       }
     });
 
     this.clearDerivedCaches();
 
-    return deployment;
+    return this.toDeploymentType(deployment);
   }
 
   async listDeployments(environment?: string): Promise<DeploymentType[]> {
     const envFilter = this.toEnvironment(environment);
-    return this.prisma.deployment.findMany({
+    const deployments = await this.prisma.deployment.findMany({
       where: envFilter ? { environment: envFilter } : undefined,
       orderBy: { deployedAt: "desc" },
       take: 30
     });
+    return deployments.map((deployment) => this.toDeploymentType(deployment));
   }
 
   async deploymentImpact(input: DeploymentImpactInput): Promise<DeploymentImpactReportType> {
@@ -925,8 +1276,10 @@ export class OpsService {
       throw new NotFoundException("해당 배포 버전을 찾을 수 없습니다.");
     }
 
-    const beforeStart = new Date(deployment.deployedAt.getTime() - 24 * 60 * 60 * 1000);
-    const afterEnd = new Date(deployment.deployedAt.getTime() + 24 * 60 * 60 * 1000);
+    const monitoringWindowMin = deployment.monitoringWindowMin ?? 60;
+    const windowMs = monitoringWindowMin * 60 * 1000;
+    const beforeStart = new Date(deployment.deployedAt.getTime() - windowMs);
+    const afterEnd = new Date(deployment.deployedAt.getTime() + windowMs);
 
     const candidateIssues = await this.prisma.issue.findMany({
       where: { environment },
@@ -990,8 +1343,10 @@ export class OpsService {
     increasedIssues.sort((a, b) => b.delta - a.delta);
 
     const topIncreasedIssue = increasedIssues[0];
+    const riskLevel = this.getDeploymentRiskLevel({ increasedIssues, totalAfterErrorCount });
+    const recommendedAction = this.getDeploymentRecommendedAction(riskLevel);
     const summary = !topIncreasedIssue
-      ? "배포 전후 24시간 비교에서 유의미한 증가 이슈가 발견되지 않았습니다."
+      ? `배포 전후 ${monitoringWindowMin}분 비교에서 유의미한 증가 이슈가 발견되지 않았습니다.`
       : `배포 이후 증가 이슈 ${increasedIssues.length}건이 감지되었고, 가장 큰 증가 이슈는 '${topIncreasedIssue.title}' 입니다.`;
 
     const report: DeploymentImpactReportType = {
@@ -1000,6 +1355,9 @@ export class OpsService {
       deployedAt: deployment.deployedAt,
       increasedIssueCount: increasedIssues.length,
       totalAfterErrorCount,
+      riskLevel,
+      recommendedAction,
+      monitoringWindowMin,
       increasedIssues: increasedIssues.slice(0, 10),
       summary
     };
@@ -1051,21 +1409,17 @@ export class OpsService {
         generatedCases: generated.generatedCases,
         riskPoints: generated.riskPoints,
         regressionTargets: generated.regressionTargets,
-        audience: input.audience
+        audience: input.audience,
+        status: "draft",
+        owner: input.owner?.trim() || "QA 담당자",
+        reviewer: input.reviewer?.trim() || null,
+        executionStatus: "not_started"
       }
     });
 
     this.qaScenarioListCache.clear();
 
-    return {
-      id: created.id,
-      featureName: created.featureName,
-      generatedCases: this.parseArray(created.generatedCases),
-      riskPoints: this.parseArray(created.riskPoints),
-      regressionTargets: this.parseArray(created.regressionTargets),
-      audience: created.audience,
-      createdAt: created.createdAt
-    };
+    return this.toQaScenarioType(created);
   }
 
   async recentQaScenarios(): Promise<QaScenarioType[]> {
@@ -1083,17 +1437,27 @@ export class OpsService {
       take: 20
     });
 
-    const mapped = scenarios.map((scenario) => ({
-      id: scenario.id,
-      featureName: scenario.featureName,
-      generatedCases: this.parseArray(scenario.generatedCases),
-      riskPoints: this.parseArray(scenario.riskPoints),
-      regressionTargets: this.parseArray(scenario.regressionTargets),
-      audience: scenario.audience,
-      createdAt: scenario.createdAt
-    }));
+    const mapped = scenarios.map((scenario) => this.toQaScenarioType(scenario));
     this.writeQaScenarioListCache(mapped);
     return mapped;
+  }
+
+  async deleteQaScenario(scenarioId: string): Promise<boolean> {
+    const existing = await this.prisma.qaScenario.findUnique({
+      where: { id: scenarioId },
+      select: { id: true }
+    });
+
+    if (!existing) {
+      throw new NotFoundException("QA 시나리오를 찾을 수 없습니다.");
+    }
+
+    await this.prisma.qaScenario.delete({
+      where: { id: scenarioId }
+    });
+
+    this.qaScenarioListCache.clear();
+    return true;
   }
 
   async aiBriefing(filter?: DashboardFilterInput): Promise<string> {

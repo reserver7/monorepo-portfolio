@@ -9,7 +9,7 @@ import { Badge, Box, Button, Flex, Input, Typography, toast, useDisclosure } fro
 import { Bell, Menu, Search, SlidersHorizontal } from "lucide-react";
 import { OPS_ALERT_EVENT_NAME, useOpsAlertStore, type CreateOpsAlertInput } from "@/features/alerts";
 import { ProfileMenu, type OpsFilterFormValues } from "@/features/modals";
-import { useOpsFilterStore } from "@/features/stores";
+import { useOpsFilterStore } from "@/features/common/stores";
 import { readNotificationPolicy } from "@/lib/auth";
 import { toCalendarLocale } from "@/lib/i18n/messages";
 

@@ -6,7 +6,7 @@ import { configureHttpAuth, setHttpAccessToken } from "@repo/react-query";
 import { AppProviders } from "@repo/theme";
 import { NextIntlClientProvider } from "next-intl";
 import { OpsAlertStoreProvider } from "@/features/alerts";
-import { OpsFilterStoreProvider, useOpsFilterStore } from "@/features/stores";
+import { OpsFilterStoreProvider, useOpsFilterStore } from "@/features/common/stores";
 import { getAuthAccessToken } from "@/lib/auth";
 import { opslensClientEnv } from "@/lib/config";
 import { OPS_DEFAULT_LOCALE, type OpsLocale } from "@/lib/i18n/messages";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { AlertTriangle, CheckCheck, Circle } from "lucide-react";
+import { CheckCheck, X } from "lucide-react";
 import {
   Badge,
   Box,
@@ -16,6 +16,7 @@ import {
   Typography
 } from "@repo/ui";
 import type { OpsAlert } from "@/features/alerts";
+import { formatDateTime } from "@repo/utils";
 
 type AlertsModalProps = {
   open: boolean;
@@ -39,85 +40,135 @@ export function AlertsModal({
   const tAlerts = useTranslations("alerts");
   const unreadCount = alerts.filter((item) => !item.readAt).length;
   const recentAlerts = alerts.slice(0, 12);
+  const levelLabelMap = {
+    critical: "critical",
+    high: "high",
+    info: "info"
+  } as const;
+  const levelTextClassMap = {
+    critical: "text-danger",
+    high: "text-warning",
+    info: "text-muted"
+  } as const;
 
   return (
     <Modal open={open} onOpenChange={onOpenChange}>
-      <ModalContent size="sm" className="px-[var(--panel-padding-x)] py-[var(--panel-padding-y)]">
-        <ModalHeader className="mb-[var(--space-3)]">
-          <ModalTitle>{tAlerts("title")}</ModalTitle>
-          <ModalDescription>{tAlerts("description")}</ModalDescription>
+      <ModalContent size="sm" className="p-[var(--space-4)] sm:p-[var(--space-5)]">
+        <ModalHeader className="mb-[var(--space-3)] pr-[var(--space-8)]">
+          <ModalTitle className="text-body-lg font-semibold">{tAlerts("title")}</ModalTitle>
+          <ModalDescription className="text-caption leading-[var(--line-height-normal)]">
+            {tAlerts("description")}
+          </ModalDescription>
         </ModalHeader>
 
-        <ModalBody className="space-y-[var(--panel-gap)]">
-          <Flex className="border-default bg-surface-elevated items-center justify-between rounded-[var(--radius-md)] border px-[var(--space-2-5)] py-[var(--space-2)]">
-            <Flex className="items-center gap-[var(--space-2)]">
-              <Typography as="p" variant="caption" color="muted">
+        <ModalBody className="space-y-[var(--space-3)]">
+          <Flex className="border-default bg-surface-elevated items-center justify-between rounded-[var(--radius-md)] border px-[var(--space-3)] py-[var(--space-2)]">
+            <Flex className="items-center gap-[var(--space-2-5)]">
+              <Typography as="p" variant="caption" color="subtle" className="font-semibold">
                 {tAlerts("unread")}
               </Typography>
               <Badge
-                variant={unreadCount > 0 ? "dangerSolid" : "secondary"}
+                variant={unreadCount > 0 ? "danger" : "secondary"}
                 size="sm"
-                shape="pill"
-                className="h-[var(--size-chip-sm)] min-w-[var(--size-chip-sm)] justify-center px-[var(--space-1)] text-[10px] font-semibold leading-none"
+                shape="rounded"
+                className="border border-current/20 font-semibold"
               >
                 {unreadCount}
               </Badge>
             </Flex>
-            <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<CheckCheck className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />}
-              className="h-[var(--size-control-sm)] px-[var(--space-2)] text-[11px]"
-              onClick={onMarkAllRead}
-            >
-              {tAlerts("markAllRead")}
-            </Button>
+            {unreadCount > 0 ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={<CheckCheck className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />}
+                className="h-7 border-transparent !bg-transparent px-[var(--space-2)] text-caption text-muted hover:!bg-surface hover:text-foreground"
+                onClick={onMarkAllRead}
+              >
+                {tAlerts("markAllRead")}
+              </Button>
+            ) : (
+              <Typography as="span" variant="caption" color="subtle">
+                모두 확인됨
+              </Typography>
+            )}
           </Flex>
 
           {recentAlerts.length > 0 ? (
-            <Flex className="max-h-[320px] flex-col gap-[var(--space-1-5)] overflow-y-auto pr-[var(--space-1)]">
+            <Box className="max-h-[300px] overflow-y-auto pr-[var(--space-1)]">
+              <Box className="divide-y divide-default border-y border-default">
               {recentAlerts.map((alert) => {
+                const unread = !alert.readAt;
                 return (
-                  <Badge
+                  <Box
                     key={alert.id}
-                    variant={alert.readAt ? "outline" : "info"}
-                    size="md"
-                    shape="pill"
-                    truncate
-                    maxWidth="100%"
-                    interactive
-                    removable
-                    removeLabel={tAlerts("remove")}
-                    onRemove={() => onRemoveAlert(alert.id)}
-                    className={`h-[var(--chip-height)] w-full cursor-pointer justify-between gap-[var(--space-2)] px-[var(--space-3)] text-body-sm ${
-                      alert.readAt
-                        ? "text-foreground bg-surface hover:bg-surface-elevated border-default"
-                        : "text-foreground border-primary/35 bg-primary/10 hover:bg-primary/15"
-                    }`}
-                    leftSlot={
-                      <AlertTriangle
-                        className={`${
-                          alert.level === "critical"
-                            ? "text-danger"
-                            : alert.level === "high"
-                              ? "text-warning"
-                              : "text-primary"
-                        } h-[var(--size-icon-sm)] w-[var(--size-icon-sm)]`}
-                      />
-                    }
-                    rightSlot={!alert.readAt ? <Circle className="text-primary h-2.5 w-2.5 fill-current" /> : null}
+                    role="button"
+                    tabIndex={0}
+                    className={`focus-visible:ring-primary focus-visible:ring-offset-surface group relative cursor-pointer px-[var(--space-2)] py-[var(--space-2-5)] pr-[var(--space-7)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                      unread ? "bg-surface" : "bg-surface text-muted"
+                    } hover:bg-surface-elevated`}
                     onClick={() => {
                       onMarkRead(alert.id);
                       onMoveToIssues(alert.id);
                     }}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter" && event.key !== " ") return;
+                      event.preventDefault();
+                      onMarkRead(alert.id);
+                      onMoveToIssues(alert.id);
+                    }}
                   >
-                    {alert.title}
-                  </Badge>
+                    <Flex className="items-start gap-[var(--space-2)]">
+                      <Box className={`mt-[var(--space-1-5)] h-[var(--space-1-5)] w-[var(--space-1-5)] shrink-0 rounded-full ${
+                        alert.level === "critical"
+                          ? "bg-danger"
+                          : alert.level === "high"
+                            ? "bg-warning"
+                            : "bg-muted"
+                      }`} />
+                      <Box className="min-w-0 flex-1">
+                        <Typography as="p" variant="caption" className={`line-clamp-2 pr-[var(--space-2)] ${unread ? "font-semibold text-foreground" : "text-muted"}`}>
+                            {alert.title}
+                        </Typography>
+                        <Flex className="mt-[var(--space-1)] flex-wrap items-center gap-x-[var(--space-2)] gap-y-[var(--space-1)]">
+                          <Typography as="span" variant="caption" className={`font-semibold uppercase ${levelTextClassMap[alert.level]}`}>
+                            {levelLabelMap[alert.level]}
+                          </Typography>
+                          {alert.source ? (
+                            <Typography as="span" variant="caption" color="subtle" className="font-mono">
+                              {alert.source}
+                            </Typography>
+                          ) : null}
+                          <Typography as="span" variant="caption" color="subtle">
+                            {formatDateTime(alert.createdAt)}
+                          </Typography>
+                          {unread ? (
+                            <Typography as="span" variant="caption" className="font-semibold text-primary">
+                              New
+                            </Typography>
+                          ) : null}
+                        </Flex>
+                      </Box>
+                    </Flex>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      iconOnly
+                      leftIcon={<X />}
+                      aria-label={tAlerts("remove")}
+                      className="absolute right-[var(--space-1)] top-[var(--space-2)] h-6 w-6 border-transparent !bg-transparent text-muted opacity-0 hover:!bg-danger/10 hover:text-danger group-hover:opacity-70 focus-visible:opacity-100"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onRemoveAlert(alert.id);
+                      }}
+                    />
+                  </Box>
                 );
               })}
-            </Flex>
+              </Box>
+            </Box>
           ) : (
-            <Box className="text-center">
+            <Box className="border-default rounded-[var(--radius-md)] border border-dashed py-[var(--space-6)] text-center">
               <Typography as="p" variant="caption" color="muted">
                 {tAlerts("none")}
               </Typography>

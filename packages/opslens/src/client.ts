@@ -339,6 +339,16 @@ export const opslensQueryKeys = {
       filter.from,
       filter.to
     ),
+  opsReport: (filter: OpsFilterParams) =>
+    opslensKeysBase.custom(
+      "reports",
+      "structured",
+      filter.environment,
+      filter.serviceName,
+      filter.search,
+      filter.from,
+      filter.to
+    ),
   reportsIssues: (filter: OpsFilterParams) =>
     opslensKeysBase.custom(
       "reports",
@@ -361,7 +371,11 @@ export const opslensQueryKeys = {
   deployments: (environment: Environment) => opslensKeysBase.custom("deployments", environment),
   deploymentImpact: (environment: Environment, version?: string) =>
     opslensKeysBase.custom("deployment-impact", environment, version),
-  qaScenarios: () => opslensKeysBase.custom("qa-scenarios")
+  qaScenarios: () => opslensKeysBase.custom("qa-scenarios"),
+  alerts: () => opslensKeysBase.custom("alerts"),
+  logAnalysisSessions: () => opslensKeysBase.custom("log-analysis-sessions"),
+  reportSnapshots: () => opslensKeysBase.custom("report-snapshots"),
+  settings: () => opslensKeysBase.custom("settings")
 };
 
 export type DashboardSummary = {
@@ -392,6 +406,9 @@ export type Issue = {
   title: string;
   severity: Severity;
   status: IssueStatus;
+  priority: string;
+  slaDueAt?: string | null;
+  escalationLevel: number;
   summary: string;
   probableCauses: string[];
   suggestedActions: string[];
@@ -431,6 +448,13 @@ export type Deployment = {
   version: string;
   environment: Environment;
   changelog: string;
+  status: string;
+  owner: string;
+  approver?: string | null;
+  scopeTags: string[];
+  checklist: string[];
+  rollbackCriteria?: string | null;
+  monitoringWindowMin: number;
   deployedAt: string;
 };
 
@@ -440,6 +464,9 @@ export type DeploymentImpactReport = {
   deployedAt: string;
   increasedIssueCount: number;
   totalAfterErrorCount: number;
+  riskLevel: "normal" | "caution" | "rollback_review" | string;
+  recommendedAction: string;
+  monitoringWindowMin: number;
   summary: string;
   increasedIssues: Array<{
     issueId: string;
@@ -452,6 +479,83 @@ export type DeploymentImpactReport = {
   }>;
 };
 
+export type OpsReport = {
+  title: string;
+  generatedAt: string;
+  riskLevel: "normal" | "warning" | "critical" | string;
+  executiveSummary: string;
+  technicalSummary: string;
+  shareText: string;
+  kpis: Array<{
+    label: string;
+    value: string;
+    helper: string;
+    tone: string;
+  }>;
+  actionItems: Array<{
+    title: string;
+    description: string;
+    owner: string;
+    priority: string;
+  }>;
+  priorityIssues: Array<{
+    issueId: string;
+    title: string;
+    severity: Severity;
+    status: IssueStatus;
+    serviceName: string;
+    occurrenceCount: number;
+  }>;
+};
+
+export type OpsReportSnapshot = {
+  id: string;
+  title: string;
+  environment?: Environment | null;
+  riskLevel: string;
+  executiveSummary: string;
+  technicalSummary: string;
+  shareText: string;
+  generatedBy: string;
+  generatedAt: string;
+};
+
+export type OpsAlert = {
+  id: string;
+  level: Severity;
+  title: string;
+  message: string;
+  source: string;
+  link?: string | null;
+  readAt?: string | null;
+  createdAt: string;
+};
+
+export type LogAnalysisSession = {
+  id: string;
+  environment: Environment;
+  serviceName: string;
+  source: string;
+  requestedBy: string;
+  deploymentVersion?: string | null;
+  rawLineCount: number;
+  clusterTotalCount: number;
+  clusterDisplayedCount: number;
+  createdIssues: number;
+  updatedIssues: number;
+  topClusterTitle?: string | null;
+  createdAt: string;
+};
+
+export type OpsSetting = {
+  id: string;
+  key: string;
+  value: string;
+  description?: string | null;
+  updatedBy: string;
+  updatedAt: string;
+};
+
 export type QaScenario = {
   id: string;
   featureName: string;
@@ -459,6 +563,12 @@ export type QaScenario = {
   riskPoints: string[];
   regressionTargets: string[];
   audience: string;
+  status: string;
+  owner: string;
+  reviewer?: string | null;
+  executionStatus: string;
+  executedAt?: string | null;
+  notes?: string | null;
   createdAt: string;
 };
 
@@ -576,6 +686,9 @@ export async function listIssues(filter: {
           title
           severity
           status
+          priority
+          slaDueAt
+          escalationLevel
           summary
           occurrenceCount
           serviceName
@@ -612,6 +725,9 @@ export async function getIssueDetail(issueId: string): Promise<Issue> {
         title
         severity
         status
+        priority
+        slaDueAt
+        escalationLevel
         summary
         probableCauses
         suggestedActions
@@ -662,6 +778,9 @@ export async function updateIssueStatus(issueId: string, status: IssueStatus): P
         id
         title
         status
+        priority
+        slaDueAt
+        escalationLevel
         severity
         summary
         probableCauses
@@ -696,6 +815,9 @@ export async function assignIssue(issueId: string, assignee: string): Promise<Is
         id
         title
         status
+        priority
+        slaDueAt
+        escalationLevel
         severity
         summary
         probableCauses
@@ -730,6 +852,9 @@ export async function addIssueComment(issueId: string, author: string, body: str
         id
         title
         status
+        priority
+        slaDueAt
+        escalationLevel
         severity
         summary
         probableCauses
@@ -759,6 +884,13 @@ export async function registerDeployment(input: {
   version: string;
   environment: Environment;
   changelog: string;
+  status?: string;
+  owner?: string;
+  approver?: string;
+  scopeTags?: string[];
+  checklist?: string[];
+  rollbackCriteria?: string;
+  monitoringWindowMin?: number;
   deployedAt?: string;
 }): Promise<Deployment> {
   const data = await graphqlRequest<{ registerDeployment: Deployment }>(
@@ -770,6 +902,13 @@ export async function registerDeployment(input: {
         version
         environment
         changelog
+        status
+        owner
+        approver
+        scopeTags
+        checklist
+        rollbackCriteria
+        monitoringWindowMin
         deployedAt
       }
     }
@@ -791,6 +930,13 @@ export async function getDeployments(environment?: Environment): Promise<Deploym
         version
         environment
         changelog
+        status
+        owner
+        approver
+        scopeTags
+        checklist
+        rollbackCriteria
+        monitoringWindowMin
         deployedAt
       }
     }
@@ -815,6 +961,9 @@ export async function getDeploymentImpact(
         deployedAt
         increasedIssueCount
         totalAfterErrorCount
+        riskLevel
+        recommendedAction
+        monitoringWindowMin
         summary
         increasedIssues {
           issueId
@@ -862,12 +1011,59 @@ export async function getAiBriefing(filter: {
   return data.aiBriefing;
 }
 
+export async function getOpsReport(filter: {
+  environment: Environment;
+  serviceName?: string;
+  query?: string;
+  from?: string;
+  to?: string;
+}): Promise<OpsReport> {
+  const data = await graphqlRequest<{ opsReport: OpsReport }>(
+    opslensApiUrl,
+    `
+    query OpsReport($filter: DashboardFilterInput) {
+      opsReport(filter: $filter) {
+        title
+        generatedAt
+        riskLevel
+        executiveSummary
+        technicalSummary
+        shareText
+        kpis { label value helper tone }
+        actionItems { title description owner priority }
+        priorityIssues {
+          issueId
+          title
+          severity
+          status
+          serviceName
+          occurrenceCount
+        }
+      }
+    }
+  `,
+    {
+      filter: {
+        environment: filter.environment,
+        serviceName: filter.serviceName === "all" ? undefined : filter.serviceName,
+        query: filter.query || undefined,
+        from: filter.from,
+        to: filter.to
+      }
+    }
+  );
+
+  return data.opsReport;
+}
+
 export async function generateQaScenario(input: {
   featureName: string;
   changedScreens: string;
   relatedApis: string;
   releaseNote: string;
   audience: string;
+  owner?: string;
+  reviewer?: string;
 }): Promise<QaScenario> {
   const data = await graphqlRequest<{ generateQaScenario: QaScenario }>(
     opslensApiUrl,
@@ -880,6 +1076,12 @@ export async function generateQaScenario(input: {
         riskPoints
         regressionTargets
         audience
+        status
+        owner
+        reviewer
+        executionStatus
+        executedAt
+        notes
         createdAt
       }
     }
@@ -903,6 +1105,12 @@ export async function getRecentQaScenarios(): Promise<QaScenario[]> {
         riskPoints
         regressionTargets
         audience
+        status
+        owner
+        reviewer
+        executionStatus
+        executedAt
+        notes
         createdAt
       }
     }
@@ -910,4 +1118,207 @@ export async function getRecentQaScenarios(): Promise<QaScenario[]> {
   );
 
   return data.recentQaScenarios;
+}
+
+export async function getOpsAlerts(): Promise<OpsAlert[]> {
+  const data = await graphqlRequest<{ opsAlerts: OpsAlert[] }>(
+    opslensApiUrl,
+    `
+    query OpsAlerts {
+      opsAlerts {
+        id
+        level
+        title
+        message
+        source
+        link
+        readAt
+        createdAt
+      }
+    }
+  `
+  );
+
+  return data.opsAlerts;
+}
+
+export async function createOpsAlert(input: {
+  level: Severity;
+  title: string;
+  message: string;
+  source: string;
+  link?: string;
+}): Promise<OpsAlert> {
+  const data = await graphqlRequest<{ createOpsAlert: OpsAlert }>(
+    opslensApiUrl,
+    `
+    mutation CreateOpsAlert($input: CreateOpsAlertInput!) {
+      createOpsAlert(input: $input) {
+        id
+        level
+        title
+        message
+        source
+        link
+        readAt
+        createdAt
+      }
+    }
+  `,
+    { input },
+    { successMessage: "운영 알림이 등록되었습니다." }
+  );
+
+  return data.createOpsAlert;
+}
+
+export async function markOpsAlertRead(alertId: string): Promise<OpsAlert> {
+  const data = await graphqlRequest<{ markOpsAlertRead: OpsAlert }>(
+    opslensApiUrl,
+    `
+    mutation MarkOpsAlertRead($alertId: String!) {
+      markOpsAlertRead(alertId: $alertId) {
+        id
+        level
+        title
+        message
+        source
+        link
+        readAt
+        createdAt
+      }
+    }
+  `,
+    { alertId },
+    { notifyOnSuccess: false }
+  );
+
+  return data.markOpsAlertRead;
+}
+
+export async function markAllOpsAlertsRead(): Promise<boolean> {
+  const data = await graphqlRequest<{ markAllOpsAlertsRead: boolean }>(
+    opslensApiUrl,
+    `
+    mutation MarkAllOpsAlertsRead {
+      markAllOpsAlertsRead
+    }
+  `,
+    undefined,
+    { notifyOnSuccess: false }
+  );
+
+  return data.markAllOpsAlertsRead;
+}
+
+export async function getLogAnalysisSessions(): Promise<LogAnalysisSession[]> {
+  const data = await graphqlRequest<{ logAnalysisSessions: LogAnalysisSession[] }>(
+    opslensApiUrl,
+    `
+    query LogAnalysisSessions {
+      logAnalysisSessions {
+        id
+        environment
+        serviceName
+        source
+        requestedBy
+        deploymentVersion
+        rawLineCount
+        clusterTotalCount
+        clusterDisplayedCount
+        createdIssues
+        updatedIssues
+        topClusterTitle
+        createdAt
+      }
+    }
+  `
+  );
+
+  return data.logAnalysisSessions;
+}
+
+export async function getReportSnapshots(): Promise<OpsReportSnapshot[]> {
+  const data = await graphqlRequest<{ reportSnapshots: OpsReportSnapshot[] }>(
+    opslensApiUrl,
+    `
+    query ReportSnapshots {
+      reportSnapshots {
+        id
+        title
+        environment
+        riskLevel
+        executiveSummary
+        technicalSummary
+        shareText
+        generatedBy
+        generatedAt
+      }
+    }
+  `
+  );
+
+  return data.reportSnapshots;
+}
+
+export async function getOpsSettings(): Promise<OpsSetting[]> {
+  const data = await graphqlRequest<{ opsSettings: OpsSetting[] }>(
+    opslensApiUrl,
+    `
+    query OpsSettings {
+      opsSettings {
+        id
+        key
+        value
+        description
+        updatedBy
+        updatedAt
+      }
+    }
+  `
+  );
+
+  return data.opsSettings;
+}
+
+export async function upsertOpsSetting(input: {
+  key: string;
+  value: string;
+  description?: string;
+  updatedBy?: string;
+}): Promise<OpsSetting> {
+  const data = await graphqlRequest<{ upsertOpsSetting: OpsSetting }>(
+    opslensApiUrl,
+    `
+    mutation UpsertOpsSetting($input: UpsertOpsSettingInput!) {
+      upsertOpsSetting(input: $input) {
+        id
+        key
+        value
+        description
+        updatedBy
+        updatedAt
+      }
+    }
+  `,
+    { input },
+    { successMessage: "운영 설정이 저장되었습니다." }
+  );
+
+  return data.upsertOpsSetting;
+}
+
+export async function deleteQaScenario(scenarioId: string): Promise<boolean> {
+  const data = await graphqlRequest<{ deleteQaScenario: boolean }>(
+    opslensApiUrl,
+    `
+    mutation DeleteQaScenario($scenarioId: String!) {
+      deleteQaScenario(scenarioId: $scenarioId)
+    }
+  `,
+    { scenarioId },
+    { successMessage: "QA 산출물이 삭제되었습니다." }
+  );
+
+  return data.deleteQaScenario;
 }

@@ -8,7 +8,36 @@ OpsLens용 GraphQL 서버입니다.
 - 이슈 생성/수정/상태관리
 - QA 시나리오 생성
 - 배포 영향 분석 데이터 제공
+- 운영 알림/설정 데이터 제공
+- 운영 리포트 생성/스냅샷 저장
+- 로그 분석 세션 이력 저장
 - Prisma(PostgreSQL/Neon) 연동
+
+## 도메인 기능
+
+### 대시보드/이슈
+
+- severity 분포, 24시간 에러 추이, 반복 이슈, 배포 이후 신규 이슈 집계
+- 이슈 priority, SLA, escalation level, 담당자, 상태, 코멘트 관리
+- 로그 이벤트와 이슈 상세 연결
+
+### 로그 분석
+
+- raw log 파싱/클러스터링
+- 신규 이슈 생성 또는 기존 이슈 갱신
+- 분석 실행 이력을 `LogAnalysisSession`에 저장
+
+### 배포 운영
+
+- 배포 버전, 상태, 담당자, 승인자, 변경 범위, 체크리스트, 롤백 기준 저장
+- 배포 전후 모니터링 윈도우 기준 에러 증가 분석
+
+### QA/리포트/알림
+
+- QA 산출물 생성, 조회, 삭제와 담당자/검토자/실행 상태 저장
+- 운영 리포트 생성 결과를 `OpsReportSnapshot`에 저장
+- 운영 알림 생성/조회/읽음 처리
+- 운영 설정 key-value 저장
 
 ## 레이어 구조
 
@@ -20,16 +49,41 @@ OpsLens용 GraphQL 서버입니다.
 ## 실행
 
 ```bash
+pnpm db:opslens:migrate:deploy
 pnpm db:opslens:generate
+pnpm db:opslens:seed
 pnpm dev:opslens:server
 pnpm --filter @repo/opslens-server lint
 pnpm --filter @repo/opslens-server typecheck
-pnpm db:opslens:migrate:dev
-pnpm db:opslens:seed
 ```
 
 - Local: <http://localhost:4100/graphql>
 - Domain: 미배포
+
+## 로컬 mock 로그인
+
+Seed 실행 후 아래 계정으로 `opslens-web`에서 로그인할 수 있습니다.
+
+| 역할 | 이메일 | 비밀번호 |
+| --- | --- | --- |
+| Admin | `admin@opslens.local` | `opslens1234!` |
+| Operator | `operator@opslens.local` | `opslens1234!` |
+
+## Seed 데이터
+
+`prisma/seed.ts`는 OpsLens 확인에 필요한 운영 mock 데이터를 재생성합니다.
+
+- 사용자: admin/operator 계정
+- 배포: prod/stage 배포 이력, 변경 범위, 체크리스트, 롤백 기준
+- 이슈: 결제/주문/인증/문서/화이트보드/배치 이슈, priority/SLA/escalation
+- 로그: 이슈별 log event
+- QA: 산출물, 담당자, 검토자, 실행 상태
+- 알림: critical/high/medium 운영 알림
+- 분석 이력: 로그 분석 세션
+- 리포트: 운영 리포트 스냅샷
+- 설정: 알림 정책, 리포트 스케줄, 배포 가드레일
+
+주의: seed는 OpsLens 샘플 데이터를 삭제 후 재입력합니다. 공유 DB에 실행할 때는 대상 환경을 먼저 확인하세요.
 
 ## 배포 단계별 실행 예시
 

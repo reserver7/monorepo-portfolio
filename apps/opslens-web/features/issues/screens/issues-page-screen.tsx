@@ -6,6 +6,15 @@ import { useTranslations } from "next-intl";
 import { RotateCcw } from "lucide-react";
 import { useAppForm } from "@repo/forms";
 import {
+  listIssues,
+  opslensQueryKeys,
+  toOptionalSearch,
+  toOptionalServiceName,
+  toOptionalSeverity,
+  toOptionalStatus,
+  type Issue
+} from "@repo/opslens";
+import {
   Badge,
   Box,
   Button,
@@ -19,88 +28,29 @@ import {
   Typography
 } from "@repo/ui";
 import { keepPreviousData, useQuery } from "@repo/react-query";
-import { listIssues, type Issue, type IssueStatus, type Severity } from "@repo/opslens";
 import { OpsPageShell, OpsSectionCard, SeverityBadge, StatusBadge } from "@/features";
-import { formatDateTimeByLocale, resolveServiceLabel } from "@/features/utils/ops-display";
-import { useOpsFilters } from "@/features/stores";
-import { useOpsQueryOptions } from "@/features/query/use-ops-query-options";
+import { useOpsQueryOptions } from "@/features/common/hooks/use-ops-query-options";
+import { useOpsFilters } from "@/features/common/stores";
+import { formatDateTimeByLocale, resolveServiceLabel } from "@/features/common/utils/ops-display";
 import { formatDateTime, formatNumber } from "@repo/utils";
 import {
-  opslensQueryKeys,
-  toOptionalSearch,
-  toOptionalServiceName,
-  toOptionalSeverity,
-  toOptionalStatus
-} from "@repo/opslens";
-
-const statusOptions: Array<{ label: string; value: "all" | IssueStatus }> = [
-  { label: "전체", value: "all" },
-  { label: "신규", value: "new" },
-  { label: "분석중", value: "analyzing" },
-  { label: "대응중", value: "in_progress" },
-  { label: "해결", value: "resolved" }
-];
-
-const severityOptions: Array<{ label: string; value: "all" | Severity }> = [
-  { label: "전체", value: "all" },
-  { label: "critical", value: "critical" },
-  { label: "high", value: "high" },
-  { label: "medium", value: "medium" },
-  { label: "low", value: "low" }
-];
-
-const assigneeOptions: Array<{ label: string; value: "all" | "assigned" | "unassigned" }> = [
-  { label: "전체", value: "all" },
-  { label: "지정됨", value: "assigned" },
-  { label: "미지정", value: "unassigned" }
-];
-
-const sortOptions: Array<{ label: string; value: "recent" | "occurrence" | "severity" }> = [
-  { label: "최근 발생순", value: "recent" },
-  { label: "발생 횟수순", value: "occurrence" },
-  { label: "심각도순", value: "severity" }
-];
-
-const severityScore: Record<Severity, number> = {
-  critical: 4,
-  high: 3,
-  medium: 2,
-  low: 1
-};
-
-const issueTone = {
-  criticalHigh: "danger",
-  unassigned: "info",
-  slaRisk: "warning"
-} as const;
-
-function isSlaRisk(issue: Issue) {
-  if (issue.status === "resolved") return false;
-  const elapsedMinutes = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(issue.lastOccurredAt).getTime()) / 60000)
-  );
-  if (issue.severity === "critical") return elapsedMinutes >= 30;
-  if (issue.severity === "high") return elapsedMinutes >= 60;
-  return false;
-}
+  ISSUE_ASSIGNEE_OPTIONS,
+  ISSUE_FILTER_DEFAULT_VALUES,
+  ISSUE_SEVERITY_OPTIONS,
+  ISSUE_SEVERITY_SCORE,
+  ISSUE_SORT_OPTIONS,
+  ISSUE_STATUS_OPTIONS,
+  ISSUE_TONE
+} from "../constants";
+import type { IssueFilterFormValues } from "../types";
+import { isIssueSlaRisk } from "../utils/issues-utils";
 
 export default function IssuesPage() {
   const { environment, locale, serviceName, search } = useOpsFilters();
   const tService = useTranslations("service");
 
-  const filterForm = useAppForm<{
-    status: "all" | IssueStatus;
-    severity: "all" | Severity;
-    assignee: "all" | "assigned" | "unassigned";
-    sortBy: "recent" | "occurrence" | "severity";
-  }>({
-    defaultValues: {
-      status: "all",
-      severity: "all",
-      assignee: "all",
-      sortBy: "recent"
-    }
+  const filterForm = useAppForm<IssueFilterFormValues>({
+    defaultValues: ISSUE_FILTER_DEFAULT_VALUES
   });
   const status = filterForm.watch("status");
   const severity = filterForm.watch("severity");
@@ -178,10 +128,10 @@ export default function IssuesPage() {
       if (assignee === "unassigned") return !item.assignee;
       return true;
     });
-    const byRisk = slaRiskOnly ? byAssignee.filter((item) => isSlaRisk(item)) : byAssignee;
+    const byRisk = slaRiskOnly ? byAssignee.filter((item) => isIssueSlaRisk(item)) : byAssignee;
     const sorted = [...byRisk].sort((a, b) => {
       if (sortBy === "occurrence") return b.occurrenceCount - a.occurrenceCount;
-      if (sortBy === "severity") return severityScore[b.severity] - severityScore[a.severity];
+      if (sortBy === "severity") return ISSUE_SEVERITY_SCORE[b.severity] - ISSUE_SEVERITY_SCORE[a.severity];
       return new Date(b.lastOccurredAt).getTime() - new Date(a.lastOccurredAt).getTime();
     });
     return sorted;
@@ -191,7 +141,7 @@ export default function IssuesPage() {
     const openItems = kpiItems.filter((item) => item.status !== "resolved");
     const criticalHigh = openItems.filter((item) => item.severity === "critical" || item.severity === "high");
     const unassigned = openItems.filter((item) => !item.assignee);
-    const slaRisk = openItems.filter((item) => isSlaRisk(item));
+    const slaRisk = openItems.filter((item) => isIssueSlaRisk(item));
     return {
       open: openItems.length,
       criticalHigh: criticalHigh.length,
@@ -225,7 +175,6 @@ export default function IssuesPage() {
           <Link
             href={`/issues/${row.original.id}`}
             className="text-foreground hover:text-primary focus-visible:ring-primary focus-visible:ring-offset-surface block truncate font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-            title={row.original.title}
           >
             {row.original.title}
           </Link>
@@ -267,9 +216,9 @@ export default function IssuesPage() {
               </Badge>
             );
           }
-          const isRisk = isSlaRisk(issue);
+          const isRisk = isIssueSlaRisk(issue);
           return (
-            <Badge variant={isRisk ? issueTone.slaRisk : "outline"} size="sm">
+            <Badge variant={isRisk ? ISSUE_TONE.slaRisk : "outline"} size="sm">
               {isRisk ? "주의" : "정상"}
             </Badge>
           );
@@ -316,7 +265,7 @@ export default function IssuesPage() {
             label="Critical / High"
             value={formatNumber(summary.criticalHigh)}
             helper="우선 대응 대상"
-            color={issueTone.criticalHigh}
+            color={ISSUE_TONE.criticalHigh}
             size="md"
             className="h-full rounded-[var(--radius-lg)] [&>p:nth-of-type(2)]:text-[1.625rem] [&>p:nth-of-type(2)]:leading-[1.1] [&>p:last-child]:text-[11px]"
           />
@@ -324,7 +273,7 @@ export default function IssuesPage() {
             label="Unassigned"
             value={formatNumber(summary.unassigned)}
             helper="담당자 미지정"
-            color={issueTone.unassigned}
+            color={ISSUE_TONE.unassigned}
             size="md"
             className="h-full rounded-[var(--radius-lg)] [&>p:nth-of-type(2)]:text-[1.625rem] [&>p:nth-of-type(2)]:leading-[1.1] [&>p:last-child]:text-[11px]"
           />
@@ -332,7 +281,7 @@ export default function IssuesPage() {
             label="SLA Risk"
             value={formatNumber(summary.slaRisk)}
             helper="지연 임계치 초과"
-            color={issueTone.slaRisk}
+            color={ISSUE_TONE.slaRisk}
             size="md"
             className="h-full rounded-[var(--radius-lg)] [&>p:nth-of-type(2)]:text-[1.625rem] [&>p:nth-of-type(2)]:leading-[1.1] [&>p:last-child]:text-[11px]"
           />
@@ -341,28 +290,28 @@ export default function IssuesPage() {
         <Box className="border-default bg-surface mb-[var(--space-3)] rounded-[var(--radius-md)] border p-[var(--space-3)]">
           <Grid className="gap-[var(--space-2)] md:grid-cols-2 xl:grid-cols-5">
             <Select
-              options={statusOptions}
+              options={ISSUE_STATUS_OPTIONS}
               control={filterForm.control}
               name="status"
               onChange={() => setPage(1)}
               size="sm"
             />
             <Select
-              options={severityOptions}
+              options={ISSUE_SEVERITY_OPTIONS}
               control={filterForm.control}
               name="severity"
               onChange={() => setPage(1)}
               size="sm"
             />
             <Select
-              options={assigneeOptions}
+              options={ISSUE_ASSIGNEE_OPTIONS}
               control={filterForm.control}
               name="assignee"
               onChange={() => setPage(1)}
               size="sm"
             />
             <Select
-              options={sortOptions}
+              options={ISSUE_SORT_OPTIONS}
               control={filterForm.control}
               name="sortBy"
               onChange={() => setPage(1)}

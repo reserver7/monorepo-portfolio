@@ -1,5 +1,5 @@
-export * from "./components";
-export * from "./stores";
+export * from "./common/components";
+export * from "./common/stores";
 export * from "./dashboard";
 export * from "./logs";
 export * from "./issues";

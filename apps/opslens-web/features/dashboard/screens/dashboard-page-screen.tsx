@@ -22,10 +22,11 @@ import {
   toOptionalServiceName
 } from "@repo/opslens";
 import { OpsDashboardSkeleton, OpsPageShell, OpsSectionCard, SeverityBadge } from "@/features";
-import { formatDateRangeLabel, formatDateTimeByLocale, resolveServiceLabel } from "@/features/utils/ops-display";
-import { useOpsFilters } from "@/features/stores";
-import { useOpsQueryOptions } from "@/features/query/use-ops-query-options";
+import { useOpsQueryOptions } from "@/features/common/hooks/use-ops-query-options";
+import { useOpsFilters } from "@/features/common/stores";
+import { formatDateRangeLabel, formatDateTimeByLocale, resolveServiceLabel } from "@/features/common/utils/ops-display";
 import { formatNumber } from "@repo/utils";
+import { DASHBOARD_ISSUE_KEY_TO_I18N_MAP } from "../constants";
 
 function OpsChartSkeleton({ heightClassName }: { heightClassName: string }) {
   return (
@@ -36,30 +37,18 @@ function OpsChartSkeleton({ heightClassName }: { heightClassName: string }) {
   );
 }
 
-const SeverityDistributionChart = dynamic(() => import("@/features/components/dashboard-charts").then((mod) => mod.SeverityDistributionChart), {
+const SeverityDistributionChart = dynamic(() => import("../components/dashboard-charts").then((mod) => mod.SeverityDistributionChart), {
   ssr: false,
   loading: () => <OpsChartSkeleton heightClassName="h-[232px]" />
 });
-const ErrorTrendChart = dynamic(() => import("@/features/components/dashboard-charts").then((mod) => mod.ErrorTrendChart), {
+const ErrorTrendChart = dynamic(() => import("../components/dashboard-charts").then((mod) => mod.ErrorTrendChart), {
   ssr: false,
   loading: () => <OpsChartSkeleton heightClassName="h-[232px]" />
 });
-const TopRepeatedErrorsChart = dynamic(() => import("@/features/components/dashboard-charts").then((mod) => mod.TopRepeatedErrorsChart), {
+const TopRepeatedErrorsChart = dynamic(() => import("../components/dashboard-charts").then((mod) => mod.TopRepeatedErrorsChart), {
   ssr: false,
   loading: () => <OpsChartSkeleton heightClassName="h-[248px]" />
 });
-
-const ISSUE_KEY_TO_I18N_MAP = {
-  runtimeTypeError: "issueKeys.runtimeTypeError",
-  apiHttp500: "issueKeys.apiHttp500",
-  networkTimeout: "issueKeys.networkTimeout",
-  loginSessionIssue: "issueKeys.loginSessionIssue",
-  renderLatency: "issueKeys.renderLatency",
-  qaRegression: "issueKeys.qaRegression",
-  discountDisplayMissing: "issueKeys.discountDisplayMissing",
-  docsPermissionLoop: "issueKeys.docsPermissionLoop",
-  whiteboardReconnectDelay: "issueKeys.whiteboardReconnectDelay"
-} as const;
 
 export default function DashboardPage() {
   const tDashboard = useTranslations("dashboard");
@@ -88,7 +77,7 @@ export default function DashboardPage() {
   const summary = summaryQuery.data;
   const localizeIssueTitle = (title: string, titleKey?: string) => {
     if (!titleKey) return title;
-    const i18nKey = ISSUE_KEY_TO_I18N_MAP[titleKey as keyof typeof ISSUE_KEY_TO_I18N_MAP];
+    const i18nKey = DASHBOARD_ISSUE_KEY_TO_I18N_MAP[titleKey as keyof typeof DASHBOARD_ISSUE_KEY_TO_I18N_MAP];
     return i18nKey ? tDashboard(i18nKey) : title;
   };
   const topRepeatedErrors = summary.topRepeatedErrors.map((item) => ({

@@ -1,7 +1,9 @@
 "use client";
 
 import { createAppStore, createScopedStoreProvider } from "@repo/zustand";
-import type { CreateOpsAlertInput, OpsAlert } from "./types";
+import { OPS_ALERT_STORE_KEY } from "../constants";
+import type { CreateOpsAlertInput, OpsAlert } from "../types";
+import { createOpsAlertId, createOpsAlertSeedItems, getOpsAlertTimestamp } from "../utils/alerts-utils";
 
 type OpsAlertState = {
   alerts: OpsAlert[];
@@ -13,32 +15,12 @@ type OpsAlertState = {
   clearAlerts: () => void;
 };
 
-const SEED_ALERTS: OpsAlert[] = [
-  {
-    id: "seed-alert-1",
-    title: "결제 승인 단계 TypeError 급증",
-    level: "critical",
-    source: "payments-api",
-    createdAt: new Date(Date.now() - 2 * 60_000).toISOString()
-  },
-  {
-    id: "seed-alert-2",
-    title: "주문 상세 API 500 에러 재발",
-    level: "high",
-    source: "orders-api",
-    createdAt: new Date(Date.now() - 7 * 60_000).toISOString(),
-    readAt: new Date(Date.now() - 4 * 60_000).toISOString()
-  }
-];
-
-const nowIso = () => new Date().toISOString();
-
 const createOpsAlertStore = () =>
   createAppStore<OpsAlertState>(
     (set) => ({
-      alerts: SEED_ALERTS,
+      alerts: createOpsAlertSeedItems(),
       addAlert: (input) => {
-        const id = `alert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const id = createOpsAlertId();
         const nextAlert: OpsAlert = {
           id,
           title: input.title,
@@ -46,7 +28,7 @@ const createOpsAlertStore = () =>
           level: input.level ?? "info",
           source: input.source,
           link: input.link,
-          createdAt: input.createdAt ?? nowIso()
+          createdAt: input.createdAt ?? getOpsAlertTimestamp()
         };
         set((state) => ({
           alerts: [nextAlert, ...state.alerts].slice(0, 50)
@@ -54,7 +36,7 @@ const createOpsAlertStore = () =>
         return id;
       },
       markRead: (id) => {
-        const stamp = nowIso();
+        const stamp = getOpsAlertTimestamp();
         set((state) => ({
           alerts: state.alerts.map((alert) => (alert.id === id ? { ...alert, readAt: alert.readAt ?? stamp } : alert))
         }));
@@ -65,7 +47,7 @@ const createOpsAlertStore = () =>
         }));
       },
       markAllRead: () => {
-        const stamp = nowIso();
+        const stamp = getOpsAlertTimestamp();
         set((state) => ({
           alerts: state.alerts.map((alert) => ({ ...alert, readAt: alert.readAt ?? stamp }))
         }));
@@ -78,9 +60,9 @@ const createOpsAlertStore = () =>
       }
     }),
     {
-      name: "opslens-alert-store",
+      name: OPS_ALERT_STORE_KEY,
       persist: {
-        key: "opslens-alert-store",
+        key: OPS_ALERT_STORE_KEY,
         partialize: (state) => ({ alerts: state.alerts })
       }
     }

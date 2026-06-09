@@ -1,186 +1,124 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Box, Button, Flex, SplitWorkspaceLayout, StateView, Skeleton, Textarea } from "@repo/ui";
+import { Clipboard } from "lucide-react";
 import { useQuery } from "@repo/react-query";
-import { getAiBriefing, getDashboardSummary, listIssues } from "@repo/opslens";
-import { OpsCardListSkeleton, OpsPageShell, OpsSectionCard, SeverityBadge, StatusBadge } from "@/features";
-import { useOpsFilters } from "@/features/stores";
-import { useOpsQueryOptions } from "@/features/query/use-ops-query-options";
-import { formatDateTime, formatNumber } from "@repo/utils";
-import { opslensQueryKeys, toOptionalSearch, toOptionalServiceName } from "@repo/opslens";
+import { Badge, Box, Button, Flex, SplitWorkspaceLayout, StateView, Textarea, Typography, toast } from "@repo/ui";
+import { getOpsReport, opslensQueryKeys, toOptionalSearch, toOptionalServiceName } from "@repo/opslens";
+import { OpsPageShell, OpsSectionCard } from "@/features";
+import { useOpsQueryOptions } from "@/features/common/hooks/use-ops-query-options";
+import { useOpsFilters } from "@/features/common/stores";
+import { ReportActionList, ReportPriorityIssues, ReportSummaryPanel } from "../components";
 
 export default function ReportsPage() {
   const { environment, serviceName, search, from, to } = useOpsFilters();
   const filter = { environment, serviceName, search, from, to };
 
-  const [audience, setAudience] = useState<"developer" | "stakeholder">("developer");
+  const reportQuery = useQuery(
+    useOpsQueryOptions("default", {
+      queryKey: opslensQueryKeys.opsReport(filter),
+      queryFn: () =>
+        getOpsReport({
+          environment,
+          serviceName: toOptionalServiceName(serviceName),
+          query: toOptionalSearch(search),
+          from,
+          to
+        })
+    })
+  );
 
-  const summaryQuery = useQuery(useOpsQueryOptions("default", {
-    queryKey: opslensQueryKeys.reportsSummary(filter),
-    queryFn: () =>
-      getDashboardSummary({
-        environment,
-        serviceName: toOptionalServiceName(serviceName),
-        query: toOptionalSearch(search),
-        from,
-        to
-      })
-  }));
-
-  const briefingQuery = useQuery(useOpsQueryOptions("default", {
-    queryKey: opslensQueryKeys.reportsBriefing(filter),
-    queryFn: () =>
-      getAiBriefing({
-        environment,
-        serviceName: toOptionalServiceName(serviceName),
-        query: toOptionalSearch(search),
-        from,
-        to
-      })
-  }));
-
-  const issuesQuery = useQuery(useOpsQueryOptions("list", {
-    queryKey: opslensQueryKeys.reportsIssues(filter),
-    queryFn: () =>
-      listIssues({
-        environment,
-        serviceName: toOptionalServiceName(serviceName),
-        query: toOptionalSearch(search),
-        page: 1,
-        pageSize: 5
-      })
-  }));
-
-  const reportText = useMemo(() => {
-    const summary = summaryQuery.data;
-    const issues = issuesQuery.data?.items ?? [];
-
-    if (!summary) return "";
-
-    const topSeverity = [...summary.severityDistribution].sort((a, b) => b.count - a.count)[0];
-    const topIssue = issues[0];
-
-    if (audience === "developer") {
-      return [
-        `[${environment}] 운영 리포트`,
-        `- 오늘 이슈 수: ${summary.todayIssueCount}`,
-        `- 가장 큰 비중 심각도: ${topSeverity?.severity ?? "n/a"} (${topSeverity?.count ?? 0})`,
-        `- 배포 이후 신규 증가: ${summary.newAfterLatestDeployment.length}`,
-        topIssue
-          ? `- 우선 대응 이슈: ${topIssue.title} (횟수 ${topIssue.occurrenceCount})`
-          : "- 우선 대응 이슈: 없음",
-        "- 상세: /issues 화면에서 상태 전환 및 담당자 지정"
-      ].join("\n");
+  const report = reportQuery.data;
+  const copyShareText = async () => {
+    if (!report) return;
+    try {
+      await navigator.clipboard.writeText(report.shareText);
+      toast.success("공유용 리포트를 복사했습니다.");
+    } catch {
+      toast.error("복사에 실패했습니다. 텍스트 영역에서 직접 복사해 주세요.");
     }
-
-    return [
-      `[${environment}] 운영 브리핑`,
-      `오늘 주요 이슈는 ${summary.todayIssueCount}건입니다.`,
-      `현재 우선 확인이 필요한 심각도는 ${topSeverity?.severity ?? "n/a"} 입니다.`,
-      `배포 이후 신규 증가 이슈는 ${summary.newAfterLatestDeployment.length}건입니다.`,
-      topIssue ? `최우선 확인 대상: ${topIssue.title}` : "최우선 확인 대상: 없음"
-    ].join("\n");
-  }, [audience, environment, issuesQuery.data?.items, summaryQuery.data]);
+  };
 
   return (
     <OpsPageShell>
-      <SplitWorkspaceLayout
-        sidebarWidthClassName="xl:grid-cols-[minmax(0,1fr)_360px]"
-        main={
-          <Box className="space-y-[var(--stack-gap)]">
-            <OpsSectionCard
-              title="AI 브리핑"
-              description="운영/개발/기획이 같은 맥락으로 이슈를 이해하도록 요약합니다."
-            >
-              <Flex className="flex-wrap items-center justify-between gap-[var(--space-3)]">
-                <Flex className="items-center gap-[var(--space-2)] text-sm">
+      <Box className="border-default bg-surface rounded-[var(--radius-xl)] border px-[var(--space-4)] py-[var(--space-3)] md:px-[var(--space-5)]">
+        <Flex className="items-center justify-between gap-[var(--space-3)]">
+          <Typography as="h2" variant="headingMd" className="tracking-[-0.01em]">
+            운영 리포트
+          </Typography>
+          <Flex className="shrink-0 flex-wrap justify-end gap-[var(--space-2)]">
+            <Badge variant="secondary" size="sm" shape="rounded" className="border border-default bg-surface-elevated font-semibold">
+              환경: {environment}
+            </Badge>
+          </Flex>
+        </Flex>
+      </Box>
+
+      {reportQuery.isError ? (
+        <StateView variant="error" size="sm" title="운영 리포트 생성에 실패했습니다." className="border-default bg-surface rounded-[var(--radius-xl)] border p-[var(--space-4)]" />
+      ) : report ? (
+        <SplitWorkspaceLayout
+          sidebarWidthClassName="xl:grid-cols-[minmax(0,1fr)_360px]"
+          main={
+            <Box className="min-w-0 space-y-[var(--stack-gap)]">
+              <OpsSectionCard title="리포트 요약" description="현재 필터 기준의 운영 위험도와 핵심 KPI입니다.">
+                <Flex className="mb-[var(--space-3)] justify-end">
                   <Button
                     type="button"
-                    variant={audience === "developer" ? "primary" : "outline"}
+                    variant="secondary"
                     size="sm"
-                    onClick={() => setAudience("developer")}
+                    loading={reportQuery.isFetching ? true : undefined}
+                    onClick={() => void reportQuery.refetch()}
                   >
-                    개발자용
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={audience === "stakeholder" ? "primary" : "outline"}
-                    size="sm"
-                    onClick={() => setAudience("stakeholder")}
-                  >
-                    비개발자용
+                    갱신
                   </Button>
                 </Flex>
-              </Flex>
+                <ReportSummaryPanel report={report} />
+              </OpsSectionCard>
 
-              {briefingQuery.isLoading ? (
-                <Box className="border-default bg-surface-elevated mt-[var(--space-3)] space-y-[var(--space-2)] rounded-xl border p-[var(--space-4)]">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-11/12" />
-                  <Skeleton className="h-4 w-4/5" />
+              <OpsSectionCard title="액션 아이템" description="공유 후 바로 담당자와 우선순위를 정리할 항목입니다.">
+                <ReportActionList actions={report.actionItems} />
+              </OpsSectionCard>
+
+              <OpsSectionCard title="기술 상세" description="개발/운영 담당자가 원인 확인에 사용할 상세 요약입니다.">
+                <Box className="border-default bg-surface-elevated rounded-[var(--radius-md)] border p-[var(--space-3)]">
+                  <Typography as="p" variant="bodySm" color="muted" className="whitespace-pre-wrap font-mono leading-[1.7]">
+                    {report.technicalSummary}
+                  </Typography>
                 </Box>
-              ) : briefingQuery.isError ? (
-                <StateView variant="error" size="sm" title="브리핑 생성에 실패했습니다." className="mt-[var(--space-3)]" />
-              ) : (
-                <Box className="border-default bg-surface-elevated mt-[var(--space-3)] rounded-xl border p-[var(--space-4)]">
-                  <Box as="p" className="text-foreground whitespace-pre-wrap text-sm leading-6">{briefingQuery.data}</Box>
-                </Box>
-              )}
-            </OpsSectionCard>
+              </OpsSectionCard>
+            </Box>
+          }
+          sidebar={
+            <Box className="min-w-0 space-y-[var(--stack-gap)]">
+              <OpsSectionCard title="우선 대응 이슈" description="발생 횟수와 심각도를 기준으로 정렬된 대응 후보입니다.">
+                <ReportPriorityIssues issues={report.priorityIssues} />
+              </OpsSectionCard>
 
-            <OpsSectionCard
-              title="리포트 포맷 (Slack/Jira 공유용)"
-              description="아래 문구를 그대로 공유하면 운영 정렬이 빨라집니다."
-            >
-              <Textarea
-                readOnly
-                value={reportText}
-                rows={10}
-                className="bg-surface-elevated mt-[var(--space-3)] font-mono text-caption"
-              />
-            </OpsSectionCard>
-          </Box>
-        }
-        sidebar={
-          <OpsSectionCard title="우선 대응 이슈 TOP 5">
-            {issuesQuery.isLoading ? (
-              <OpsCardListSkeleton count={5} />
-            ) : issuesQuery.isError ? (
-              <StateView variant="error" size="sm" title="이슈 조회에 실패했습니다." className="mt-[var(--space-3)]" />
-            ) : (issuesQuery.data?.items.length ?? 0) === 0 ? (
-              <StateView variant="empty" size="sm" title="대상 이슈가 없습니다." className="mt-[var(--space-3)]" />
-            ) : (
-              <Box className="mt-[var(--space-3)] space-y-[var(--space-2)]">
-                {issuesQuery.data?.items.map((issue) => (
-                  <Box key={issue.id} className="border-default bg-surface-elevated rounded-xl border p-[var(--space-3)] text-sm">
-                    <Box as="p" className="text-foreground font-semibold">{issue.title}</Box>
-                    <Flex className="text-muted mt-[var(--space-1)] flex-wrap items-center gap-[var(--space-2)] text-caption">
-                      <SeverityBadge severity={issue.severity} />
-                      <StatusBadge status={issue.status} />
-                      <Box as="span">{issue.serviceName}</Box>
-                      <Box as="span">·</Box>
-                      <Box as="span">{formatNumber(issue.occurrenceCount)}회</Box>
-                    </Flex>
-                    <Box as="p" className="text-muted-foreground mt-[var(--space-1)] text-caption">
-                      최근 발생: {formatDateTime(issue.lastOccurredAt)}
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-            )}
-          </OpsSectionCard>
-        }
-      />
-
-      {summaryQuery.isLoading ? (
+              <OpsSectionCard title="공유용 리포트" description="Slack/Jira에 그대로 붙여넣을 수 있는 요약입니다.">
+                <Flex className="mb-[var(--space-3)] justify-end">
+                  <Button type="button" variant="secondary" size="sm" leftIcon={<Clipboard />} onClick={copyShareText}>
+                    복사
+                  </Button>
+                </Flex>
+                <Textarea
+                  readOnly
+                  value={report.shareText}
+                  rows={13}
+                  resize="none"
+                  className="bg-surface-elevated font-mono text-caption leading-[1.6]"
+                />
+              </OpsSectionCard>
+            </Box>
+          }
+        />
+      ) : (
         <StateView
           variant="loading"
           size="sm"
-          className="border-default bg-surface rounded-xl border p-[var(--space-4)]"
-          title="대시보드 요약 데이터를 갱신하는 중입니다."
+          className="border-default bg-surface rounded-[var(--radius-xl)] border p-[var(--space-4)]"
+          title="운영 리포트를 생성하는 중입니다."
         />
-      ) : null}
+      )}
     </OpsPageShell>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
@@ -28,6 +29,11 @@ export const Spinner = React.memo(function Spinner({
   const [visible, setVisible] = React.useState(
     () => (open && resolvedDelayMs === 0) || (open && !fullscreen)
   );
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   React.useEffect(() => {
     if (!open) {
@@ -63,9 +69,9 @@ export const Spinner = React.memo(function Spinner({
 
   if (!fullscreen) return content;
 
-  return (
+  const fullscreenContent = (
     <div
-      className="bg-foreground/35 fixed inset-0 z-50 flex items-center justify-center backdrop-blur-[1px]"
+      className="fixed inset-0 z-[1000] flex h-dvh w-dvw items-center justify-center bg-foreground/35 backdrop-blur-[1px]"
       role="status"
       aria-live="polite"
       aria-busy="true"
@@ -79,5 +85,9 @@ export const Spinner = React.memo(function Spinner({
       </div>
     </div>
   );
+
+  if (!mounted) return fullscreenContent;
+
+  return createPortal(fullscreenContent, document.body);
 });
 Spinner.displayName = "Spinner";

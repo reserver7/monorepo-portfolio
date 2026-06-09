@@ -10,7 +10,7 @@ import { subscribeHttpUnauthorized } from "@repo/react-query";
 import { Box, ConsoleAppLayout, toast, useDisclosure } from "@repo/ui";
 import { clearAuthSession, logoutCurrentSession, OPS_AVATAR_COLOR_CHANGED_EVENT, readAuthAvatarColor, readAuthSession } from "@/lib/auth";
 import { opsNavItems } from "@/lib/navigation";
-import { useOpsFilterStore, useOpsFilterStoreApi } from "@/features/stores";
+import { useOpsFilterStore, useOpsFilterStoreApi } from "@/features/common/stores";
 
 const DynamicAppShellHeaderControls = dynamic(() => import("./app-shell-header-controls"), {
   ssr: false,

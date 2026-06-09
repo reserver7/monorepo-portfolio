@@ -6,61 +6,23 @@ import { Box, Button, ConsolePageStack, ConsoleSectionCard, Flex, FormField, Gri
 import { useMutation } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
 import { analyzeLogs, createOpsLogTailEventSource, type OpsLogTailEvent } from "@repo/opslens";
-import { formatDateTimeByLocale, resolveServiceLabel } from "@/features/utils/ops-display";
-import { useOpsFilters } from "@/features/stores";
+import { useOpsFilters } from "@/features/common/stores";
+import { formatDateTimeByLocale, resolveServiceLabel } from "@/features/common/utils/ops-display";
 import { formatDateTime, formatNumber } from "@repo/utils";
-
-type FormValues = {
-  source: "server" | "client" | "api" | "console" | "sentry";
-  serviceName: string;
-  deploymentVersion?: string;
-  rawLogs: string;
-};
-
-type SeverityFilter = "all" | "critical" | "high" | "medium" | "low";
-type SortKey = "countDesc" | "latestDesc" | "severityDesc";
-type SavedView = {
-  id: string;
-  name: string;
-  severity: SeverityFilter;
-  query: string;
-  sort: SortKey;
-};
-type SavedViewsState = {
-  items: SavedView[];
-  activeId: string | null;
-};
-
-type CorrelationToken = {
-  key: "traceId" | "requestId";
-  value: string;
-};
-
-const severityVariantMap = {
-  critical: "danger",
-  high: "warning",
-  medium: "info",
-  low: "success"
-} as const;
-
-const DEFAULT_CLUSTER_LIMIT = 12;
-const SAVED_VIEWS_KEY = "opslens.logs.savedViews.v1";
-const createSavedViewId = (): string => {
-  if (typeof globalThis !== "undefined" && "crypto" in globalThis && typeof globalThis.crypto?.randomUUID === "function") {
-    return globalThis.crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-};
-
-const getAnalyzeErrorMessage = (error: unknown): string => {
-  if (error instanceof Error && error.message.trim().length > 0) {
-    if (error.message.toLowerCase().includes("network")) {
-      return "네트워크 상태를 확인한 뒤 다시 시도하세요.";
-    }
-    return error.message;
-  }
-  return "로그 분석에 실패했습니다.";
-};
+import {
+  LOGS_DEFAULT_CLUSTER_LIMIT,
+  LOGS_SAMPLE,
+  LOGS_SAVED_VIEWS_KEY,
+  LOGS_SEVERITY_VARIANT_MAP
+} from "../constants";
+import type { LogsFormValues, LogsSavedView, LogsSavedViewsState, LogsSeverityFilter, LogsSortKey } from "../types";
+import {
+  createLogsSavedViewId,
+  extractCorrelationTokens,
+  getAnalyzeErrorMessage,
+  getLogsLineCount,
+  sortLogClusters
+} from "../utils/logs-utils";
 
 export default function LogsPage() {
   const { environment, locale, serviceName } = useOpsFilters();
@@ -71,20 +33,16 @@ export default function LogsPage() {
   const [clusterMeta, setClusterMeta] = useState<{ totalCount: number; displayedCount: number } | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const [analyzedAt, setAnalyzedAt] = useState<Date | null>(null);
-  const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
+  const [severityFilter, setSeverityFilter] = useState<LogsSeverityFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("countDesc");
-  const [savedViewsState, setSavedViewsState] = useState<SavedViewsState>({ items: [], activeId: null });
+  const [sortKey, setSortKey] = useState<LogsSortKey>("countDesc");
+  const [savedViewsState, setSavedViewsState] = useState<LogsSavedViewsState>({ items: [], activeId: null });
   const [selectedClusterKey, setSelectedClusterKey] = useState<string | null>(null);
   const [liveTailEnabled, setLiveTailEnabled] = useState(false);
   const [dismissedCorrelationKeys, setDismissedCorrelationKeys] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryInputRef = useRef<HTMLInputElement>(null);
-  const lastSubmittedRef = useRef<FormValues | null>(null);
-  const sampleLogs = `2026-03-25T10:14:11Z ERROR checkout-api Payment timeout while calling gateway
-2026-03-25T10:14:43Z ERROR checkout-api Payment timeout while calling gateway
-2026-03-25T10:15:05Z WARN docs-api Permission loop detected for document ACL
-2026-03-25T10:16:02Z ERROR ui-shell Cannot read properties of undefined (reading 'id')`;
+  const lastSubmittedRef = useRef<LogsFormValues | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -97,9 +55,9 @@ export default function LogsPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const parsed = JSON.parse(window.localStorage.getItem(SAVED_VIEWS_KEY) ?? "[]");
+      const parsed = JSON.parse(window.localStorage.getItem(LOGS_SAVED_VIEWS_KEY) ?? "[]");
       if (Array.isArray(parsed)) {
-        const normalized = parsed.filter((item): item is SavedView => (
+        const normalized = parsed.filter((item): item is LogsSavedView => (
           typeof item?.id === "string" &&
           typeof item?.name === "string" &&
           typeof item?.severity === "string" &&
@@ -115,7 +73,7 @@ export default function LogsPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(savedViewsState.items));
+    window.localStorage.setItem(LOGS_SAVED_VIEWS_KEY, JSON.stringify(savedViewsState.items));
   }, [savedViewsState.items]);
 
   useEffect(() => {
@@ -132,7 +90,7 @@ export default function LogsPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const form = useAppForm<FormValues>({
+  const form = useAppForm<LogsFormValues>({
     defaultValues: {
       source: "server",
       serviceName: serviceName === "all" ? "docs" : serviceName,
@@ -172,14 +130,14 @@ export default function LogsPage() {
   }, [environment, form, liveTailEnabled, serviceName, watchedSource]);
 
   const analyzeMutation = useMutation({
-    mutationFn: (values: FormValues) =>
+    mutationFn: (values: LogsFormValues) =>
       analyzeLogs({
         rawLogs: values.rawLogs,
         source: values.source,
         environment,
         serviceName: values.serviceName,
         deploymentVersion: values.deploymentVersion || undefined,
-        clusterLimit: DEFAULT_CLUSTER_LIMIT,
+        clusterLimit: LOGS_DEFAULT_CLUSTER_LIMIT,
         requestedBy: `${operatorRole}:opslens-web/logs-page`
       }),
     retry: 2,
@@ -206,22 +164,12 @@ export default function LogsPage() {
   };
 
   const rawLogsValue = form.watch("rawLogs");
-  const rawLineCount = rawLogsValue.trim().length === 0 ? 0 : rawLogsValue.split("\n").filter((line) => line.trim().length > 0).length;
+  const rawLineCount = getLogsLineCount(rawLogsValue);
   const totalClusterCount = clusters.reduce((acc, cluster) => acc + cluster.count, 0);
   const serviceLabel = resolveServiceLabel(serviceName, tService);
   const analyzedAtLabel = analyzedAt ? formatDateTimeByLocale(analyzedAt.toISOString(), locale) : "-";
   const correlationTokens = useMemo(() => {
-    const matches = rawLogsValue.matchAll(/\b(traceId|requestId)=([a-zA-Z0-9_-]+)\b/g);
-    const unique = new Map<string, CorrelationToken>();
-    for (const match of matches) {
-      const key = match[1] as "traceId" | "requestId";
-      const value = match[2] ?? "";
-      if (value.length === 0) continue;
-      const id = `${key}:${value}`;
-      if (!unique.has(id)) unique.set(id, { key, value });
-      if (unique.size >= 10) break;
-    }
-    return Array.from(unique.values());
+    return extractCorrelationTokens(rawLogsValue);
   }, [rawLogsValue]);
   const visibleCorrelationTokens = useMemo(
     () => correlationTokens.filter((token) => !dismissedCorrelationKeys.includes(`${token.key}:${token.value}`)),
@@ -240,18 +188,7 @@ export default function LogsPage() {
             .includes(keyword)
         );
 
-    const severityRank: Record<"critical" | "high" | "medium" | "low", number> = {
-      critical: 4,
-      high: 3,
-      medium: 2,
-      low: 1
-    };
-
-    return [...byKeyword].sort((a, b) => {
-      if (sortKey === "countDesc") return b.count - a.count;
-      if (sortKey === "latestDesc") return new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
-      return severityRank[b.severity] - severityRank[a.severity];
-    });
+    return sortLogClusters(byKeyword, sortKey);
   }, [clusters, searchQuery, severityFilter, sortKey]);
 
   const selectedCluster = useMemo(
@@ -261,8 +198,8 @@ export default function LogsPage() {
 
   const saveCurrentView = () => {
     const baseName = `View ${savedViewsState.items.length + 1}`;
-    const nextId = createSavedViewId();
-    const next: SavedView = {
+    const nextId = createLogsSavedViewId();
+    const next: LogsSavedView = {
       id: nextId,
       name: baseName,
       severity: severityFilter,
@@ -297,7 +234,7 @@ export default function LogsPage() {
     setSavedViewsState((prev) => ({ ...prev, activeId: id }));
   };
 
-  const runAnalyze = (values: FormValues) => {
+  const runAnalyze = (values: LogsFormValues) => {
     if (operatorRole === "viewer") {
       toast.error("viewer 권한에서는 로그 분석을 실행할 수 없습니다.");
       return;
@@ -435,7 +372,7 @@ export default function LogsPage() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => form.setValue("rawLogs", sampleLogs, { shouldDirty: true })}
+                          onClick={() => form.setValue("rawLogs", LOGS_SAMPLE, { shouldDirty: true })}
                           disabled={analyzeMutation.isPending}
                         >
                           샘플 넣기
@@ -533,7 +470,7 @@ export default function LogsPage() {
                   />
                   <Select
                     value={severityFilter}
-                    onChange={(value) => setSeverityFilter(String(value) as SeverityFilter)}
+                    onChange={(value) => setSeverityFilter(String(value) as LogsSeverityFilter)}
                     options={[
                       { label: "심각도: 전체", value: "all" },
                       { label: "Critical", value: "critical" },
@@ -544,7 +481,7 @@ export default function LogsPage() {
                   />
                   <Select
                     value={sortKey}
-                    onChange={(value) => setSortKey(String(value) as SortKey)}
+                    onChange={(value) => setSortKey(String(value) as LogsSortKey)}
                     options={[
                       { label: "정렬: 발생량", value: "countDesc" },
                       { label: "정렬: 최근순", value: "latestDesc" },
@@ -604,7 +541,7 @@ export default function LogsPage() {
                           type="button"
                           size="sm"
                           variant="outline"
-                          onClick={() => runAnalyze(lastSubmittedRef.current as FormValues)}
+                          onClick={() => runAnalyze(lastSubmittedRef.current as LogsFormValues)}
                           loading={analyzeMutation.isPending ? true : undefined}
                           loadingLabel="재시도 중..."
                         >
@@ -630,7 +567,7 @@ export default function LogsPage() {
                       <Flex className="flex-wrap items-center justify-between gap-[var(--space-2)]">
                         <Typography as="p" variant="bodySm" className="font-semibold">{cluster.title}</Typography>
                         <Flex className="items-center gap-[var(--space-2)]">
-                          <Badge variant={severityVariantMap[cluster.severity]} size="sm" className="rounded-md font-semibold">
+                          <Badge variant={LOGS_SEVERITY_VARIANT_MAP[cluster.severity]} size="sm" className="rounded-md font-semibold">
                             {cluster.severity}
                           </Badge>
                           <Badge size="sm" variant="secondary">{formatNumber(cluster.count)}건</Badge>
@@ -678,7 +615,7 @@ export default function LogsPage() {
                 <ConsoleSectionCard title="선택 클러스터 상세" description="우선 처리 대상을 빠르게 확인합니다." contentClassName="pt-[var(--space-2)]">
                   <Box className="space-y-[var(--space-2)]">
                     <Flex className="items-center justify-between gap-[var(--space-2)]">
-                      <Badge variant={severityVariantMap[selectedCluster.severity]} size="sm">{selectedCluster.severity}</Badge>
+                      <Badge variant={LOGS_SEVERITY_VARIANT_MAP[selectedCluster.severity]} size="sm">{selectedCluster.severity}</Badge>
                       <Badge variant="secondary" size="sm">{formatNumber(selectedCluster.count)}건</Badge>
                     </Flex>
                     <Typography as="p" variant="bodySm" className="font-semibold">{selectedCluster.title}</Typography>

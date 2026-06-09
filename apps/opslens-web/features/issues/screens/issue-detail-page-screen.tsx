@@ -10,20 +10,14 @@ import {
   addIssueComment,
   assignIssue,
   getIssueDetail,
+  opslensQueryKeys,
   type IssueStatus,
   updateIssueStatus
 } from "@repo/opslens";
 import { OpsInfoItem, OpsIssueDetailSkeleton, OpsPageShell, OpsSectionCard } from "@/features";
-import { useOpsQueryOptions } from "@/features/query/use-ops-query-options";
+import { useOpsQueryOptions } from "@/features/common/hooks/use-ops-query-options";
 import { formatDateTime, formatNumber } from "@repo/utils";
-import { opslensQueryKeys } from "@repo/opslens";
-
-const statusOptions: Array<{ label: string; value: IssueStatus }> = [
-  { label: "신규", value: "new" },
-  { label: "분석중", value: "analyzing" },
-  { label: "대응중", value: "in_progress" },
-  { label: "해결", value: "resolved" }
-];
+import { ISSUE_DETAIL_STATUS_OPTIONS } from "../constants";
 
 export default function IssueDetailPage() {
   const params = useParams<{ id: string }>();
@@ -134,7 +128,7 @@ export default function IssueDetailPage() {
             <Grid className="gap-[var(--space-1)]">
               <Label htmlFor="issue-status">상태 변경</Label>
               <Select
-                options={statusOptions}
+                options={ISSUE_DETAIL_STATUS_OPTIONS}
                 value={issue.status}
                 onChange={(value) => statusMutation.mutate(String(value) as IssueStatus)}
                 disabled={statusMutation.isPending}

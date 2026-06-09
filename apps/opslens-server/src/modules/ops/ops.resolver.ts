@@ -5,11 +5,13 @@ import {
   AddIssueCommentInput,
   AnalyzeLogsInputModel,
   AssignIssueInput,
+  CreateOpsAlertInput,
   DashboardFilterInput,
   DeploymentImpactInput,
   IssueFilterInput,
   QaAssistantInputModel,
   RegisterDeploymentInput,
+  UpsertOpsSettingInput,
   UpdateIssueStatusInput
 } from "./ops.inputs.js";
 import {
@@ -19,6 +21,11 @@ import {
   DeploymentType,
   IssueListPayloadType,
   IssueType,
+  LogAnalysisSessionType,
+  OpsAlertType,
+  OpsReportType,
+  OpsReportSnapshotType,
+  OpsSettingType,
   QaScenarioType
 } from "./ops.types.js";
 import { OpsService } from "./ops.service.js";
@@ -73,6 +80,34 @@ export class OpsResolver {
     return this.opsService.aiBriefing(filter);
   }
 
+  @Query(() => OpsReportType)
+  opsReport(
+    @Args("filter", { type: () => DashboardFilterInput, nullable: true })
+    filter?: DashboardFilterInput
+  ): Promise<OpsReportType> {
+    return this.opsService.getOpsReport(filter);
+  }
+
+  @Query(() => [OpsReportSnapshotType])
+  reportSnapshots(): Promise<OpsReportSnapshotType[]> {
+    return this.opsService.listReportSnapshots();
+  }
+
+  @Query(() => [OpsAlertType])
+  opsAlerts(): Promise<OpsAlertType[]> {
+    return this.opsService.listOpsAlerts();
+  }
+
+  @Query(() => [LogAnalysisSessionType])
+  logAnalysisSessions(): Promise<LogAnalysisSessionType[]> {
+    return this.opsService.listLogAnalysisSessions();
+  }
+
+  @Query(() => [OpsSettingType])
+  opsSettings(): Promise<OpsSettingType[]> {
+    return this.opsService.listOpsSettings();
+  }
+
   @Query(() => [QaScenarioType])
   recentQaScenarios(): Promise<QaScenarioType[]> {
     return this.opsService.recentQaScenarios();
@@ -84,6 +119,32 @@ export class OpsResolver {
     input: AnalyzeLogsInputModel
   ): Promise<AnalyzeLogsPayloadType> {
     return this.opsService.analyzeLogs(input);
+  }
+
+  @Mutation(() => OpsAlertType)
+  createOpsAlert(
+    @Args("input", { type: () => CreateOpsAlertInput })
+    input: CreateOpsAlertInput
+  ): Promise<OpsAlertType> {
+    return this.opsService.createOpsAlert(input);
+  }
+
+  @Mutation(() => OpsAlertType)
+  markOpsAlertRead(@Args("alertId", { type: () => String }) alertId: string): Promise<OpsAlertType> {
+    return this.opsService.markOpsAlertRead(alertId);
+  }
+
+  @Mutation(() => Boolean)
+  markAllOpsAlertsRead(): Promise<boolean> {
+    return this.opsService.markAllOpsAlertsRead();
+  }
+
+  @Mutation(() => OpsSettingType)
+  upsertOpsSetting(
+    @Args("input", { type: () => UpsertOpsSettingInput })
+    input: UpsertOpsSettingInput
+  ): Promise<OpsSettingType> {
+    return this.opsService.upsertOpsSetting(input);
   }
 
   @Mutation(() => IssueType)
@@ -124,5 +185,13 @@ export class OpsResolver {
     input: QaAssistantInputModel
   ): Promise<QaScenarioType> {
     return this.opsService.generateQaScenario(input);
+  }
+
+  @Mutation(() => Boolean)
+  deleteQaScenario(
+    @Args("scenarioId", { type: () => String })
+    scenarioId: string
+  ): Promise<boolean> {
+    return this.opsService.deleteQaScenario(scenarioId);
   }
 }

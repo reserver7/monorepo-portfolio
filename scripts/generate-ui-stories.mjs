@@ -687,7 +687,8 @@ const GLOBAL_TABLE_HIDE_PROPS = [
   "optionLabelClassName",
   "optionDescriptionClassName",
   "style",
-  "id"
+  "id",
+  "title"
 ];
 const COMPONENT_TABLE_HIDE_PROPS = {
   DataTable: ["columns", "data", "getRowId", "onPageChange", "tableClassName", "totalCount", "page", "totalPages"],
