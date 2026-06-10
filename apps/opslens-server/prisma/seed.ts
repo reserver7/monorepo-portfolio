@@ -16,6 +16,7 @@ async function main(): Promise<void> {
   console.log("[seed] OpsLens 샘플 데이터 입력 시작");
 
   await prisma.$transaction([
+    prisma.opsAuditLog.deleteMany(),
     prisma.opsSetting.deleteMany(),
     prisma.opsReportSnapshot.deleteMany(),
     prisma.opsAlert.deleteMany(),
@@ -588,6 +589,8 @@ async function main(): Promise<void> {
         technicalSummary: "payments-web TypeError와 orders-api 500이 배포 이후 증가했습니다.",
         shareText: "[prod] 운영 리포트\nCritical 2건 / High 3건\nAction: 결제 승인 오류와 주문 API 500 우선 대응",
         generatedBy: "system",
+        pinned: true,
+        sharedAt: minutesAgo(45),
         generatedAt: hoursAgo(1)
       },
       {
@@ -599,6 +602,7 @@ async function main(): Promise<void> {
         technicalSummary: "orders-web 조건부 렌더링 분기 누락 가능성이 큽니다.",
         shareText: "[stage] QA 리포트\n회귀 후보 1건\nAction: 할인금액 표시 케이스 자동화",
         generatedBy: "qa",
+        pinned: false,
         generatedAt: hoursAgo(6)
       }
     ]
@@ -615,7 +619,11 @@ async function main(): Promise<void> {
           escalationMinutes: { critical: 15, high: 60 }
         },
         description: "운영 알림 발송 및 에스컬레이션 기준",
-        updatedBy: "OpsLens Admin"
+        category: "alert",
+        riskLevel: "high",
+        editable: true,
+        updatedBy: "OpsLens Admin",
+        changeReason: "운영 알림 기준 초기 구성"
       },
       {
         id: "setting-report-schedule",
@@ -626,7 +634,11 @@ async function main(): Promise<void> {
           recipients: ["ops", "tech-leads"]
         },
         description: "운영 리포트 자동 생성 기준",
-        updatedBy: "OpsLens Admin"
+        category: "report",
+        riskLevel: "medium",
+        editable: true,
+        updatedBy: "OpsLens Admin",
+        changeReason: "정기 리포트 mock 운영 정책 구성"
       },
       {
         id: "setting-deployment-guardrail",
@@ -637,7 +649,55 @@ async function main(): Promise<void> {
           requiredChecklist: ["릴리즈 노트", "롤백 기준", "담당자"]
         },
         description: "배포 등록과 영향 분석 기본 정책",
-        updatedBy: "OpsLens Admin"
+        category: "deployment",
+        riskLevel: "critical",
+        editable: true,
+        updatedBy: "OpsLens Admin",
+        changeReason: "배포 가드레일 기본값 구성"
+      }
+    ]
+  });
+
+  await prisma.opsAuditLog.createMany({
+    data: [
+      {
+        id: "audit-seed-report-created",
+        actor: "system",
+        action: "report_snapshot.created",
+        targetType: "OpsReportSnapshot",
+        targetId: "report-prod-daily",
+        severity: "info",
+        summary: "[prod] 일일 운영 리포트 스냅샷 생성",
+        metadata: { riskLevel: "critical" },
+        createdAt: hoursAgo(1)
+      },
+      {
+        id: "audit-seed-alert-read",
+        actor: "OpsLens Admin",
+        action: "alert.read",
+        targetType: "OpsAlert",
+        targetId: "alert-report-read",
+        severity: "info",
+        summary: "일일 운영 리포트 생성 완료 알림 읽음 처리",
+        metadata: {},
+        createdAt: minutesAgo(12)
+      },
+      {
+        id: "audit-seed-setting",
+        actor: "OpsLens Admin",
+        action: "setting.upserted",
+        targetType: "OpsSetting",
+        targetId: "setting-alert-policy",
+        severity: "warning",
+        summary: "alert.policy 운영 설정 저장",
+        beforeValue: { minLevel: "critical", channels: ["inApp"] },
+        afterValue: {
+          minLevel: "high",
+          channels: ["inApp", "slack"],
+          escalationMinutes: { critical: 15, high: 60 }
+        },
+        metadata: { key: "alert.policy", category: "alert", changeReason: "슬랙 알림 추가" },
+        createdAt: hoursAgo(2)
       }
     ]
   });

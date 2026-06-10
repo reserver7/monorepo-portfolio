@@ -164,8 +164,50 @@ export class OpsReportSnapshotType {
   @Field(() => String)
   generatedBy!: string;
 
+  @Field(() => Boolean)
+  pinned!: boolean;
+
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  sharedAt?: Date | null;
+
   @Field(() => GraphQLISODateTime)
   generatedAt!: Date;
+}
+
+@ObjectType()
+export class OpsAuditLogType {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
+  actor!: string;
+
+  @Field(() => String)
+  action!: string;
+
+  @Field(() => String)
+  targetType!: string;
+
+  @Field(() => String, { nullable: true })
+  targetId?: string | null;
+
+  @Field(() => String)
+  severity!: string;
+
+  @Field(() => String)
+  summary!: string;
+
+  @Field(() => String, { nullable: true })
+  beforeValue?: string | null;
+
+  @Field(() => String, { nullable: true })
+  afterValue?: string | null;
+
+  @Field(() => String)
+  metadata!: string;
+
+  @Field(() => GraphQLISODateTime)
+  createdAt!: Date;
 }
 
 @ObjectType()
@@ -252,7 +294,19 @@ export class OpsSettingType {
   description?: string | null;
 
   @Field(() => String)
+  category!: string;
+
+  @Field(() => String)
+  riskLevel!: string;
+
+  @Field(() => Boolean)
+  editable!: boolean;
+
+  @Field(() => String)
   updatedBy!: string;
+
+  @Field(() => String, { nullable: true })
+  changeReason?: string | null;
 
   @Field(() => GraphQLISODateTime)
   updatedAt!: Date;

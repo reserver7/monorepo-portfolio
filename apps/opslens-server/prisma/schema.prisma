@@ -215,6 +215,8 @@ model OpsReportSnapshot {
   technicalSummary  String
   shareText         String
   generatedBy       String         @default("system")
+  pinned            Boolean        @default(false)
+  sharedAt          DateTime?
   generatedAt       DateTime       @default(now())
   createdAt         DateTime       @default(now())
 }
@@ -224,7 +226,34 @@ model OpsSetting {
   key         String   @unique
   value       Json
   description String?
+  category    String   @default("general")
+  riskLevel   String   @default("low")
+  editable    Boolean  @default(true)
   updatedBy   String   @default("system")
+  changeReason String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([riskLevel])
+}
+
+model OpsAuditLog {
+  id          String   @id @default(cuid())
+  actor       String   @default("system")
+  action      String
+  targetType  String
+  targetId    String?
+  severity    String   @default("info")
+  summary     String
+  beforeValue Json?
+  afterValue  Json?
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@index([actor])
+  @@index([action])
+  @@index([severity])
+  @@index([createdAt])
 }
