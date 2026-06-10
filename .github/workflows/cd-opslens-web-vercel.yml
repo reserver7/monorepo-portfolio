@@ -83,34 +83,48 @@ jobs:
           ref: ${{ needs.verify-tag-on-main.outputs.release_sha }}
 
       - name: Validate Vercel secrets
+        id: vercel
         run: |
           set -euo pipefail
-          [ -n "${VERCEL_TOKEN}" ] || { echo "Missing secret: VERCEL_TOKEN"; exit 1; }
-          [ -n "${VERCEL_ORG_ID}" ] || { echo "Missing secret: VERCEL_ORG_ID"; exit 1; }
-          [ -n "${VERCEL_PROJECT_ID}" ] || { echo "Missing secret: VERCEL_PROJECT_ID_OPSLENS_WEB"; exit 1; }
+          if [ -z "${VERCEL_TOKEN}" ] || [ -z "${VERCEL_ORG_ID}" ] || [ -z "${VERCEL_PROJECT_ID}" ]; then
+            echo "enabled=false" >> "${GITHUB_OUTPUT}"
+            echo "OpsLens Web production domain is not configured yet. Skipping Vercel deployment."
+            exit 0
+          fi
+          echo "enabled=true" >> "${GITHUB_OUTPUT}"
 
       - name: Setup pnpm
+        if: ${{ steps.vercel.outputs.enabled == 'true' }}
         uses: pnpm/action-setup@v4
         with:
           version: 10.12.3
 
       - name: Setup Node
+        if: ${{ steps.vercel.outputs.enabled == 'true' }}
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: "pnpm"
 
       - name: Install dependencies
+        if: ${{ steps.vercel.outputs.enabled == 'true' }}
         run: pnpm install --frozen-lockfile
 
       - name: Pull Vercel Environment Information (OpsLens Web)
+        if: ${{ steps.vercel.outputs.enabled == 'true' }}
         working-directory: apps/opslens-web
         run: pnpm dlx vercel@latest pull --yes --environment=production --token="${VERCEL_TOKEN}"
 
       - name: Build OpsLens Web
+        if: ${{ steps.vercel.outputs.enabled == 'true' }}
         working-directory: apps/opslens-web
         run: pnpm dlx vercel@latest build --prod --token="${VERCEL_TOKEN}"
 
       - name: Deploy OpsLens Web
+        if: ${{ steps.vercel.outputs.enabled == 'true' }}
         working-directory: apps/opslens-web
         run: pnpm dlx vercel@latest deploy --prebuilt --prod --token="${VERCEL_TOKEN}"
+
+      - name: Skip notice
+        if: ${{ steps.vercel.outputs.enabled != 'true' }}
+        run: echo "Deployment skipped because OpsLens Web production Vercel project is not configured."
