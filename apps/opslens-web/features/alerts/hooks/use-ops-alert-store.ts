@@ -13,6 +13,7 @@ type OpsAlertState = {
   markAllRead: () => void;
   removeAlert: (id: string) => void;
   clearAlerts: () => void;
+  replaceAlerts: (alerts: OpsAlert[]) => void;
 };
 
 const createOpsAlertStore = () =>
@@ -57,6 +58,9 @@ const createOpsAlertStore = () =>
       },
       clearAlerts: () => {
         set({ alerts: [] });
+      },
+      replaceAlerts: (alerts) => {
+        set({ alerts });
       }
     }),
     {

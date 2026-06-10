@@ -25,7 +25,7 @@ type AlertsModalProps = {
   onMarkAllRead: () => void;
   onMarkRead: (id: string) => void;
   onRemoveAlert: (id: string) => void;
-  onMoveToIssues: (id: string) => void;
+  onMoveToAlert: (alert: OpsAlert) => void;
 };
 
 export function AlertsModal({
@@ -35,7 +35,7 @@ export function AlertsModal({
   onMarkAllRead,
   onMarkRead,
   onRemoveAlert,
-  onMoveToIssues
+  onMoveToAlert
 }: AlertsModalProps) {
   const tAlerts = useTranslations("alerts");
   const unreadCount = alerts.filter((item) => !item.readAt).length;
@@ -43,11 +43,15 @@ export function AlertsModal({
   const levelLabelMap = {
     critical: "critical",
     high: "high",
+    medium: "medium",
+    low: "low",
     info: "info"
   } as const;
   const levelTextClassMap = {
     critical: "text-danger",
     high: "text-warning",
+    medium: "text-warning",
+    low: "text-muted",
     info: "text-muted"
   } as const;
 
@@ -108,13 +112,13 @@ export function AlertsModal({
                     } hover:bg-surface-elevated`}
                     onClick={() => {
                       onMarkRead(alert.id);
-                      onMoveToIssues(alert.id);
+                      onMoveToAlert(alert);
                     }}
                     onKeyDown={(event) => {
                       if (event.key !== "Enter" && event.key !== " ") return;
                       event.preventDefault();
                       onMarkRead(alert.id);
-                      onMoveToIssues(alert.id);
+                      onMoveToAlert(alert);
                     }}
                   >
                     <Flex className="items-start gap-[var(--space-2)]">

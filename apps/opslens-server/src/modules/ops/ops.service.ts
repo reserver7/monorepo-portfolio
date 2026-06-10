@@ -22,9 +22,11 @@ import {
   type DashboardFilterInput,
   type DeploymentImpactInput,
   type IssueFilterInput,
+  type OpsAuditLogFilterInput,
   type QaAssistantInputModel,
   type RegisterDeploymentInput,
   type UpsertOpsSettingInput,
+  type UpdateReportSnapshotInput,
   type UpdateIssueStatusInput
 } from "./ops.inputs.js";
 import { clusterLogs, parseLogLines } from "./log-parser.js";
@@ -36,6 +38,7 @@ import type {
   IssueListPayloadType,
   IssueType,
   LogAnalysisSessionType,
+  OpsAuditLogType,
   OpsAlertType,
   OpsReportType,
   OpsReportSnapshotType,
@@ -146,6 +149,34 @@ export class OpsService {
   private parseArray(value: Prisma.JsonValue): string[] {
     if (Array.isArray(value)) return value.map((item) => String(item));
     return [];
+  }
+
+  private async writeAuditLog(input: {
+    actor?: string;
+    action: string;
+    targetType: string;
+    targetId?: string | null;
+    severity?: string;
+    summary: string;
+    beforeValue?: Prisma.InputJsonValue | null;
+    afterValue?: Prisma.InputJsonValue | null;
+    metadata?: Prisma.InputJsonValue;
+  }): Promise<void> {
+    await this.prisma.opsAuditLog.create({
+      data: {
+        actor: input.actor?.trim() || "system",
+        action: input.action,
+        targetType: input.targetType,
+        targetId: input.targetId ?? null,
+        severity: input.severity ?? "info",
+        summary: input.summary,
+        beforeValue: input.beforeValue ?? undefined,
+        afterValue: input.afterValue ?? undefined,
+        metadata: input.metadata ?? {}
+      }
+    }).catch((error) => {
+      this.logger.warn(`[audit] failed action=${input.action} target=${input.targetType}:${input.targetId ?? "-"} ${String(error)}`);
+    });
   }
 
   private toIssueTitleKey(title: string): string | undefined {
@@ -730,7 +761,7 @@ export class OpsService {
       }))
     };
 
-    await this.prisma.opsReportSnapshot.create({
+    const snapshot = await this.prisma.opsReportSnapshot.create({
       data: {
         title,
         environment: this.toEnvironment(filter?.environment),
@@ -742,13 +773,20 @@ export class OpsService {
         generatedAt: new Date(generatedAt)
       }
     });
+    await this.writeAuditLog({
+      action: "report_snapshot.created",
+      targetType: "OpsReportSnapshot",
+      targetId: snapshot.id,
+      summary: `${title} 리포트 스냅샷 생성`,
+      metadata: { riskLevel, environment }
+    });
 
     return report;
   }
 
   async listReportSnapshots(): Promise<OpsReportSnapshotType[]> {
     const snapshots = await this.prisma.opsReportSnapshot.findMany({
-      orderBy: { generatedAt: "desc" },
+      orderBy: [{ pinned: "desc" }, { generatedAt: "desc" }],
       take: 20
     });
 
@@ -761,8 +799,69 @@ export class OpsService {
       technicalSummary: snapshot.technicalSummary,
       shareText: snapshot.shareText,
       generatedBy: snapshot.generatedBy,
+      pinned: snapshot.pinned,
+      sharedAt: snapshot.sharedAt,
       generatedAt: snapshot.generatedAt
     }));
+  }
+
+  async updateReportSnapshot(input: UpdateReportSnapshotInput): Promise<OpsReportSnapshotType> {
+    const data: Prisma.OpsReportSnapshotUpdateInput = {};
+    if (typeof input.pinned === "boolean") {
+      data.pinned = input.pinned;
+    }
+    if (input.markShared) {
+      data.sharedAt = new Date();
+    }
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException("변경할 리포트 스냅샷 값이 필요합니다.");
+    }
+
+    const updated = await this.prisma.opsReportSnapshot.update({
+      where: { id: input.snapshotId },
+      data
+    });
+    await this.writeAuditLog({
+      actor: input.actor,
+      action: "report_snapshot.updated",
+      targetType: "OpsReportSnapshot",
+      targetId: updated.id,
+      summary: `${updated.title} 리포트 스냅샷 업데이트`,
+      metadata: { pinned: updated.pinned, sharedAt: updated.sharedAt?.toISOString() ?? null }
+    });
+
+    return {
+      id: updated.id,
+      title: updated.title,
+      environment: updated.environment,
+      riskLevel: updated.riskLevel,
+      executiveSummary: updated.executiveSummary,
+      technicalSummary: updated.technicalSummary,
+      shareText: updated.shareText,
+      generatedBy: updated.generatedBy,
+      pinned: updated.pinned,
+      sharedAt: updated.sharedAt,
+      generatedAt: updated.generatedAt
+    };
+  }
+
+  async deleteReportSnapshot(snapshotId: string, actor?: string): Promise<boolean> {
+    const existing = await this.prisma.opsReportSnapshot.findUnique({
+      where: { id: snapshotId },
+      select: { id: true, title: true }
+    });
+    if (!existing) {
+      throw new NotFoundException("리포트 스냅샷을 찾을 수 없습니다.");
+    }
+    await this.prisma.opsReportSnapshot.delete({ where: { id: snapshotId } });
+    await this.writeAuditLog({
+      actor,
+      action: "report_snapshot.deleted",
+      targetType: "OpsReportSnapshot",
+      targetId: existing.id,
+      summary: `${existing.title} 리포트 스냅샷 삭제`
+    });
+    return true;
   }
 
   async listOpsAlerts(): Promise<OpsAlertType[]> {
@@ -787,6 +886,13 @@ export class OpsService {
         link: input.link?.trim() || null
       }
     });
+    await this.writeAuditLog({
+      action: "alert.created",
+      targetType: "OpsAlert",
+      targetId: created.id,
+      summary: `${created.title} 알림 생성`,
+      metadata: { level: created.level, source: created.source }
+    });
     return this.toOpsAlertType(created);
   }
 
@@ -795,13 +901,43 @@ export class OpsService {
       where: { id: alertId },
       data: { readAt: new Date() }
     });
+    await this.writeAuditLog({
+      action: "alert.read",
+      targetType: "OpsAlert",
+      targetId: updated.id,
+      summary: `${updated.title} 알림 읽음 처리`
+    });
     return this.toOpsAlertType(updated);
   }
 
   async markAllOpsAlertsRead(): Promise<boolean> {
-    await this.prisma.opsAlert.updateMany({
+    const result = await this.prisma.opsAlert.updateMany({
       where: { readAt: null },
       data: { readAt: new Date() }
+    });
+    await this.writeAuditLog({
+      action: "alert.read_all",
+      targetType: "OpsAlert",
+      summary: `읽지 않은 알림 ${result.count}건 전체 읽음 처리`,
+      metadata: { count: result.count }
+    });
+    return true;
+  }
+
+  async deleteOpsAlert(alertId: string): Promise<boolean> {
+    const existing = await this.prisma.opsAlert.findUnique({
+      where: { id: alertId },
+      select: { id: true, title: true }
+    });
+    if (!existing) {
+      throw new NotFoundException("알림을 찾을 수 없습니다.");
+    }
+    await this.prisma.opsAlert.delete({ where: { id: alertId } });
+    await this.writeAuditLog({
+      action: "alert.deleted",
+      targetType: "OpsAlert",
+      targetId: existing.id,
+      summary: `${existing.title} 알림 삭제`
     });
     return true;
   }
@@ -839,8 +975,54 @@ export class OpsService {
       key: setting.key,
       value: JSON.stringify(setting.value),
       description: setting.description,
+      category: setting.category,
+      riskLevel: setting.riskLevel,
+      editable: setting.editable,
       updatedBy: setting.updatedBy,
+      changeReason: setting.changeReason,
       updatedAt: setting.updatedAt
+    }));
+  }
+
+  async listOpsAuditLogs(filter?: OpsAuditLogFilterInput): Promise<OpsAuditLogType[]> {
+    const where: Prisma.OpsAuditLogWhereInput = {};
+    const limit = Math.min(Math.max(filter?.limit ?? 50, 1), 200);
+    if (filter?.actor) where.actor = { contains: filter.actor, mode: "insensitive" };
+    if (filter?.action) where.action = filter.action;
+    if (filter?.targetType) where.targetType = filter.targetType;
+    if (filter?.severity) where.severity = filter.severity;
+    if (filter?.query) {
+      where.OR = [
+        { summary: { contains: filter.query, mode: "insensitive" } },
+        { action: { contains: filter.query, mode: "insensitive" } },
+        { targetType: { contains: filter.query, mode: "insensitive" } }
+      ];
+    }
+    if (filter?.from || filter?.to) {
+      where.createdAt = {
+        gte: filter.from ? new Date(filter.from) : undefined,
+        lte: filter.to ? new Date(filter.to) : undefined
+      };
+    }
+
+    const logs = await this.prisma.opsAuditLog.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: limit
+    });
+
+    return logs.map((log) => ({
+      id: log.id,
+      actor: log.actor,
+      action: log.action,
+      targetType: log.targetType,
+      targetId: log.targetId,
+      severity: log.severity,
+      summary: log.summary,
+      beforeValue: log.beforeValue == null ? null : JSON.stringify(log.beforeValue),
+      afterValue: log.afterValue == null ? null : JSON.stringify(log.afterValue),
+      metadata: JSON.stringify(log.metadata),
+      createdAt: log.createdAt
     }));
   }
 
@@ -852,19 +1034,49 @@ export class OpsService {
       throw new BadRequestException("value는 JSON 문자열이어야 합니다.");
     }
 
+    const previous = await this.prisma.opsSetting.findUnique({ where: { key: input.key } });
+    if (previous && !previous.editable) {
+      throw new BadRequestException("읽기 전용 운영 설정은 화면에서 수정할 수 없습니다.");
+    }
+
+    const category = input.category?.trim() || previous?.category || "general";
+    const riskLevel = input.riskLevel?.trim() || previous?.riskLevel || "low";
+    const editable = input.editable ?? previous?.editable ?? true;
+    const updatedBy = input.updatedBy?.trim() || "operator";
+    const changeReason = input.changeReason?.trim() || null;
+
     const setting = await this.prisma.opsSetting.upsert({
       where: { key: input.key },
       update: {
         value,
         description: input.description?.trim() || null,
-        updatedBy: input.updatedBy?.trim() || "operator"
+        category,
+        riskLevel,
+        editable,
+        updatedBy,
+        changeReason
       },
       create: {
         key: input.key,
         value,
         description: input.description?.trim() || null,
-        updatedBy: input.updatedBy?.trim() || "operator"
+        category,
+        riskLevel,
+        editable,
+        updatedBy,
+        changeReason
       }
+    });
+    await this.writeAuditLog({
+      actor: setting.updatedBy,
+      action: "setting.upserted",
+      targetType: "OpsSetting",
+      targetId: setting.id,
+      summary: `${setting.key} 운영 설정 저장`,
+      severity: setting.riskLevel === "critical" || setting.riskLevel === "high" ? "warning" : "info",
+      beforeValue: previous?.value as Prisma.InputJsonValue | undefined,
+      afterValue: setting.value as Prisma.InputJsonValue,
+      metadata: { key: setting.key, category: setting.category, riskLevel: setting.riskLevel, changeReason }
     });
 
     return {
@@ -872,7 +1084,11 @@ export class OpsService {
       key: setting.key,
       value: JSON.stringify(setting.value),
       description: setting.description,
+      category: setting.category,
+      riskLevel: setting.riskLevel,
+      editable: setting.editable,
       updatedBy: setting.updatedBy,
+      changeReason: setting.changeReason,
       updatedAt: setting.updatedAt
     };
   }
@@ -1169,6 +1385,13 @@ export class OpsService {
     });
 
     this.clearDerivedCaches();
+    await this.writeAuditLog({
+      action: "issue.status_updated",
+      targetType: "Issue",
+      targetId: updated.id,
+      summary: `${updated.title} 상태를 ${updated.status}(으)로 변경`,
+      metadata: { status: updated.status }
+    });
 
     return this.toIssueType({ ...updated, logs: [], comments: [] });
   }
@@ -1181,17 +1404,33 @@ export class OpsService {
     });
 
     this.clearDerivedCaches();
+    await this.writeAuditLog({
+      actor: input.assignee,
+      action: "issue.assigned",
+      targetType: "Issue",
+      targetId: updated.id,
+      summary: `${updated.title} 담당자 지정`,
+      metadata: { assignee: updated.assignee }
+    });
 
     return this.toIssueType({ ...updated, logs: [], comments: [] });
   }
 
   async addIssueComment(input: AddIssueCommentInput): Promise<IssueType> {
-    await this.prisma.issueComment.create({
+    const comment = await this.prisma.issueComment.create({
       data: {
         issueId: input.issueId,
         author: input.author.trim() || "익명",
         body: input.body
       }
+    });
+    await this.writeAuditLog({
+      actor: comment.author,
+      action: "issue.comment_added",
+      targetType: "Issue",
+      targetId: input.issueId,
+      summary: "이슈 코멘트 추가",
+      metadata: { commentId: comment.id }
     });
 
     return this.getIssueDetail(input.issueId);
@@ -1233,6 +1472,14 @@ export class OpsService {
     });
 
     this.clearDerivedCaches();
+    await this.writeAuditLog({
+      actor: deployment.owner,
+      action: "deployment.registered",
+      targetType: "Deployment",
+      targetId: deployment.id,
+      summary: `${deployment.version} 배포 등록/갱신`,
+      metadata: { environment: deployment.environment, status: deployment.status }
+    });
 
     return this.toDeploymentType(deployment);
   }
@@ -1454,6 +1701,12 @@ export class OpsService {
 
     await this.prisma.qaScenario.delete({
       where: { id: scenarioId }
+    });
+    await this.writeAuditLog({
+      action: "qa_scenario.deleted",
+      targetType: "QaScenario",
+      targetId: scenarioId,
+      summary: "QA 산출물 삭제"
     });
 
     this.qaScenarioListCache.clear();

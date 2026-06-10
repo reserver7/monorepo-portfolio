@@ -202,12 +202,15 @@ type Mutation {
   analyzeLogs(input: AnalyzeLogsInputModel!): AnalyzeLogsPayloadType!
   assignIssue(input: AssignIssueInput!): IssueType!
   createOpsAlert(input: CreateOpsAlertInput!): OpsAlertType!
+  deleteOpsAlert(alertId: String!): Boolean!
   deleteQaScenario(scenarioId: String!): Boolean!
+  deleteReportSnapshot(actor: String, snapshotId: String!): Boolean!
   generateQaScenario(input: QaAssistantInputModel!): QaScenarioType!
   markAllOpsAlertsRead: Boolean!
   markOpsAlertRead(alertId: String!): OpsAlertType!
   registerDeployment(input: RegisterDeploymentInput!): DeploymentType!
   updateIssueStatus(input: UpdateIssueStatusInput!): IssueType!
+  updateReportSnapshot(input: UpdateReportSnapshotInput!): OpsReportSnapshotType!
   upsertOpsSetting(input: UpsertOpsSettingInput!): OpsSettingType!
 }
 
@@ -222,14 +225,30 @@ type OpsAlertType {
   title: String!
 }
 
+type OpsAuditLogType {
+  action: String!
+  actor: String!
+  afterValue: String
+  beforeValue: String
+  createdAt: DateTime!
+  id: String!
+  metadata: String!
+  severity: String!
+  summary: String!
+  targetId: String
+  targetType: String!
+}
+
 type OpsReportSnapshotType {
   environment: String
   executiveSummary: String!
   generatedAt: DateTime!
   generatedBy: String!
   id: String!
+  pinned: Boolean!
   riskLevel: String!
   shareText: String!
+  sharedAt: DateTime
   technicalSummary: String!
   title: String!
 }
@@ -247,12 +266,27 @@ type OpsReportType {
 }
 
 type OpsSettingType {
+  category: String!
+  changeReason: String
   description: String
+  editable: Boolean!
   id: String!
   key: String!
+  riskLevel: String!
   updatedAt: DateTime!
   updatedBy: String!
   value: String!
+}
+
+input OpsAuditLogFilterInput {
+  action: String
+  actor: String
+  from: String
+  limit: Int = 50
+  query: String
+  severity: String
+  targetType: String
+  to: String
 }
 
 input QaAssistantInputModel {
@@ -290,6 +324,7 @@ type Query {
   issues(filter: IssueFilterInput): IssueListPayloadType!
   logAnalysisSessions: [LogAnalysisSessionType!]!
   opsAlerts: [OpsAlertType!]!
+  opsAuditLogs(filter: OpsAuditLogFilterInput): [OpsAuditLogType!]!
   opsReport(filter: DashboardFilterInput): OpsReportType!
   opsSettings: [OpsSettingType!]!
   recentQaScenarios: [QaScenarioType!]!
@@ -356,9 +391,20 @@ input UpdateIssueStatusInput {
   status: String!
 }
 
+input UpdateReportSnapshotInput {
+  actor: String
+  markShared: Boolean
+  pinned: Boolean
+  snapshotId: String!
+}
+
 input UpsertOpsSettingInput {
+  category: String
+  changeReason: String
   description: String
+  editable: Boolean
   key: String!
+  riskLevel: String
   updatedBy: String
   value: String!
 }

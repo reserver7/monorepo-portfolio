@@ -195,5 +195,59 @@ export class UpsertOpsSettingInput {
   description?: string;
 
   @Field(() => String, { nullable: true })
+  category?: string;
+
+  @Field(() => String, { nullable: true })
+  riskLevel?: string;
+
+  @Field(() => Boolean, { nullable: true })
+  editable?: boolean;
+
+  @Field(() => String, { nullable: true })
   updatedBy?: string;
+
+  @Field(() => String, { nullable: true })
+  changeReason?: string;
+}
+
+@InputType()
+export class OpsAuditLogFilterInput {
+  @Field(() => String, { nullable: true })
+  actor?: string;
+
+  @Field(() => String, { nullable: true })
+  action?: string;
+
+  @Field(() => String, { nullable: true })
+  targetType?: string;
+
+  @Field(() => String, { nullable: true })
+  severity?: string;
+
+  @Field(() => String, { nullable: true })
+  query?: string;
+
+  @Field(() => String, { nullable: true })
+  from?: string;
+
+  @Field(() => String, { nullable: true })
+  to?: string;
+
+  @Field(() => Int, { nullable: true, defaultValue: 50 })
+  limit?: number;
+}
+
+@InputType()
+export class UpdateReportSnapshotInput {
+  @Field(() => String)
+  snapshotId!: string;
+
+  @Field(() => Boolean, { nullable: true })
+  pinned?: boolean;
+
+  @Field(() => Boolean, { nullable: true })
+  markShared?: boolean;
+
+  @Field(() => String, { nullable: true })
+  actor?: string;
 }

@@ -5,10 +5,21 @@ import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useAppForm } from "@repo/forms";
+import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { Badge, Box, Button, Flex, Input, Typography, toast, useDisclosure } from "@repo/ui";
+import {
+  createOpsAlert,
+  deleteOpsAlert,
+  getOpsAlerts,
+  markAllOpsAlertsRead,
+  markOpsAlertRead,
+  opslensQueryKeys,
+  type OpsAlert as ApiOpsAlert
+} from "@repo/opslens";
 import { Bell, Menu, Search, SlidersHorizontal } from "lucide-react";
 import { OPS_ALERT_EVENT_NAME, useOpsAlertStore, type CreateOpsAlertInput } from "@/features/alerts";
 import { ProfileMenu, type OpsFilterFormValues } from "@/features/modals";
+import type { OpsAlert } from "@/features/alerts";
 import { useOpsFilterStore } from "@/features/common/stores";
 import { readNotificationPolicy } from "@/lib/auth";
 import { toCalendarLocale } from "@/lib/i18n/messages";
@@ -21,6 +32,17 @@ const LazyOpsFilterSheet = dynamic(
   () => import("@/features/modals").then((mod) => mod.OpsFilterSheet),
   { ssr: false }
 );
+
+const toUiAlert = (alert: ApiOpsAlert): OpsAlert => ({
+  id: alert.id,
+  title: alert.title,
+  message: alert.message,
+  level: alert.level === "low" ? "info" : alert.level,
+  source: alert.source,
+  link: alert.link ?? undefined,
+  createdAt: alert.createdAt,
+  readAt: alert.readAt ?? undefined
+});
 
 type AppShellHeaderControlsProps = {
   pathname: string;
@@ -45,6 +67,7 @@ export default function AppShellHeaderControls({
   onLogout
 }: AppShellHeaderControlsProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const tCommon = useTranslations("common");
 
   const environment = useOpsFilterStore((state) => state.environment);
@@ -109,12 +132,75 @@ export default function AppShellHeaderControls({
   const [recentSearches, setRecentSearches] = useState<string[]>(["결제 오류", "API 500", "socket timeout"]);
   const searchWrapRef = useRef<HTMLDivElement | null>(null);
   const [urlFilterSyncInitialized, setUrlFilterSyncInitialized] = useState(false);
+  const [focusModeEnabled, setFocusModeEnabled] = useState(false);
 
   const alerts = useOpsAlertStore((state) => state.alerts);
   const addAlert = useOpsAlertStore((state) => state.addAlert);
   const markRead = useOpsAlertStore((state) => state.markRead);
   const markAllRead = useOpsAlertStore((state) => state.markAllRead);
   const removeAlert = useOpsAlertStore((state) => state.removeAlert);
+  const replaceAlerts = useOpsAlertStore((state) => state.replaceAlerts);
+
+  const alertsQuery = useQuery({
+    queryKey: opslensQueryKeys.alerts(),
+    queryFn: getOpsAlerts,
+    staleTime: 15_000
+  });
+
+  useEffect(() => {
+    if (!alertsQuery.data) return;
+    replaceAlerts(alertsQuery.data.map(toUiAlert));
+  }, [alertsQuery.data, replaceAlerts]);
+
+  const createAlertMutation = useMutation({
+    mutationFn: (input: CreateOpsAlertInput) =>
+      createOpsAlert({
+        title: input.title,
+        message: input.message ?? input.title,
+        level: input.level === "info" ? "low" : input.level ?? "low",
+        source: input.source ?? "web",
+        link: input.link
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.alerts() });
+    }
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: markOpsAlertRead,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.alerts() });
+    }
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: markAllOpsAlertsRead,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.alerts() });
+    }
+  });
+
+  const deleteAlertMutation = useMutation({
+    mutationFn: deleteOpsAlert,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.alerts() });
+    }
+  });
+
+  const handleMarkRead = (id: string) => {
+    markRead(id);
+    markReadMutation.mutate(id);
+  };
+
+  const handleMarkAllRead = () => {
+    markAllRead();
+    markAllReadMutation.mutate();
+  };
+
+  const handleRemoveAlert = (id: string) => {
+    removeAlert(id);
+    deleteAlertMutation.mutate(id);
+  };
 
   const unreadAlertCount = alerts.filter((item) => !item.readAt).length;
   const draftSheetLocale = watchLocaleDraft ?? locale;
@@ -154,6 +240,13 @@ export default function AppShellHeaderControls({
     filterForm.setValue("search", "");
     setSearch("");
     setSearchPanelOpen(false);
+  };
+
+  const toggleFocusMode = () => {
+    const nextEnabled = !focusModeEnabled;
+    setFocusModeEnabled(nextEnabled);
+    window.localStorage.setItem("opslens.focus-mode", nextEnabled ? "1" : "0");
+    toast.info(nextEnabled ? "운영 집중 모드가 켜졌습니다." : "운영 집중 모드가 꺼졌습니다.");
   };
 
   const commitSearch = () => {
@@ -304,6 +397,10 @@ export default function AppShellHeaderControls({
   }, []);
 
   useEffect(() => {
+    setFocusModeEnabled(window.localStorage.getItem("opslens.focus-mode") === "1");
+  }, []);
+
+  useEffect(() => {
     const listener = (event: Event) => {
       const custom = event as CustomEvent<CreateOpsAlertInput>;
       const detail = custom.detail;
@@ -313,6 +410,7 @@ export default function AppShellHeaderControls({
       if (!policy.inAppEnabled) return;
       if (policy.minLevel === "critical" && detail.level !== "critical") return;
       if (policy.minLevel === "high" && detail.level !== "critical" && detail.level !== "high") return;
+      if (focusModeEnabled && detail.level !== "critical" && detail.level !== "high") return;
 
       if (policy.quietHoursEnabled) {
         const [fromHourRaw, fromMinRaw] = policy.quietFrom.split(":");
@@ -332,13 +430,14 @@ export default function AppShellHeaderControls({
       }
 
       addAlert(detail);
+      createAlertMutation.mutate(detail);
       const color = detail.level === "critical" ? "error" : detail.level === "high" ? "warning" : "info";
       toast[color](detail.title);
     };
 
     window.addEventListener(OPS_ALERT_EVENT_NAME, listener as EventListener);
     return () => window.removeEventListener(OPS_ALERT_EVENT_NAME, listener as EventListener);
-  }, [addAlert]);
+  }, [addAlert, createAlertMutation, focusModeEnabled]);
 
   return (
     <>
@@ -473,7 +572,13 @@ export default function AppShellHeaderControls({
             userEmail={authProfile?.email ?? "-"}
             userRole={authProfile?.role ?? "viewer"}
             avatarColor={avatarColor}
-            onMoveToSettings={() => router.push("/settings")}
+            focusModeEnabled={focusModeEnabled}
+            onMoveToProfile={() => router.push("/settings?tab=profile")}
+            onMoveToMyIssues={() => router.push("/issues?assignee=me")}
+            onMoveToNotifications={() => router.push("/settings?tab=notifications")}
+            onMoveToWorkspace={() => router.push("/settings?tab=workspace")}
+            onMoveToAudit={() => router.push("/settings?tab=audit")}
+            onToggleFocusMode={toggleFocusMode}
             onLogout={onLogout}
           />
         </Flex>
@@ -484,13 +589,12 @@ export default function AppShellHeaderControls({
           open={alertModalOpen}
           onOpenChange={(nextOpen) => (nextOpen ? openAlertModal() : closeAlertModal())}
           alerts={sortedAlerts}
-          onMarkAllRead={markAllRead}
-          onMarkRead={markRead}
-          onRemoveAlert={removeAlert}
-          onMoveToIssues={(id) => {
-            markRead(id);
+          onMarkAllRead={handleMarkAllRead}
+          onMarkRead={handleMarkRead}
+          onRemoveAlert={handleRemoveAlert}
+          onMoveToAlert={(alert) => {
             closeAlertModal();
-            router.push("/issues");
+            router.push(alert.link ?? "/issues");
           }}
         />
       ) : null}

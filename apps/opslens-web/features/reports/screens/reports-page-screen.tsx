@@ -1,15 +1,26 @@
 "use client";
 
+import { useEffect } from "react";
 import { Clipboard } from "lucide-react";
-import { useQuery } from "@repo/react-query";
-import { Badge, Box, Button, Flex, SplitWorkspaceLayout, StateView, Textarea, Typography, toast } from "@repo/ui";
-import { getOpsReport, opslensQueryKeys, toOptionalSearch, toOptionalServiceName } from "@repo/opslens";
+import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
+import { Badge, Box, Button, Flex, SplitWorkspaceLayout, StateView, Textarea, Typography, confirm, toast } from "@repo/ui";
+import {
+  deleteReportSnapshot,
+  getOpsReport,
+  getReportSnapshots,
+  opslensQueryKeys,
+  toOptionalSearch,
+  toOptionalServiceName,
+  updateReportSnapshot,
+  type OpsReportSnapshot
+} from "@repo/opslens";
 import { OpsPageShell, OpsSectionCard } from "@/features";
 import { useOpsQueryOptions } from "@/features/common/hooks/use-ops-query-options";
 import { useOpsFilters } from "@/features/common/stores";
 import { ReportActionList, ReportPriorityIssues, ReportSummaryPanel } from "../components";
 
 export default function ReportsPage() {
+  const queryClient = useQueryClient();
   const { environment, serviceName, search, from, to } = useOpsFilters();
   const filter = { environment, serviceName, search, from, to };
 
@@ -26,16 +37,63 @@ export default function ReportsPage() {
         })
     })
   );
+  const snapshotsQuery = useQuery(
+    useOpsQueryOptions("list", {
+      queryKey: opslensQueryKeys.reportSnapshots(),
+      queryFn: getReportSnapshots
+    })
+  );
 
   const report = reportQuery.data;
+  const latestSnapshot = snapshotsQuery.data?.[0] ?? null;
+  const invalidateSnapshots = async () => {
+    await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.reportSnapshots() });
+  };
+  const updateSnapshotMutation = useMutation({
+    mutationFn: updateReportSnapshot,
+    onSuccess: invalidateSnapshots
+  });
+  const deleteSnapshotMutation = useMutation({
+    mutationFn: ({ snapshotId }: { snapshotId: string }) => deleteReportSnapshot(snapshotId, "web"),
+    onSuccess: invalidateSnapshots
+  });
+
+  useEffect(() => {
+    if (!report?.generatedAt) return;
+    void invalidateSnapshots();
+  }, [report?.generatedAt]);
+
   const copyShareText = async () => {
     if (!report) return;
     try {
       await navigator.clipboard.writeText(report.shareText);
+      if (latestSnapshot) {
+        updateSnapshotMutation.mutate({ snapshotId: latestSnapshot.id, markShared: true, actor: "web" });
+      }
       toast.success("공유용 리포트를 복사했습니다.");
     } catch {
       toast.error("복사에 실패했습니다. 텍스트 영역에서 직접 복사해 주세요.");
     }
+  };
+
+  const toggleSnapshotPin = (snapshot: OpsReportSnapshot) => {
+    updateSnapshotMutation.mutate({
+      snapshotId: snapshot.id,
+      pinned: !snapshot.pinned,
+      actor: "web"
+    });
+  };
+
+  const requestDeleteSnapshot = async (snapshot: OpsReportSnapshot) => {
+    const ok = await confirm({
+      title: "리포트 스냅샷을 삭제할까요?",
+      description: `"${snapshot.title}" 저장본이 삭제됩니다.`,
+      confirmText: "삭제",
+      cancelText: "취소",
+      confirmVariant: "danger"
+    });
+    if (!ok) return;
+    deleteSnapshotMutation.mutate({ snapshotId: snapshot.id });
   };
 
   return (
@@ -107,6 +165,63 @@ export default function ReportsPage() {
                   resize="none"
                   className="bg-surface-elevated font-mono text-caption leading-[1.6]"
                 />
+              </OpsSectionCard>
+
+              <OpsSectionCard title="저장된 리포트" description="백엔드에 저장된 최근 리포트 스냅샷입니다.">
+                <Box className="divide-y divide-default border-y border-default">
+                  {(snapshotsQuery.data ?? []).slice(0, 5).map((snapshot) => (
+                    <Box key={snapshot.id} className="py-[var(--space-2-5)]">
+                      <Flex className="items-start justify-between gap-[var(--space-2)]">
+                        <Box className="min-w-0">
+                          <Flex className="min-w-0 items-center gap-[var(--space-1)]">
+                            {snapshot.pinned ? (
+                              <Badge variant="secondary" size="sm" shape="rounded" className="shrink-0">고정</Badge>
+                            ) : null}
+                            <Typography as="p" variant="caption" className="truncate font-semibold">
+                              {snapshot.title}
+                            </Typography>
+                          </Flex>
+                          <Typography as="p" variant="caption" color="muted" className="mt-[var(--space-1)] line-clamp-2">
+                            {snapshot.executiveSummary}
+                          </Typography>
+                          <Flex className="mt-[var(--space-2)] flex-wrap gap-[var(--space-1)]">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-[var(--space-2)] text-caption"
+                              onClick={() => toggleSnapshotPin(snapshot)}
+                            >
+                              {snapshot.pinned ? "고정 해제" : "고정"}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-[var(--space-2)] text-caption text-danger hover:text-danger"
+                              onClick={() => void requestDeleteSnapshot(snapshot)}
+                            >
+                              삭제
+                            </Button>
+                          </Flex>
+                        </Box>
+                        <Badge
+                          variant={snapshot.riskLevel === "critical" ? "danger" : snapshot.riskLevel === "warning" ? "warning" : "secondary"}
+                          size="sm"
+                          shape="rounded"
+                          className="shrink-0 font-semibold"
+                        >
+                          {snapshot.riskLevel}
+                        </Badge>
+                      </Flex>
+                    </Box>
+                  ))}
+                </Box>
+                {!snapshotsQuery.isLoading && (snapshotsQuery.data ?? []).length === 0 ? (
+                  <Typography as="p" variant="caption" color="muted" className="pt-[var(--space-3)]">
+                    저장된 리포트가 없습니다.
+                  </Typography>
+                ) : null}
               </OpsSectionCard>
             </Box>
           }

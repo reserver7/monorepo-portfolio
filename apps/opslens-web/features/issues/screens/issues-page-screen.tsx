@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { RotateCcw } from "lucide-react";
 import { useAppForm } from "@repo/forms";
@@ -33,6 +34,7 @@ import { useOpsQueryOptions } from "@/features/common/hooks/use-ops-query-option
 import { useOpsFilters } from "@/features/common/stores";
 import { formatDateTimeByLocale, resolveServiceLabel } from "@/features/common/utils/ops-display";
 import { formatDateTime, formatNumber } from "@repo/utils";
+import { readAuthSession } from "@/lib/auth";
 import {
   ISSUE_ASSIGNEE_OPTIONS,
   ISSUE_FILTER_DEFAULT_VALUES,
@@ -48,6 +50,19 @@ import { isIssueSlaRisk } from "../utils/issues-utils";
 export default function IssuesPage() {
   const { environment, locale, serviceName, search } = useOpsFilters();
   const tService = useTranslations("service");
+  const searchParams = useSearchParams();
+  const authSession = readAuthSession();
+  const currentAssigneeKeys = useMemo(
+    () =>
+      [
+        authSession?.user.name,
+        authSession?.user.email,
+        authSession?.user.email.split("@")[0]
+      ]
+        .filter((value): value is string => Boolean(value))
+        .map((value) => value.toLowerCase()),
+    [authSession?.user.email, authSession?.user.name]
+  );
 
   const filterForm = useAppForm<IssueFilterFormValues>({
     defaultValues: ISSUE_FILTER_DEFAULT_VALUES
@@ -60,6 +75,12 @@ export default function IssuesPage() {
   const [slaRiskOnly, setSlaRiskOnly] = useState(false);
   const [pageSize, setPageSize] = useState(10);
   const kpiPageSize = 200;
+
+  useEffect(() => {
+    if (searchParams.get("assignee") !== "me") return;
+    filterForm.setValue("assignee", "me");
+    setPage(1);
+  }, [filterForm, searchParams]);
 
   const issuesQuery = useQuery(
     useOpsQueryOptions("list", {
@@ -124,6 +145,10 @@ export default function IssuesPage() {
   const kpiItems = kpiQuery.data ?? [];
   const filteredItems = useMemo(() => {
     const byAssignee = rawItems.filter((item) => {
+      if (assignee === "me") {
+        const itemAssignee = item.assignee?.toLowerCase();
+        return Boolean(itemAssignee && currentAssigneeKeys.some((key) => itemAssignee.includes(key)));
+      }
       if (assignee === "assigned") return Boolean(item.assignee);
       if (assignee === "unassigned") return !item.assignee;
       return true;
@@ -135,7 +160,7 @@ export default function IssuesPage() {
       return new Date(b.lastOccurredAt).getTime() - new Date(a.lastOccurredAt).getTime();
     });
     return sorted;
-  }, [assignee, rawItems, slaRiskOnly, sortBy]);
+  }, [assignee, currentAssigneeKeys, rawItems, slaRiskOnly, sortBy]);
 
   const summary = useMemo(() => {
     const openItems = kpiItems.filter((item) => item.status !== "resolved");

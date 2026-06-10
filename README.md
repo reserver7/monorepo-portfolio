@@ -124,6 +124,9 @@ pnpm audit:workspace
 - Collab Web은 Vercel 프로젝트 1개로 운영합니다.
   - Project Name: `monorepo-portfolio-collab-web`
   - Root Directory: `apps/collab-web`
+- OpsLens는 현재 운영 배포 도메인이 없습니다.
+  - 로컬/개발 DB 확인 중심으로 운영합니다.
+  - `opslens-v*` 태그 CD는 준비되어 있지만, Vercel/Render 대상과 secrets가 설정되지 않으면 배포를 건너뜁니다.
 - 배포 시 필요한 GitHub Actions 시크릿:
   - `VERCEL_TOKEN`
   - `VERCEL_ORG_ID`
@@ -137,7 +140,7 @@ pnpm audit:workspace
   - `main` 머지 후 태그 규칙에 따라 CD 워크플로우가 실행됩니다.
     - `collab-v*`: Collab Web + Collab Server 배포
     - `sb-v*`: Storybook 배포
-    - `opslens-v*`: OpsLens Web + OpsLens Server 배포
+    - `opslens-v*`: OpsLens Web + OpsLens Server 배포 준비 확인, 배포 대상 설정 시 배포
   - CI는 PR(`main` 대상)과 수동 실행에서 동작합니다.
 
 ## 태그 배포

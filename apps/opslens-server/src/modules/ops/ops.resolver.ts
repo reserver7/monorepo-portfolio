@@ -9,9 +9,11 @@ import {
   DashboardFilterInput,
   DeploymentImpactInput,
   IssueFilterInput,
+  OpsAuditLogFilterInput,
   QaAssistantInputModel,
   RegisterDeploymentInput,
   UpsertOpsSettingInput,
+  UpdateReportSnapshotInput,
   UpdateIssueStatusInput
 } from "./ops.inputs.js";
 import {
@@ -22,6 +24,7 @@ import {
   IssueListPayloadType,
   IssueType,
   LogAnalysisSessionType,
+  OpsAuditLogType,
   OpsAlertType,
   OpsReportType,
   OpsReportSnapshotType,
@@ -108,6 +111,14 @@ export class OpsResolver {
     return this.opsService.listOpsSettings();
   }
 
+  @Query(() => [OpsAuditLogType])
+  opsAuditLogs(
+    @Args("filter", { type: () => OpsAuditLogFilterInput, nullable: true })
+    filter?: OpsAuditLogFilterInput
+  ): Promise<OpsAuditLogType[]> {
+    return this.opsService.listOpsAuditLogs(filter);
+  }
+
   @Query(() => [QaScenarioType])
   recentQaScenarios(): Promise<QaScenarioType[]> {
     return this.opsService.recentQaScenarios();
@@ -137,6 +148,27 @@ export class OpsResolver {
   @Mutation(() => Boolean)
   markAllOpsAlertsRead(): Promise<boolean> {
     return this.opsService.markAllOpsAlertsRead();
+  }
+
+  @Mutation(() => Boolean)
+  deleteOpsAlert(@Args("alertId", { type: () => String }) alertId: string): Promise<boolean> {
+    return this.opsService.deleteOpsAlert(alertId);
+  }
+
+  @Mutation(() => OpsReportSnapshotType)
+  updateReportSnapshot(
+    @Args("input", { type: () => UpdateReportSnapshotInput })
+    input: UpdateReportSnapshotInput
+  ): Promise<OpsReportSnapshotType> {
+    return this.opsService.updateReportSnapshot(input);
+  }
+
+  @Mutation(() => Boolean)
+  deleteReportSnapshot(
+    @Args("snapshotId", { type: () => String }) snapshotId: string,
+    @Args("actor", { type: () => String, nullable: true }) actor?: string
+  ): Promise<boolean> {
+    return this.opsService.deleteReportSnapshot(snapshotId, actor);
   }
 
   @Mutation(() => OpsSettingType)

@@ -375,7 +375,8 @@ export const opslensQueryKeys = {
   alerts: () => opslensKeysBase.custom("alerts"),
   logAnalysisSessions: () => opslensKeysBase.custom("log-analysis-sessions"),
   reportSnapshots: () => opslensKeysBase.custom("report-snapshots"),
-  settings: () => opslensKeysBase.custom("settings")
+  settings: () => opslensKeysBase.custom("settings"),
+  auditLogs: () => opslensKeysBase.custom("audit-logs")
 };
 
 export type DashboardSummary = {
@@ -517,7 +518,23 @@ export type OpsReportSnapshot = {
   technicalSummary: string;
   shareText: string;
   generatedBy: string;
+  pinned: boolean;
+  sharedAt?: string | null;
   generatedAt: string;
+};
+
+export type OpsAuditLog = {
+  id: string;
+  actor: string;
+  action: string;
+  targetType: string;
+  targetId?: string | null;
+  severity: "info" | "warning" | "critical" | string;
+  summary: string;
+  beforeValue?: string | null;
+  afterValue?: string | null;
+  metadata: string;
+  createdAt: string;
 };
 
 export type OpsAlert = {
@@ -552,7 +569,11 @@ export type OpsSetting = {
   key: string;
   value: string;
   description?: string | null;
+  category: string;
+  riskLevel: "low" | "medium" | "high" | "critical" | string;
+  editable: boolean;
   updatedBy: string;
+  changeReason?: string | null;
   updatedAt: string;
 };
 
@@ -1211,6 +1232,21 @@ export async function markAllOpsAlertsRead(): Promise<boolean> {
   return data.markAllOpsAlertsRead;
 }
 
+export async function deleteOpsAlert(alertId: string): Promise<boolean> {
+  const data = await graphqlRequest<{ deleteOpsAlert: boolean }>(
+    opslensApiUrl,
+    `
+    mutation DeleteOpsAlert($alertId: String!) {
+      deleteOpsAlert(alertId: $alertId)
+    }
+  `,
+    { alertId },
+    { notifyOnSuccess: false }
+  );
+
+  return data.deleteOpsAlert;
+}
+
 export async function getLogAnalysisSessions(): Promise<LogAnalysisSession[]> {
   const data = await graphqlRequest<{ logAnalysisSessions: LogAnalysisSession[] }>(
     opslensApiUrl,
@@ -1252,6 +1288,8 @@ export async function getReportSnapshots(): Promise<OpsReportSnapshot[]> {
         technicalSummary
         shareText
         generatedBy
+        pinned
+        sharedAt
         generatedAt
       }
     }
@@ -1259,6 +1297,88 @@ export async function getReportSnapshots(): Promise<OpsReportSnapshot[]> {
   );
 
   return data.reportSnapshots;
+}
+
+export async function updateReportSnapshot(input: {
+  snapshotId: string;
+  pinned?: boolean;
+  markShared?: boolean;
+  actor?: string;
+}): Promise<OpsReportSnapshot> {
+  const data = await graphqlRequest<{ updateReportSnapshot: OpsReportSnapshot }>(
+    opslensApiUrl,
+    `
+    mutation UpdateReportSnapshot($input: UpdateReportSnapshotInput!) {
+      updateReportSnapshot(input: $input) {
+        id
+        title
+        environment
+        riskLevel
+        executiveSummary
+        technicalSummary
+        shareText
+        generatedBy
+        pinned
+        sharedAt
+        generatedAt
+      }
+    }
+  `,
+    { input },
+    { notifyOnSuccess: false }
+  );
+
+  return data.updateReportSnapshot;
+}
+
+export async function deleteReportSnapshot(snapshotId: string, actor?: string): Promise<boolean> {
+  const data = await graphqlRequest<{ deleteReportSnapshot: boolean }>(
+    opslensApiUrl,
+    `
+    mutation DeleteReportSnapshot($snapshotId: String!, $actor: String) {
+      deleteReportSnapshot(snapshotId: $snapshotId, actor: $actor)
+    }
+  `,
+    { snapshotId, actor },
+    { notifyOnSuccess: false }
+  );
+
+  return data.deleteReportSnapshot;
+}
+
+export async function getOpsAuditLogs(filter?: {
+  actor?: string;
+  action?: string;
+  targetType?: string;
+  severity?: string;
+  query?: string;
+  from?: string;
+  to?: string;
+  limit?: number;
+}): Promise<OpsAuditLog[]> {
+  const data = await graphqlRequest<{ opsAuditLogs: OpsAuditLog[] }>(
+    opslensApiUrl,
+    `
+    query OpsAuditLogs($filter: OpsAuditLogFilterInput) {
+      opsAuditLogs(filter: $filter) {
+        id
+        actor
+        action
+        targetType
+        targetId
+        severity
+        summary
+        beforeValue
+        afterValue
+        metadata
+        createdAt
+      }
+    }
+  `,
+    { filter }
+  );
+
+  return data.opsAuditLogs;
 }
 
 export async function getOpsSettings(): Promise<OpsSetting[]> {
@@ -1271,7 +1391,11 @@ export async function getOpsSettings(): Promise<OpsSetting[]> {
         key
         value
         description
+        category
+        riskLevel
+        editable
         updatedBy
+        changeReason
         updatedAt
       }
     }
@@ -1285,7 +1409,11 @@ export async function upsertOpsSetting(input: {
   key: string;
   value: string;
   description?: string;
+  category?: string;
+  riskLevel?: string;
+  editable?: boolean;
   updatedBy?: string;
+  changeReason?: string;
 }): Promise<OpsSetting> {
   const data = await graphqlRequest<{ upsertOpsSetting: OpsSetting }>(
     opslensApiUrl,
@@ -1296,7 +1424,11 @@ export async function upsertOpsSetting(input: {
         key
         value
         description
+        category
+        riskLevel
+        editable
         updatedBy
+        changeReason
         updatedAt
       }
     }

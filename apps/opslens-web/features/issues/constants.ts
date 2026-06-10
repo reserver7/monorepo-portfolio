@@ -36,6 +36,7 @@ export const ISSUE_SEVERITY_OPTIONS: Array<{ label: string; value: IssueFilterFo
 
 export const ISSUE_ASSIGNEE_OPTIONS: Array<{ label: string; value: IssueFilterFormValues["assignee"] }> = [
   { label: "전체", value: "all" },
+  { label: "내 담당", value: "me" },
   { label: "지정됨", value: "assigned" },
   { label: "미지정", value: "unassigned" }
 ];
