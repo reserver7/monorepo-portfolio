@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { LogOut, Settings, UserCircle2 } from "lucide-react";
+import { Bell, Check, ClipboardList, History, LogOut, Settings, UserCircle2, Zap } from "lucide-react";
 import {
   Avatar,
   Box,
@@ -19,7 +19,13 @@ type ProfileMenuProps = {
   userEmail: string;
   userRole: string;
   avatarColor?: string;
-  onMoveToSettings: () => void;
+  focusModeEnabled: boolean;
+  onMoveToProfile: () => void;
+  onMoveToMyIssues: () => void;
+  onMoveToNotifications: () => void;
+  onMoveToWorkspace: () => void;
+  onMoveToAudit: () => void;
+  onToggleFocusMode: () => void;
   onLogout: () => void;
 };
 
@@ -28,7 +34,13 @@ export function ProfileMenu({
   userEmail,
   userRole,
   avatarColor = "#64748B",
-  onMoveToSettings,
+  focusModeEnabled,
+  onMoveToProfile,
+  onMoveToMyIssues,
+  onMoveToNotifications,
+  onMoveToWorkspace,
+  onMoveToAudit,
+  onToggleFocusMode,
   onLogout
 }: ProfileMenuProps) {
   const tCommon = useTranslations("common");
@@ -46,7 +58,7 @@ export function ProfileMenu({
           <Avatar size="sm" name={userName} status="online" color={avatarColor} bordered={false} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[220px]">
+      <DropdownMenuContent align="end" className="w-[260px]">
         <DropdownMenuLabel>
           <Box className="grid gap-[2px]">
             <Typography as="p" className="text-foreground text-sm font-semibold leading-none">{userName}</Typography>
@@ -57,15 +69,41 @@ export function ProfileMenu({
         <DropdownMenuSeparator />
         <DropdownMenuItem
           leftSlot={<UserCircle2 className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />}
-          onSelect={onMoveToSettings}
+          onSelect={onMoveToProfile}
         >
           {tProfile("myProfile")}
         </DropdownMenuItem>
         <DropdownMenuItem
+          leftSlot={<ClipboardList className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />}
+          onSelect={onMoveToMyIssues}
+        >
+          내 담당 이슈
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          leftSlot={<Bell className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />}
+          onSelect={onMoveToNotifications}
+        >
+          내 알림 설정
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          leftSlot={<Zap className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />}
+          rightSlot={focusModeEnabled ? <Check className="h-[var(--size-icon-sm)] w-[var(--size-icon-sm)]" /> : undefined}
+          onSelect={onToggleFocusMode}
+        >
+          운영 집중 모드
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
           leftSlot={<Settings className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />}
-          onSelect={onMoveToSettings}
+          onSelect={onMoveToWorkspace}
         >
           {tProfile("workspaceSettings")}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          leftSlot={<History className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />}
+          onSelect={onMoveToAudit}
+        >
+          감사 로그
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem

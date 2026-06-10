@@ -1,4 +1,4 @@
-export type OpsAlertLevel = "critical" | "high" | "info";
+export type OpsAlertLevel = "critical" | "high" | "medium" | "low" | "info";
 
 export type OpsAlert = {
   id: string;
