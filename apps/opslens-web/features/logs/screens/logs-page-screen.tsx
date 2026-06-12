@@ -2,18 +2,18 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Box, Button, ConsolePageStack, ConsoleSectionCard, Flex, FormField, Grid, Input, Select, SplitWorkspaceLayout, StateView, Textarea, Badge, StatCard, Typography, toast } from "@repo/ui";
+import { Box, Button, ConsolePageStack, ConsoleSectionCard, Flex, FormField, Grid, Input, Select, SplitWorkspaceLayout, Textarea, Badge, StatCard, Typography, toast } from "@repo/ui";
 import { useMutation } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
 import { analyzeLogs, createOpsLogTailEventSource, type OpsLogTailEvent } from "@repo/opslens";
 import { useOpsFilters } from "@/features/common/stores";
 import { formatDateTimeByLocale, resolveServiceLabel } from "@/features/common/utils/ops-display";
-import { formatDateTime, formatNumber } from "@repo/utils";
+import { formatNumber } from "@repo/utils";
+import { LogAnalysisSidebar, LogClusterResults } from "../components";
 import {
   LOGS_DEFAULT_CLUSTER_LIMIT,
   LOGS_SAMPLE,
-  LOGS_SAVED_VIEWS_KEY,
-  LOGS_SEVERITY_VARIANT_MAP
+  LOGS_SAVED_VIEWS_KEY
 } from "../constants";
 import type { LogsFormValues, LogsSavedView, LogsSavedViewsState, LogsSeverityFilter, LogsSortKey } from "../types";
 import {
@@ -458,182 +458,33 @@ export default function LogsPage() {
               </Box>
             </ConsoleSectionCard>
 
-            <ConsoleSectionCard title="분석 결과 클러스터" description="중복 패턴과 심각도를 기준으로 정리된 결과입니다.">
-              <Box className="mb-[var(--space-3)]">
-                <Grid className="gap-[var(--space-2)] md:grid-cols-[minmax(0,1fr)_180px_180px_auto]">
-                  <Input
-                    ref={queryInputRef}
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="클러스터 검색 (/)"
-                    size="md"
-                  />
-                  <Select
-                    value={severityFilter}
-                    onChange={(value) => setSeverityFilter(String(value) as LogsSeverityFilter)}
-                    options={[
-                      { label: "심각도: 전체", value: "all" },
-                      { label: "Critical", value: "critical" },
-                      { label: "High", value: "high" },
-                      { label: "Medium", value: "medium" },
-                      { label: "Low", value: "low" }
-                    ]}
-                  />
-                  <Select
-                    value={sortKey}
-                    onChange={(value) => setSortKey(String(value) as LogsSortKey)}
-                    options={[
-                      { label: "정렬: 발생량", value: "countDesc" },
-                      { label: "정렬: 최근순", value: "latestDesc" },
-                      { label: "정렬: 심각도", value: "severityDesc" }
-                    ]}
-                  />
-                  <Flex className="items-center justify-end gap-[var(--space-1-5)]">
-                    <Button type="button" size="sm" variant="outline" onClick={saveCurrentView}>뷰 저장</Button>
-                  </Flex>
-                </Grid>
-                {savedViewsState.items.length > 0 ? (
-                  <Flex className="mt-[var(--space-2)] flex-wrap items-center gap-[var(--space-1-5)]">
-                    {savedViewsState.items.map((view) => (
-                      <Badge
-                        key={view.id}
-                        size="sm"
-                        variant={savedViewsState.activeId === view.id ? "info" : "secondary"}
-                        interactive
-                        removable
-                        onClick={() => applySavedView(view.id)}
-                        onRemove={() => removeSavedView(view.id)}
-                        removeLabel={`${view.name} 삭제`}
-                        className={`cursor-pointer transition-[background-color,border-color,box-shadow,color] duration-150 ease-out ${
-                          savedViewsState.activeId === view.id ? "ring-1 ring-primary/35 shadow-none" : "ring-0 shadow-none"
-                        }`}
-                      >
-                        {view.name}
-                      </Badge>
-                    ))}
-                    <Badge
-                      size="sm"
-                      variant="outline"
-                      interactive
-                      onClick={clearSavedViews}
-                      className="cursor-pointer"
-                    >
-                      전체 삭제
-                    </Badge>
-                  </Flex>
-                ) : null}
-              </Box>
-              {clusterMeta ? (
-                <Flex className="mb-[var(--space-2)] items-center gap-[var(--space-1-5)]">
-                  <Badge variant="secondary" size="sm">표시 {formatNumber(filteredClusters.length)}건</Badge>
-                  <Badge variant="outline" size="sm">전체 {formatNumber(clusterMeta.totalCount)}건</Badge>
-                </Flex>
-              ) : null}
-              {analyzeMutation.isError ? (
-                <Box className="mb-[var(--space-2)]">
-                  <StateView
-                    variant="error"
-                    size="sm"
-                    title={getAnalyzeErrorMessage(analyzeMutation.error)}
-                    action={
-                      lastSubmittedRef.current ? (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => runAnalyze(lastSubmittedRef.current as LogsFormValues)}
-                          loading={analyzeMutation.isPending ? true : undefined}
-                          loadingLabel="재시도 중..."
-                        >
-                          다시 시도
-                        </Button>
-                      ) : undefined
-                    }
-                  />
-                </Box>
-              ) : null}
-              {filteredClusters.length === 0 ? (
-                <StateView variant="empty" size="sm" title="분석 결과가 없습니다." />
-              ) : (
-                <Box className="space-y-[var(--space-2)]">
-                  {filteredClusters.map((cluster) => (
-                    <Box
-                      key={cluster.normalizedMessage}
-                      className={`border-default bg-surface rounded-[var(--radius-lg)] border p-[var(--space-3)] ${
-                        selectedCluster?.normalizedMessage === cluster.normalizedMessage ? "ring-1 ring-primary/35" : ""
-                      }`}
-                      onClick={() => setSelectedClusterKey(cluster.normalizedMessage)}
-                    >
-                      <Flex className="flex-wrap items-center justify-between gap-[var(--space-2)]">
-                        <Typography as="p" variant="bodySm" className="font-semibold">{cluster.title}</Typography>
-                        <Flex className="items-center gap-[var(--space-2)]">
-                          <Badge variant={LOGS_SEVERITY_VARIANT_MAP[cluster.severity]} size="sm" className="rounded-md font-semibold">
-                            {cluster.severity}
-                          </Badge>
-                          <Badge size="sm" variant="secondary">{formatNumber(cluster.count)}건</Badge>
-                        </Flex>
-                      </Flex>
-                      <Typography as="p" variant="caption" color="muted" className="mt-[var(--space-1)]">{cluster.normalizedMessage}</Typography>
-                      <Typography as="p" variant="caption" color="subtle" className="mt-[var(--space-2)]">
-                        최초 {formatDateTime(cluster.firstSeen)} · 최근 {formatDateTime(cluster.lastSeen)}
-                      </Typography>
-                      <Box className="mt-[var(--space-2)] space-y-[var(--space-1)]">
-                        {cluster.suggestedActions.map((action) => (
-                          <Flex key={action} className="items-start gap-[var(--space-1)]">
-                            <Box as="span" className="text-muted text-caption">•</Box>
-                            <Typography as="p" variant="caption" color="muted">{action}</Typography>
-                          </Flex>
-                        ))}
-                      </Box>
-                    </Box>
-                  ))}
-                </Box>
-              )}
-            </ConsoleSectionCard>
+            <LogClusterResults
+              clusters={filteredClusters}
+              clusterMeta={clusterMeta}
+              error={analyzeMutation.error}
+              isError={analyzeMutation.isError}
+              isPending={analyzeMutation.isPending}
+              lastSubmitted={lastSubmittedRef.current}
+              queryInputRef={queryInputRef}
+              savedViewsState={savedViewsState}
+              searchQuery={searchQuery}
+              selectedCluster={selectedCluster}
+              severityFilter={severityFilter}
+              sortKey={sortKey}
+              onApplySavedView={applySavedView}
+              onClearSavedViews={clearSavedViews}
+              onRemoveSavedView={removeSavedView}
+              onRetry={runAnalyze}
+              onSaveCurrentView={saveCurrentView}
+              onSearchQueryChange={setSearchQuery}
+              onSelectCluster={setSelectedClusterKey}
+              onSeverityFilterChange={setSeverityFilter}
+              onSortKeyChange={setSortKey}
+              resolveErrorMessage={getAnalyzeErrorMessage}
+            />
           </Box>
         }
-        sidebar={
-          summary ? (
-            <Box className="space-y-[var(--space-3)]">
-              <StatCard
-                label="신규 이슈 생성"
-                value={`${formatNumber(summary.createdIssues)}건`}
-                helper="새로 생성된 항목"
-                color="success"
-                size="sm"
-                className="rounded-[var(--radius-lg)]"
-              />
-              <StatCard
-                label="기존 이슈 업데이트"
-                value={`${formatNumber(summary.updatedIssues)}건`}
-                helper="기존 항목에 반영"
-                color="warning"
-                size="sm"
-                className="rounded-[var(--radius-lg)]"
-              />
-              {selectedCluster ? (
-                <ConsoleSectionCard title="선택 클러스터 상세" description="우선 처리 대상을 빠르게 확인합니다." contentClassName="pt-[var(--space-2)]">
-                  <Box className="space-y-[var(--space-2)]">
-                    <Flex className="items-center justify-between gap-[var(--space-2)]">
-                      <Badge variant={LOGS_SEVERITY_VARIANT_MAP[selectedCluster.severity]} size="sm">{selectedCluster.severity}</Badge>
-                      <Badge variant="secondary" size="sm">{formatNumber(selectedCluster.count)}건</Badge>
-                    </Flex>
-                    <Typography as="p" variant="bodySm" className="font-semibold">{selectedCluster.title}</Typography>
-                    <Typography as="p" variant="caption" color="muted">{selectedCluster.normalizedMessage}</Typography>
-                    <Typography as="p" variant="caption" color="subtle">
-                      최초 {formatDateTime(selectedCluster.firstSeen)} · 최근 {formatDateTime(selectedCluster.lastSeen)}
-                    </Typography>
-                    <Button type="button" size="sm" variant="outline" onClick={createIssueFromCluster}>
-                      이슈 생성
-                    </Button>
-                  </Box>
-                </ConsoleSectionCard>
-              ) : null}
-            </Box>
-          ) : (
-            <StateView variant="info" size="sm" title="로그를 분석하면 요약 카드가 표시됩니다." />
-          )
-        }
+        sidebar={<LogAnalysisSidebar selectedCluster={selectedCluster} summary={summary} onCreateIssue={createIssueFromCluster} />}
       />
 
     </ConsolePageStack>

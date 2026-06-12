@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { RotateCcw } from "lucide-react";
 import { useAppForm } from "@repo/forms";
 import {
+  getIssueSummary,
   listIssues,
   opslensQueryKeys,
   toOptionalSearch,
@@ -18,14 +18,10 @@ import {
 import {
   Badge,
   Box,
-  Button,
   DataTable,
   DataTableColumnHeader,
   Flex,
-  Grid,
-  StatCard,
   type DataTableColumnDef,
-  Select,
   Typography
 } from "@repo/ui";
 import { keepPreviousData, useQuery } from "@repo/react-query";
@@ -36,14 +32,11 @@ import { formatDateTimeByLocale, resolveServiceLabel } from "@/features/common/u
 import { formatDateTime, formatNumber } from "@repo/utils";
 import { readAuthSession } from "@/lib/auth";
 import {
-  ISSUE_ASSIGNEE_OPTIONS,
   ISSUE_FILTER_DEFAULT_VALUES,
-  ISSUE_SEVERITY_OPTIONS,
   ISSUE_SEVERITY_SCORE,
-  ISSUE_SORT_OPTIONS,
-  ISSUE_STATUS_OPTIONS,
   ISSUE_TONE
 } from "../constants";
+import { IssuesFilterBar, IssuesSummaryCards } from "../components";
 import type { IssueFilterFormValues } from "../types";
 import { isIssueSlaRisk } from "../utils/issues-utils";
 
@@ -74,7 +67,6 @@ export default function IssuesPage() {
   const [page, setPage] = useState(1);
   const [slaRiskOnly, setSlaRiskOnly] = useState(false);
   const [pageSize, setPageSize] = useState(10);
-  const kpiPageSize = 200;
 
   useEffect(() => {
     if (searchParams.get("assignee") !== "me") return;
@@ -98,37 +90,17 @@ export default function IssuesPage() {
         })
     })
   );
-  const kpiQuery = useQuery(
+  const summaryQuery = useQuery(
     useOpsQueryOptions("default", {
-      queryKey: [
-        "issues-kpi",
-        environment,
-        serviceName,
-        search,
-        status,
-        severity
-      ],
-      queryFn: async () => {
-        let currentPage = 1;
-        let totalCount = 0;
-        const allItems: Issue[] = [];
-        while (currentPage <= 20) {
-          const response = await listIssues({
-            environment,
-            serviceName: toOptionalServiceName(serviceName),
-            query: toOptionalSearch(search),
-            status: toOptionalStatus(status),
-            severity: toOptionalSeverity(severity),
-            page: currentPage,
-            pageSize: kpiPageSize
-          });
-          if (currentPage === 1) totalCount = response.totalCount;
-          allItems.push(...response.items);
-          if (allItems.length >= totalCount || response.items.length === 0) break;
-          currentPage += 1;
-        }
-        return allItems;
-      }
+      queryKey: opslensQueryKeys.issueSummary({ environment, serviceName, search, status, severity }),
+      queryFn: () =>
+        getIssueSummary({
+          environment,
+          serviceName: toOptionalServiceName(serviceName),
+          query: toOptionalSearch(search),
+          status: toOptionalStatus(status),
+          severity: toOptionalSeverity(severity)
+        })
     })
   );
 
@@ -142,7 +114,6 @@ export default function IssuesPage() {
     ? formatDateTimeByLocale(new Date(issuesQuery.dataUpdatedAt).toISOString(), locale)
     : "-";
   const rawItems = issuesQuery.data?.items ?? [];
-  const kpiItems = kpiQuery.data ?? [];
   const filteredItems = useMemo(() => {
     const byAssignee = rawItems.filter((item) => {
       if (assignee === "me") {
@@ -162,18 +133,7 @@ export default function IssuesPage() {
     return sorted;
   }, [assignee, currentAssigneeKeys, rawItems, slaRiskOnly, sortBy]);
 
-  const summary = useMemo(() => {
-    const openItems = kpiItems.filter((item) => item.status !== "resolved");
-    const criticalHigh = openItems.filter((item) => item.severity === "critical" || item.severity === "high");
-    const unassigned = openItems.filter((item) => !item.assignee);
-    const slaRisk = openItems.filter((item) => isIssueSlaRisk(item));
-    return {
-      open: openItems.length,
-      criticalHigh: criticalHigh.length,
-      unassigned: unassigned.length,
-      slaRisk: slaRisk.length
-    };
-  }, [kpiItems]);
+  const summary = summaryQuery.data ?? { open: 0, criticalHigh: 0, unassigned: 0, slaRisk: 0 };
   const hasIssueScopedFilter =
     status !== "all" || severity !== "all" || assignee !== "all" || sortBy !== "recent" || slaRiskOnly;
   const hasClientScopedFilter = assignee !== "all" || sortBy !== "recent" || slaRiskOnly;
@@ -278,94 +238,19 @@ export default function IssuesPage() {
         title="이슈 리스트"
         description="전역 필터(환경/서비스/검색/기간) + 이슈 전용 조건으로 우선순위를 빠르게 정리합니다."
       >
-        <Grid className="mb-[var(--space-3)] grid-cols-2 gap-[var(--space-2)] md:grid-cols-4">
-          <StatCard
-            label="Open Issues"
-            value={formatNumber(summary.open)}
-            helper="현재 미해결 이슈"
-            size="md"
-            className="h-full rounded-[var(--radius-lg)] [&>p:nth-of-type(2)]:text-[1.625rem] [&>p:nth-of-type(2)]:leading-[1.1] [&>p:last-child]:text-[11px]"
-          />
-          <StatCard
-            label="Critical / High"
-            value={formatNumber(summary.criticalHigh)}
-            helper="우선 대응 대상"
-            color={ISSUE_TONE.criticalHigh}
-            size="md"
-            className="h-full rounded-[var(--radius-lg)] [&>p:nth-of-type(2)]:text-[1.625rem] [&>p:nth-of-type(2)]:leading-[1.1] [&>p:last-child]:text-[11px]"
-          />
-          <StatCard
-            label="Unassigned"
-            value={formatNumber(summary.unassigned)}
-            helper="담당자 미지정"
-            color={ISSUE_TONE.unassigned}
-            size="md"
-            className="h-full rounded-[var(--radius-lg)] [&>p:nth-of-type(2)]:text-[1.625rem] [&>p:nth-of-type(2)]:leading-[1.1] [&>p:last-child]:text-[11px]"
-          />
-          <StatCard
-            label="SLA Risk"
-            value={formatNumber(summary.slaRisk)}
-            helper="지연 임계치 초과"
-            color={ISSUE_TONE.slaRisk}
-            size="md"
-            className="h-full rounded-[var(--radius-lg)] [&>p:nth-of-type(2)]:text-[1.625rem] [&>p:nth-of-type(2)]:leading-[1.1] [&>p:last-child]:text-[11px]"
-          />
-        </Grid>
+        <IssuesSummaryCards summary={summary} />
 
-        <Box className="border-default bg-surface mb-[var(--space-3)] rounded-[var(--radius-md)] border p-[var(--space-3)]">
-          <Grid className="gap-[var(--space-2)] md:grid-cols-2 xl:grid-cols-5">
-            <Select
-              options={ISSUE_STATUS_OPTIONS}
-              control={filterForm.control}
-              name="status"
-              onChange={() => setPage(1)}
-              size="sm"
-            />
-            <Select
-              options={ISSUE_SEVERITY_OPTIONS}
-              control={filterForm.control}
-              name="severity"
-              onChange={() => setPage(1)}
-              size="sm"
-            />
-            <Select
-              options={ISSUE_ASSIGNEE_OPTIONS}
-              control={filterForm.control}
-              name="assignee"
-              onChange={() => setPage(1)}
-              size="sm"
-            />
-            <Select
-              options={ISSUE_SORT_OPTIONS}
-              control={filterForm.control}
-              name="sortBy"
-              onChange={() => setPage(1)}
-              size="sm"
-            />
-            <Flex className="items-center gap-[var(--space-1)]">
-              <Button
-                variant={slaRiskOnly ? "primary" : "secondary"}
-                size="sm"
-                className="flex-1"
-                onClick={() => {
-                  setSlaRiskOnly((prev) => !prev);
-                  setPage(1);
-                }}
-              >
-                SLA
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                iconOnly
-                leftIcon={<RotateCcw />}
-                aria-label="이슈 전용 필터 초기화"
-                disabled={!hasIssueScopedFilter}
-                onClick={resetIssueScopedFilters}
-              />
-            </Flex>
-          </Grid>
-        </Box>
+        <IssuesFilterBar
+          form={filterForm}
+          hasFilter={hasIssueScopedFilter}
+          slaRiskOnly={slaRiskOnly}
+          onFilterChange={() => setPage(1)}
+          onReset={resetIssueScopedFilters}
+          onToggleSlaRisk={() => {
+            setSlaRiskOnly((prev) => !prev);
+            setPage(1);
+          }}
+        />
 
         <DataTable
           columns={columns}
