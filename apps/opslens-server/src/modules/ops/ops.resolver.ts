@@ -22,6 +22,7 @@ import {
   DeploymentImpactReportType,
   DeploymentType,
   IssueListPayloadType,
+  IssueSummaryType,
   IssueType,
   LogAnalysisSessionType,
   OpsAuditLogType,
@@ -52,6 +53,14 @@ export class OpsResolver {
     filter?: IssueFilterInput
   ): Promise<IssueListPayloadType> {
     return this.opsService.listIssues(filter);
+  }
+
+  @Query(() => IssueSummaryType)
+  issueSummary(
+    @Args("filter", { type: () => IssueFilterInput, nullable: true })
+    filter?: IssueFilterInput
+  ): Promise<IssueSummaryType> {
+    return this.opsService.getIssueSummary(filter);
   }
 
   @Query(() => IssueType)
