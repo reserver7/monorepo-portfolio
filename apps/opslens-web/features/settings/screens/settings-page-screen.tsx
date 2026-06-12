@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppForm } from "@repo/forms";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
-import { getOpsAuditLogs, getOpsSettings, opslensQueryKeys, upsertOpsSetting, type OpsAuditLog, type OpsSetting } from "@repo/opslens";
-import { Avatar, Badge, Box, Button, ColorPicker, Flex, FormField, Grid, Input, Select, Switch, Textarea, TimePicker, Typography, toast, type TimeRangeValue } from "@repo/ui";
+import { getOpsAuditLogs, getOpsSettings, opslensQueryKeys, upsertOpsSetting } from "@repo/opslens";
+import { Box, toast } from "@repo/ui";
 import { OpsPageShell, OpsSectionCard } from "@/features";
 import {
   changeCurrentPassword,
@@ -20,34 +20,10 @@ import {
   setAuthAvatarColor,
   updateCurrentProfile
 } from "@/lib/auth";
-import {
-  SETTINGS_AVATAR_COLOR_PRESETS,
-  SETTINGS_DEFAULT_AVATAR_COLOR,
-  SETTINGS_IN_APP_NOTIFICATION_LEVEL_OPTIONS
-} from "../constants";
+import { SETTINGS_DEFAULT_AVATAR_COLOR } from "../constants";
+import { AccountSummaryCard, AuditLogPanel, NotificationPolicyPanel, OpsSettingsPanel, ProfileSecurityForm } from "../components";
 import type { PasswordFormValues, ProfileFormValues } from "../types";
-
-const SETTING_RISK_TONE = {
-  low: "secondary",
-  medium: "info",
-  high: "warning",
-  critical: "danger"
-} as const;
-
-const AUDIT_SEVERITY_TONE = {
-  info: "secondary",
-  warning: "warning",
-  critical: "danger"
-} as const;
-
-const parseJsonLabel = (value?: string | null) => {
-  if (!value) return "";
-  try {
-    return JSON.stringify(JSON.parse(value), null, 2);
-  } catch {
-    return value;
-  }
-};
+import { formatSettingsDateTime, parseJsonLabel } from "../utils/settings-utils";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -210,13 +186,7 @@ export default function SettingsPage() {
     return window.sessionStorage.getItem("opslens.auth.access-token") ? "Session" : "Persistent";
   }, []);
   const sessionExpiresLabel = sessionExpiresAt
-    ? new Intl.DateTimeFormat("ko-KR", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit"
-      }).format(new Date(sessionExpiresAt))
+    ? formatSettingsDateTime(sessionExpiresAt)
     : "-";
 
   const selectedSettingChanged =
@@ -349,48 +319,19 @@ export default function SettingsPage() {
           title="Account"
           description="프로필, 세션 상태, 계정 보안을 관리합니다."
         >
-        <Box className="border-default bg-surface mb-[var(--space-4)] rounded-[var(--radius-lg)] border p-[var(--space-4)]">
-          <Grid className="gap-[var(--space-4)] lg:items-center">
-            <Box className="flex items-center gap-[var(--space-3)]">
-              <Avatar
-                size="lg"
-                name={profileName}
-                color={avatarColor}
-                status="online"
-              />
-              <Grid className="min-w-0 gap-[var(--space-1)]">
-                <Typography as="p" className="text-foreground truncate text-body-lg font-semibold">{profileName}</Typography>
-                <Typography as="p" color="muted" className="truncate text-body-sm">{profileEmail}</Typography>
-                <Box className="flex flex-wrap items-center gap-[var(--space-2)]">
-                  <Badge variant="secondary" size="sm">{roleLabel}</Badge>
-                  <Badge variant="outline" size="sm">{providerLabel}</Badge>
-                  <Badge variant={securityTone} size="sm">{securityLabel}</Badge>
-                </Box>
-              </Grid>
-            </Box>
-            <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
-              <Grid className="gap-[var(--space-2)]">
-                <Box className="flex items-center justify-between gap-[var(--space-2)]">
-                  <Typography as="p" color="muted" className="text-body-sm">세션 타입</Typography>
-                  <Badge variant="secondary" size="sm">{sessionTypeLabel}</Badge>
-                </Box>
-                <Box className="flex items-center justify-between gap-[var(--space-2)]">
-                  <Typography as="p" color="muted" className="text-body-sm">만료 시각</Typography>
-                  <Typography as="p" className="text-body-sm font-medium">{sessionExpiresLabel}</Typography>
-                </Box>
-                <Box className="mt-[var(--space-2)] flex justify-end">
-                  <Button
-                    variant="secondary"
-                    loading={logoutAllMutation.isPending}
-                    onClick={() => logoutAllMutation.mutate()}
-                  >
-                    현재 세션 로그아웃
-                  </Button>
-                </Box>
-              </Grid>
-            </Box>
-          </Grid>
-        </Box>
+          <AccountSummaryCard
+            profileName={profileName}
+            profileEmail={profileEmail}
+            roleLabel={roleLabel}
+            providerLabel={providerLabel}
+            securityLabel={securityLabel}
+            securityTone={securityTone}
+            avatarColor={avatarColor}
+            sessionTypeLabel={sessionTypeLabel}
+            sessionExpiresLabel={sessionExpiresLabel}
+            logoutPending={logoutAllMutation.isPending}
+            onLogoutCurrentSession={() => logoutAllMutation.mutate()}
+          />
         </OpsSectionCard>
       </Box>
 
@@ -399,90 +340,22 @@ export default function SettingsPage() {
           title="프로필 및 비밀번호"
           description="프로필 정보와 비밀번호를 한 번에 관리합니다."
         >
-          <Grid className="gap-[var(--space-4)]">
-            <FormField label="이름" htmlFor="profile-name">
-              <Input
-                id="profile-name"
-                control={profileForm.control}
-                name="name"
-                rules={{
-                  required: "이름을 입력해 주세요.",
-                  minLength: { value: 2, message: "이름은 2자 이상이어야 합니다." }
-                }}
-                errorMessage={profileForm.formState.errors.name?.message}
-                onEnter={() => submitProfile()}
-              />
-            </FormField>
-            <FormField label="아바타 배경색" htmlFor="profile-avatar-color">
-              <ColorPicker
-                value={avatarColor}
-                onChange={setAvatarColor}
-                presets={SETTINGS_AVATAR_COLOR_PRESETS}
-                label="Avatar color"
-              />
-            </FormField>
-            {profileProvider !== "local" ? (
-              <Box className="border-default bg-surface rounded-[var(--radius-md)] border p-[var(--space-3)]">
-                <Typography as="p" color="muted" className="text-body-sm leading-[1.6]">
-                  현재 계정은 소셜 로그인 계정입니다. 비밀번호는 소셜 제공자에서 관리됩니다.
-                </Typography>
-              </Box>
-            ) : (
-              <Grid className="gap-[var(--space-3)] md:grid-cols-3">
-                <FormField label="현재 비밀번호" htmlFor="profile-current-password">
-                  <Input
-                    id="profile-current-password"
-                    type="password"
-                    control={passwordForm.control}
-                    name="currentPassword"
-                    rules={{
-                      required: "현재 비밀번호를 입력해 주세요.",
-                      minLength: { value: 8, message: "8자 이상 입력해 주세요." }
-                    }}
-                    errorMessage={passwordForm.formState.errors.currentPassword?.message}
-                    onEnter={() => submitPassword()}
-                  />
-                </FormField>
-                <FormField label="새 비밀번호" htmlFor="profile-new-password">
-                  <Input
-                    id="profile-new-password"
-                    type="password"
-                    control={passwordForm.control}
-                    name="newPassword"
-                    rules={{
-                      required: "새 비밀번호를 입력해 주세요.",
-                      minLength: { value: 8, message: "8자 이상 입력해 주세요." }
-                    }}
-                    errorMessage={passwordForm.formState.errors.newPassword?.message}
-                    onEnter={() => submitPassword()}
-                  />
-                </FormField>
-                <FormField label="새 비밀번호 확인" htmlFor="profile-confirm-password">
-                  <Input
-                    id="profile-confirm-password"
-                    type="password"
-                    control={passwordForm.control}
-                    name="confirmPassword"
-                    rules={{
-                      required: "새 비밀번호 확인을 입력해 주세요."
-                    }}
-                    errorMessage={passwordForm.formState.errors.confirmPassword?.message}
-                    onEnter={() => submitPassword()}
-                  />
-                </FormField>
-              </Grid>
-            )}
-            <Box className="mt-[var(--space-2)] flex justify-end gap-[var(--space-2)]">
-              <Button
-                variant="primary"
-                disabled={!canSubmitProfileSecurity}
-                loading={isProfileSecuritySubmitting}
-                onClick={handleSaveProfileSecurity}
-              >
-                변경사항 저장
-              </Button>
-            </Box>
-          </Grid>
+          <ProfileSecurityForm
+            profileProvider={profileProvider}
+            avatarColor={avatarColor}
+            profileControl={profileForm.control}
+            passwordControl={passwordForm.control}
+            profileNameError={profileForm.formState.errors.name?.message}
+            currentPasswordError={passwordForm.formState.errors.currentPassword?.message}
+            newPasswordError={passwordForm.formState.errors.newPassword?.message}
+            confirmPasswordError={passwordForm.formState.errors.confirmPassword?.message}
+            canSubmit={canSubmitProfileSecurity}
+            submitting={isProfileSecuritySubmitting}
+            onAvatarColorChange={setAvatarColor}
+            onSubmitProfile={submitProfile}
+            onSubmitPassword={submitPassword}
+            onSave={handleSaveProfileSecurity}
+          />
         </OpsSectionCard>
       </Box>
 
@@ -491,140 +364,28 @@ export default function SettingsPage() {
           title="운영 설정"
           description="운영 정책을 검토하고 변경 사유와 함께 저장합니다."
         >
-          {opsSettingsQuery.isError ? (
-            <Box className="border-default bg-surface-elevated rounded-[var(--radius-md)] border p-[var(--space-3)]">
-              <Typography as="p" color="muted" className="text-body-sm">
-                운영 설정을 불러오지 못했습니다.
-              </Typography>
-            </Box>
-          ) : (
-            <Grid className="gap-[var(--space-4)] xl:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.35fr)]">
-              <Grid className="content-start gap-[var(--space-2)]">
-                {settings.map((setting: OpsSetting) => {
-                  const selected = selectedSetting?.key === setting.key;
-                  return (
-                    <Button
-                      key={setting.id}
-                      variant={selected ? "primary" : "secondary"}
-                      className="h-auto justify-start rounded-[var(--radius-md)] p-[var(--space-3)] text-left"
-                      onClick={() => {
-                        setSelectedSettingKey(setting.key);
-                        setSettingValueDraft(parseJsonLabel(setting.value));
-                        setSettingReasonDraft("");
-                      }}
-                    >
-                      <Box className="grid w-full gap-[var(--space-2)]">
-                        <Flex className="items-start justify-between gap-[var(--space-2)]">
-                          <Typography as="span" className="truncate text-body-sm font-semibold">
-                            {setting.key}
-                          </Typography>
-                          <Badge
-                            variant={SETTING_RISK_TONE[setting.riskLevel as keyof typeof SETTING_RISK_TONE] ?? "secondary"}
-                            size="sm"
-                          >
-                            {setting.riskLevel}
-                          </Badge>
-                        </Flex>
-                        <Flex className="flex-wrap gap-[var(--space-1)]">
-                          <Badge variant="outline" size="sm">{setting.category}</Badge>
-                          <Badge variant={setting.editable ? "success" : "secondary"} size="sm">
-                            {setting.editable ? "편집 가능" : "읽기 전용"}
-                          </Badge>
-                        </Flex>
-                        {setting.description ? (
-                          <Typography as="span" color="muted" className="line-clamp-2 text-caption leading-[1.5]">
-                            {setting.description}
-                          </Typography>
-                        ) : null}
-                      </Box>
-                    </Button>
-                  );
-                })}
-              </Grid>
-
-              <Box className="border-default bg-surface rounded-[var(--radius-lg)] border p-[var(--space-4)]">
-                {selectedSetting ? (
-                  <Grid className="gap-[var(--space-4)]">
-                    <Flex className="items-start justify-between gap-[var(--space-3)]">
-                      <Box className="min-w-0">
-                        <Typography as="h3" className="truncate text-body-lg font-semibold">
-                          {selectedSetting.key}
-                        </Typography>
-                        <Typography as="p" color="muted" className="mt-[var(--space-1)] text-body-sm">
-                          {selectedSetting.description ?? "설명 없음"}
-                        </Typography>
-                      </Box>
-                      <Flex className="shrink-0 flex-wrap justify-end gap-[var(--space-1)]">
-                        <Badge variant="outline" size="sm">{selectedSetting.category}</Badge>
-                        <Badge
-                          variant={SETTING_RISK_TONE[selectedSetting.riskLevel as keyof typeof SETTING_RISK_TONE] ?? "secondary"}
-                          size="sm"
-                        >
-                          {selectedSetting.riskLevel}
-                        </Badge>
-                      </Flex>
-                    </Flex>
-
-                    <Grid className="gap-[var(--space-3)] md:grid-cols-2">
-                      <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
-                        <Typography as="p" color="muted" className="text-caption">마지막 수정자</Typography>
-                        <Typography as="p" className="mt-[var(--space-1)] text-body-sm font-semibold">
-                          {selectedSetting.updatedBy}
-                        </Typography>
-                      </Box>
-                      <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
-                        <Typography as="p" color="muted" className="text-caption">마지막 변경 사유</Typography>
-                        <Typography as="p" className="mt-[var(--space-1)] text-body-sm font-semibold">
-                          {selectedSetting.changeReason ?? "기록 없음"}
-                        </Typography>
-                      </Box>
-                    </Grid>
-
-                    <Textarea
-                      label="설정 값(JSON)"
-                      value={settingValueDraft}
-                      rows={10}
-                      resize="vertical"
-                      disabled={!selectedSetting.editable}
-                      className="font-mono text-[12px] leading-[1.55]"
-                      onChange={(event) => setSettingValueDraft(event.target.value)}
-                    />
-                    <Input
-                      label="변경 사유"
-                      value={settingReasonDraft}
-                      disabled={!selectedSetting.editable}
-                      placeholder="예: critical 알림의 슬랙 전파 기준 강화"
-                      onChange={(event) => setSettingReasonDraft(event.target.value)}
-                    />
-                    <Flex className="justify-end gap-[var(--space-2)]">
-                      <Button
-                        variant="secondary"
-                        disabled={!selectedSettingChanged}
-                        onClick={() => {
-                          setSettingValueDraft(parseJsonLabel(selectedSetting.value));
-                          setSettingReasonDraft("");
-                        }}
-                      >
-                        되돌리기
-                      </Button>
-                      <Button
-                        variant="primary"
-                        disabled={!selectedSetting.editable || !selectedSettingChanged || settingReasonDraft.trim().length === 0}
-                        loading={saveOpsSettingMutation.isPending}
-                        onClick={() => saveOpsSettingMutation.mutate()}
-                      >
-                        설정 저장
-                      </Button>
-                    </Flex>
-                  </Grid>
-                ) : (
-                  <Typography as="p" color="muted" className="text-body-sm">
-                    등록된 운영 설정이 없습니다.
-                  </Typography>
-                )}
-              </Box>
-            </Grid>
-          )}
+          <OpsSettingsPanel
+            isError={opsSettingsQuery.isError}
+            settings={settings}
+            selectedSetting={selectedSetting}
+            valueDraft={settingValueDraft}
+            reasonDraft={settingReasonDraft}
+            selectedChanged={selectedSettingChanged}
+            savePending={saveOpsSettingMutation.isPending}
+            onSelectSetting={(setting) => {
+              setSelectedSettingKey(setting.key);
+              setSettingValueDraft(parseJsonLabel(setting.value));
+              setSettingReasonDraft("");
+            }}
+            onValueDraftChange={setSettingValueDraft}
+            onReasonDraftChange={setSettingReasonDraft}
+            onResetDraft={() => {
+              if (!selectedSetting) return;
+              setSettingValueDraft(parseJsonLabel(selectedSetting.value));
+              setSettingReasonDraft("");
+            }}
+            onSave={() => saveOpsSettingMutation.mutate()}
+          />
         </OpsSectionCard>
       </Box>
 
@@ -633,165 +394,13 @@ export default function SettingsPage() {
           title="알림 정책"
           description="인앱 알림 노출 기준과 조용한 시간대를 설정합니다."
         >
-          <Grid className="gap-[var(--space-3)]">
-            <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
-              <Grid className="gap-[var(--space-3)]">
-                <Typography as="p" className="text-body-sm font-semibold">채널</Typography>
-                <Box className={notificationPolicy.inAppEnabled ? "border-default flex items-center justify-between rounded-[var(--radius-sm)] border p-[var(--space-2)]" : "border-default bg-surface-elevated/70 flex items-center justify-between rounded-[var(--radius-sm)] border p-[var(--space-2)]"}>
-                  <Box className="grid gap-[2px]">
-                    <Typography as="p" className="text-body-sm">인앱 알림</Typography>
-                    <Typography as="p" color="muted" className="text-caption">대시보드/화면 내 알림을 표시합니다.</Typography>
-                  </Box>
-                  <Box className="flex items-center gap-[var(--space-2)]">
-                    <Badge variant="outline" size="md" shape="pill">
-                      {notificationPolicy.inAppEnabled ? "Enabled" : "Disabled"}
-                    </Badge>
-                    <Switch
-                      checked={notificationPolicy.inAppEnabled}
-                      color={notificationPolicy.inAppEnabled ? "primary" : "warning"}
-                      onCheckedChange={(checked) =>
-                        setNotificationPolicy((prev) => ({ ...prev, inAppEnabled: checked }))
-                      }
-                    />
-                  </Box>
-                </Box>
-                <Box className={notificationPolicy.emailEnabled ? "border-default flex items-center justify-between rounded-[var(--radius-sm)] border p-[var(--space-2)]" : "border-default bg-surface-elevated/70 flex items-center justify-between rounded-[var(--radius-sm)] border p-[var(--space-2)]"}>
-                  <Box className="grid gap-[2px]">
-                    <Typography as="p" className="text-body-sm">이메일 알림</Typography>
-                    <Typography as="p" color="muted" className="text-caption">중요 이벤트를 이메일로 발송합니다.</Typography>
-                  </Box>
-                  <Box className="flex items-center gap-[var(--space-2)]">
-                    <Badge variant="outline" size="md" shape="pill">
-                      {notificationPolicy.emailEnabled ? "Enabled" : "Disabled"}
-                    </Badge>
-                    <Switch
-                      checked={notificationPolicy.emailEnabled}
-                      color={notificationPolicy.emailEnabled ? "primary" : "warning"}
-                      onCheckedChange={(checked) =>
-                        setNotificationPolicy((prev) => ({ ...prev, emailEnabled: checked }))
-                      }
-                    />
-                  </Box>
-                </Box>
-                <Box className={notificationPolicy.slackEnabled ? "border-default flex items-center justify-between rounded-[var(--radius-sm)] border p-[var(--space-2)]" : "border-default bg-surface-elevated/70 flex items-center justify-between rounded-[var(--radius-sm)] border p-[var(--space-2)]"}>
-                  <Box className="grid gap-[2px]">
-                    <Typography as="p" className="text-body-sm">슬랙 알림</Typography>
-                    <Typography as="p" color="muted" className="text-caption">운영 채널로 즉시 전파합니다.</Typography>
-                  </Box>
-                  <Box className="flex items-center gap-[var(--space-2)]">
-                    <Badge variant="outline" size="md" shape="pill">
-                      {notificationPolicy.slackEnabled ? "Enabled" : "Disabled"}
-                    </Badge>
-                    <Switch
-                      checked={notificationPolicy.slackEnabled}
-                      color={notificationPolicy.slackEnabled ? "primary" : "warning"}
-                      onCheckedChange={(checked) =>
-                        setNotificationPolicy((prev) => ({ ...prev, slackEnabled: checked }))
-                      }
-                    />
-                  </Box>
-                </Box>
-              </Grid>
-            </Box>
-
-            <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
-              <Grid className="gap-[var(--space-3)]">
-                <Typography as="p" className="text-body-sm font-semibold">노출 기준</Typography>
-                <FormField label="최소 알림 레벨" htmlFor="notification-min-level">
-                  <Select
-                    value={notificationPolicy.minLevel}
-                    onChange={(next) =>
-                      setNotificationPolicy((prev) => ({
-                        ...prev,
-                        minLevel: next === "all" || next === "high" || next === "critical" ? next : "all"
-                      }))
-                    }
-                    options={[...SETTINGS_IN_APP_NOTIFICATION_LEVEL_OPTIONS]}
-                  />
-                </FormField>
-              </Grid>
-            </Box>
-
-            <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
-              <Grid className="gap-[var(--space-3)]">
-                <Box className={notificationPolicy.quietHoursEnabled ? "border-default flex items-center justify-between rounded-[var(--radius-sm)] border p-[var(--space-2)]" : "border-default bg-surface-elevated/70 flex items-center justify-between rounded-[var(--radius-sm)] border p-[var(--space-2)]"}>
-                  <Box className="grid gap-[2px]">
-                    <Typography as="p" className="text-body-sm font-semibold">방해금지 시간</Typography>
-                    <Typography as="p" color="muted" className="text-caption">지정한 시간에는 알림을 억제합니다.</Typography>
-                  </Box>
-                  <Box className="flex items-center gap-[var(--space-2)]">
-                    <Badge variant="outline" size="md" shape="pill">
-                      {notificationPolicy.quietHoursEnabled ? "Enabled" : "Disabled"}
-                    </Badge>
-                    <Switch
-                      checked={notificationPolicy.quietHoursEnabled}
-                      color={notificationPolicy.quietHoursEnabled ? "primary" : "warning"}
-                      onCheckedChange={(checked) =>
-                        setNotificationPolicy((prev) => ({ ...prev, quietHoursEnabled: checked }))
-                      }
-                    />
-                  </Box>
-                </Box>
-
-                {notificationPolicy.quietHoursEnabled ? (
-                  <FormField label="조용한 시간대" htmlFor="notification-quiet-range">
-                    <TimePicker.RangePicker
-                      minuteStep={5}
-                      value={{ start: notificationPolicy.quietFrom, end: notificationPolicy.quietTo }}
-                      startPlaceholder="시작 시간"
-                      endPlaceholder="종료 시간"
-                      disabledTime={(value: TimeRangeValue, type: "start" | "end") => {
-                        const parseMinutes = (text?: string) => {
-                          if (!text) return null;
-                          const [hourRaw, minuteRaw] = text.split(":");
-                          const hour = Number(hourRaw);
-                          const minute = Number(minuteRaw);
-                          if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null;
-                          return hour * 60 + minute;
-                        };
-                        const startMinute = parseMinutes(value.start);
-                        const endMinute = parseMinutes(value.end);
-                        if (startMinute == null || endMinute == null || startMinute !== endMinute) return {};
-                        const blockedHour = Math.floor(startMinute / 60);
-                        const blockedMinute = startMinute % 60;
-                        if (type === "start") {
-                          return {
-                            disabledHours: () => [blockedHour],
-                            disabledMinutes: (selectedHour: number) => (selectedHour === blockedHour ? [blockedMinute] : [])
-                          };
-                        }
-                        return {
-                          disabledHours: () => [blockedHour],
-                          disabledMinutes: (selectedHour: number) => (selectedHour === blockedHour ? [blockedMinute] : [])
-                        };
-                      }}
-                      onValueChange={(nextValue: TimeRangeValue) =>
-                        setNotificationPolicy((prev) => ({
-                          ...prev,
-                          quietFrom: nextValue.start || "22:00",
-                          quietTo: nextValue.end || "08:00"
-                        }))
-                      }
-                    />
-                  </FormField>
-                ) : (
-                  <Typography as="p" color="muted" className="text-caption">
-                    방해금지 시간이 비활성화되어 있습니다.
-                  </Typography>
-                )}
-              </Grid>
-            </Box>
-            <Box className="mt-[var(--space-2)] flex justify-end">
-              <Button
-                variant="primary"
-                disabled={!isNotificationDirty}
-                loading={saveNotificationMutation.isPending}
-                onClick={() => saveNotificationMutation.mutate()}
-              >
-                알림 정책 저장
-              </Button>
-            </Box>
-          </Grid>
+          <NotificationPolicyPanel
+            policy={notificationPolicy}
+            dirty={isNotificationDirty}
+            savePending={saveNotificationMutation.isPending}
+            onPolicyChange={setNotificationPolicy}
+            onSave={() => saveNotificationMutation.mutate()}
+          />
         </OpsSectionCard>
       </Box>
 
@@ -800,148 +409,23 @@ export default function SettingsPage() {
           title="감사 로그"
           description="운영 변경 이력을 필터링하고 변경 전후 값을 추적합니다."
         >
-          <Grid className="gap-[var(--space-4)]">
-            <Grid className="gap-[var(--space-2)] md:grid-cols-[minmax(0,1fr)_180px_180px_auto]">
-              <Input
-                value={auditQuery}
-                placeholder="요약, 액션, 대상 검색"
-                onChange={(event) => setAuditQuery(event.target.value)}
-              />
-              <Select
-                value={auditSeverity}
-                onChange={setAuditSeverity}
-                options={[
-                  { label: "전체 위험도", value: "all" },
-                  { label: "info", value: "info" },
-                  { label: "warning", value: "warning" },
-                  { label: "critical", value: "critical" }
-                ]}
-              />
-              <Select
-                value={auditTargetType}
-                onChange={setAuditTargetType}
-                options={[
-                  { label: "전체 대상", value: "all" },
-                  { label: "설정", value: "OpsSetting" },
-                  { label: "알림", value: "OpsAlert" },
-                  { label: "이슈", value: "Issue" },
-                  { label: "배포", value: "Deployment" },
-                  { label: "리포트", value: "OpsReportSnapshot" },
-                  { label: "QA", value: "QaScenario" }
-                ]}
-              />
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setAuditQuery("");
-                  setAuditSeverity("all");
-                  setAuditTargetType("all");
-                }}
-              >
-                초기화
-              </Button>
-            </Grid>
-
-            <Grid className="gap-[var(--space-4)] xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
-              <Box className="divide-y divide-default border-y border-default">
-                {auditLogs.map((log: OpsAuditLog) => (
-                  <Button
-                    key={log.id}
-                    variant="ghost"
-                    className="h-auto w-full justify-start rounded-none px-0 py-[var(--space-3)] text-left"
-                    onClick={() => setSelectedAuditId(log.id)}
-                  >
-                    <Flex className="w-full items-start justify-between gap-[var(--space-3)]">
-                      <Box className="min-w-0">
-                        <Flex className="flex-wrap items-center gap-[var(--space-2)]">
-                          <Badge
-                            variant={AUDIT_SEVERITY_TONE[log.severity as keyof typeof AUDIT_SEVERITY_TONE] ?? "secondary"}
-                            size="sm"
-                          >
-                            {log.severity}
-                          </Badge>
-                          <Typography as="span" className="text-body-sm font-semibold">
-                            {log.summary}
-                          </Typography>
-                        </Flex>
-                        <Typography as="p" color="muted" className="mt-[var(--space-1)] truncate text-caption">
-                          {log.actor} · {log.action} · {log.targetType}
-                        </Typography>
-                      </Box>
-                      <Badge variant={selectedAuditLog?.id === log.id ? "secondary" : "outline"} size="sm" className="shrink-0">
-                        {new Intl.DateTimeFormat("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(log.createdAt))}
-                      </Badge>
-                    </Flex>
-                  </Button>
-                ))}
-              </Box>
-              <Box className="border-default bg-surface rounded-[var(--radius-lg)] border p-[var(--space-4)]">
-                {selectedAuditLog ? (
-                  <Grid className="gap-[var(--space-3)]">
-                    <Flex className="items-start justify-between gap-[var(--space-3)]">
-                      <Box className="min-w-0">
-                        <Typography as="h3" className="text-body-lg font-semibold">
-                          {selectedAuditLog.summary}
-                        </Typography>
-                        <Typography as="p" color="muted" className="mt-[var(--space-1)] text-caption">
-                          {selectedAuditLog.actor} · {selectedAuditLog.action}
-                        </Typography>
-                      </Box>
-                      <Badge
-                        variant={AUDIT_SEVERITY_TONE[selectedAuditLog.severity as keyof typeof AUDIT_SEVERITY_TONE] ?? "secondary"}
-                        size="sm"
-                      >
-                        {selectedAuditLog.severity}
-                      </Badge>
-                    </Flex>
-                    <Grid className="gap-[var(--space-2)] md:grid-cols-2">
-                      <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
-                        <Typography as="p" color="muted" className="text-caption">대상</Typography>
-                        <Typography as="p" className="mt-[var(--space-1)] text-body-sm font-semibold">
-                          {selectedAuditLog.targetType}
-                        </Typography>
-                      </Box>
-                      <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
-                        <Typography as="p" color="muted" className="text-caption">발생 시각</Typography>
-                        <Typography as="p" className="mt-[var(--space-1)] text-body-sm font-semibold">
-                          {new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(selectedAuditLog.createdAt))}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid className="gap-[var(--space-3)] md:grid-cols-2">
-                      <Box>
-                        <Typography as="p" className="mb-[var(--space-1)] text-caption font-semibold">변경 전</Typography>
-                        <Box as="pre" className="bg-surface-elevated min-h-[120px] overflow-auto whitespace-pre-wrap break-words rounded-[var(--radius-md)] p-[var(--space-3)] font-mono text-[11px] leading-[1.5] text-muted">
-                          {parseJsonLabel(selectedAuditLog.beforeValue) || "기록 없음"}
-                        </Box>
-                      </Box>
-                      <Box>
-                        <Typography as="p" className="mb-[var(--space-1)] text-caption font-semibold">변경 후</Typography>
-                        <Box as="pre" className="bg-surface-elevated min-h-[120px] overflow-auto whitespace-pre-wrap break-words rounded-[var(--radius-md)] p-[var(--space-3)] font-mono text-[11px] leading-[1.5] text-muted">
-                          {parseJsonLabel(selectedAuditLog.afterValue) || "기록 없음"}
-                        </Box>
-                      </Box>
-                    </Grid>
-                    <Box>
-                      <Typography as="p" className="mb-[var(--space-1)] text-caption font-semibold">메타데이터</Typography>
-                      <Box as="pre" className="bg-surface-elevated max-h-[160px] overflow-auto whitespace-pre-wrap break-words rounded-[var(--radius-md)] p-[var(--space-3)] font-mono text-[11px] leading-[1.5] text-muted">
-                        {parseJsonLabel(selectedAuditLog.metadata) || "기록 없음"}
-                      </Box>
-                    </Box>
-                  </Grid>
-                ) : (
-                  <Typography as="p" color="muted" className="text-body-sm">
-                    선택된 감사 로그가 없습니다.
-                  </Typography>
-                )}
-              </Box>
-            </Grid>
-            {!auditLogsQuery.isLoading && auditLogs.length === 0 ? (
-              <Typography as="p" variant="caption" color="muted">
-                조건에 맞는 운영 변경 이력이 없습니다.
-              </Typography>
-            ) : null}
-          </Grid>
+          <AuditLogPanel
+            auditLogs={auditLogs}
+            selectedAuditLog={selectedAuditLog}
+            isLoading={auditLogsQuery.isLoading}
+            query={auditQuery}
+            severity={auditSeverity}
+            targetType={auditTargetType}
+            onQueryChange={setAuditQuery}
+            onSeverityChange={setAuditSeverity}
+            onTargetTypeChange={setAuditTargetType}
+            onSelectAuditLog={setSelectedAuditId}
+            onResetFilters={() => {
+              setAuditQuery("");
+              setAuditSeverity("all");
+              setAuditTargetType("all");
+            }}
+          />
         </OpsSectionCard>
       </Box>
     </OpsPageShell>

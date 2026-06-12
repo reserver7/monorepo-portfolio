@@ -502,6 +502,21 @@ export class IssueListPayloadType {
 }
 
 @ObjectType()
+export class IssueSummaryType {
+  @Field(() => Int)
+  open!: number;
+
+  @Field(() => Int)
+  criticalHigh!: number;
+
+  @Field(() => Int)
+  unassigned!: number;
+
+  @Field(() => Int)
+  slaRisk!: number;
+}
+
+@ObjectType()
 export class DeploymentType {
   @Field(() => String)
   id!: string;

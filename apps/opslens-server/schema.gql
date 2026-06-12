@@ -142,6 +142,13 @@ type IssueListPayloadType {
   totalCount: Int!
 }
 
+type IssueSummaryType {
+  criticalHigh: Int!
+  open: Int!
+  slaRisk: Int!
+  unassigned: Int!
+}
+
 type IssueType {
   affectedArea: String
   assignee: String
@@ -225,6 +232,17 @@ type OpsAlertType {
   title: String!
 }
 
+input OpsAuditLogFilterInput {
+  action: String
+  actor: String
+  from: String
+  limit: Int = 50
+  query: String
+  severity: String
+  targetType: String
+  to: String
+}
+
 type OpsAuditLogType {
   action: String!
   actor: String!
@@ -278,17 +296,6 @@ type OpsSettingType {
   value: String!
 }
 
-input OpsAuditLogFilterInput {
-  action: String
-  actor: String
-  from: String
-  limit: Int = 50
-  query: String
-  severity: String
-  targetType: String
-  to: String
-}
-
 input QaAssistantInputModel {
   audience: String!
   changedScreens: String!
@@ -321,6 +328,7 @@ type Query {
   deploymentImpact(input: DeploymentImpactInput!): DeploymentImpactReportType!
   deployments(environment: String): [DeploymentType!]!
   issueDetail(issueId: String!): IssueType!
+  issueSummary(filter: IssueFilterInput): IssueSummaryType!
   issues(filter: IssueFilterInput): IssueListPayloadType!
   logAnalysisSessions: [LogAnalysisSessionType!]!
   opsAlerts: [OpsAlertType!]!

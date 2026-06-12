@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAppForm } from "@repo/forms";
-import { Box, Button, Flex, Grid, Input, Label, Select, Spinner, StateView, Textarea, Typography } from "@repo/ui";
+import { Box, Button, Flex, Grid, Input, Label, Select, Spinner, StateView, Typography } from "@repo/ui";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import {
   addIssueComment,
@@ -18,6 +18,7 @@ import { OpsInfoItem, OpsIssueDetailSkeleton, OpsPageShell, OpsSectionCard } fro
 import { useOpsQueryOptions } from "@/features/common/hooks/use-ops-query-options";
 import { formatDateTime, formatNumber } from "@repo/utils";
 import { ISSUE_DETAIL_STATUS_OPTIONS } from "../constants";
+import { IssueCommentsPanel, IssueLogList } from "../components";
 
 export default function IssueDetailPage() {
   const params = useParams<{ id: string }>();
@@ -37,7 +38,6 @@ export default function IssueDetailPage() {
   });
 
   const assignee = assigneeForm.watch("assignee");
-  const commentBody = commentForm.watch("body");
 
   const issueQuery = useQuery(useOpsQueryOptions("detail", {
     queryKey: opslensQueryKeys.issueDetail(issueId),
@@ -191,67 +191,16 @@ export default function IssueDetailPage() {
 
       <Grid className="gap-[var(--space-6)] xl:grid-cols-2">
         <OpsSectionCard title="관련 로그 (최근 30개)">
-          {issue.logs.length === 0 ? (
-            <StateView variant="empty" size="sm" title="로그 데이터가 없습니다." className="mt-[var(--space-3)]" />
-          ) : (
-            <Box className="mt-[var(--space-3)] max-h-[360px] space-y-[var(--space-2)] overflow-auto pr-1">
-              {issue.logs.map((log) => (
-                <Box key={log.id} className="border-default rounded-lg border p-[var(--space-3)]">
-                  <Box as="p" className="text-muted-foreground text-caption">
-                    {formatDateTime(log.occurredAt)} · {log.source} · {log.level}
-                  </Box>
-                  <Box as="p" className="text-foreground mt-[var(--space-1)] whitespace-pre-wrap break-all font-mono text-caption">
-                    {log.rawMessage}
-                  </Box>
-                </Box>
-              ))}
-            </Box>
-          )}
+          <IssueLogList logs={issue.logs} />
         </OpsSectionCard>
 
         <OpsSectionCard title="메모 / 댓글">
-          <form
-            className="mt-[var(--space-3)] grid gap-[var(--space-2)]"
-            onSubmit={commentForm.handleSubmit((values) => commentMutation.mutate(values))}
-          >
-            <Input
-              id="comment-author"
-              placeholder="작성자"
-              size="md"
-              control={commentForm.control}
-              name="author"
-            />
-            <Textarea
-              id="comment-body"
-              rows={4}
-              placeholder="운영 메모/분석 결과를 입력하세요"
-              control={commentForm.control}
-              name="body"
-            />
-            <Button
-              type="submit"
-              disabled={commentMutation.isPending || commentBody.trim().length === 0}
-              variant="secondary"
-              className="w-fit"
-              loading={commentMutation.isPending ? true : undefined}
-            >
-              댓글 등록
-            </Button>
-          </form>
-
-          <Box className="mt-[var(--space-4)] space-y-[var(--space-2)]">
-            {issue.comments.length === 0 ? (
-              <StateView variant="empty" size="sm" title="등록된 댓글이 없습니다." />
-            ) : (
-              issue.comments.map((comment) => (
-                <Box key={comment.id} className="border-default rounded-lg border p-[var(--space-3)] text-sm">
-                  <Box as="p" className="text-foreground font-semibold">{comment.author}</Box>
-                  <Box as="p" className="text-muted mt-[var(--space-1)] whitespace-pre-wrap">{comment.body}</Box>
-                  <Box as="p" className="text-muted-foreground mt-[var(--space-1)] text-caption">{formatDateTime(comment.createdAt)}</Box>
-                </Box>
-              ))
-            )}
-          </Box>
+          <IssueCommentsPanel
+            comments={issue.comments}
+            form={commentForm}
+            isSubmitting={commentMutation.isPending}
+            onSubmit={(values) => commentMutation.mutate(values)}
+          />
         </OpsSectionCard>
       </Grid>
 

@@ -1,0 +1,84 @@
+import { createQueryKeys } from "@repo/react-query";
+import type { Environment, IssueListFilterParams, OpsFilterParams } from "./types";
+
+const opslensKeysBase = createQueryKeys("opslens");
+
+export const opslensQueryKeys = {
+  all: opslensKeysBase.all,
+  dashboard: (filter: OpsFilterParams) =>
+    opslensKeysBase.custom(
+      "dashboard",
+      filter.environment,
+      filter.serviceName,
+      filter.search,
+      filter.from,
+      filter.to
+    ),
+  reportsSummary: (filter: OpsFilterParams) =>
+    opslensKeysBase.custom(
+      "reports",
+      "summary",
+      filter.environment,
+      filter.serviceName,
+      filter.search,
+      filter.from,
+      filter.to
+    ),
+  reportsBriefing: (filter: OpsFilterParams) =>
+    opslensKeysBase.custom(
+      "reports",
+      "briefing",
+      filter.environment,
+      filter.serviceName,
+      filter.search,
+      filter.from,
+      filter.to
+    ),
+  opsReport: (filter: OpsFilterParams) =>
+    opslensKeysBase.custom(
+      "reports",
+      "structured",
+      filter.environment,
+      filter.serviceName,
+      filter.search,
+      filter.from,
+      filter.to
+    ),
+  reportsIssues: (filter: OpsFilterParams) =>
+    opslensKeysBase.custom(
+      "reports",
+      "issues",
+      filter.environment,
+      filter.serviceName,
+      filter.search
+    ),
+  issues: (filter: IssueListFilterParams) =>
+    opslensKeysBase.custom(
+      "issues",
+      filter.environment,
+      filter.serviceName,
+      filter.search,
+      filter.status,
+      filter.severity,
+      filter.page
+    ),
+  issueSummary: (filter: IssueListFilterParams) =>
+    opslensKeysBase.custom(
+      "issue-summary",
+      filter.environment,
+      filter.serviceName,
+      filter.search,
+      filter.status,
+      filter.severity
+    ),
+  issueDetail: (issueId: string) => opslensKeysBase.custom("issue-detail", issueId),
+  deployments: (environment: Environment) => opslensKeysBase.custom("deployments", environment),
+  deploymentImpact: (environment: Environment, version?: string) =>
+    opslensKeysBase.custom("deployment-impact", environment, version),
+  qaScenarios: () => opslensKeysBase.custom("qa-scenarios"),
+  alerts: () => opslensKeysBase.custom("alerts"),
+  logAnalysisSessions: () => opslensKeysBase.custom("log-analysis-sessions"),
+  reportSnapshots: () => opslensKeysBase.custom("report-snapshots"),
+  settings: () => opslensKeysBase.custom("settings"),
+  auditLogs: () => opslensKeysBase.custom("audit-logs")
+};
