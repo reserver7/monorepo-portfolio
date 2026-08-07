@@ -9,7 +9,7 @@
     "build": "pnpm --filter @repo/opslens-server exec prisma generate && tsc -p tsconfig.json",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "pnpm --filter @repo/opslens-server exec prisma generate && tsc -p tsconfig.json --noEmit",
-    "test": "tsx --test src/modules/auth/*.test.ts src/modules/ops/*.test.ts"
+    "test": "DATABASE_URL=postgresql://test:test@localhost:5432/opslens tsx --test src/modules/auth/*.test.ts src/modules/ops/*.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
