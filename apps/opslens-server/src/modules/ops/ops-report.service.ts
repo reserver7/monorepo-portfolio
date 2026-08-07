@@ -2,11 +2,11 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from "@nes
 import { IssueSeverity, Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../integration/db/prisma.service.js";
-import type { DashboardFilterInput, UpdateReportSnapshotInput } from "./ops.inputs.js";
+import type { DashboardFilterInput, UpdateReportActionInput, UpdateReportSnapshotInput } from "./ops.inputs.js";
 import { writeOpsAuditLog } from "./ops-audit-writer.js";
 import { buildIssueWhere, toEnvironment } from "./ops.filters.js";
 import { OpsDashboardService } from "./ops-dashboard.service.js";
-import type { OpsReportSnapshotType, OpsReportType } from "./ops.types.js";
+import type { OpsReportActionType, OpsReportSnapshotType, OpsReportType } from "./ops.types.js";
 
 @Injectable()
 export class OpsReportService {
@@ -26,6 +26,27 @@ export class OpsReportService {
     });
     const criticalCount = summary.severityDistribution.find((item) => item.severity === "critical")?.count ?? 0;
     const highCount = summary.severityDistribution.find((item) => item.severity === "high")?.count ?? 0;
+    const now = new Date();
+    const openIssueWhere: Prisma.IssueWhereInput = {
+      ...buildIssueWhere(filter),
+      status: { not: "resolved" }
+    };
+    const [slaRiskCount, unassignedCount] = await Promise.all([
+      this.prisma.issue.count({ where: { ...openIssueWhere, slaDueAt: { lt: now } } }),
+      this.prisma.issue.count({ where: { ...openIssueWhere, OR: [{ assignee: null }, { assignee: "" }] } })
+    ]);
+    const resolvedForMetrics = await this.prisma.issue.findMany({
+      where: { ...buildIssueWhere(filter), resolvedAt: { not: null } },
+      select: { firstOccurredAt: true, acknowledgedAt: true, resolvedAt: true },
+      take: 100,
+      orderBy: { resolvedAt: "desc" }
+    });
+    const averageMinutes = (durations: number[]): string => {
+      if (durations.length === 0) return "-";
+      return `${Math.round(durations.reduce((sum, value) => sum + value, 0) / durations.length)}분`;
+    };
+    const mtta = averageMinutes(resolvedForMetrics.filter((item) => item.acknowledgedAt).map((item) => (item.acknowledgedAt!.getTime() - item.firstOccurredAt.getTime()) / 60_000));
+    const mttr = averageMinutes(resolvedForMetrics.map((item) => (item.resolvedAt!.getTime() - item.firstOccurredAt.getTime()) / 60_000));
     const deployRiskCount = summary.newAfterLatestDeployment.length;
     const topIssue = issues[0];
     const riskLevel = criticalCount > 0 || deployRiskCount >= 3 ? "critical" : highCount > 0 || deployRiskCount > 0 ? "warning" : "normal";
@@ -37,6 +58,9 @@ export class OpsReportService {
       deployRiskCount > 0
         ? `배포 이후 신규 증가 이슈 ${deployRiskCount}건이 있어 배포 영향 확인이 필요합니다.`
         : "배포 이후 신규 증가 이슈는 감지되지 않았습니다.",
+      slaRiskCount > 0 || unassignedCount > 0
+        ? `SLA 위험 ${slaRiskCount}건, 담당자 미지정 ${unassignedCount}건을 우선 정리해야 합니다.`
+        : "SLA 위험 및 담당자 미지정 이슈는 없습니다.",
       topIssue ? `최우선 확인 대상은 '${topIssue.title}'입니다.` : "현재 우선 대응 이슈는 없습니다."
     ].join(" ");
     const technicalSummary = [
@@ -60,6 +84,14 @@ export class OpsReportService {
             priority: "P1"
           }]
         : []),
+      ...(slaRiskCount > 0 || unassignedCount > 0
+        ? [{
+            title: "SLA 및 소유권 정리",
+            description: `SLA 위험 ${slaRiskCount}건과 담당자 미지정 ${unassignedCount}건을 확인합니다.`,
+            owner: "운영 리드",
+            priority: slaRiskCount > 0 ? "P1" : "P2"
+          }]
+        : []),
       {
         title: "공유 리포트 전파",
         description: "Slack/Jira에 요약과 액션 아이템을 공유하고 후속 상태를 갱신합니다.",
@@ -75,12 +107,15 @@ export class OpsReportService {
       `- 오늘 이슈: ${summary.todayIssueCount}`,
       `- Critical/High: ${criticalCount}/${highCount}`,
       `- 배포 이후 증가: ${deployRiskCount}`,
+      `- SLA 위험 / 미지정: ${slaRiskCount} / ${unassignedCount}`,
+      `- MTTA / MTTR: ${mtta} / ${mttr}`,
       "",
       "[Action]",
       ...actionItems.map((item) => `- ${item.priority} ${item.title}: ${item.owner}`)
     ].join("\n");
 
     const report: OpsReportType = {
+      snapshotId: "",
       title,
       generatedAt,
       riskLevel,
@@ -90,7 +125,24 @@ export class OpsReportService {
       kpis: [
         { label: "오늘 이슈", value: String(summary.todayIssueCount), helper: "현재 필터 기준", tone: summary.todayIssueCount > 0 ? "warning" : "default" },
         { label: "Critical / High", value: `${criticalCount} / ${highCount}`, helper: "즉시 확인 대상", tone: criticalCount > 0 ? "danger" : highCount > 0 ? "warning" : "default" },
-        { label: "배포 이후 증가", value: String(deployRiskCount), helper: "최근 배포 영향", tone: deployRiskCount > 0 ? "warning" : "default" }
+        {
+          label: "배포 이후 증가",
+          value: String(deployRiskCount),
+          helper: "최근 배포 영향",
+          tone: deployRiskCount > 0 ? "warning" : "default"
+        },
+        {
+          label: "SLA 위험",
+          value: String(slaRiskCount),
+          helper: `담당자 미지정 ${unassignedCount}건`,
+          tone: slaRiskCount > 0 ? "danger" : unassignedCount > 0 ? "warning" : "default"
+        },
+        {
+          label: "MTTA / MTTR",
+          value: `${mtta} / ${mttr}`,
+          helper: `최근 해결 이슈 ${resolvedForMetrics.length}건 기준`,
+          tone: "default"
+        }
       ],
       actionItems,
       priorityIssues: issues.map((issue) => ({
@@ -115,6 +167,16 @@ export class OpsReportService {
         generatedAt: new Date(generatedAt)
       }
     });
+    await this.prisma.opsReportAction.createMany({
+      data: actionItems.map((item) => ({
+        snapshotId: snapshot.id,
+        actionKey: `${item.priority}:${item.title}`,
+        title: item.title,
+        description: item.description,
+        owner: item.owner,
+        priority: item.priority
+      }))
+    });
     await writeOpsAuditLog(this.prisma, this.logger, {
       action: "report_snapshot.created",
       targetType: "OpsReportSnapshot",
@@ -123,7 +185,50 @@ export class OpsReportService {
       metadata: { riskLevel, environment }
     });
 
+    report.snapshotId = snapshot.id;
     return report;
+  }
+
+  async listReportActions(snapshotId: string): Promise<OpsReportActionType[]> {
+    const actions = await this.prisma.opsReportAction.findMany({
+      where: { snapshotId },
+      orderBy: [{ completedAt: "asc" }, { priority: "asc" }, { createdAt: "asc" }]
+    });
+    return actions.map((action) => ({
+      id: action.id,
+      snapshotId: action.snapshotId,
+      title: action.title,
+      description: action.description,
+      owner: action.owner,
+      priority: action.priority,
+      completedAt: action.completedAt,
+      completedBy: action.completedBy
+    }));
+  }
+
+  async updateReportAction(input: UpdateReportActionInput, actor?: string): Promise<OpsReportActionType> {
+    const action = await this.prisma.opsReportAction.update({
+      where: { id: input.actionId },
+      data: input.completed ? { completedAt: new Date(), completedBy: actor ?? input.actor ?? "unknown" } : { completedAt: null, completedBy: null }
+    });
+    await writeOpsAuditLog(this.prisma, this.logger, {
+      actor: actor ?? input.actor,
+      action: input.completed ? "report_action.completed" : "report_action.reopened",
+      targetType: "OpsReportAction",
+      targetId: action.id,
+      summary: `${action.title} 액션 아이템 ${input.completed ? "완료" : "재개"}`,
+      metadata: { snapshotId: action.snapshotId, completed: input.completed }
+    });
+    return {
+      id: action.id,
+      snapshotId: action.snapshotId,
+      title: action.title,
+      description: action.description,
+      owner: action.owner,
+      priority: action.priority,
+      completedAt: action.completedAt,
+      completedBy: action.completedBy
+    };
   }
 
   async listReportSnapshots(): Promise<OpsReportSnapshotType[]> {

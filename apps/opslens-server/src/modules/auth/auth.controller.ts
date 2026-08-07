@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Headers, Patch, Post, Req, UnauthorizedException, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Param, Patch, Post, Req, UnauthorizedException, UseGuards } from "@nestjs/common";
 import {
   AuthChangePasswordDto,
+  AuthAdminUpdateUserDto,
   AuthForgotPasswordDto,
   AuthLoginDto,
   AuthOAuthLoginDto,
@@ -51,6 +52,22 @@ export class AuthController {
   @Get("me")
   me(@Req() request: AuthenticatedRequest) {
     return this.authService.me(request.authUser!);
+  }
+
+  @UseGuards(OpsAuthGuard)
+  @Get("users")
+  users(@Req() request: AuthenticatedRequest) {
+    return this.authService.listUsers(request.authUser!);
+  }
+
+  @UseGuards(OpsAuthGuard)
+  @Patch("users/:userId")
+  updateUser(
+    @Req() request: AuthenticatedRequest,
+    @Param("userId") userId: string,
+    @Body() input: AuthAdminUpdateUserDto
+  ) {
+    return this.authService.updateUser(request.authUser!, userId, input);
   }
 
   @UseGuards(OpsAuthGuard)

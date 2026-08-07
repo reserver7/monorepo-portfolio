@@ -85,6 +85,7 @@ model Deployment {
   status              String         @default("completed")
   owner               String         @default("운영담당자")
   approver            String?
+  overrideReason      String?
   scopeTags           Json           @default("[]")
   checklist           Json           @default("[]")
   rollbackCriteria    String?
@@ -106,6 +107,10 @@ model Issue {
   priority              String         @default("P2")
   slaDueAt              DateTime?
   escalationLevel       Int            @default(0)
+  acknowledgedAt        DateTime?
+  resolvedAt            DateTime?
+  rootCause             String?
+  postmortemUrl         String?
   summary               String
   probableCauses        Json
   suggestedActions      Json
@@ -206,6 +211,22 @@ model OpsAlert {
   updatedAt   DateTime       @updatedAt
 }
 
+model OpsNotificationDelivery {
+  id            String   @id @default(cuid())
+  alertId       String
+  channel       String
+  status        String   @default("pending")
+  attempts      Int      @default(0)
+  lastError     String?
+  nextAttemptAt DateTime?
+  deliveredAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([alertId, channel])
+  @@index([status, nextAttemptAt])
+}
+
 model OpsReportSnapshot {
   id                String         @id @default(cuid())
   title             String
@@ -219,6 +240,25 @@ model OpsReportSnapshot {
   sharedAt          DateTime?
   generatedAt       DateTime       @default(now())
   createdAt         DateTime       @default(now())
+  actions           OpsReportAction[]
+}
+
+model OpsReportAction {
+  id          String   @id @default(cuid())
+  snapshotId  String
+  snapshot    OpsReportSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  actionKey   String
+  title       String
+  description String
+  owner       String
+  priority    String
+  completedAt DateTime?
+  completedBy String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([snapshotId, actionKey])
+  @@index([snapshotId, completedAt])
 }
 
 model OpsSetting {

@@ -31,7 +31,9 @@ loadEnvFiles();
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(4100),
+  CORS_ORIGINS: z.string().default(""),
   DATABASE_URL: z.string().min(1),
+  DIRECT_DATABASE_URL: z.string().min(1),
   AUTH_JWT_SECRET: z.string().min(16).default("opslens-local-dev-secret-change-me"),
   AUTH_ACCESS_TOKEN_TTL_SEC: z.coerce.number().int().min(300).max(86400).default(28800),
   AUTH_REFRESH_TOKEN_TTL_SEC: z.coerce
@@ -51,6 +53,7 @@ const envSchema = z.object({
   AUTH_BRIDGE_SECRET: z.string().min(16).default("opslens-auth-bridge-secret-change-me"),
   OPS_INGESTION_KEY: z.string().min(16).optional(),
   OPS_INGESTION_MAX_CHARS: z.coerce.number().int().min(1000).max(10_000_000).default(1_000_000),
+  OPS_SLACK_WEBHOOK_URL: z.string().url().optional(),
   AI_PROVIDER: z.enum(["gemini", "none"]).default("gemini"),
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().default("gemini-2.0-flash"),
@@ -103,7 +106,9 @@ export type ServerEnv = z.infer<typeof envSchema>;
 const parsed = envSchema.safeParse({
   NODE_ENV: process.env.NODE_ENV,
   PORT: process.env.PORT,
+  CORS_ORIGINS: process.env.CORS_ORIGINS,
   DATABASE_URL: process.env.DATABASE_URL,
+  DIRECT_DATABASE_URL: process.env.DIRECT_DATABASE_URL,
   AUTH_JWT_SECRET: process.env.AUTH_JWT_SECRET,
   AUTH_ACCESS_TOKEN_TTL_SEC: process.env.AUTH_ACCESS_TOKEN_TTL_SEC,
   AUTH_REFRESH_TOKEN_TTL_SEC: process.env.AUTH_REFRESH_TOKEN_TTL_SEC,
@@ -113,6 +118,7 @@ const parsed = envSchema.safeParse({
   AUTH_BRIDGE_SECRET: process.env.AUTH_BRIDGE_SECRET,
   OPS_INGESTION_KEY: process.env.OPS_INGESTION_KEY,
   OPS_INGESTION_MAX_CHARS: process.env.OPS_INGESTION_MAX_CHARS,
+  OPS_SLACK_WEBHOOK_URL: process.env.OPS_SLACK_WEBHOOK_URL,
   AI_PROVIDER: process.env.AI_PROVIDER,
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   GEMINI_MODEL: process.env.GEMINI_MODEL,
@@ -134,11 +140,16 @@ if (!parsed.success) {
   throw new Error(
     [
       "OpsLens Server 환경변수 설정이 누락되었습니다.",
-      "필수: DATABASE_URL",
+      "필수: DATABASE_URL, DIRECT_DATABASE_URL",
       "파일 경로: apps/opslens-server/.env",
-      "예시: DATABASE_URL=postgresql://<user>:<password>@<host>/<db>?sslmode=require"
+      "예시: DATABASE_URL=postgresql://<user>:<password>@<pooled-host>/<db>?sslmode=require",
+      "DIRECT_DATABASE_URL=postgresql://<user>:<password>@<direct-host>/<db>?sslmode=require"
     ].join("\n")
   );
 }
 
 export const env: ServerEnv = parsed.data;
+
+if (env.NODE_ENV === "production" && env.CORS_ORIGINS.trim().length === 0) {
+  throw new Error("운영 환경에서는 CORS_ORIGINS에 허용할 웹 도메인을 지정해야 합니다.");
+}

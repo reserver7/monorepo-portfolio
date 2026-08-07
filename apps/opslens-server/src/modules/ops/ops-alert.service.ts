@@ -5,13 +5,14 @@ import type { CreateOpsAlertInput } from "./ops.inputs.js";
 import { writeOpsAuditLog } from "./ops-audit-writer.js";
 import { toSeverity } from "./ops.filters.js";
 import { toOpsAlertType } from "./ops.mappers.js";
+import { OpsAlertDeliveryService } from "./ops-alert-delivery.service.js";
 import type { OpsAlertType } from "./ops.types.js";
 
 @Injectable()
 export class OpsAlertService {
   private readonly logger = new Logger(OpsAlertService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly deliveryService: OpsAlertDeliveryService) {}
 
   async listOpsAlerts(): Promise<OpsAlertType[]> {
     const alerts = await this.prisma.opsAlert.findMany({
@@ -42,6 +43,7 @@ export class OpsAlertService {
       summary: `${created.title} 알림 생성`,
       metadata: { level: created.level, source: created.source }
     });
+    void this.deliveryService.enqueue(created);
     return toOpsAlertType(created);
   }
 

@@ -48,6 +48,14 @@ curl -X POST http://localhost:4100/ops/ingest/logs \
 - ingestion 요청은 기존 로그 클러스터링과 이슈 생성 흐름을 그대로 사용합니다.
 - 최대 본문 크기는 `OPS_INGESTION_MAX_CHARS`로 제한합니다.
 
+### Sentry 이벤트 ingestion
+
+Sentry webhook relay는 `POST /ops/ingest/sentry`로 최소 이벤트를 전달할 수 있습니다. 기존 `OPS_INGESTION_KEY`를 동일하게 사용합니다.
+
+```json
+{"environment":"prod","project":"checkout","message":"payment timeout","level":"error","tags":{"service":"checkout-api","release":"v1.4.0"}}
+```
+
 ### 배포 운영
 
 - 배포 버전, 상태, 담당자, 승인자, 변경 범위, 체크리스트, 롤백 기준 저장

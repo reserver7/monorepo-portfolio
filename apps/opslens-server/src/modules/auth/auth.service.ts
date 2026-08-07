@@ -1,8 +1,9 @@
-import { ConflictException, HttpException, HttpStatus, Injectable, UnauthorizedException } from "@nestjs/common";
+import { ConflictException, ForbiddenException, HttpException, HttpStatus, Injectable, Logger, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { createHash, randomBytes } from "node:crypto";
 import type { User } from "@prisma/client";
 import { env } from "../../config/env.js";
 import { PrismaService } from "../../integration/db/prisma.service.js";
+import { writeOpsAuditLog } from "../ops/ops-audit-writer.js";
 import { AuthUserPayload, hashPassword, signAccessToken, verifyAccessToken, verifyPassword } from "./auth.token.js";
 
 type AuthUserResponse = {
@@ -12,6 +13,7 @@ type AuthUserResponse = {
   role: User["role"];
   authProvider: User["authProvider"];
   avatarColor: User["avatarColor"];
+  isActive: boolean;
 };
 
 export type AuthLoginResponse = {
@@ -44,6 +46,7 @@ const DEFAULT_NOTIFICATION_POLICY: AuthNotificationPolicy = {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly loginAttempts = new Map<string, { count: number; firstAttemptAt: number; blockedUntil: number }>();
 
   constructor(private readonly prisma: PrismaService) {}
@@ -77,6 +80,52 @@ export class AuthService {
     });
 
     return this.buildLoginResponse(createdUser, createdUser.name);
+  }
+
+  async listUsers(actor: AuthUserPayload): Promise<AuthUserResponse[]> {
+    this.assertAdmin(actor);
+    const users = await this.prisma.user.findMany({ orderBy: { createdAt: "desc" } });
+    return users.map((user) => this.toAuthUserResponse(user));
+  }
+
+  async updateUser(
+    actor: AuthUserPayload,
+    userId: string,
+    input: { role?: User["role"]; isActive?: boolean }
+  ): Promise<AuthUserResponse> {
+    this.assertAdmin(actor);
+    if (actor.sub === userId && input.isActive === false) {
+      throw new ConflictException("자신의 계정은 비활성화할 수 없습니다.");
+    }
+    const target = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!target) throw new NotFoundException("사용자를 찾을 수 없습니다.");
+    if (target.role === "admin" && input.role !== "admin") {
+      const adminCount = await this.prisma.user.count({ where: { role: "admin", isActive: true } });
+      if (adminCount <= 1) throw new ConflictException("활성 관리자는 최소 한 명 이상 필요합니다.");
+    }
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { ...(input.role ? { role: input.role } : {}), ...(typeof input.isActive === "boolean" ? { isActive: input.isActive } : {}) }
+    });
+    await writeOpsAuditLog(this.prisma, this.logger, {
+      actor: actor.email,
+      action: "user.updated",
+      targetType: "User",
+      targetId: updated.id,
+      severity: input.isActive === false || input.role === "admin" ? "warning" : "info",
+      summary: `${updated.email} 사용자 권한 또는 활성 상태 변경`,
+      beforeValue: { role: target.role, isActive: target.isActive },
+      afterValue: { role: updated.role, isActive: updated.isActive }
+    });
+    return this.toAuthUserResponse(updated);
+  }
+
+  private assertAdmin(actor: AuthUserPayload): void {
+    if (actor.role !== "admin") throw new ForbiddenException("관리자 권한이 필요합니다.");
+  }
+
+  private toAuthUserResponse(user: User): AuthUserResponse {
+    return { id: user.id, email: user.email, name: user.name, role: user.role, authProvider: user.authProvider, avatarColor: user.avatarColor, isActive: user.isActive };
   }
 
   async login(email: string, password: string, ip?: string): Promise<AuthLoginResponse> {
@@ -322,7 +371,8 @@ export class AuthService {
       name: user.name,
       role: user.role,
       authProvider: user.authProvider,
-      avatarColor: user.avatarColor
+      avatarColor: user.avatarColor,
+      isActive: user.isActive
     };
   }
 
@@ -364,7 +414,8 @@ export class AuthService {
         name: displayName,
         role: user.role,
         authProvider: user.authProvider,
-        avatarColor: user.avatarColor
+        avatarColor: user.avatarColor,
+        isActive: user.isActive
       }
     };
   }

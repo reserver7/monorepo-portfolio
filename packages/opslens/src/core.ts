@@ -1,9 +1,12 @@
 const DEFAULT_OPSLENS_API_URL = "http://localhost:4100/graphql";
 let opslensApiUrl = DEFAULT_OPSLENS_API_URL;
+let opslensLogTailUrl: string | undefined;
 
-export function configureOpslensClient(options: { apiUrl?: string }): void {
+export function configureOpslensClient(options: { apiUrl?: string; logTailUrl?: string }): void {
   const nextApiUrl = options.apiUrl?.trim();
   opslensApiUrl = nextApiUrl && nextApiUrl.length > 0 ? nextApiUrl : DEFAULT_OPSLENS_API_URL;
+  const nextLogTailUrl = options.logTailUrl?.trim();
+  opslensLogTailUrl = nextLogTailUrl && nextLogTailUrl.length > 0 ? nextLogTailUrl : undefined;
 }
 
 export const getOpslensApiUrl = (): string => opslensApiUrl;
@@ -23,6 +26,8 @@ export const resolveOpsApiUrl = (): string => {
   }
   return trimmed;
 };
+
+export const getOpsLogTailUrl = (): string => opslensLogTailUrl ?? `${resolveOpsApiUrl()}/ops/log-tail`;
 
 export const parseErrorMessage = async (response: Response): Promise<string> => {
   try {

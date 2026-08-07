@@ -58,6 +58,24 @@ export class DashboardSummaryType {
 }
 
 @ObjectType()
+export class ServiceHealthType {
+  @Field(() => String)
+  serviceName!: string;
+
+  @Field(() => String)
+  status!: string;
+
+  @Field(() => Int)
+  openIssueCount!: number;
+
+  @Field(() => Int)
+  criticalHighCount!: number;
+
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  lastOccurredAt?: Date | null;
+}
+
+@ObjectType()
 export class ReportKpiType {
   @Field(() => String)
   label!: string;
@@ -111,6 +129,9 @@ export class ReportIssueType {
 @ObjectType()
 export class OpsReportType {
   @Field(() => String)
+  snapshotId!: string;
+
+  @Field(() => String)
   title!: string;
 
   @Field(() => String)
@@ -136,6 +157,33 @@ export class OpsReportType {
 
   @Field(() => [ReportIssueType])
   priorityIssues!: ReportIssueType[];
+}
+
+@ObjectType()
+export class OpsReportActionType {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
+  snapshotId!: string;
+
+  @Field(() => String)
+  title!: string;
+
+  @Field(() => String)
+  description!: string;
+
+  @Field(() => String)
+  owner!: string;
+
+  @Field(() => String)
+  priority!: string;
+
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  completedAt?: Date | null;
+
+  @Field(() => String, { nullable: true })
+  completedBy?: string | null;
 }
 
 @ObjectType()
@@ -235,6 +283,26 @@ export class OpsAlertType {
 
   @Field(() => GraphQLISODateTime)
   createdAt!: Date;
+}
+
+@ObjectType()
+export class OpsNotificationDeliveryType {
+  @Field(() => String)
+  id!: string;
+  @Field(() => String)
+  alertId!: string;
+  @Field(() => String)
+  channel!: string;
+  @Field(() => String)
+  status!: string;
+  @Field(() => Int)
+  attempts!: number;
+  @Field(() => String, { nullable: true })
+  lastError?: string | null;
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  nextAttemptAt?: Date | null;
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  deliveredAt?: Date | null;
 }
 
 @ObjectType()
@@ -412,6 +480,30 @@ export class IssueCommentType {
 }
 
 @ObjectType()
+export class IncidentTimelineItemType {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
+  kind!: string;
+
+  @Field(() => String)
+  title!: string;
+
+  @Field(() => String)
+  detail!: string;
+
+  @Field(() => String, { nullable: true })
+  actor?: string;
+
+  @Field(() => String)
+  tone!: string;
+
+  @Field(() => GraphQLISODateTime)
+  occurredAt!: Date;
+}
+
+@ObjectType()
 export class IssueType {
   @Field(() => String)
   id!: string;
@@ -433,6 +525,18 @@ export class IssueType {
 
   @Field(() => Int)
   escalationLevel!: number;
+
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  acknowledgedAt?: Date | null;
+
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  resolvedAt?: Date | null;
+
+  @Field(() => String, { nullable: true })
+  rootCause?: string | null;
+
+  @Field(() => String, { nullable: true })
+  postmortemUrl?: string | null;
 
   @Field(() => String)
   summary!: string;
@@ -553,6 +657,24 @@ export class DeploymentType {
 
   @Field(() => GraphQLISODateTime)
   deployedAt!: Date;
+}
+
+@ObjectType()
+export class DeploymentReadinessType {
+  @Field(() => String)
+  environment!: string;
+
+  @Field(() => String)
+  status!: string;
+
+  @Field(() => Int)
+  criticalHighCount!: number;
+
+  @Field(() => Int)
+  unassignedCount!: number;
+
+  @Field(() => [String])
+  recommendations!: string[];
 }
 
 @ObjectType()
