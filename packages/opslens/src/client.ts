@@ -1,8 +1,7 @@
 import { graphqlRequest } from "@repo/react-query";
 import {
   getOpslensApiUrl,
-  getOpsLogTailUrl,
-  resolveOpsApiUrl
+  getOpsLogTailUrl
 } from "./core";
 import type { DashboardSummary, Deployment, DeploymentImpactReport, Environment, ErrorCluster, Issue, IssueStatus, IssueSummary, LogAnalysisSession, OpsAlert, OpsAuditLog, OpsReport, OpsReportSnapshot, OpsSetting, QaScenario, Severity } from "./types";
 
