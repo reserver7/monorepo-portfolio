@@ -27,6 +27,27 @@ OpsLens용 GraphQL 서버입니다.
 - 신규 이슈 생성 또는 기존 이슈 갱신
 - 분석 실행 이력을 `LogAnalysisSession`에 저장
 
+### 외부 로그 ingestion
+
+`OPS_INGESTION_KEY`를 설정하면 외부 로그 수집기나 CI에서 `POST /ops/ingest/logs`를 호출할 수 있습니다.
+
+```bash
+curl -X POST http://localhost:4100/ops/ingest/logs \
+  -H 'Content-Type: application/json' \
+  -H 'x-opslens-ingestion-key: replace-with-32chars-or-more-ingestion-key' \
+  -d '{
+    "environment": "prod",
+    "serviceName": "checkout-api",
+    "source": "sentry",
+    "deploymentVersion": "v1.4.0",
+    "logs": ["2026-08-07T10:00:00Z ERROR checkout timeout"]
+  }'
+```
+
+- `logs`는 문자열 또는 문자열 배열을 지원합니다.
+- ingestion 요청은 기존 로그 클러스터링과 이슈 생성 흐름을 그대로 사용합니다.
+- 최대 본문 크기는 `OPS_INGESTION_MAX_CHARS`로 제한합니다.
+
 ### 배포 운영
 
 - 배포 버전, 상태, 담당자, 승인자, 변경 범위, 체크리스트, 롤백 기준 저장
@@ -64,9 +85,9 @@ pnpm --filter @repo/opslens-server typecheck
 
 Seed 실행 후 아래 계정으로 `opslens-web`에서 로그인할 수 있습니다.
 
-| 역할 | 이메일 | 비밀번호 |
-| --- | --- | --- |
-| Admin | `admin@opslens.local` | `opslens1234!` |
+| 역할     | 이메일                   | 비밀번호       |
+| -------- | ------------------------ | -------------- |
+| Admin    | `admin@opslens.local`    | `opslens1234!` |
 | Operator | `operator@opslens.local` | `opslens1234!` |
 
 ## Seed 데이터
@@ -109,6 +130,7 @@ pnpm --filter @repo/opslens-server build
 
 - 운영에서는 `DATABASE_URL`, `DIRECT_DATABASE_URL`, `AI_*` 값을 런타임 환경변수로 주입합니다.
 - 인증 사용 시 `AUTH_JWT_SECRET`, `AUTH_ACCESS_TOKEN_TTL_SEC`, `AUTH_BRIDGE_SECRET`도 함께 설정합니다.
+- 외부 로그 ingestion 사용 시 `OPS_INGESTION_KEY`를 반드시 secret으로 주입합니다.
 
 ## 관련 문서
 

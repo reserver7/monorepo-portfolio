@@ -57,6 +57,12 @@ jobs:
       - name: i18n missing-key fail-fast
         run: pnpm i18n:sync:check
 
+      - name: Validate workspace boundaries
+        run: pnpm audit:workspace
+
+      - name: Validate infrastructure Compose config
+        run: pnpm infra:check
+
       - name: Verify Storybook Auto Stories Are Up To Date
         if: steps.changes.outputs.ui_storybook == 'true'
         run: |
@@ -72,6 +78,12 @@ jobs:
 
       - name: Typecheck
         run: pnpm turbo run typecheck
+
+      - name: Test Collab server
+        run: pnpm test:collab-server
+
+      - name: Test OpsLens server
+        run: pnpm test:opslens-server
 
   chromatic:
     name: Validate UI Visual Regressions (Chromatic)

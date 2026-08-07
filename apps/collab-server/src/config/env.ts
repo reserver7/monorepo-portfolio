@@ -1,3 +1,20 @@
+import { config as loadDotenv } from "dotenv";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+
+const loadEnvFiles = (): void => {
+  const candidates = [
+    resolve(process.cwd(), "apps/collab-server/.env"),
+    resolve(process.cwd(), ".env")
+  ];
+
+  for (const filePath of new Set(candidates)) {
+    if (existsSync(filePath)) loadDotenv({ path: filePath, override: false });
+  }
+};
+
+loadEnvFiles();
+
 const DEFAULT_SESSION_SECRET = "dev-collab-session-secret";
 
 const toPort = (rawValue: string | undefined, fallback: number): number => {
@@ -92,6 +109,9 @@ export interface ServerEnv {
   corsOrigins: string[];
   allowAllCors: boolean;
   stateFilePath: string | undefined;
+  stateBackend: "file" | "postgres";
+  collabDatabaseUrl: string | undefined;
+  redisUrl: string | undefined;
   collabSessionSecret: string;
   editorAccessKey: string | undefined;
   socketRateLimitWindowMs: number;
@@ -127,10 +147,15 @@ export const createServerEnv = (rawEnv: NodeJS.ProcessEnv = process.env): Server
   }
 
   const stateFilePath = rawEnv.STATE_FILE_PATH?.trim() || undefined;
-  if (isProduction && !stateFilePath) {
+  const stateBackend = rawEnv.STATE_BACKEND?.trim().toLowerCase() === "postgres" ? "postgres" : "file";
+  const collabDatabaseUrl = rawEnv.COLLAB_DATABASE_URL?.trim() || undefined;
+  if (isProduction && stateBackend === "file" && !stateFilePath) {
     throw new Error(
       "STATE_FILE_PATH must be configured in production so persisted state survives service restarts."
     );
+  }
+  if (stateBackend === "postgres" && !collabDatabaseUrl) {
+    throw new Error("COLLAB_DATABASE_URL is required when STATE_BACKEND=postgres.");
   }
 
   return {
@@ -140,6 +165,9 @@ export const createServerEnv = (rawEnv: NodeJS.ProcessEnv = process.env): Server
     corsOrigins,
     allowAllCors,
     stateFilePath,
+    stateBackend,
+    collabDatabaseUrl,
+    redisUrl: rawEnv.REDIS_URL?.trim() || undefined,
     collabSessionSecret,
     editorAccessKey: rawEnv.EDITOR_ACCESS_KEY?.trim() || undefined,
     socketRateLimitWindowMs: toPositiveInt(rawEnv.SOCKET_RATE_LIMIT_WINDOW_MS, 10_000),

@@ -8,7 +8,13 @@ import { signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { subscribeHttpUnauthorized } from "@repo/react-query";
 import { Box, ConsoleAppLayout, toast, useDisclosure } from "@repo/ui";
-import { clearAuthSession, logoutCurrentSession, OPS_AVATAR_COLOR_CHANGED_EVENT, readAuthAvatarColor, readAuthSession } from "@/lib/auth";
+import {
+  clearAuthSession,
+  logoutCurrentSession,
+  OPS_AVATAR_COLOR_CHANGED_EVENT,
+  readAuthAvatarColor,
+  validateCurrentSession
+} from "@/lib/auth";
 import { opsNavItems } from "@/lib/navigation";
 import { useOpsFilterStore, useOpsFilterStoreApi } from "@/features/common/stores";
 
@@ -77,25 +83,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    const session = readAuthSession();
-    if (!session?.accessToken) {
-      const nextPath = `${pathname}${querySnapshot.length > 0 ? `?${querySnapshot}` : ""}`;
-      router.replace(`/login?next=${encodeURIComponent(nextPath)}`);
-      setAuthenticated(false);
-      setAuthProfile(null);
-      setAuthReady(true);
-      return;
-    }
+    let active = true;
+    setAuthReady(false);
+    void validateCurrentSession().then((session) => {
+      if (!active) return;
+      if (!session?.accessToken) {
+        const nextPath = `${pathname}${querySnapshot.length > 0 ? `?${querySnapshot}` : ""}`;
+        router.replace(`/login?next=${encodeURIComponent(nextPath)}`);
+        setAuthenticated(false);
+        setAuthProfile(null);
+        setAuthReady(true);
+        return;
+      }
 
-    setAuthProfile({
-      name: session.user.name,
-      email: session.user.email,
-      role: session.user.role,
-      authProvider: session.user.authProvider ?? "local"
+      setAuthProfile({
+        name: session.user.name,
+        email: session.user.email,
+        role: session.user.role,
+        authProvider: session.user.authProvider ?? "local"
+      });
+      setAvatarColor(session.user.avatarColor);
+      setAuthenticated(true);
+      setAuthReady(true);
     });
-    setAvatarColor(readAuthAvatarColor());
-    setAuthenticated(true);
-    setAuthReady(true);
+    return () => {
+      active = false;
+    };
   }, [pathname, querySnapshot, router]);
 
   useEffect(
