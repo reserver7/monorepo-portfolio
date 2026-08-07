@@ -4,11 +4,7 @@ import {
   changeOpslensPassword,
   getOpslensNotificationPolicy,
   getOpslensMe,
-  loginOpslens,
-  logoutOpslens,
-  refreshOpslens,
   requestPasswordResetOpslens,
-  signupOpslens,
   updateOpslensNotificationPolicy,
   updateOpslensProfile,
   type OpsAuthUser,
@@ -16,10 +12,6 @@ import {
 } from "@repo/opslens";
 import { setHttpAccessToken } from "@repo/react-query";
 
-const ACCESS_TOKEN_KEY = "opslens.auth.access-token";
-const EXPIRES_AT_KEY = "opslens.auth.expires-at";
-const USER_KEY = "opslens.auth.user";
-const REFRESH_TOKEN_KEY = "opslens.auth.refresh-token";
 const LEGACY_ROLE_KEY = "opslens.role";
 export const OPS_AVATAR_COLOR_CHANGED_EVENT = "opslens:avatar-color-changed";
 const DEFAULT_AVATAR_COLOR = "#64748B";
@@ -29,9 +21,9 @@ export type OpsAvatarColor = string;
 
 export type OpsAuthSession = {
   accessToken: string;
-  refreshToken: string;
   expiresAt: number;
   user: OpsAuthUser;
+  storageMode: SessionStorageMode;
 };
 
 export type OpsNotificationPolicy = {
@@ -56,64 +48,16 @@ const DEFAULT_NOTIFICATION_POLICY: OpsNotificationPolicy = {
 
 const isBrowser = (): boolean => typeof window !== "undefined";
 
-const parseSessionFrom = (storage: Storage): OpsAuthSession | null => {
-  const accessToken = storage.getItem(ACCESS_TOKEN_KEY);
-  const expiresAtRaw = storage.getItem(EXPIRES_AT_KEY);
-  const userRaw = storage.getItem(USER_KEY);
-  const refreshToken = storage.getItem(REFRESH_TOKEN_KEY);
-  if (!accessToken || !expiresAtRaw || !userRaw || !refreshToken) {
-    return null;
-  }
-
-  const expiresAt = Number(expiresAtRaw);
-  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
-    return null;
-  }
-
-  try {
-    const user = JSON.parse(userRaw) as OpsAuthUser;
-    if (!user?.id || !user?.email || !user?.name || !user?.role) {
-      return null;
-    }
-    return { accessToken, refreshToken, expiresAt, user };
-  } catch {
-    return null;
-  }
-};
-
-const parseSession = (): OpsAuthSession | null => {
-  if (!isBrowser()) return null;
-
-  return parseSessionFrom(window.localStorage) ?? parseSessionFrom(window.sessionStorage);
-};
+let memorySession: OpsAuthSession | null = null;
 
 const writeSession = (session: OpsAuthSession, storageMode: SessionStorageMode = "local"): void => {
-  if (!isBrowser()) return;
-  const storage = storageMode === "session" ? window.sessionStorage : window.localStorage;
-  const otherStorage = storageMode === "session" ? window.localStorage : window.sessionStorage;
-
-  otherStorage.removeItem(ACCESS_TOKEN_KEY);
-  otherStorage.removeItem(EXPIRES_AT_KEY);
-  otherStorage.removeItem(USER_KEY);
-  otherStorage.removeItem(REFRESH_TOKEN_KEY);
-
-  storage.setItem(ACCESS_TOKEN_KEY, session.accessToken);
-  storage.setItem(EXPIRES_AT_KEY, String(session.expiresAt));
-  storage.setItem(USER_KEY, JSON.stringify(session.user));
-  storage.setItem(REFRESH_TOKEN_KEY, session.refreshToken);
-  window.localStorage.setItem(LEGACY_ROLE_KEY, session.user.role);
+  memorySession = { ...session, storageMode };
+  if (isBrowser()) window.localStorage.setItem(LEGACY_ROLE_KEY, session.user.role);
 };
 
 export const clearAuthSession = (): void => {
+  memorySession = null;
   if (isBrowser()) {
-    window.localStorage.removeItem(ACCESS_TOKEN_KEY);
-    window.localStorage.removeItem(EXPIRES_AT_KEY);
-    window.localStorage.removeItem(USER_KEY);
-    window.localStorage.removeItem(REFRESH_TOKEN_KEY);
-    window.sessionStorage.removeItem(ACCESS_TOKEN_KEY);
-    window.sessionStorage.removeItem(EXPIRES_AT_KEY);
-    window.sessionStorage.removeItem(USER_KEY);
-    window.sessionStorage.removeItem(REFRESH_TOKEN_KEY);
     window.localStorage.removeItem(LEGACY_ROLE_KEY);
   }
   setHttpAccessToken(null);
@@ -140,12 +84,8 @@ export const setAuthAvatarColor = (avatarColor: OpsAvatarColor): void => {
 };
 
 export const readAuthSession = (): OpsAuthSession | null => {
-  const session = parseSession();
-  if (!session) {
-    clearAuthSession();
-    return null;
-  }
-  return session;
+  if (!memorySession || memorySession.expiresAt <= Date.now()) return null;
+  return memorySession;
 };
 
 export const getAuthAccessToken = (): string | null => {
@@ -201,13 +141,30 @@ export const fetchNotificationPolicy = async (): Promise<OpsNotificationPolicy> 
   return saveNotificationPolicy(policy);
 };
 
-export const updateNotificationPolicy = async (policy: OpsNotificationPolicy): Promise<OpsNotificationPolicy> => {
+export const updateNotificationPolicy = async (
+  policy: OpsNotificationPolicy
+): Promise<OpsNotificationPolicy> => {
   const session = readAuthSession();
   if (!session) {
     throw new Error("로그인이 필요합니다.");
   }
   const saved = await updateOpslensNotificationPolicy(session.accessToken, policy);
   return saveNotificationPolicy(saved);
+};
+
+const requestSession = async (
+  action: "login" | "signup" | "refresh",
+  input: object
+): Promise<OpsLoginResponse> => {
+  const response = await fetch(`/api/opslens-auth/${action}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) {
+    throw new Error(await parseOAuthBridgeError(response));
+  }
+  return (await response.json()) as OpsLoginResponse;
 };
 
 export const saveAuthSession = (
@@ -217,9 +174,9 @@ export const saveAuthSession = (
   const expiresAt = Date.now() + response.expiresIn * 1000;
   const session: OpsAuthSession = {
     accessToken: response.accessToken,
-    refreshToken: response.refreshToken,
     expiresAt,
-    user: response.user
+    user: response.user,
+    storageMode: options?.storageMode ?? "local"
   };
   writeSession(session, options?.storageMode ?? "local");
   setHttpAccessToken(response.accessToken);
@@ -231,7 +188,7 @@ export const loginWithPassword = async (input: {
   password: string;
   rememberMe?: boolean;
 }): Promise<OpsAuthSession> => {
-  const response = await loginOpslens(input);
+  const response = await requestSession("login", input);
   return saveAuthSession(response, { storageMode: input.rememberMe === false ? "session" : "local" });
 };
 
@@ -240,7 +197,7 @@ export const signupWithPassword = async (input: {
   name: string;
   password: string;
 }): Promise<OpsAuthSession> => {
-  const response = await signupOpslens(input);
+  const response = await requestSession("signup", input);
   return saveAuthSession(response);
 };
 
@@ -283,30 +240,34 @@ export const requestPasswordReset = async (input: { email: string }): Promise<vo
 
 export const logoutCurrentSession = async (): Promise<void> => {
   const session = readAuthSession();
-  if (session) {
-    await logoutOpslens(session.accessToken, session.refreshToken);
-  }
+  await fetch("/api/opslens-auth/logout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(session ? { accessToken: session.accessToken } : {})
+  }).catch(() => undefined);
   clearAuthSession();
 };
 
 export const validateCurrentSession = async (): Promise<OpsAuthSession | null> => {
   const session = readAuthSession();
-  if (!session) return null;
+  if (session) {
+    try {
+      const user = await getOpslensMe(session.accessToken);
+      const verifiedSession: OpsAuthSession = { ...session, user };
+      writeSession(verifiedSession, session.storageMode);
+      return verifiedSession;
+    } catch {
+      // Continue with the cookie-backed refresh flow.
+    }
+  }
 
   try {
-    const user = await getOpslensMe(session.accessToken);
-    const verifiedSession: OpsAuthSession = { ...session, user };
-    writeSession(verifiedSession);
-    return verifiedSession;
+    return saveAuthSession(await requestSession("refresh", {}), {
+      storageMode: session?.storageMode ?? "local"
+    });
   } catch {
-    try {
-      const refreshed = await refreshOpslens(session.refreshToken);
-      const next = saveAuthSession(refreshed);
-      return next;
-    } catch {
-      clearAuthSession();
-      return null;
-    }
+    clearAuthSession();
+    return null;
   }
 };
 

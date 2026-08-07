@@ -1,5 +1,5 @@
 import type { Config } from "tailwindcss";
-import { createAppTailwindConfig } from "../../packages/configs/src/tailwind/create-app-tailwind-config";
+import { createAppTailwindConfig } from "@repo/configs";
 
 const config: Config = createAppTailwindConfig();
 

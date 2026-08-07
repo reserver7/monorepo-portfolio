@@ -21,7 +21,13 @@ import {
   updateCurrentProfile
 } from "@/lib/auth";
 import { SETTINGS_DEFAULT_AVATAR_COLOR } from "../constants";
-import { AccountSummaryCard, AuditLogPanel, NotificationPolicyPanel, OpsSettingsPanel, ProfileSecurityForm } from "../components";
+import {
+  AccountSummaryCard,
+  AuditLogPanel,
+  NotificationPolicyPanel,
+  OpsSettingsPanel,
+  ProfileSecurityForm
+} from "../components";
 import type { PasswordFormValues, ProfileFormValues } from "../types";
 import { formatSettingsDateTime, parseJsonLabel } from "../utils/settings-utils";
 
@@ -40,8 +46,12 @@ export default function SettingsPage() {
   const [avatarColor, setAvatarColor] = useState<string>(SETTINGS_DEFAULT_AVATAR_COLOR);
   const [initialAvatarColor, setInitialAvatarColor] = useState<string>(SETTINGS_DEFAULT_AVATAR_COLOR);
   const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
-  const [notificationPolicy, setNotificationPolicy] = useState<OpsNotificationPolicy>(() => readNotificationPolicy());
-  const [initialNotificationPolicy, setInitialNotificationPolicy] = useState<OpsNotificationPolicy>(() => readNotificationPolicy());
+  const [notificationPolicy, setNotificationPolicy] = useState<OpsNotificationPolicy>(() =>
+    readNotificationPolicy()
+  );
+  const [initialNotificationPolicy, setInitialNotificationPolicy] = useState<OpsNotificationPolicy>(() =>
+    readNotificationPolicy()
+  );
   const [selectedSettingKey, setSelectedSettingKey] = useState("");
   const [settingValueDraft, setSettingValueDraft] = useState("");
   const [settingReasonDraft, setSettingReasonDraft] = useState("");
@@ -136,8 +146,7 @@ export default function SettingsPage() {
   }, [searchParams]);
 
   const profileMutation = useMutation({
-    mutationFn: (values: { name: string; avatarColor?: string }) =>
-      updateCurrentProfile(values),
+    mutationFn: (values: { name: string; avatarColor?: string }) => updateCurrentProfile(values),
     onSuccess: (session) => {
       setProfileName(session.user.name);
       profileForm.setValue("name", session.user.name);
@@ -177,17 +186,15 @@ export default function SettingsPage() {
       newPassword: values.newPassword.trim()
     });
   });
-  const providerLabel = profileProvider === "local" ? "Local" : profileProvider === "google" ? "Google" : "GitHub";
+  const providerLabel =
+    profileProvider === "local" ? "Local" : profileProvider === "google" ? "Google" : "GitHub";
   const securityLabel = profileProvider === "local" ? "비밀번호 로그인" : "소셜 로그인";
   const securityTone = profileProvider === "local" ? "success" : "secondary";
   const roleLabel = profileRole ? profileRole.charAt(0).toUpperCase() + profileRole.slice(1) : "-";
   const sessionTypeLabel = useMemo(() => {
-    if (typeof window === "undefined") return "Persistent";
-    return window.sessionStorage.getItem("opslens.auth.access-token") ? "Session" : "Persistent";
+    return readAuthSession()?.storageMode === "session" ? "Session" : "Persistent";
   }, []);
-  const sessionExpiresLabel = sessionExpiresAt
-    ? formatSettingsDateTime(sessionExpiresAt)
-    : "-";
+  const sessionExpiresLabel = sessionExpiresAt ? formatSettingsDateTime(sessionExpiresAt) : "-";
 
   const selectedSettingChanged =
     Boolean(selectedSetting) &&
@@ -268,8 +275,7 @@ export default function SettingsPage() {
   });
 
   const isProfileDirty =
-    profileForm.getValues("name").trim() !== profileName ||
-    avatarColor !== initialAvatarColor;
+    profileForm.getValues("name").trim() !== profileName || avatarColor !== initialAvatarColor;
   const isPasswordDirty =
     passwordForm.formState.isDirty ||
     Boolean(passwordForm.getValues("currentPassword")) ||
@@ -315,10 +321,7 @@ export default function SettingsPage() {
   return (
     <OpsPageShell>
       <Box>
-        <OpsSectionCard
-          title="Account"
-          description="프로필, 세션 상태, 계정 보안을 관리합니다."
-        >
+        <OpsSectionCard title="Account" description="프로필, 세션 상태, 계정 보안을 관리합니다.">
           <AccountSummaryCard
             profileName={profileName}
             profileEmail={profileEmail}
@@ -336,10 +339,7 @@ export default function SettingsPage() {
       </Box>
 
       <Box ref={profileSectionRef}>
-        <OpsSectionCard
-          title="프로필 및 비밀번호"
-          description="프로필 정보와 비밀번호를 한 번에 관리합니다."
-        >
+        <OpsSectionCard title="프로필 및 비밀번호" description="프로필 정보와 비밀번호를 한 번에 관리합니다.">
           <ProfileSecurityForm
             profileProvider={profileProvider}
             avatarColor={avatarColor}
@@ -360,10 +360,7 @@ export default function SettingsPage() {
       </Box>
 
       <Box ref={workspaceSectionRef}>
-        <OpsSectionCard
-          title="운영 설정"
-          description="운영 정책을 검토하고 변경 사유와 함께 저장합니다."
-        >
+        <OpsSectionCard title="운영 설정" description="운영 정책을 검토하고 변경 사유와 함께 저장합니다.">
           <OpsSettingsPanel
             isError={opsSettingsQuery.isError}
             settings={settings}
@@ -390,10 +387,7 @@ export default function SettingsPage() {
       </Box>
 
       <Box ref={notificationSectionRef}>
-        <OpsSectionCard
-          title="알림 정책"
-          description="인앱 알림 노출 기준과 조용한 시간대를 설정합니다."
-        >
+        <OpsSectionCard title="알림 정책" description="인앱 알림 노출 기준과 조용한 시간대를 설정합니다.">
           <NotificationPolicyPanel
             policy={notificationPolicy}
             dirty={isNotificationDirty}

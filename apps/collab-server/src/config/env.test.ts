@@ -118,6 +118,23 @@ describe("서버 환경 변수 파싱", () => {
     ).toThrow("STATE_FILE_PATH must be configured in production");
   });
 
+  it("PostgreSQL 저장 모드는 연결 문자열을 요구한다", () => {
+    expect(() => createServerEnv({ STATE_BACKEND: "postgres" })).toThrow("COLLAB_DATABASE_URL is required");
+
+    const env = createServerEnv({
+      NODE_ENV: "production",
+      CORS_ORIGINS: "https://docs.example.com",
+      COLLAB_SESSION_SECRET: "test-secret",
+      STATE_BACKEND: "postgres",
+      COLLAB_DATABASE_URL: "postgresql://localhost/collab",
+      REDIS_URL: "redis://localhost:6379"
+    });
+
+    expect(env.stateBackend).toBe("postgres");
+    expect(env.collabDatabaseUrl).toBe("postgresql://localhost/collab");
+    expect(env.redisUrl).toBe("redis://localhost:6379");
+  });
+
   it("숫자 제한 값이 비정상이면 기본값으로 대체한다", () => {
     const env = createServerEnv({
       PORT: "abc",

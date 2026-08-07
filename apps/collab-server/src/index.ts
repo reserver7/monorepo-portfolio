@@ -50,6 +50,11 @@ import {
   readOptionalString,
   readStringArray,
   RealtimeStore,
+  PostgresStatePersistence,
+  configureRedisRealtimeAdapter,
+  MemoryRoleLockStore,
+  type RealtimeAdapterHandle,
+  type RoleLockStore,
   sanitizeEditorAccessKey,
   toJsonObject,
   verifyEditorAccessKey,
@@ -57,7 +62,11 @@ import {
 } from "./features/workspace";
 
 const app = express();
-const store = new RealtimeStore(serverEnv.stateFilePath);
+const store = new RealtimeStore(
+  serverEnv.stateBackend === "postgres"
+    ? new PostgresStatePersistence(serverEnv.collabDatabaseUrl!)
+    : serverEnv.stateFilePath
+);
 const logger = createLogger({
   service: "collab-server",
   env: serverEnv.nodeEnv
@@ -84,16 +93,12 @@ const io = new Server(httpServer, {
     credentials: true
   }
 });
+let realtimeAdapterHandle: RealtimeAdapterHandle | null = null;
 
-const {
-  boardBySocket,
-  boardParticipants,
-  boardRolesBySession,
-  documentBySocket,
-  documentParticipants,
-  documentRolesBySession
-} = createRealtimeSessionState();
+const { boardBySocket, boardParticipants, documentBySocket, documentParticipants } =
+  createRealtimeSessionState();
 const socketLimiter = new EventRateLimiter();
+let roleLockStore: RoleLockStore = new MemoryRoleLockStore();
 const EMPTY_TITLE = "(제목 없음)";
 
 const enforceRateLimit = (
@@ -176,26 +181,15 @@ const resolveSessionFromRequest = (
   return resolveSessionFromSocketPayload(sessionIdHeader ?? undefined, sessionTokenHeader ?? undefined);
 };
 
-const resolveLockedRole = (
+const resolveLockedRole = async (
   scope: "document" | "board",
   entityId: string,
   sessionId: string,
   requestedRole: AccessRole,
   editorAccessKey?: string,
   requiredEditorAccessKey?: string
-): AccessRole => {
-  const roleLocks = scope === "document" ? documentRolesBySession : boardRolesBySession;
-
-  if (!roleLocks.has(entityId)) {
-    roleLocks.set(entityId, new Map());
-  }
-
-  const sessionRoles = roleLocks.get(entityId);
-  if (!sessionRoles) {
-    return "viewer";
-  }
-
-  const lockedRole = sessionRoles.get(sessionId);
+): Promise<AccessRole> => {
+  const lockedRole = await roleLockStore.get(scope, entityId, sessionId);
   const effectiveEditorAccessKey =
     sanitizeEditorAccessKey(requiredEditorAccessKey) ?? sanitizeEditorAccessKey(serverEnv.editorAccessKey);
 
@@ -206,7 +200,7 @@ const resolveLockedRole = (
         !requiresEditorAccessKey || verifyEditorAccessKey(effectiveEditorAccessKey, editorAccessKey);
 
       if (hasValidEditorAccessKey) {
-        sessionRoles.set(sessionId, "editor");
+        await roleLockStore.set(scope, entityId, sessionId, "editor");
         return "editor";
       }
     }
@@ -224,7 +218,7 @@ const resolveLockedRole = (
     nextRole = "viewer";
   }
 
-  sessionRoles.set(sessionId, nextRole);
+  await roleLockStore.set(scope, entityId, sessionId, nextRole);
   return nextRole;
 };
 
@@ -240,9 +234,12 @@ const emitPermissionDenied = (socket: Socket, scope: "document" | "board", curre
   });
 };
 
-const broadcastDocumentParticipants = (documentId: string): void => {
-  const members = documentParticipants.get(documentId);
-  const participants = members ? [...members.values()].map(publicParticipant) : [];
+const broadcastDocumentParticipants = async (documentId: string): Promise<void> => {
+  const sockets = await io.in(documentRoom(documentId)).fetchSockets();
+  const participants = sockets
+    .map((remoteSocket) => remoteSocket.data.documentParticipant as Participant | undefined)
+    .filter((participant): participant is Participant => Boolean(participant))
+    .map(publicParticipant);
 
   io.to(documentRoom(documentId)).emit("participants:update", {
     documentId,
@@ -250,9 +247,12 @@ const broadcastDocumentParticipants = (documentId: string): void => {
   });
 };
 
-const broadcastBoardParticipants = (boardId: string): void => {
-  const members = boardParticipants.get(boardId);
-  const participants = members ? [...members.values()].map(publicParticipant) : [];
+const broadcastBoardParticipants = async (boardId: string): Promise<void> => {
+  const sockets = await io.in(boardRoom(boardId)).fetchSockets();
+  const participants = sockets
+    .map((remoteSocket) => remoteSocket.data.boardParticipant as Participant | undefined)
+    .filter((participant): participant is Participant => Boolean(participant))
+    .map(publicParticipant);
 
   io.to(boardRoom(boardId)).emit("participants:update", {
     boardId,
@@ -271,12 +271,13 @@ const leaveDocument = (socketId: string): void => {
     members.delete(socketId);
     if (members.size === 0) {
       documentParticipants.delete(joinedDocumentId);
-      documentRolesBySession.delete(joinedDocumentId);
     }
   }
 
   documentBySocket.delete(socketId);
-  broadcastDocumentParticipants(joinedDocumentId);
+  const targetSocket = io.sockets.sockets.get(socketId);
+  if (targetSocket) delete targetSocket.data.documentParticipant;
+  void broadcastDocumentParticipants(joinedDocumentId);
 };
 
 const leaveBoard = (socketId: string): void => {
@@ -290,12 +291,13 @@ const leaveBoard = (socketId: string): void => {
     members.delete(socketId);
     if (members.size === 0) {
       boardParticipants.delete(joinedBoardId);
-      boardRolesBySession.delete(joinedBoardId);
     }
   }
 
   boardBySocket.delete(socketId);
-  broadcastBoardParticipants(joinedBoardId);
+  const targetSocket = io.sockets.sockets.get(socketId);
+  if (targetSocket) delete targetSocket.data.boardParticipant;
+  void broadcastBoardParticipants(joinedBoardId);
 };
 
 const teardownDocumentAfterDelete = (documentId: string): void => {
@@ -312,8 +314,8 @@ const teardownDocumentAfterDelete = (documentId: string): void => {
   }
 
   documentParticipants.delete(documentId);
-  documentRolesBySession.delete(documentId);
-  broadcastDocumentParticipants(documentId);
+  void roleLockStore.deleteScope("document", documentId);
+  void broadcastDocumentParticipants(documentId);
 };
 
 const teardownBoardAfterDelete = (boardId: string): void => {
@@ -330,8 +332,8 @@ const teardownBoardAfterDelete = (boardId: string): void => {
   }
 
   boardParticipants.delete(boardId);
-  boardRolesBySession.delete(boardId);
-  broadcastBoardParticipants(boardId);
+  void roleLockStore.deleteScope("board", boardId);
+  void broadcastBoardParticipants(boardId);
 };
 
 app.get(API_ROUTES.health, (_req, res) => {
@@ -504,7 +506,7 @@ io.on("connection", (socket) => {
     socketId: socket.id
   });
 
-  socket.on(socketEventName.documentJoin, (payload: DocumentJoinPayload) => {
+  socket.on(socketEventName.documentJoin, async (payload: DocumentJoinPayload) => {
     socketMetrics.record(socketEventName.documentJoin, "received");
 
     if (!enforceRateLimit(socket, socketEventName.documentJoin, serverEnv.socketWriteEventsPerWindow)) {
@@ -528,7 +530,7 @@ io.on("connection", (socket) => {
     const requestedRole = sanitizeRole(payload.role);
     const requiredEditorAccessKey =
       store.getDocumentEditorAccessKey(document.id) ?? serverEnv.editorAccessKey;
-    const role = resolveLockedRole(
+    const role = await resolveLockedRole(
       "document",
       document.id,
       session.sessionId,
@@ -555,6 +557,7 @@ io.on("connection", (socket) => {
 
     documentParticipants.get(document.id)?.set(socket.id, participant);
     documentBySocket.set(socket.id, document.id);
+    socket.data.documentParticipant = participant;
 
     if (typeof payload.clientYjsState === "string" && payload.clientYjsState.length > 0) {
       if (payload.clientYjsState.length > serverEnv.maxYjsUpdateBase64Chars) {
@@ -587,7 +590,7 @@ io.on("connection", (socket) => {
       emitPermissionDenied(socket, "document", role);
     }
 
-    broadcastDocumentParticipants(document.id);
+    void broadcastDocumentParticipants(document.id);
   });
 
   socket.on(socketEventName.documentYjsUpdate, (payload: DocumentYjsUpdatePayload) => {
@@ -940,7 +943,7 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on(socketEventName.boardJoin, (payload: BoardJoinPayload) => {
+  socket.on(socketEventName.boardJoin, async (payload: BoardJoinPayload) => {
     socketMetrics.record(socketEventName.boardJoin, "received");
 
     if (!enforceRateLimit(socket, socketEventName.boardJoin, serverEnv.socketWriteEventsPerWindow)) {
@@ -963,7 +966,7 @@ io.on("connection", (socket) => {
     const session = resolveSessionFromSocketPayload(payload.sessionId, payload.sessionToken);
     const requestedRole = sanitizeRole(payload.role);
     const requiredEditorAccessKey = store.getBoardEditorAccessKey(board.id) ?? serverEnv.editorAccessKey;
-    const role = resolveLockedRole(
+    const role = await resolveLockedRole(
       "board",
       board.id,
       session.sessionId,
@@ -991,6 +994,7 @@ io.on("connection", (socket) => {
 
     boardParticipants.get(board.id)?.set(socket.id, participant);
     boardBySocket.set(socket.id, board.id);
+    socket.data.boardParticipant = participant;
 
     socket.emit("board:state", {
       board,
@@ -1004,7 +1008,7 @@ io.on("connection", (socket) => {
       emitPermissionDenied(socket, "board", role);
     }
 
-    broadcastBoardParticipants(board.id);
+    void broadcastBoardParticipants(board.id);
   });
 
   socket.on(socketEventName.boardTitleUpdate, (payload: BoardTitlePayload) => {
@@ -1382,11 +1386,15 @@ io.on("connection", (socket) => {
 
 const start = async (): Promise<void> => {
   await store.init();
+  realtimeAdapterHandle = await configureRedisRealtimeAdapter(io, serverEnv.redisUrl);
+  roleLockStore = realtimeAdapterHandle.roleLocks;
 
   httpServer.listen(serverEnv.port, () => {
     logger.info("server.started", {
       port: serverEnv.port,
-      corsOrigins: serverEnv.allowAllCors ? ["*"] : serverEnv.corsOrigins
+      corsOrigins: serverEnv.allowAllCors ? ["*"] : serverEnv.corsOrigins,
+      stateBackend: serverEnv.stateBackend,
+      redisAdapter: Boolean(serverEnv.redisUrl)
     });
   });
 };
@@ -1394,7 +1402,8 @@ const start = async (): Promise<void> => {
 const shutdown = async (): Promise<void> => {
   logger.info("server.shutdown.begin");
   socketMetrics.stop();
-  await store.persistNow();
+  await store.close();
+  await realtimeAdapterHandle?.close();
   httpServer.close(() => {
     logger.info("server.shutdown.completed");
     process.exit(0);

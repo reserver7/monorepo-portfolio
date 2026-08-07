@@ -32,14 +32,17 @@ type AuditValueBlockProps = {
 function AuditValueBlock({ label, value, maxHeightClassName = "max-h-[132px]" }: AuditValueBlockProps) {
   return (
     <Box className="min-w-0">
-      <Typography as="p" color="muted" className="mb-[var(--space-1-5)] text-caption font-semibold">
+      <Typography as="p" color="muted" className="text-caption mb-[var(--space-1-5)] font-semibold">
         {label}
       </Typography>
       <Box
         className={`border-default bg-surface-elevated overflow-auto rounded-[var(--radius-md)] border p-[var(--space-2-5)] ${maxHeightClassName}`}
       >
         {value ? (
-          <Typography as="p" className="whitespace-pre-wrap break-words font-mono text-[11px] leading-[1.45] text-muted">
+          <Typography
+            as="p"
+            className="text-muted whitespace-pre-wrap break-words font-mono text-[11px] leading-[1.45]"
+          >
             {value}
           </Typography>
         ) : (
@@ -79,7 +82,9 @@ export function AuditLogPanel({
         />
         <Select
           value={severity}
-          onChange={onSeverityChange}
+          onChange={(value) => {
+            if (typeof value === "string") onSeverityChange(value);
+          }}
           options={[
             { label: "전체 위험도", value: "all" },
             { label: "info", value: "info" },
@@ -89,7 +94,9 @@ export function AuditLogPanel({
         />
         <Select
           value={targetType}
-          onChange={onTargetTypeChange}
+          onChange={(value) => {
+            if (typeof value === "string") onTargetTypeChange(value);
+          }}
           options={[
             { label: "전체 대상", value: "all" },
             { label: "설정", value: "OpsSetting" },
@@ -106,7 +113,7 @@ export function AuditLogPanel({
       </Grid>
 
       <Grid className="gap-[var(--space-4)] xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
-        <Box className="border-default bg-surface divide-y divide-default overflow-hidden rounded-[var(--radius-lg)] border">
+        <Box className="border-default bg-surface divide-default divide-y overflow-hidden rounded-[var(--radius-lg)] border">
           {auditLogs.length > 0 ? (
             auditLogs.map((log) => (
               <Button
@@ -120,18 +127,22 @@ export function AuditLogPanel({
                 <Flex className="w-full items-start justify-between gap-[var(--space-3)]">
                   <Box className="min-w-0">
                     <Flex className="flex-wrap items-center gap-[var(--space-2)]">
-                      <Badge variant={AUDIT_SEVERITY_TONE[log.severity] ?? "secondary"} size="sm" className="shrink-0">
+                      <Badge
+                        variant={AUDIT_SEVERITY_TONE[log.severity] ?? "secondary"}
+                        size="sm"
+                        className="shrink-0"
+                      >
                         {log.severity}
                       </Badge>
-                      <Typography as="span" className="min-w-0 text-body-sm font-semibold">
+                      <Typography as="span" className="text-body-sm min-w-0 font-semibold">
                         {log.summary}
                       </Typography>
                     </Flex>
-                    <Typography as="p" color="muted" className="mt-[var(--space-1)] truncate text-caption">
+                    <Typography as="p" color="muted" className="text-caption mt-[var(--space-1)] truncate">
                       {log.actor} · {log.action} · {log.targetType}
                     </Typography>
                   </Box>
-                  <Typography as="span" color="subtle" className="shrink-0 text-caption">
+                  <Typography as="span" color="subtle" className="text-caption shrink-0">
                     {formatAuditListDateTime(log.createdAt)}
                   </Typography>
                 </Flex>
@@ -153,7 +164,7 @@ export function AuditLogPanel({
                   <Typography as="h3" className="text-body-lg font-semibold">
                     {selectedAuditLog.summary}
                   </Typography>
-                  <Typography as="p" color="muted" className="mt-[var(--space-1)] text-caption">
+                  <Typography as="p" color="muted" className="text-caption mt-[var(--space-1)]">
                     {selectedAuditLog.actor} · {selectedAuditLog.action}
                   </Typography>
                 </Box>
@@ -163,35 +174,45 @@ export function AuditLogPanel({
               </Flex>
               <Grid className="gap-[var(--space-2)] md:grid-cols-2">
                 <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
-                  <Typography as="p" color="muted" className="text-caption">대상</Typography>
-                  <Typography as="p" className="mt-[var(--space-1)] text-body-sm font-semibold">
+                  <Typography as="p" color="muted" className="text-caption">
+                    대상
+                  </Typography>
+                  <Typography as="p" className="text-body-sm mt-[var(--space-1)] font-semibold">
                     {selectedAuditLog.targetType}
                   </Typography>
                 </Box>
                 <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
-                  <Typography as="p" color="muted" className="text-caption">대상 ID</Typography>
-                  <Typography as="p" className="mt-[var(--space-1)] truncate text-body-sm font-semibold">
+                  <Typography as="p" color="muted" className="text-caption">
+                    대상 ID
+                  </Typography>
+                  <Typography as="p" className="text-body-sm mt-[var(--space-1)] truncate font-semibold">
                     {selectedAuditLog.targetId ?? "-"}
                   </Typography>
                 </Box>
               </Grid>
               <Grid className="gap-[var(--space-2)] md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
-                  <Typography as="p" color="muted" className="text-caption">발생 시각</Typography>
-                  <Typography as="p" className="mt-[var(--space-1)] text-body-sm font-semibold">
+                  <Typography as="p" color="muted" className="text-caption">
+                    발생 시각
+                  </Typography>
+                  <Typography as="p" className="text-body-sm mt-[var(--space-1)] font-semibold">
                     {formatAuditDetailDateTime(selectedAuditLog.createdAt)}
                   </Typography>
                 </Box>
                 <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
-                  <Typography as="p" color="muted" className="text-caption">작업자</Typography>
-                  <Typography as="p" className="mt-[var(--space-1)] truncate text-body-sm font-semibold">
+                  <Typography as="p" color="muted" className="text-caption">
+                    작업자
+                  </Typography>
+                  <Typography as="p" className="text-body-sm mt-[var(--space-1)] truncate font-semibold">
                     {selectedAuditLog.actor}
                   </Typography>
                 </Box>
               </Grid>
               <Box className="border-default rounded-[var(--radius-md)] border">
-                <Box className="border-b border-default px-[var(--space-3)] py-[var(--space-2)]">
-                  <Typography as="p" className="text-caption font-semibold">변경 내용</Typography>
+                <Box className="border-default border-b px-[var(--space-3)] py-[var(--space-2)]">
+                  <Typography as="p" className="text-caption font-semibold">
+                    변경 내용
+                  </Typography>
                 </Box>
                 <Grid className="gap-[var(--space-3)] p-[var(--space-3)] md:grid-cols-2">
                   <AuditValueBlock label="변경 전" value={beforeValue} />
@@ -200,11 +221,19 @@ export function AuditLogPanel({
               </Box>
               <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
                 <Flex className="items-center justify-between gap-[var(--space-2)]">
-                  <Typography as="p" className="text-caption font-semibold">메타데이터</Typography>
-                  <Badge variant="outline" size="sm">{selectedAuditLog.action}</Badge>
+                  <Typography as="p" className="text-caption font-semibold">
+                    메타데이터
+                  </Typography>
+                  <Badge variant="outline" size="sm">
+                    {selectedAuditLog.action}
+                  </Badge>
                 </Flex>
                 <Box className="mt-[var(--space-2)]">
-                  <AuditValueBlock label="요청 정보" value={metadataValue} maxHeightClassName="max-h-[96px]" />
+                  <AuditValueBlock
+                    label="요청 정보"
+                    value={metadataValue}
+                    maxHeightClassName="max-h-[96px]"
+                  />
                 </Box>
               </Box>
             </Grid>

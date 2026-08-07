@@ -1,6 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
-import path from "node:path";
 import * as Y from "yjs";
 import type {
   DocumentComment,
@@ -27,13 +25,11 @@ import {
 } from "./store-document-utils";
 import { sanitizeShape } from "./store-shape-utils";
 import { createYDoc, decodeBinary, encodeBinary, readYDocState, replaceYText } from "./store-yjs-utils";
-
-interface PersistedState {
-  documents: DocumentRecord[];
-  boards: WhiteboardRecord[];
-  documentAccessKeys?: Record<string, string>;
-  boardAccessKeys?: Record<string, string>;
-}
+import {
+  createFileStatePersistence,
+  type PersistedWorkspaceState,
+  type StatePersistence
+} from "./persistence/state-persistence";
 
 interface UpdateDocumentInput {
   documentId: string;
@@ -123,19 +119,17 @@ export class RealtimeStore {
   private readonly boardPast = new Map<string, WhiteboardShape[][]>();
   private readonly boardFuture = new Map<string, WhiteboardShape[][]>();
   private persistTimer: NodeJS.Timeout | null = null;
-  private readonly dataFilePath: string;
+  private readonly persistence: StatePersistence;
 
-  constructor(dataFilePath?: string) {
-    this.dataFilePath = dataFilePath ?? path.resolve(process.cwd(), "data", "state.json");
+  constructor(persistence?: string | StatePersistence) {
+    this.persistence =
+      typeof persistence === "object" ? persistence : createFileStatePersistence(persistence);
   }
 
   async init(): Promise<void> {
-    await mkdir(path.dirname(this.dataFilePath), { recursive: true });
+    const parsed = await this.persistence.load();
 
-    try {
-      const raw = await readFile(this.dataFilePath, "utf8");
-      const parsed = JSON.parse(raw) as PersistedState;
-
+    if (parsed) {
       for (const persistedDocument of parsed.documents ?? []) {
         const normalized: DocumentRecord = {
           ...persistedDocument,
@@ -196,8 +190,6 @@ export class RealtimeStore {
           }
         }
       }
-    } catch {
-      // Seed fallback is handled below.
     }
 
     if (this.documents.size === 0) {
@@ -936,25 +928,19 @@ export class RealtimeStore {
       this.persistTimer = null;
     }
 
-    const payload: PersistedState = {
+    const payload: PersistedWorkspaceState = {
       documents: [...this.documents.values()],
       boards: [...this.boards.values()],
       documentAccessKeys: Object.fromEntries(this.documentAccessKeys.entries()),
       boardAccessKeys: Object.fromEntries(this.boardAccessKeys.entries())
     };
 
-    const tempPath = `${this.dataFilePath}.tmp-${process.pid}-${Date.now()}`;
-    const serialized = JSON.stringify(payload, null, 2);
+    await this.persistence.save(payload);
+  }
 
-    await writeFile(tempPath, serialized, "utf8");
-    try {
-      await rename(tempPath, this.dataFilePath);
-    } catch (error) {
-      await unlink(tempPath).catch(() => {
-        // Ignore temp cleanup errors.
-      });
-      throw error;
-    }
+  async close(): Promise<void> {
+    await this.persistNow();
+    await this.persistence.close?.();
   }
 
   private appendHistory(document: DocumentRecord, entry: HistoryEntry): void {

@@ -8,7 +8,12 @@ import { useTheme } from "next-themes";
 import { useAppForm } from "@repo/forms";
 import { useMutation } from "@repo/react-query";
 import { Box, Button, Card, CardContent, Checkbox, FormField, Input, Typography, toast } from "@repo/ui";
-import { loginWithPassword, readAuthSession, requestPasswordReset, signupWithPassword } from "@/lib/auth";
+import {
+  loginWithPassword,
+  requestPasswordReset,
+  signupWithPassword,
+  validateCurrentSession
+} from "@/lib/auth";
 
 type LoginFormValues = {
   email: string;
@@ -147,10 +152,13 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-    const session = readAuthSession();
-    if (session?.accessToken) {
-      router.replace(nextPath);
-    }
+    let active = true;
+    void validateCurrentSession().then((session) => {
+      if (active && session?.accessToken) router.replace(nextPath);
+    });
+    return () => {
+      active = false;
+    };
   }, [nextPath, router]);
 
   useEffect(() => {
@@ -260,7 +268,9 @@ export default function LoginPage() {
                       onClick={() => startOAuthLogin("github")}
                     >
                       <Image
-                        src={resolvedTheme === "dark" ? "/icons/github-mark-white.svg" : "/icons/github-mark.svg"}
+                        src={
+                          resolvedTheme === "dark" ? "/icons/github-mark-white.svg" : "/icons/github-mark.svg"
+                        }
                         alt="GitHub"
                         width={22}
                         height={22}

@@ -33,8 +33,54 @@ Turborepo + pnpm 기반 모노레포입니다.
 
 ```bash
 pnpm install
+pnpm infra:up
 pnpm dev:collab
 pnpm dev:opslens
+```
+
+## 로컬 인프라
+
+Redis와 PostgreSQL만 Docker Compose로 실행하며 웹·서버 앱은 기존처럼 호스트에서 실행합니다.
+
+```bash
+pnpm infra:up
+pnpm infra:status
+pnpm infra:logs
+pnpm infra:down
+```
+
+기본 구성:
+
+- PostgreSQL 16: `localhost:5433` (호스트 PostgreSQL과의 기본 포트 충돌 방지)
+- Redis 7: `localhost:6379`
+- OpsLens DB: `opslens`
+- Collab DB: `collab`
+- PostgreSQL과 Redis 데이터는 named volume에 보존
+
+기본 연결값은 [`.env.infrastructure.example`](.env.infrastructure.example)에 있습니다. 포트나 로컬 비밀번호를 바꾸려면 이 파일을 `.env.infrastructure`로 복사한 뒤 다음처럼 실행할 수 있습니다.
+
+```bash
+docker compose --env-file .env.infrastructure -f compose.infrastructure.yml up -d --wait
+```
+
+앱 환경변수 예시:
+
+```bash
+# apps/opslens-server/.env
+DATABASE_URL=postgresql://portfolio:portfolio-local-password@localhost:5433/opslens
+DIRECT_DATABASE_URL=postgresql://portfolio:portfolio-local-password@localhost:5433/opslens
+
+# apps/collab-server/.env
+STATE_BACKEND=postgres
+COLLAB_DATABASE_URL=postgresql://portfolio:portfolio-local-password@localhost:5433/collab
+REDIS_URL=redis://localhost:6379
+```
+
+최초 OpsLens 스키마 적용:
+
+```bash
+pnpm db:opslens:migrate:deploy
+pnpm db:opslens:seed
 ```
 
 ## OpsLens 로컬 확인
@@ -53,10 +99,10 @@ pnpm dev:opslens
 
 ### Mock 로그인 계정
 
-| 역할 | 이메일 | 비밀번호 | 용도 |
-| --- | --- | --- | --- |
-| Admin | `admin@opslens.local` | `opslens1234!` | 전체 화면/운영 설정 확인 |
-| Operator | `operator@opslens.local` | `opslens1234!` | 운영자 권한 흐름 확인 |
+| 역할     | 이메일                   | 비밀번호       | 용도                     |
+| -------- | ------------------------ | -------------- | ------------------------ |
+| Admin    | `admin@opslens.local`    | `opslens1234!` | 전체 화면/운영 설정 확인 |
+| Operator | `operator@opslens.local` | `opslens1234!` | 운영자 권한 흐름 확인    |
 
 ### Mock 데이터 범위
 
@@ -163,3 +209,4 @@ git push origin opslens-v0.2.x
 
 - 패키지 가이드: [`packages/README.md`](packages/README.md)
 - 기여/구조 원칙: [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- 환경/배포 설정: [`docs/environment-deployment.md`](docs/environment-deployment.md)
