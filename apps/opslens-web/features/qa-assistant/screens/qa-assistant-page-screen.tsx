@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
-import { Badge, Box, Flex, Grid, Spinner, SplitWorkspaceLayout, StatCard, Typography } from "@repo/ui";
+import { Badge, Box, Flex, Grid, SplitWorkspaceLayout, StatCard, Typography } from "@repo/ui";
 import { useAppForm } from "@repo/forms";
 import { formatNumber } from "@repo/utils";
 import { OpsPageShell, OpsSectionCard } from "@/features";
+import { useOpsPermissions } from "@/features/common/hooks/use-ops-permissions";
 import { QaAssistantForm, QaScenarioDetail, QaScenarioList } from "../components";
 import { QA_AUDIENCE_LABELS, QA_FORM_DEFAULT_VALUES, QA_NEUTRAL_BADGE_CLASS } from "../constants";
 import { useQaAssistantScenarios } from "../hooks/use-qa-assistant-scenarios";
@@ -17,6 +18,7 @@ import {
 } from "../utils/qa-assistant-utils";
 
 export default function QaAssistantPage() {
+  const { canAdminister, canOperate } = useOpsPermissions();
   const form = useAppForm<QaFormValues>({
     defaultValues: QA_FORM_DEFAULT_VALUES
   });
@@ -87,7 +89,7 @@ export default function QaAssistantPage() {
           <Box className="space-y-[var(--stack-gap)]">
             <OpsSectionCard
               title="릴리즈 변경 정보"
-              description="QA가 바로 실행할 수 있도록 화면, API, 변경 맥락을 함께 입력합니다."
+              description={canOperate ? "QA가 바로 실행할 수 있도록 화면, API, 변경 맥락을 함께 입력합니다." : "조회 전용 역할에서는 QA 산출물을 생성할 수 없습니다."}
               contentClassName="pt-[var(--space-2)]"
             >
               <QaAssistantForm
@@ -96,6 +98,7 @@ export default function QaAssistantPage() {
                 onSubmit={(values) => generateMutation.mutate(values)}
                 onReset={() => form.reset(QA_FORM_DEFAULT_VALUES)}
                 readinessItems={readinessItems}
+                readOnly={!canOperate}
               />
             </OpsSectionCard>
 
@@ -112,14 +115,13 @@ export default function QaAssistantPage() {
               selectedScenarioId={selectedScenarioId}
               onSelectScenario={setSelectedScenarioId}
               onDeleteScenario={(scenario) => {
+                if (!canAdminister) return;
                 void requestDeleteScenario(scenario);
               }}
             />
           </OpsSectionCard>
         }
       />
-
-      <Spinner open={generateMutation.isPending || deleteMutation.isPending} fullscreen size="lg" color="primary" />
     </OpsPageShell>
   );
 }

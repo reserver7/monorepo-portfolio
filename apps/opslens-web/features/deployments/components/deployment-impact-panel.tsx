@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { AlertTriangle, BarChart3 } from "lucide-react";
 import { Badge, Box, Flex, Grid, StateView, Typography } from "@repo/ui";
 import { formatDateTime, formatNumber } from "@repo/utils";
-import { OpsInfoItem, SeverityBadge } from "@/features";
+import { OpsInfoItem, OpsSectionSkeleton, SeverityBadge } from "@/features";
 import type { DeploymentImpact } from "../types";
 import { getDeploymentRiskLabel, getDeploymentRiskVariant } from "../utils/deployment-utils";
 
@@ -26,11 +27,9 @@ export function DeploymentImpactPanel({
 
   if (isLoading) {
     return (
-      <StateView
-        variant="loading"
-        size="sm"
+      <OpsSectionSkeleton
+        rows={5}
         className="border-default bg-surface-elevated rounded-[var(--radius-md)] border p-[var(--space-4)]"
-        title="선택한 배포 버전 기준으로 영향도를 계산하는 중입니다."
       />
     );
   }
@@ -88,7 +87,7 @@ export function DeploymentImpactPanel({
           </Flex>
 
           {impact.increasedIssues.map((item) => (
-            <Box key={item.issueId} className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
+            <Link key={item.issueId} href={`/issues/${item.issueId}`} className="border-default hover:border-primary/50 block rounded-[var(--radius-md)] border p-[var(--space-3)] transition-colors">
               <Flex className="items-start justify-between gap-[var(--space-3)]">
                 <Box className="min-w-0">
                   <Typography as="p" variant="bodySm" className="line-clamp-2 font-semibold">
@@ -110,7 +109,12 @@ export function DeploymentImpactPanel({
                   </Typography>
                 </Box>
               </Flex>
-            </Box>
+              <Box className="mt-[var(--space-3)] space-y-[var(--space-1)]" aria-label={`${item.title} 배포 전후 오류 비교`}>
+                <Box className="bg-muted/30 h-1.5 overflow-hidden rounded-full"><Box className="h-full bg-muted" style={{ width: `${Math.max(8, (item.beforeCount / Math.max(item.beforeCount, item.afterCount, 1)) * 100)}%` }} /></Box>
+                <Box className="bg-muted/30 h-1.5 overflow-hidden rounded-full"><Box className="h-full bg-warning" style={{ width: `${Math.max(8, (item.afterCount / Math.max(item.beforeCount, item.afterCount, 1)) * 100)}%` }} /></Box>
+                <Flex className="justify-between"><Typography as="span" variant="caption" color="subtle">배포 전 {formatNumber(item.beforeCount)}</Typography><Typography as="span" variant="caption" color="subtle">배포 후 {formatNumber(item.afterCount)}</Typography></Flex>
+              </Box>
+            </Link>
           ))}
         </Box>
       ) : (

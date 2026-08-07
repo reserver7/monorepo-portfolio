@@ -11,7 +11,7 @@ import { getAuthAccessToken } from "@/lib/auth";
 import { opslensClientEnv } from "@/lib/config";
 import { OPS_DEFAULT_LOCALE, type OpsLocale } from "@/lib/i18n/messages";
 
-configureOpslensClient({ apiUrl: opslensClientEnv.apiUrl });
+configureOpslensClient({ apiUrl: opslensClientEnv.apiUrl, logTailUrl: "/api/opslens-auth/log-tail" });
 
 const loadLocaleMessages = async (locale: OpsLocale): Promise<Record<string, unknown>> => {
   if (locale === "en") {

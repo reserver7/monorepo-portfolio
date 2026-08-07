@@ -14,6 +14,7 @@ type QaAssistantFormProps = {
   onSubmit: (values: QaFormValues) => void;
   onReset: () => void;
   readinessItems: ReadinessItem[];
+  readOnly?: boolean;
 };
 
 export function QaAssistantForm({
@@ -21,7 +22,8 @@ export function QaAssistantForm({
   isGenerating,
   onSubmit,
   onReset,
-  readinessItems
+  readinessItems,
+  readOnly = false
 }: QaAssistantFormProps) {
   return (
     <form className="grid gap-[var(--space-3)]" onSubmit={form.handleSubmit(onSubmit)}>
@@ -118,6 +120,7 @@ export function QaAssistantForm({
           loading={isGenerating ? true : undefined}
           loadingLabel="시나리오 생성 중..."
           leftIcon={<Sparkles size={16} />}
+          disabled={readOnly || isGenerating}
         >
           QA 시나리오 생성
         </Button>
@@ -126,7 +129,7 @@ export function QaAssistantForm({
           variant="outline"
           size="sm"
           onClick={() => form.reset(QA_SAMPLE_VALUES)}
-          disabled={isGenerating}
+          disabled={readOnly || isGenerating}
         >
           샘플 채우기
         </Button>
@@ -136,7 +139,7 @@ export function QaAssistantForm({
           size="sm"
           leftIcon={<RotateCcw size={16} />}
           onClick={onReset}
-          disabled={isGenerating}
+          disabled={readOnly || isGenerating}
         >
           초기화
         </Button>

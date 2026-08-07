@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { Box, Button, ConsolePageStack, ConsoleSectionCard, Flex, FormField, Grid, Input, Select, SplitWorkspaceLayout, Textarea, Badge, StatCard, Typography, toast } from "@repo/ui";
 import { useMutation } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
 import { analyzeLogs, createOpsLogTailEventSource, type OpsLogTailEvent } from "@repo/opslens";
 import { useOpsFilters } from "@/features/common/stores";
 import { formatDateTimeByLocale, resolveServiceLabel } from "@/features/common/utils/ops-display";
+import { downloadCsv } from "@/features/common/utils/download-csv";
 import { formatNumber } from "@repo/utils";
 import { LogAnalysisSidebar, LogClusterResults } from "../components";
 import {
@@ -26,6 +28,7 @@ import {
 
 export default function LogsPage() {
   const { environment, locale, serviceName } = useOpsFilters();
+  const searchParams = useSearchParams();
   const tService = useTranslations("service");
   const [operatorRole, setOperatorRole] = useState<"admin" | "operator" | "viewer">("admin");
   const [clusters, setClusters] = useState<Awaited<ReturnType<typeof analyzeLogs>>["clusters"]>([]);
@@ -39,6 +42,7 @@ export default function LogsPage() {
   const [savedViewsState, setSavedViewsState] = useState<LogsSavedViewsState>({ items: [], activeId: null });
   const [selectedClusterKey, setSelectedClusterKey] = useState<string | null>(null);
   const [liveTailEnabled, setLiveTailEnabled] = useState(false);
+  const [liveTailPaused, setLiveTailPaused] = useState(false);
   const [dismissedCorrelationKeys, setDismissedCorrelationKeys] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryInputRef = useRef<HTMLInputElement>(null);
@@ -101,6 +105,13 @@ export default function LogsPage() {
   const watchedSource = form.watch("source");
 
   useEffect(() => {
+    const targetService = searchParams.get("service");
+    const targetDeployment = searchParams.get("deployment");
+    if (targetService) form.setValue("serviceName", targetService);
+    if (targetDeployment) form.setValue("deploymentVersion", targetDeployment);
+  }, [form, searchParams]);
+
+  useEffect(() => {
     if (!liveTailEnabled) return;
     const eventSource = createOpsLogTailEventSource({
       environment,
@@ -111,6 +122,7 @@ export default function LogsPage() {
     eventSource.onmessage = (event) => {
       try {
         const payload = JSON.parse(event.data) as OpsLogTailEvent;
+        if (liveTailPaused) return;
         const line = `${payload.occurredAt} ${payload.level.toUpperCase()} ${payload.source} ${payload.rawMessage}`;
         const current = form.getValues("rawLogs");
         const merged = current.trim().length === 0 ? line : `${current}\n${line}`;
@@ -127,7 +139,7 @@ export default function LogsPage() {
     return () => {
       eventSource.close();
     };
-  }, [environment, form, liveTailEnabled, serviceName, watchedSource]);
+  }, [environment, form, liveTailEnabled, liveTailPaused, serviceName, watchedSource]);
 
   const analyzeMutation = useMutation({
     mutationFn: (values: LogsFormValues) =>
@@ -248,6 +260,14 @@ export default function LogsPage() {
     toast.success(`이슈 생성 요청: ${selectedCluster.title}`);
   };
 
+  const exportClusters = () => {
+    downloadCsv(
+      `opslens-log-clusters-${new Date().toISOString().slice(0, 10)}.csv`,
+      ["제목", "심각도", "발생 횟수", "최초 발생", "최근 발생", "영향 영역", "정규화 메시지"],
+      filteredClusters.map((cluster) => [cluster.title, cluster.severity, cluster.count, cluster.firstSeen, cluster.lastSeen, cluster.affectedArea, cluster.normalizedMessage])
+    );
+  };
+
   return (
     <ConsolePageStack>
       <Box className="border-default bg-surface rounded-[var(--radius-xl)] border px-[var(--space-4)] py-[var(--space-3)] md:px-[var(--space-5)]">
@@ -258,6 +278,9 @@ export default function LogsPage() {
               최근 분석: {analyzedAtLabel}
             </Typography>
             <Badge variant="secondary" size="sm">서비스: {serviceLabel}</Badge>
+            <Button type="button" variant="secondary" size="sm" onClick={exportClusters} disabled={filteredClusters.length === 0}>
+              CSV 내보내기
+            </Button>
           </Flex>
         </Flex>
       </Box>
@@ -357,17 +380,18 @@ export default function LogsPage() {
                       <Flex className="items-center gap-[var(--space-1-5)]">
                         <Badge size="sm" variant="secondary">라인 {formatNumber(rawLineCount)}</Badge>
                         {uploadedFileName ? <Badge size="sm" variant="outline">{uploadedFileName}</Badge> : null}
-                        <Badge size="sm" variant={liveTailEnabled ? "info" : "outline"}>Live Tail {liveTailEnabled ? "On" : "Off"}</Badge>
+                        <Badge size="sm" variant={liveTailEnabled ? "info" : "outline"}>Live Tail {liveTailEnabled ? liveTailPaused ? "Paused" : "On" : "Off"}</Badge>
                       </Flex>
                       <Flex className="items-center gap-[var(--space-1-5)]">
                         <Button
                           type="button"
                           variant={liveTailEnabled ? "secondary" : "ghost"}
                           size="sm"
-                          onClick={() => setLiveTailEnabled((prev) => !prev)}
+                          onClick={() => { setLiveTailEnabled((prev) => !prev); setLiveTailPaused(false); }}
                         >
                           {liveTailEnabled ? "Live Tail 중지" : "Live Tail 시작"}
                         </Button>
+                        {liveTailEnabled ? <Button type="button" variant="ghost" size="sm" onClick={() => setLiveTailPaused((prev) => !prev)}>{liveTailPaused ? "수신 재개" : "수신 일시정지"}</Button> : null}
                         <Button
                           type="button"
                           variant="ghost"

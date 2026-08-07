@@ -16,7 +16,7 @@ import {
   opslensQueryKeys,
   type OpsAlert as ApiOpsAlert
 } from "@repo/opslens";
-import { Bell, Menu, Search, SlidersHorizontal } from "lucide-react";
+import { Bell, Keyboard, Menu, Search, SlidersHorizontal } from "lucide-react";
 import { OPS_ALERT_EVENT_NAME, useOpsAlertStore, type CreateOpsAlertInput } from "@/features/alerts";
 import { ProfileMenu, type OpsFilterFormValues } from "@/features/modals";
 import type { OpsAlert } from "@/features/alerts";
@@ -133,6 +133,8 @@ export default function AppShellHeaderControls({
   const searchWrapRef = useRef<HTMLDivElement | null>(null);
   const [urlFilterSyncInitialized, setUrlFilterSyncInitialized] = useState(false);
   const [focusModeEnabled, setFocusModeEnabled] = useState(false);
+  const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
+  const pendingGoShortcutRef = useRef(false);
 
   const alerts = useOpsAlertStore((state) => state.alerts);
   const addAlert = useOpsAlertStore((state) => state.addAlert);
@@ -152,6 +154,13 @@ export default function AppShellHeaderControls({
     replaceAlerts(alertsQuery.data.map(toUiAlert));
   }, [alertsQuery.data, replaceAlerts]);
 
+  const refreshAlerts = async () => {
+    await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.alerts() });
+  };
+
+  const getAlertMutationError = (error: unknown, fallback: string) =>
+    error instanceof Error && error.message.trim().length > 0 ? error.message : fallback;
+
   const createAlertMutation = useMutation({
     mutationFn: (input: CreateOpsAlertInput) =>
       createOpsAlert({
@@ -160,39 +169,58 @@ export default function AppShellHeaderControls({
         level: input.level === "info" ? "low" : input.level ?? "low",
         source: input.source ?? "web",
         link: input.link
-      }),
+    }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.alerts() });
+      await refreshAlerts();
+    },
+    onError: (error) => {
+      toast.error(getAlertMutationError(error, "알림을 등록하지 못했습니다."));
     }
   });
 
   const markReadMutation = useMutation({
     mutationFn: markOpsAlertRead,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.alerts() });
+      await refreshAlerts();
+    },
+    onError: async (error) => {
+      await refreshAlerts();
+      toast.error(getAlertMutationError(error, "알림 읽음 처리에 실패했습니다."));
     }
   });
 
   const markAllReadMutation = useMutation({
     mutationFn: markAllOpsAlertsRead,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.alerts() });
+      await refreshAlerts();
+      toast.success("모든 알림을 읽음 처리했습니다.");
+    },
+    onError: async (error) => {
+      await refreshAlerts();
+      toast.error(getAlertMutationError(error, "전체 읽음 처리에 실패했습니다."));
     }
   });
 
   const deleteAlertMutation = useMutation({
     mutationFn: deleteOpsAlert,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.alerts() });
+      await refreshAlerts();
+      toast.success("알림을 삭제했습니다.");
+    },
+    onError: async (error) => {
+      await refreshAlerts();
+      toast.error(getAlertMutationError(error, "알림 삭제에 실패했습니다."));
     }
   });
 
   const handleMarkRead = (id: string) => {
+    if (alerts.find((alert) => alert.id === id)?.readAt) return;
     markRead(id);
     markReadMutation.mutate(id);
   };
 
   const handleMarkAllRead = () => {
+    if (!alerts.some((alert) => !alert.readAt)) return;
     markAllRead();
     markAllReadMutation.mutate();
   };
@@ -439,6 +467,43 @@ export default function AppShellHeaderControls({
     return () => window.removeEventListener(OPS_ALERT_EVENT_NAME, listener as EventListener);
   }, [addAlert, createAlertMutation, focusModeEnabled]);
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      const editing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || (target instanceof HTMLElement && target.isContentEditable);
+      if (editing) return;
+      if (event.key === "/") {
+        event.preventDefault();
+        document.getElementById("opslens-global-search")?.focus();
+        return;
+      }
+      if (event.key === "?") {
+        event.preventDefault();
+        setShortcutHelpOpen((open) => !open);
+        return;
+      }
+      if (event.key === "Escape") {
+        setSearchPanelOpen(false);
+        setShortcutHelpOpen(false);
+        return;
+      }
+      if (pendingGoShortcutRef.current) {
+        pendingGoShortcutRef.current = false;
+        if (event.key.toLowerCase() === "i") router.push("/issues");
+        if (event.key.toLowerCase() === "d") router.push("/deployments");
+        if (event.key.toLowerCase() === "c") router.push("/command-center");
+        return;
+      }
+      if (event.key.toLowerCase() === "g") {
+        pendingGoShortcutRef.current = true;
+        window.setTimeout(() => { pendingGoShortcutRef.current = false; }, 900);
+      }
+      if (event.key.toLowerCase() === "r") router.refresh();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [router]);
+
   return (
     <>
       <Flex className="w-full items-center justify-between gap-[var(--space-3)]">
@@ -455,6 +520,7 @@ export default function AppShellHeaderControls({
 
           <Box ref={searchWrapRef} className="relative w-full max-w-[420px]">
             <Input
+              id="opslens-global-search"
               value={watchSearch}
               onFocus={() => setSearchPanelOpen(true)}
               onChange={(event) => {
@@ -512,12 +578,21 @@ export default function AppShellHeaderControls({
                     {tCommon("recentSearchEmpty")}
                   </Typography>
                 )}
+                {watchSearch.trim() ? (
+                  <Box className="border-default mt-[var(--space-2)] border-t pt-[var(--space-2)]">
+                    <Typography as="p" variant="caption" color="muted">검색 결과로 이동</Typography>
+                    <Flex className="mt-[var(--space-1)] flex-wrap gap-[var(--space-1)]">
+                      {[{ label: "이슈", href: "/issues" }, { label: "로그", href: "/logs" }, { label: "배포", href: "/deployments" }, { label: "리포트", href: "/reports" }].map((target) => <Button key={target.href} type="button" variant="ghost" size="sm" onClick={() => { commitSearch(); router.push(target.href); }}>{target.label}에서 보기</Button>)}
+                    </Flex>
+                  </Box>
+                ) : null}
               </Box>
             ) : null}
           </Box>
         </Flex>
 
         <Flex className="items-center gap-[var(--space-1)] md:gap-[var(--space-2)]">
+          <Button variant="ghost" size="sm" iconOnly leftIcon={<Keyboard />} aria-label="키보드 단축키 도움말" onClick={() => setShortcutHelpOpen((open) => !open)} className="hidden md:inline-flex" />
           <Button
             variant="ghost"
             size="sm"
@@ -583,6 +658,11 @@ export default function AppShellHeaderControls({
           />
         </Flex>
       </Flex>
+
+      {shortcutHelpOpen ? <Box className="border-default bg-surface fixed bottom-[var(--space-4)] right-[var(--space-4)] z-40 w-[min(320px,calc(100vw-var(--space-8)))] rounded-[var(--radius-lg)] border p-[var(--space-3)] shadow-lg" role="dialog" aria-label="키보드 단축키">
+        <Flex className="items-center justify-between"><Typography as="p" variant="bodySm" className="font-semibold">키보드 단축키</Typography><Button type="button" variant="ghost" size="sm" onClick={() => setShortcutHelpOpen(false)}>닫기</Button></Flex>
+        <Box className="mt-[var(--space-2)] space-y-[var(--space-1)]">{[["/", "검색 포커스"], ["g i", "이슈로 이동"], ["g d", "배포로 이동"], ["g c", "커맨드 센터로 이동"], ["r", "현재 화면 새로고침"], ["Esc", "열린 패널 닫기"]].map(([key, label]) => <Flex key={key} className="items-center justify-between"><Typography as="span" variant="caption" color="muted">{label}</Typography><Badge variant="outline" size="sm">{key}</Badge></Flex>)}</Box>
+      </Box> : null}
 
       {alertModalOpen ? (
         <LazyAlertsModal

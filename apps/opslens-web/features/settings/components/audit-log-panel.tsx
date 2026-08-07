@@ -2,6 +2,7 @@
 
 import type { OpsAuditLog } from "@repo/opslens";
 import { Badge, Box, Button, Flex, Grid, Input, Select, Typography } from "@repo/ui";
+import { OpsSectionSkeleton } from "@/features";
 import {
   AUDIT_SEVERITY_TONE,
   formatAuditDetailDateTime,
@@ -21,6 +22,7 @@ type AuditLogPanelProps = {
   onTargetTypeChange: (value: string) => void;
   onSelectAuditLog: (id: string) => void;
   onResetFilters: () => void;
+  onExport: () => void;
 };
 
 type AuditValueBlockProps = {
@@ -66,7 +68,8 @@ export function AuditLogPanel({
   onSeverityChange,
   onTargetTypeChange,
   onSelectAuditLog,
-  onResetFilters
+  onResetFilters,
+  onExport
 }: AuditLogPanelProps) {
   const beforeValue = selectedAuditLog ? parseJsonLabel(selectedAuditLog.beforeValue) : "";
   const afterValue = selectedAuditLog ? parseJsonLabel(selectedAuditLog.afterValue) : "";
@@ -74,7 +77,7 @@ export function AuditLogPanel({
 
   return (
     <Grid className="gap-[var(--space-4)]">
-      <Grid className="gap-[var(--space-2)] md:grid-cols-[minmax(0,1fr)_180px_180px_auto]">
+      <Grid className="gap-[var(--space-2)] md:grid-cols-[minmax(0,1fr)_180px_180px_auto_auto]">
         <Input
           value={query}
           placeholder="요약, 액션, 대상 검색"
@@ -110,11 +113,16 @@ export function AuditLogPanel({
         <Button variant="secondary" onClick={onResetFilters}>
           초기화
         </Button>
+        <Button variant="secondary" onClick={onExport} disabled={auditLogs.length === 0}>
+          CSV 내보내기
+        </Button>
       </Grid>
 
       <Grid className="gap-[var(--space-4)] xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
         <Box className="border-default bg-surface divide-default divide-y overflow-hidden rounded-[var(--radius-lg)] border">
-          {auditLogs.length > 0 ? (
+          {isLoading ? (
+            <OpsSectionSkeleton rows={5} className="p-[var(--space-3)]" />
+          ) : auditLogs.length > 0 ? (
             auditLogs.map((log) => (
               <Button
                 key={log.id}
@@ -151,7 +159,7 @@ export function AuditLogPanel({
           ) : (
             <Box className="px-[var(--space-3)] py-[var(--space-5)] text-center">
               <Typography as="p" variant="caption" color="muted">
-                {isLoading ? "감사 로그를 불러오는 중입니다." : "조건에 맞는 운영 변경 이력이 없습니다."}
+                조건에 맞는 운영 변경 이력이 없습니다.
               </Typography>
             </Box>
           )}

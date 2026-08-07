@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Box, Typography, toast } from "@repo/ui";
 import { loginWithOAuth, readAuthSession } from "@/lib/auth";
@@ -25,6 +25,7 @@ export default function OAuthCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = useMemo(() => resolveNextPath(searchParams.get("next")), [searchParams]);
+  const hasStartedLogin = useRef(false);
 
   useEffect(() => {
     const session = readAuthSession();
@@ -32,6 +33,9 @@ export default function OAuthCallbackPage() {
       router.replace(nextPath);
       return;
     }
+
+    if (hasStartedLogin.current) return;
+    hasStartedLogin.current = true;
 
     void loginWithOAuth()
       .then(() => {
@@ -57,4 +61,3 @@ export default function OAuthCallbackPage() {
     </Box>
   );
 }
-

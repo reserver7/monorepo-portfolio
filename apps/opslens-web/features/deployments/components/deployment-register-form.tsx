@@ -82,6 +82,16 @@ export function DeploymentRegisterForm({
           />
         </FormField>
 
+        <FormField label="Override 사유" htmlFor="deployment-override-reason" size="sm">
+          <Textarea
+            id="deployment-override-reason"
+            {...form.register("overrideReason")}
+            rows={2}
+            resize="none"
+            placeholder="차단 신호가 있는 경우 승인 배포가 필요한 이유를 기록하세요."
+          />
+        </FormField>
+
         <FormField label="변경 범위" htmlFor="deployment-scope" size="sm">
           <Flex id="deployment-scope" className="flex-wrap gap-x-[var(--space-3)] gap-y-[var(--space-2)]">
             {DEPLOYMENT_SCOPE_OPTIONS.map((option) => (

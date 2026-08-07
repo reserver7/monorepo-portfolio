@@ -5,6 +5,7 @@ export const DEPLOYMENT_FORM_DEFAULT_VALUES: DeploymentFormValues = {
   status: "completed",
   owner: "운영담당자",
   approver: "",
+  overrideReason: "",
   scopeTags: [],
   monitoringWindowMin: 60,
   rollbackCriteria: "Critical 증가, 결제/로그인 실패, 에러 이벤트 100건 이상",

@@ -1,27 +1,31 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Clipboard } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { Badge, Box, Button, Flex, SplitWorkspaceLayout, StateView, Textarea, Typography, confirm, toast } from "@repo/ui";
 import {
   deleteReportSnapshot,
+  getReportActions,
   getOpsReport,
   getReportSnapshots,
   opslensQueryKeys,
   toOptionalSearch,
   toOptionalServiceName,
   updateReportSnapshot,
+  updateReportAction,
   type OpsReportSnapshot
 } from "@repo/opslens";
-import { OpsPageShell, OpsSectionCard } from "@/features";
+import { OpsPageShell, OpsSectionCard, OpsSectionSkeleton } from "@/features";
 import { useOpsQueryOptions } from "@/features/common/hooks/use-ops-query-options";
 import { useOpsFilters } from "@/features/common/stores";
 import { ReportActionList, ReportPriorityIssues, ReportSummaryPanel } from "../components";
+import { downloadCsv } from "@/features/common/utils/download-csv";
 
 export default function ReportsPage() {
   const queryClient = useQueryClient();
   const { environment, serviceName, search, from, to } = useOpsFilters();
+  const [openActionsOnly, setOpenActionsOnly] = useState(false);
   const filter = { environment, serviceName, search, from, to };
 
   const reportQuery = useQuery(
@@ -53,10 +57,26 @@ export default function ReportsPage() {
     mutationFn: updateReportSnapshot,
     onSuccess: invalidateSnapshots
   });
+  const actionsQuery = useQuery(
+    useOpsQueryOptions("list", {
+      queryKey: opslensQueryKeys.reportActions(report?.snapshotId ?? ""),
+      queryFn: () => getReportActions(report!.snapshotId),
+      enabled: Boolean(report?.snapshotId)
+    })
+  );
+  const updateActionMutation = useMutation({
+    mutationFn: updateReportAction,
+    onSuccess: async (_action, variables) => {
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.reportActions(report?.snapshotId ?? "") });
+      toast.success(variables.completed ? "액션 아이템을 완료했습니다." : "액션 아이템을 다시 열었습니다.");
+    }
+  });
   const deleteSnapshotMutation = useMutation({
     mutationFn: ({ snapshotId }: { snapshotId: string }) => deleteReportSnapshot(snapshotId, "web"),
     onSuccess: invalidateSnapshots
   });
+  const visibleActions = useMemo(() => (actionsQuery.data ?? []).filter((action) => !openActionsOnly || !action.completedAt), [actionsQuery.data, openActionsOnly]);
+  const exportActions = () => downloadCsv(`opslens-report-actions-${new Date().toISOString().slice(0, 10)}.csv`, ["우선순위", "액션", "담당자", "상태", "완료자", "완료 시각"], visibleActions.map((action) => [action.priority, action.title, action.owner, action.completedAt ? "완료" : "진행 필요", action.completedBy, action.completedAt]));
 
   useEffect(() => {
     if (!report?.generatedAt) return;
@@ -134,7 +154,8 @@ export default function ReportsPage() {
               </OpsSectionCard>
 
               <OpsSectionCard title="액션 아이템" description="공유 후 바로 담당자와 우선순위를 정리할 항목입니다.">
-                <ReportActionList actions={report.actionItems} />
+                <Flex className="mb-[var(--space-3)] flex-wrap justify-end gap-[var(--space-2)]"><Button type="button" variant={openActionsOnly ? "primary" : "secondary"} size="sm" onClick={() => setOpenActionsOnly((value) => !value)}>{openActionsOnly ? "전체 보기" : "미완료만 보기"}</Button><Button type="button" variant="secondary" size="sm" onClick={exportActions} disabled={visibleActions.length === 0}>CSV 내보내기</Button></Flex>
+                <ReportActionList actions={visibleActions} disabled={updateActionMutation.isPending} onToggle={(action, completed) => updateActionMutation.mutate({ actionId: action.id, completed, actor: "web" })} />
               </OpsSectionCard>
 
               <OpsSectionCard title="기술 상세" description="개발/운영 담당자가 원인 확인에 사용할 상세 요약입니다.">
@@ -227,11 +248,9 @@ export default function ReportsPage() {
           }
         />
       ) : (
-        <StateView
-          variant="loading"
-          size="sm"
+        <OpsSectionSkeleton
+          rows={6}
           className="border-default bg-surface rounded-[var(--radius-xl)] border p-[var(--space-4)]"
-          title="운영 리포트를 생성하는 중입니다."
         />
       )}
     </OpsPageShell>

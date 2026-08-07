@@ -24,20 +24,28 @@ export async function POST() {
     return NextResponse.json({ message: "서버 OAuth 브리지 시크릿이 설정되지 않았습니다." }, { status: 500 });
   }
 
-  const response = await fetch(`${resolveAuthApiUrl()}/auth/oauth-login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      "x-opslens-auth-bridge": bridgeSecret
-    },
-    body: JSON.stringify({
-      provider,
-      providerAccountId,
-      email,
-      name: name && name.length > 0 ? name : (email.split("@")[0] ?? "Ops User")
-    })
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${resolveAuthApiUrl()}/auth/oauth-login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "x-opslens-auth-bridge": bridgeSecret
+      },
+      body: JSON.stringify({
+        provider,
+        providerAccountId,
+        email,
+        name: name && name.length > 0 ? name : (email.split("@")[0] ?? "Ops User")
+      })
+    });
+  } catch {
+    return NextResponse.json(
+      { message: "인증 서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요." },
+      { status: 502 }
+    );
+  }
 
   if (!response.ok) {
     return NextResponse.json(
