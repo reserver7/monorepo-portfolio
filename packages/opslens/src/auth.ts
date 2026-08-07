@@ -10,7 +10,13 @@ export type OpsAuthUser = {
   role: AuthRole;
   authProvider: "local" | "google" | "github";
   avatarColor: AvatarColor;
+  isActive?: boolean;
 };
+
+const authHeaders = (accessToken: string): HeadersInit => ({
+  Authorization: `Bearer ${accessToken}`,
+  Accept: "application/json"
+});
 
 export type OpsLoginResponse = {
   accessToken: string;
@@ -205,4 +211,27 @@ export async function updateOpslensNotificationPolicy(
   }
 
   return (await response.json()) as OpsNotificationPolicy;
+}
+
+export async function getOpslensUsers(accessToken: string): Promise<OpsAuthUser[]> {
+  const response = await fetch(`${resolveAuthApiUrl()}/auth/users`, {
+    method: "GET",
+    headers: authHeaders(accessToken)
+  });
+  if (!response.ok) throw new Error(await parseErrorMessage(response));
+  return (await response.json()) as OpsAuthUser[];
+}
+
+export async function updateOpslensUser(
+  accessToken: string,
+  userId: string,
+  input: Partial<Pick<OpsAuthUser, "role">> & { isActive?: boolean }
+): Promise<OpsAuthUser> {
+  const response = await fetch(`${resolveAuthApiUrl()}/auth/users/${encodeURIComponent(userId)}`, {
+    method: "PATCH",
+    headers: { ...authHeaders(accessToken), "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) throw new Error(await parseErrorMessage(response));
+  return (await response.json()) as OpsAuthUser;
 }

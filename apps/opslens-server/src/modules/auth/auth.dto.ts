@@ -93,3 +93,13 @@ export class AuthUpdateNotificationPolicyDto {
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
   quietTo!: string;
 }
+
+export class AuthAdminUpdateUserDto {
+  @IsOptional()
+  @IsIn(["admin", "operator", "viewer"])
+  role?: "admin" | "operator" | "viewer";
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}

@@ -73,7 +73,7 @@ export class OpsSettingsService {
     }));
   }
 
-  async upsertOpsSetting(input: UpsertOpsSettingInput): Promise<OpsSettingType> {
+  async upsertOpsSetting(input: UpsertOpsSettingInput, actor?: string): Promise<OpsSettingType> {
     let value: Prisma.InputJsonValue;
     try {
       value = JSON.parse(input.value) as Prisma.InputJsonValue;
@@ -89,7 +89,7 @@ export class OpsSettingsService {
     const category = input.category?.trim() || previous?.category || "general";
     const riskLevel = input.riskLevel?.trim() || previous?.riskLevel || "low";
     const editable = input.editable ?? previous?.editable ?? true;
-    const updatedBy = input.updatedBy?.trim() || "operator";
+    const updatedBy = actor?.trim() || input.updatedBy?.trim() || "operator";
     const changeReason = input.changeReason?.trim() || null;
 
     const setting = await this.prisma.opsSetting.upsert({

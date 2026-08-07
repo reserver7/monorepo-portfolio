@@ -32,10 +32,10 @@ export const SELECT_TRIGGER_BASE_CLASS =
   "inline-flex w-full cursor-pointer items-center justify-between rounded-[var(--radius-md)] border px-[var(--space-3)] py-[var(--space-2)] text-foreground outline-none transition-colors focus:ring-1 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50";
 
 export const SELECT_CONTENT_BASE_CLASS =
-  "z-50 max-h-[var(--size-select-content-max-h)] min-w-[var(--radix-select-trigger-width)] w-[var(--radix-select-trigger-width)] overflow-hidden rounded-[var(--radius-md)] border border-default bg-surface shadow-[var(--shadow-card)]";
+  "z-[70] max-h-[var(--size-select-content-max-h)] min-w-[var(--radix-select-trigger-width)] w-[var(--radix-select-trigger-width)] overflow-hidden rounded-[var(--radius-md)] border border-default bg-surface shadow-[var(--shadow-card)]";
 
 export const SELECT_POPOVER_CONTENT_BASE_CLASS =
-  "border-default bg-surface z-50 rounded-[var(--radius-md)] border p-[var(--space-2)] shadow-[var(--shadow-card)]";
+  "border-default bg-surface z-[70] rounded-[var(--radius-md)] border p-[var(--space-2)] shadow-[var(--shadow-card)]";
 
 export const SELECT_SCROLL_LIST_CLASS = "space-y-[var(--space-1)] overflow-auto p-[var(--space-1)]";
 

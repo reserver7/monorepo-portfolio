@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  Siren,
   LayoutDashboard,
   type LucideIcon,
   Settings,
@@ -17,6 +18,7 @@ export type OpsNavItem = {
 
 export const opsNavItems: OpsNavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/command-center", label: "Command Center", icon: Siren },
   { href: "/logs", label: "Logs", icon: Upload },
   { href: "/issues", label: "Issues", icon: AlertTriangle },
   { href: "/qa-assistant", label: "QA Assistant", icon: Workflow },
@@ -24,4 +26,3 @@ export const opsNavItems: OpsNavItem[] = [
   { href: "/reports", label: "Reports", icon: UploadCloud },
   { href: "/settings", label: "Settings", icon: Settings }
 ];
-

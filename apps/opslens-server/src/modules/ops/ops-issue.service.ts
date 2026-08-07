@@ -6,13 +6,15 @@ import { PrismaService } from "../../integration/db/prisma.service.js";
 import type {
   AddIssueCommentInput,
   AssignIssueInput,
+  BulkUpdateIssuesInput,
   IssueFilterInput,
-  UpdateIssueStatusInput
+  UpdateIssueStatusInput,
+  UpdateIncidentClosureInput
 } from "./ops.inputs.js";
 import { writeOpsAuditLog } from "./ops-audit-writer.js";
 import { buildIssueWhere, toStatus } from "./ops.filters.js";
 import { toIssueType } from "./ops.mappers.js";
-import type { IssueListPayloadType, IssueSummaryType, IssueType } from "./ops.types.js";
+import type { IncidentTimelineItemType, IssueListPayloadType, IssueSummaryType, IssueType } from "./ops.types.js";
 
 @Injectable()
 export class OpsIssueService {
@@ -137,31 +139,85 @@ export class OpsIssueService {
     return toIssueType(issue);
   }
 
-  async updateIssueStatus(input: UpdateIssueStatusInput): Promise<IssueType> {
+  async getIncidentTimeline(issueId: string): Promise<IncidentTimelineItemType[]> {
+    const issue = await this.prisma.issue.findUnique({
+      where: { id: issueId },
+      include: {
+        deployment: true,
+        comments: { orderBy: { createdAt: "desc" }, take: 30 },
+        logs: { orderBy: { occurredAt: "desc" }, take: 30 }
+      }
+    });
+    if (!issue) throw new NotFoundException("이슈를 찾을 수 없습니다.");
+
+    const audits = await this.prisma.opsAuditLog.findMany({
+      where: { targetType: "Issue", targetId: issueId },
+      orderBy: { createdAt: "desc" },
+      take: 30
+    });
+    const items: IncidentTimelineItemType[] = [
+      { id: `issue:${issue.id}`, kind: "incident", title: "인시던트 감지", detail: issue.summary, tone: issue.severity, occurredAt: issue.firstOccurredAt },
+      ...(issue.deployment
+        ? [{ id: `deployment:${issue.deployment.id}`, kind: "deployment", title: `배포 ${issue.deployment.version}`, detail: issue.deployment.changelog, actor: issue.deployment.owner, tone: "warning", occurredAt: issue.deployment.deployedAt }]
+        : []),
+      ...issue.logs.map((log) => ({ id: `log:${log.id}`, kind: "log", title: `${log.level.toUpperCase()} 로그`, detail: log.rawMessage, tone: log.level.toLowerCase().includes("error") ? "critical" : "info", occurredAt: log.occurredAt })),
+      ...issue.comments.map((comment) => ({ id: `comment:${comment.id}`, kind: "comment", title: "운영 메모", detail: comment.body, actor: comment.author, tone: "info", occurredAt: comment.createdAt })),
+      ...audits.map((audit) => ({ id: `audit:${audit.id}`, kind: "activity", title: audit.action, detail: audit.summary, actor: audit.actor, tone: audit.severity, occurredAt: audit.createdAt }))
+    ];
+    return items.sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
+  }
+
+  async updateIssueStatus(input: UpdateIssueStatusInput, actor?: string): Promise<IssueType> {
     const status = toStatus(input.status);
     if (!status) {
       throw new BadRequestException("status 값이 필요합니다.");
     }
 
+    const now = new Date();
+    const existing = await this.prisma.issue.findUnique({ where: { id: input.issueId }, select: { acknowledgedAt: true, resolvedAt: true } });
+    if (!existing) throw new NotFoundException("이슈를 찾을 수 없습니다.");
     const updated = await this.prisma.issue.update({
       where: { id: input.issueId },
-      data: { status },
+      data: {
+        status,
+        acknowledgedAt: !existing.acknowledgedAt && (status === "analyzing" || status === "in_progress") ? now : undefined,
+        resolvedAt: status === "resolved" ? existing.resolvedAt ?? now : status === "new" ? null : undefined
+      },
       include: { deployment: true }
     });
 
     this.clearCache();
     await writeOpsAuditLog(this.prisma, this.logger, {
+      actor,
       action: "issue.status_updated",
       targetType: "Issue",
       targetId: updated.id,
       summary: `${updated.title} 상태를 ${updated.status}(으)로 변경`,
-      metadata: { status: updated.status }
+      metadata: { status: updated.status, acknowledgedAt: updated.acknowledgedAt?.toISOString() ?? null, resolvedAt: updated.resolvedAt?.toISOString() ?? null }
     });
 
     return toIssueType({ ...updated, logs: [], comments: [] });
   }
 
-  async assignIssue(input: AssignIssueInput): Promise<IssueType> {
+  async updateIncidentClosure(input: UpdateIncidentClosureInput, actor?: string): Promise<IssueType> {
+    const postmortemUrl = input.postmortemUrl?.trim();
+    if (postmortemUrl) {
+      try {
+        new URL(postmortemUrl);
+      } catch {
+        throw new BadRequestException("postmortemUrl은 올바른 URL이어야 합니다.");
+      }
+    }
+    const updated = await this.prisma.issue.update({
+      where: { id: input.issueId },
+      data: { rootCause: input.rootCause?.trim() || null, postmortemUrl: postmortemUrl || null },
+      include: { deployment: true }
+    });
+    await writeOpsAuditLog(this.prisma, this.logger, { actor, action: "issue.closure_updated", targetType: "Issue", targetId: updated.id, summary: `${updated.title} 종료 정보 업데이트` });
+    return toIssueType({ ...updated, logs: [], comments: [] });
+  }
+
+  async assignIssue(input: AssignIssueInput, actor?: string): Promise<IssueType> {
     const updated = await this.prisma.issue.update({
       where: { id: input.issueId },
       data: { assignee: input.assignee.trim() || null },
@@ -170,7 +226,7 @@ export class OpsIssueService {
 
     this.clearCache();
     await writeOpsAuditLog(this.prisma, this.logger, {
-      actor: input.assignee,
+      actor,
       action: "issue.assigned",
       targetType: "Issue",
       targetId: updated.id,
@@ -181,7 +237,18 @@ export class OpsIssueService {
     return toIssueType({ ...updated, logs: [], comments: [] });
   }
 
-  async addIssueComment(input: AddIssueCommentInput): Promise<IssueType> {
+  async bulkUpdateIssues(input: BulkUpdateIssuesInput, actor?: string): Promise<number> {
+    const issueIds = [...new Set(input.issueIds.filter(Boolean))];
+    if (issueIds.length === 0 || issueIds.length > 100) throw new BadRequestException("1~100개의 이슈를 선택하세요.");
+    const status = input.status ? toStatus(input.status) : undefined;
+    if (input.status && !status) throw new BadRequestException("올바른 상태를 선택하세요.");
+    if (!status && input.assignee === undefined) throw new BadRequestException("변경할 상태 또는 담당자가 필요합니다.");
+    const result = await this.prisma.issue.updateMany({ where: { id: { in: issueIds } }, data: { status, assignee: input.assignee?.trim() || undefined, acknowledgedAt: status === "analyzing" || status === "in_progress" ? new Date() : undefined, resolvedAt: status === "resolved" ? new Date() : undefined } });
+    await writeOpsAuditLog(this.prisma, this.logger, { actor, action: "issue.bulk_updated", targetType: "Issue", summary: `${result.count}개 이슈 일괄 변경`, metadata: { issueIds, status, assignee: input.assignee } });
+    return result.count;
+  }
+
+  async addIssueComment(input: AddIssueCommentInput, actor?: string): Promise<IssueType> {
     const comment = await this.prisma.issueComment.create({
       data: {
         issueId: input.issueId,
@@ -190,7 +257,7 @@ export class OpsIssueService {
       }
     });
     await writeOpsAuditLog(this.prisma, this.logger, {
-      actor: comment.author,
+      actor,
       action: "issue.comment_added",
       targetType: "Issue",
       targetId: input.issueId,

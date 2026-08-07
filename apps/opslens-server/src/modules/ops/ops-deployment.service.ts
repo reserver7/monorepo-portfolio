@@ -12,7 +12,7 @@ import {
   normalizeStringList,
   toDeploymentType
 } from "./ops.mappers.js";
-import type { DeploymentImpactReportType, DeploymentType } from "./ops.types.js";
+import type { DeploymentImpactReportType, DeploymentReadinessType, DeploymentType } from "./ops.types.js";
 
 @Injectable()
 export class OpsDeploymentService {
@@ -47,19 +47,45 @@ export class OpsDeploymentService {
     this.deploymentImpactCache.clear();
   }
 
-  async registerDeployment(input: RegisterDeploymentInput): Promise<DeploymentType> {
+  async registerDeployment(input: RegisterDeploymentInput, actor?: string): Promise<DeploymentType> {
     const environment = toEnvironment(input.environment);
     if (!environment) {
       throw new BadRequestException("environment 값이 필요합니다.");
     }
 
+    const criticalHighCount = await this.prisma.issue.count({
+      where: { environment, status: { not: "resolved" }, severity: { in: ["critical", "high"] } }
+    });
+    if (criticalHighCount > 0 && (!input.approver?.trim() || !input.overrideReason?.trim())) {
+      throw new BadRequestException(`미해결 Critical/High 이슈 ${criticalHighCount}건이 있어 승인자와 override 사유가 필요합니다.`);
+    }
+
     const deployedAt = input.deployedAt ? new Date(input.deployedAt) : new Date();
     const monitoringWindowMin = Math.max(15, Math.min(1440, input.monitoringWindowMin ?? 60));
+    const guardrail = await this.prisma.opsSetting.findUnique({
+      where: { key: "deployment.guardrail" },
+      select: { value: true }
+    });
+    const guardrailValue = guardrail?.value && typeof guardrail.value === "object" && !Array.isArray(guardrail.value)
+      ? guardrail.value as { requiredChecklist?: unknown }
+      : {};
+    const requiredChecklist = normalizeStringList(guardrailValue.requiredChecklist);
+    const suppliedChecklist = normalizeStringList(input.checklist);
+    const missingRequirements = requiredChecklist.filter((requirement) => {
+      if (requirement === "릴리즈 노트") return !input.changelog.trim();
+      if (requirement === "롤백 기준") return !input.rollbackCriteria?.trim();
+      if (requirement === "담당자") return !input.owner?.trim();
+      return !suppliedChecklist.includes(requirement);
+    });
+    if (missingRequirements.length > 0) {
+      throw new BadRequestException(`배포 가드레일 필수 항목이 누락되었습니다: ${missingRequirements.join(", ")}`);
+    }
     const deploymentData = {
       changelog: input.changelog,
       status: input.status?.trim() || "completed",
       owner: input.owner?.trim() || "운영담당자",
       approver: input.approver?.trim() || null,
+      overrideReason: input.overrideReason?.trim() || null,
       scopeTags: normalizeStringList(input.scopeTags) as Prisma.JsonArray,
       checklist: normalizeStringList(input.checklist) as Prisma.JsonArray,
       rollbackCriteria: input.rollbackCriteria?.trim() || null,
@@ -84,12 +110,12 @@ export class OpsDeploymentService {
 
     this.clearCache();
     await writeOpsAuditLog(this.prisma, this.logger, {
-      actor: deployment.owner,
+      actor,
       action: "deployment.registered",
       targetType: "Deployment",
       targetId: deployment.id,
       summary: `${deployment.version} 배포 등록/갱신`,
-      metadata: { environment: deployment.environment, status: deployment.status }
+      metadata: { environment: deployment.environment, status: deployment.status, criticalHighCount, approver: deployment.approver, overrideReason: deployment.overrideReason, guardrailRequirements: requiredChecklist }
     });
 
     return toDeploymentType(deployment);
@@ -103,6 +129,23 @@ export class OpsDeploymentService {
       take: 30
     });
     return deployments.map((deployment) => toDeploymentType(deployment));
+  }
+
+  async getDeploymentReadiness(environmentInput: string): Promise<DeploymentReadinessType> {
+    const environment = toEnvironment(environmentInput);
+    if (!environment) throw new BadRequestException("environment 값이 필요합니다.");
+    const openWhere = { environment, status: { not: "resolved" as const } };
+    const [criticalHighCount, unassignedCount] = await Promise.all([
+      this.prisma.issue.count({ where: { ...openWhere, severity: { in: ["critical", "high"] } } }),
+      this.prisma.issue.count({ where: { ...openWhere, OR: [{ assignee: null }, { assignee: "" }] } })
+    ]);
+    const status = criticalHighCount > 0 ? "blocked" : unassignedCount > 0 ? "approval_required" : "ready";
+    const recommendations = [
+      ...(criticalHighCount > 0 ? [`미해결 Critical/High 이슈 ${criticalHighCount}건을 확인하고 롤백 담당자를 지정하세요.`] : []),
+      ...(unassignedCount > 0 ? [`담당자 미지정 이슈 ${unassignedCount}건의 소유권을 확인하세요.`] : []),
+      ...(criticalHighCount === 0 && unassignedCount === 0 ? ["현재 차단 신호가 없습니다. 체크리스트와 모니터링 윈도우를 확인한 뒤 배포하세요."] : [])
+    ];
+    return { environment, status, criticalHighCount, unassignedCount, recommendations };
   }
 
   async deploymentImpact(input: DeploymentImpactInput): Promise<DeploymentImpactReportType> {

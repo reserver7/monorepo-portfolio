@@ -23,6 +23,9 @@ if (process.env.AUTH_GITHUB_CLIENT_ID && process.env.AUTH_GITHUB_CLIENT_SECRET) 
 }
 
 export const oauthAuthOptions: NextAuthOptions = {
+  // NextAuth v4 reads NEXTAUTH_SECRET by convention; accept the existing
+  // AUTH_SECRET name as a backwards-compatible fallback.
+  secret: process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login"

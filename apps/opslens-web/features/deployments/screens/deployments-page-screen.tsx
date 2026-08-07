@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Badge, Box, Button, Flex, Grid, Spinner, StatCard, Typography } from "@repo/ui";
+import { Badge, Box, Button, Flex, Grid, StatCard, Typography } from "@repo/ui";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
-import { getDeploymentImpact, getDeployments, opslensQueryKeys, registerDeployment } from "@repo/opslens";
+import { getDeploymentImpact, getDeploymentReadiness, getDeployments, opslensQueryKeys, registerDeployment } from "@repo/opslens";
 import { OpsPageShell, OpsSectionCard } from "@/features";
 import { useOpsQueryOptions } from "@/features/common/hooks/use-ops-query-options";
+import { useOpsPermissions } from "@/features/common/hooks/use-ops-permissions";
 import { useOpsFilters } from "@/features/common/stores";
 import { formatNumber } from "@repo/utils";
 import { DeploymentHistoryList, DeploymentImpactPanel, DeploymentRegisterForm } from "../components";
@@ -16,6 +17,7 @@ import type { DeploymentFormValues } from "../types";
 export default function DeploymentsPage() {
   const { environment } = useOpsFilters();
   const queryClient = useQueryClient();
+  const { canOperate } = useOpsPermissions();
 
   const form = useAppForm<DeploymentFormValues>({
     defaultValues: DEPLOYMENT_FORM_DEFAULT_VALUES
@@ -35,6 +37,10 @@ export default function DeploymentsPage() {
     queryFn: () => getDeploymentImpact(selectedVersion!, environment),
     enabled: Boolean(selectedVersion)
   }));
+  const readinessQuery = useQuery(useOpsQueryOptions("default", {
+    queryKey: opslensQueryKeys.deploymentReadiness(environment),
+    queryFn: () => getDeploymentReadiness(environment)
+  }));
 
   const createMutation = useMutation({
     mutationFn: (values: DeploymentFormValues) =>
@@ -43,6 +49,7 @@ export default function DeploymentsPage() {
         status: values.status,
         owner: values.owner.trim(),
         approver: values.approver.trim() || undefined,
+        overrideReason: values.overrideReason.trim() || undefined,
         scopeTags: values.scopeTags,
         checklist: values.checklist,
         rollbackCriteria: values.rollbackCriteria.trim() || undefined,
@@ -66,13 +73,13 @@ export default function DeploymentsPage() {
   return (
     <OpsPageShell>
       <Box className="border-default bg-surface rounded-[var(--radius-xl)] border px-[var(--space-4)] py-[var(--space-3)] md:px-[var(--space-5)]">
-        <Flex className="items-center justify-between gap-[var(--space-3)]">
+        <Flex className="flex-col items-stretch justify-between gap-[var(--space-3)] sm:flex-row sm:items-center">
           <Box className="min-w-0">
             <Typography as="h2" variant="headingMd" className="tracking-[-0.01em]">
               배포 운영
             </Typography>
           </Box>
-          <Flex className="shrink-0 flex-wrap justify-end gap-[var(--space-2)]">
+          <Flex className="shrink-0 flex-wrap justify-start gap-[var(--space-2)] sm:justify-end">
             <Badge variant="secondary" size="sm" shape="rounded" className="border border-default bg-surface-elevated font-semibold">
               환경: {environment}
             </Badge>
@@ -107,6 +114,22 @@ export default function DeploymentsPage() {
           className="h-full rounded-[var(--radius-lg)]"
         />
       </Grid>
+
+      {readinessQuery.data ? (
+        <OpsSectionCard title="배포 전 게이트" description="미해결 운영 이슈를 기준으로 배포 전 확인이 필요한 항목입니다.">
+          <Flex className="flex-wrap items-start justify-between gap-[var(--space-3)]">
+            <Flex className="flex-wrap items-center gap-[var(--space-2)]">
+              <Badge size="sm" variant={readinessQuery.data.status === "blocked" ? "danger" : readinessQuery.data.status === "approval_required" ? "warning" : "success"}>
+                {readinessQuery.data.status === "blocked" ? "배포 차단" : readinessQuery.data.status === "approval_required" ? "승인 필요" : "배포 가능"}
+              </Badge>
+              <Typography as="p" variant="caption" color="muted">Critical/High {readinessQuery.data.criticalHighCount} · 미지정 {readinessQuery.data.unassignedCount}</Typography>
+            </Flex>
+            <Box className="min-w-0 flex-1 xl:max-w-[720px]">
+              {readinessQuery.data.recommendations.map((recommendation) => <Typography key={recommendation} as="p" variant="caption" color="muted" className="mb-[var(--space-1)]">• {recommendation}</Typography>)}
+            </Box>
+          </Flex>
+        </OpsSectionCard>
+      ) : null}
 
       <Grid className="items-start gap-[var(--space-4)] xl:grid-cols-[minmax(0,1fr)_420px]">
         <Box className="min-w-0 space-y-[var(--space-4)]">
@@ -147,18 +170,12 @@ export default function DeploymentsPage() {
         <Box className="min-w-0">
           <OpsSectionCard
             title="배포 등록"
-            description="운영자가 추적할 수 있는 버전명과 변경 요약을 남깁니다."
+            description={canOperate ? "운영자가 추적할 수 있는 버전명과 변경 요약을 남깁니다." : "조회 전용 역할에서는 배포를 등록할 수 없습니다."}
           >
-            <DeploymentRegisterForm
-              form={form}
-              isSubmitting={createMutation.isPending}
-              onSubmit={(values) => createMutation.mutate(values)}
-            />
+            {canOperate ? <DeploymentRegisterForm form={form} isSubmitting={createMutation.isPending} onSubmit={(values) => createMutation.mutate(values)} /> : <Typography as="p" variant="bodySm" color="muted">배포 이력과 영향 분석은 계속 확인할 수 있습니다.</Typography>}
           </OpsSectionCard>
         </Box>
       </Grid>
-
-      <Spinner open={createMutation.isPending} fullscreen size="lg" color="primary" />
     </OpsPageShell>
   );
 }

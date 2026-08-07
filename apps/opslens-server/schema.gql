@@ -31,6 +31,12 @@ input AssignIssueInput {
   issueId: String!
 }
 
+input BulkUpdateIssuesInput {
+  assignee: String
+  issueIds: [String!]!
+  status: String
+}
+
 input CreateOpsAlertInput {
   level: String!
   link: String
@@ -89,6 +95,14 @@ type DeploymentImpactReportType {
   version: String!
 }
 
+type DeploymentReadinessType {
+  criticalHighCount: Int!
+  environment: String!
+  recommendations: [String!]!
+  status: String!
+  unassignedCount: Int!
+}
+
 type DeploymentType {
   approver: String
   changelog: String!
@@ -116,6 +130,16 @@ type ErrorClusterType {
   severity: String!
   suggestedActions: [String!]!
   title: String!
+}
+
+type IncidentTimelineItemType {
+  actor: String
+  detail: String!
+  id: String!
+  kind: String!
+  occurredAt: DateTime!
+  title: String!
+  tone: String!
 }
 
 type IssueCommentType {
@@ -150,6 +174,7 @@ type IssueSummaryType {
 }
 
 type IssueType {
+  acknowledgedAt: DateTime
   affectedArea: String
   assignee: String
   comments: [IssueCommentType!]!
@@ -163,9 +188,12 @@ type IssueType {
   lastOccurredAt: DateTime!
   logs: [LogEventType!]!
   occurrenceCount: Int!
+  postmortemUrl: String
   priority: String!
   probableCauses: [String!]!
   reproductionGuide: String!
+  resolvedAt: DateTime
+  rootCause: String
   serviceName: String!
   severity: String!
   slaDueAt: DateTime
@@ -208,6 +236,7 @@ type Mutation {
   addIssueComment(input: AddIssueCommentInput!): IssueType!
   analyzeLogs(input: AnalyzeLogsInputModel!): AnalyzeLogsPayloadType!
   assignIssue(input: AssignIssueInput!): IssueType!
+  bulkUpdateIssues(input: BulkUpdateIssuesInput!): Int!
   createOpsAlert(input: CreateOpsAlertInput!): OpsAlertType!
   deleteOpsAlert(alertId: String!): Boolean!
   deleteQaScenario(scenarioId: String!): Boolean!
@@ -216,7 +245,10 @@ type Mutation {
   markAllOpsAlertsRead: Boolean!
   markOpsAlertRead(alertId: String!): OpsAlertType!
   registerDeployment(input: RegisterDeploymentInput!): DeploymentType!
+  retryPendingAlertDeliveries: Float!
+  updateIncidentClosure(input: UpdateIncidentClosureInput!): IssueType!
   updateIssueStatus(input: UpdateIssueStatusInput!): IssueType!
+  updateReportAction(input: UpdateReportActionInput!): OpsReportActionType!
   updateReportSnapshot(input: UpdateReportSnapshotInput!): OpsReportSnapshotType!
   upsertOpsSetting(input: UpsertOpsSettingInput!): OpsSettingType!
 }
@@ -257,6 +289,28 @@ type OpsAuditLogType {
   targetType: String!
 }
 
+type OpsNotificationDeliveryType {
+  alertId: String!
+  attempts: Int!
+  channel: String!
+  deliveredAt: DateTime
+  id: String!
+  lastError: String
+  nextAttemptAt: DateTime
+  status: String!
+}
+
+type OpsReportActionType {
+  completedAt: DateTime
+  completedBy: String
+  description: String!
+  id: String!
+  owner: String!
+  priority: String!
+  snapshotId: String!
+  title: String!
+}
+
 type OpsReportSnapshotType {
   environment: String
   executiveSummary: String!
@@ -279,6 +333,7 @@ type OpsReportType {
   priorityIssues: [ReportIssueType!]!
   riskLevel: String!
   shareText: String!
+  snapshotId: String!
   technicalSummary: String!
   title: String!
 }
@@ -326,17 +381,22 @@ type Query {
   aiBriefing(filter: DashboardFilterInput): String!
   dashboardSummary(filter: DashboardFilterInput): DashboardSummaryType!
   deploymentImpact(input: DeploymentImpactInput!): DeploymentImpactReportType!
+  deploymentReadiness(environment: String!): DeploymentReadinessType!
   deployments(environment: String): [DeploymentType!]!
+  incidentTimeline(issueId: String!): [IncidentTimelineItemType!]!
   issueDetail(issueId: String!): IssueType!
   issueSummary(filter: IssueFilterInput): IssueSummaryType!
   issues(filter: IssueFilterInput): IssueListPayloadType!
   logAnalysisSessions: [LogAnalysisSessionType!]!
+  notificationDeliveries: [OpsNotificationDeliveryType!]!
   opsAlerts: [OpsAlertType!]!
   opsAuditLogs(filter: OpsAuditLogFilterInput): [OpsAuditLogType!]!
   opsReport(filter: DashboardFilterInput): OpsReportType!
   opsSettings: [OpsSettingType!]!
   recentQaScenarios: [QaScenarioType!]!
+  reportActions(snapshotId: String!): [OpsReportActionType!]!
   reportSnapshots: [OpsReportSnapshotType!]!
+  serviceHealth(filter: DashboardFilterInput): [ServiceHealthType!]!
 }
 
 input RegisterDeploymentInput {
@@ -346,6 +406,7 @@ input RegisterDeploymentInput {
   deployedAt: String
   environment: String!
   monitoringWindowMin: Int
+  overrideReason: String
   owner: String
   rollbackCriteria: String
   scopeTags: [String!]
@@ -384,6 +445,14 @@ type ReportKpiType {
   value: String!
 }
 
+type ServiceHealthType {
+  criticalHighCount: Int!
+  lastOccurredAt: DateTime
+  openIssueCount: Int!
+  serviceName: String!
+  status: String!
+}
+
 type SeverityCountType {
   count: Int!
   severity: String!
@@ -394,9 +463,21 @@ type TrendPointType {
   hour: String!
 }
 
+input UpdateIncidentClosureInput {
+  issueId: String!
+  postmortemUrl: String
+  rootCause: String
+}
+
 input UpdateIssueStatusInput {
   issueId: String!
   status: String!
+}
+
+input UpdateReportActionInput {
+  actionId: String!
+  actor: String
+  completed: Boolean!
 }
 
 input UpdateReportSnapshotInput {

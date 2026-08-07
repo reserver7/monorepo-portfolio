@@ -7,7 +7,7 @@
 | 앱 | 필수 변수 |
 | --- | --- |
 | Collab Server | `STATE_BACKEND=postgres`, `COLLAB_DATABASE_URL`, `REDIS_URL`, `COLLAB_SESSION_SECRET`, `CORS_ORIGINS` |
-| OpsLens Server | `DATABASE_URL`, `DIRECT_DATABASE_URL`, `AUTH_JWT_SECRET`, `AUTH_BRIDGE_SECRET`, `OPS_INGESTION_KEY` |
+| OpsLens Server | `DATABASE_URL`, `DIRECT_DATABASE_URL`, `AUTH_JWT_SECRET`, `AUTH_BRIDGE_SECRET`, `OPS_INGESTION_KEY`, `CORS_ORIGINS` |
 | Collab Web | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL` |
 | OpsLens Web | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, `OPSLENS_AUTH_BRIDGE_SECRET` |
 
@@ -25,7 +25,15 @@
 | Collab Web | Vercel | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL` |
 | OpsLens Web | Vercel | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, `OPSLENS_AUTH_BRIDGE_SECRET` |
 
-운영에서는 로컬 Docker URL을 사용하지 않습니다. `COLLAB_SESSION_SECRET`, `AUTH_JWT_SECRET`, `AUTH_BRIDGE_SECRET`, `OPSLENS_AUTH_BRIDGE_SECRET`, `OPS_INGESTION_KEY`는 서로 다른 32자 이상 난수로 설정합니다.
+운영에서는 로컬 Docker URL을 사용하지 않습니다. `COLLAB_SESSION_SECRET`, `AUTH_JWT_SECRET`, `AUTH_BRIDGE_SECRET`, `OPSLENS_AUTH_BRIDGE_SECRET`, `OPS_INGESTION_KEY`는 서로 다른 32자 이상 난수로 설정합니다. OpsLens Server는 운영 모드에서 `CORS_ORIGINS`가 비어 있으면 시작하지 않으며, OpsLens Web의 실제 도메인만 쉼표로 구분해 지정합니다.
+
+## OpsLens 외부 연동
+
+- Slack: `OPS_SLACK_WEBHOOK_URL`을 설정하면 Critical/High 알림이 `OpsNotificationDelivery`로 기록되고 실패 시 지수 백오프로 재시도됩니다.
+- Sentry: Relay 또는 webhook에서 `POST /ops/ingest/sentry`로 전달합니다. `x-opslens-ingestion-key` 헤더와 `OPS_INGESTION_KEY`가 일치해야 합니다.
+- CI/배포 도구: `POST /ops/ingest/logs`에 `environment`, `serviceName`, `deploymentVersion`, `logs`를 전달합니다. 배포 직후 오류 증가는 OpsLens 배포 영향 분석과 커맨드 센터에 반영됩니다.
+
+배포 전에는 `pnpm db:opslens:migrate:deploy`로 최신 마이그레이션을 적용한 뒤, OpsLens Web/Server를 같은 production 환경변수 세트로 빌드합니다.
 
 ## 배포 전 확인
 

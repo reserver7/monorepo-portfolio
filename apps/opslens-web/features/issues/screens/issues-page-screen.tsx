@@ -13,22 +13,28 @@ import {
   toOptionalServiceName,
   toOptionalSeverity,
   toOptionalStatus,
+  bulkUpdateIssues,
   type Issue
 } from "@repo/opslens";
 import {
   Badge,
   Box,
+  Button,
   DataTable,
   DataTableColumnHeader,
   Flex,
+  Grid,
+  Input,
+  Select,
   type DataTableColumnDef,
   Typography
 } from "@repo/ui";
-import { keepPreviousData, useQuery } from "@repo/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { OpsPageShell, OpsSectionCard, SeverityBadge, StatusBadge } from "@/features";
 import { useOpsQueryOptions } from "@/features/common/hooks/use-ops-query-options";
 import { useOpsFilters } from "@/features/common/stores";
 import { formatDateTimeByLocale, resolveServiceLabel } from "@/features/common/utils/ops-display";
+import { downloadCsv } from "@/features/common/utils/download-csv";
 import { formatDateTime, formatNumber } from "@repo/utils";
 import { readAuthSession } from "@/lib/auth";
 import {
@@ -67,6 +73,11 @@ export default function IssuesPage() {
   const [page, setPage] = useState(1);
   const [slaRiskOnly, setSlaRiskOnly] = useState(false);
   const [pageSize, setPageSize] = useState(10);
+  const [selectedIssueIds, setSelectedIssueIds] = useState<string[]>([]);
+  const [bulkStatus, setBulkStatus] = useState("analyzing");
+  const [bulkAssignee, setBulkAssignee] = useState("");
+  const queryClient = useQueryClient();
+  const bulkMutation = useMutation({ mutationFn: () => bulkUpdateIssues({ issueIds: selectedIssueIds, status: bulkStatus as "new" | "analyzing" | "in_progress" | "resolved", assignee: bulkAssignee.trim() || undefined }), onSuccess: async () => { setSelectedIssueIds([]); setBulkAssignee(""); await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.all }); } });
 
   useEffect(() => {
     if (searchParams.get("assignee") !== "me") return;
@@ -147,6 +158,14 @@ export default function IssuesPage() {
     filterForm.setValue("sortBy", "recent");
     setSlaRiskOnly(false);
     setPage(1);
+  };
+
+  const exportIssues = () => {
+    downloadCsv(
+      `opslens-issues-${new Date().toISOString().slice(0, 10)}.csv`,
+      ["ID", "제목", "심각도", "상태", "서비스", "환경", "발생 횟수", "담당자", "최근 발생"],
+      filteredItems.map((issue) => [issue.id, issue.title, issue.severity, issue.status, issue.serviceName, issue.environment, issue.occurrenceCount, issue.assignee, issue.lastOccurredAt])
+    );
   };
 
   const columns = useMemo<Array<DataTableColumnDef<Issue>>>(
@@ -230,6 +249,9 @@ export default function IssuesPage() {
               최근 갱신: {lastUpdatedLabel}
             </Typography>
             <Badge variant="secondary" size="sm">서비스: {serviceLabel}</Badge>
+            <Button type="button" variant="secondary" size="sm" onClick={exportIssues} disabled={filteredItems.length === 0}>
+              CSV 내보내기
+            </Button>
           </Flex>
         </Flex>
       </Box>
@@ -251,6 +273,7 @@ export default function IssuesPage() {
             setPage(1);
           }}
         />
+        {selectedIssueIds.length > 0 ? <Box className="border-primary/30 bg-primary/5 my-[var(--space-3)] rounded-[var(--radius-md)] border p-[var(--space-2)]"><Typography as="p" variant="caption" className="mb-[var(--space-2)] font-semibold">{selectedIssueIds.length}개 선택</Typography><Grid className="min-w-0 gap-[var(--space-2)] sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]"><Select className="min-w-0" value={bulkStatus} onChange={(value) => setBulkStatus(String(value))} options={[{ label: "분석중", value: "analyzing" }, { label: "대응중", value: "in_progress" }, { label: "해결", value: "resolved" }]} /><Input value={bulkAssignee} onChange={(event) => setBulkAssignee(event.target.value)} placeholder="담당자 (선택)" /><Button type="button" size="sm" loading={bulkMutation.isPending} onClick={() => bulkMutation.mutate()}>일괄 적용</Button><Button type="button" variant="ghost" size="sm" onClick={() => setSelectedIssueIds([])}>선택 해제</Button></Grid></Box> : null}
 
         <DataTable
           columns={columns}
@@ -276,6 +299,10 @@ export default function IssuesPage() {
             setPage(1);
           }}
           getRowId={(row) => row.id}
+          selectable
+          rowSelectionMode="multiple"
+          selectedRowKeys={selectedIssueIds}
+          onSelectedRowKeysChange={setSelectedIssueIds}
         />
       </OpsSectionCard>
     </OpsPageShell>

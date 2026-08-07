@@ -103,3 +103,16 @@ export function OpsCardListSkeleton({ count = 4 }: { count?: number }) {
     </Box>
   );
 }
+
+export function OpsSectionSkeleton({ rows = 3, className = "" }: { rows?: number; className?: string }) {
+  return (
+    <Box className={`space-y-[var(--space-2)] ${className}`}>
+      {Array.from({ length: rows }).map((_, index) => (
+        <Skeleton
+          key={`ops-section-skeleton-${index}`}
+          className={index === 0 ? "h-5 w-2/5 rounded-[var(--radius-sm)]" : "h-12 w-full rounded-[var(--radius-md)]"}
+        />
+      ))}
+    </Box>
+  );
+}

@@ -35,6 +35,14 @@ export type DashboardSummary = {
   aiBriefing: string;
 };
 
+export type ServiceHealth = {
+  serviceName: string;
+  status: "healthy" | "degraded" | "incident" | string;
+  openIssueCount: number;
+  criticalHighCount: number;
+  lastOccurredAt?: string | null;
+};
+
 export type ErrorCluster = {
   title: string;
   normalizedMessage: string;
@@ -57,6 +65,10 @@ export type Issue = {
   priority: string;
   slaDueAt?: string | null;
   escalationLevel: number;
+  acknowledgedAt?: string | null;
+  resolvedAt?: string | null;
+  rootCause?: string | null;
+  postmortemUrl?: string | null;
   summary: string;
   probableCauses: string[];
   suggestedActions: string[];
@@ -89,6 +101,16 @@ export type Issue = {
     body: string;
     createdAt: string;
   }>;
+};
+
+export type IncidentTimelineItem = {
+  id: string;
+  kind: "incident" | "deployment" | "log" | "comment" | "activity" | string;
+  title: string;
+  detail: string;
+  actor?: string;
+  tone: Severity | "info" | "warning" | string;
+  occurredAt: string;
 };
 
 export type IssueSummary = {
@@ -134,7 +156,16 @@ export type DeploymentImpactReport = {
   }>;
 };
 
+export type DeploymentReadiness = {
+  environment: Environment;
+  status: "ready" | "approval_required" | "blocked" | string;
+  criticalHighCount: number;
+  unassignedCount: number;
+  recommendations: string[];
+};
+
 export type OpsReport = {
+  snapshotId: string;
   title: string;
   generatedAt: string;
   riskLevel: "normal" | "warning" | "critical" | string;
@@ -151,6 +182,17 @@ export type OpsReport = {
     serviceName: string;
     occurrenceCount: number;
   }>;
+};
+
+export type OpsReportAction = {
+  id: string;
+  snapshotId: string;
+  title: string;
+  description: string;
+  owner: string;
+  priority: string;
+  completedAt?: string | null;
+  completedBy?: string | null;
 };
 
 export type OpsReportSnapshot = {
@@ -190,6 +232,17 @@ export type OpsAlert = {
   link?: string | null;
   readAt?: string | null;
   createdAt: string;
+};
+
+export type OpsNotificationDelivery = {
+  id: string;
+  alertId: string;
+  channel: string;
+  status: string;
+  attempts: number;
+  lastError?: string | null;
+  nextAttemptAt?: string | null;
+  deliveredAt?: string | null;
 };
 
 export type LogAnalysisSession = {

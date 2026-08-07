@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppForm } from "@repo/forms";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
-import { getOpsAuditLogs, getOpsSettings, opslensQueryKeys, upsertOpsSetting } from "@repo/opslens";
-import { Box, toast } from "@repo/ui";
+import { getNotificationDeliveries, getOpsAuditLogs, getOpsSettings, getOpslensUsers, opslensQueryKeys, retryPendingAlertDeliveries, updateOpslensUser, upsertOpsSetting } from "@repo/opslens";
+import { Box, Button, confirm, Textarea, toast, Typography } from "@repo/ui";
 import { OpsPageShell, OpsSectionCard } from "@/features";
 import {
   changeCurrentPassword,
@@ -26,10 +26,14 @@ import {
   AuditLogPanel,
   NotificationPolicyPanel,
   OpsSettingsPanel,
-  ProfileSecurityForm
+  ProfileSecurityForm,
+  UserManagementPanel,
+  IntegrationCatalogPanel,
+  ServiceCatalogPanel
 } from "../components";
 import type { PasswordFormValues, ProfileFormValues } from "../types";
 import { formatSettingsDateTime, parseJsonLabel } from "../utils/settings-utils";
+import { downloadCsv } from "@/features/common/utils/download-csv";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -59,6 +63,8 @@ export default function SettingsPage() {
   const [auditSeverity, setAuditSeverity] = useState("all");
   const [auditTargetType, setAuditTargetType] = useState("all");
   const [selectedAuditId, setSelectedAuditId] = useState("");
+  const [onCallDraft, setOnCallDraft] = useState("");
+  const [retentionDraft, setRetentionDraft] = useState('{"logsDays":30,"alertsDays":90,"auditDays":365,"anonymizeUserIds":true}');
   const profileForm = useAppForm<ProfileFormValues>({
     mode: "onSubmit",
     reValidateMode: "onChange",
@@ -79,6 +85,45 @@ export default function SettingsPage() {
     queryFn: getOpsSettings,
     staleTime: 30_000
   });
+  const authSession = readAuthSession();
+  const usersQuery = useQuery({
+    queryKey: ["opslens", "users"],
+    queryFn: () => getOpslensUsers(authSession!.accessToken),
+    enabled: authSession?.user.role === "admin"
+  });
+  const updateUserMutation = useMutation({
+    mutationFn: ({ userId, input }: { userId: string; input: { role?: "admin" | "operator" | "viewer"; isActive?: boolean } }) =>
+      updateOpslensUser(authSession!.accessToken, userId, input),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["opslens", "users"] });
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.auditLogs() });
+      toast.success("사용자 권한을 변경했습니다.");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "사용자 변경에 실패했습니다.")
+  });
+  const integrationMutation = useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      upsertOpsSetting({
+        key: `integration.${id}`,
+        value: JSON.stringify({ enabled, updatedAt: new Date().toISOString() }),
+        description: `${id} 외부 연동 준비 상태`,
+        category: "integration",
+        riskLevel: "medium",
+        editable: true,
+        updatedBy: profileEmail || "admin",
+        changeReason: enabled ? "외부 연동 준비 상태 활성화" : "외부 연동 준비 상태 비활성화"
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.settings() });
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.auditLogs() });
+      toast.success("연동 준비 상태를 저장했습니다.");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "연동 상태 저장에 실패했습니다.")
+  });
+  const serviceCatalogMutation = useMutation({
+    mutationFn: (value: string) => upsertOpsSetting({ key: "service.catalog", value, description: "서비스 오너·온콜·런북·SLO 카탈로그", category: "service", riskLevel: "high", editable: true, updatedBy: profileEmail || "admin", changeReason: "서비스 카탈로그 갱신" }),
+    onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.settings() }); toast.success("서비스 카탈로그를 저장했습니다."); }
+  });
   const auditLogsQuery = useQuery({
     queryKey: [...opslensQueryKeys.auditLogs(), auditQuery, auditSeverity, auditTargetType],
     queryFn: () =>
@@ -89,6 +134,14 @@ export default function SettingsPage() {
         limit: 100
       }),
     staleTime: 15_000
+  });
+  const deliveriesQuery = useQuery({ queryKey: ["opslens", "notification-deliveries"], queryFn: getNotificationDeliveries, enabled: authSession?.user.role === "admin" });
+  const retryDeliveriesMutation = useMutation({
+    mutationFn: retryPendingAlertDeliveries,
+    onSuccess: async () => {
+      await deliveriesQuery.refetch();
+      toast.success("대기 중인 알림 delivery 재시도를 실행했습니다.");
+    }
   });
 
   useEffect(() => {
@@ -113,9 +166,19 @@ export default function SettingsPage() {
   }, [profileForm]);
 
   const settings = opsSettingsQuery.data ?? [];
+  const onCallSetting = settings.find((setting) => setting.key === "alert.on_call");
+  const retentionSetting = settings.find((setting) => setting.key === "data.retention");
   const auditLogs = auditLogsQuery.data ?? [];
   const selectedSetting = settings.find((setting) => setting.key === selectedSettingKey) ?? settings[0];
   const selectedAuditLog = auditLogs.find((log) => log.id === selectedAuditId) ?? auditLogs[0];
+
+  const exportAuditLogs = () => {
+    downloadCsv(
+      `opslens-audit-logs-${new Date().toISOString().slice(0, 10)}.csv`,
+      ["시간", "위험도", "행위", "요약", "수행자", "대상", "대상 ID"],
+      auditLogs.map((log) => [log.createdAt, log.severity, log.action, log.summary, log.actor, log.targetType, log.targetId])
+    );
+  };
 
   useEffect(() => {
     if (!selectedSetting) return;
@@ -128,6 +191,12 @@ export default function SettingsPage() {
     if (!selectedAuditLog) return;
     setSelectedAuditId((current) => current || selectedAuditLog.id);
   }, [selectedAuditLog?.id]);
+
+  useEffect(() => {
+    if (!onCallSetting) return;
+    setOnCallDraft(onCallSetting.value);
+  }, [onCallSetting?.value]);
+  useEffect(() => { if (retentionSetting?.value) setRetentionDraft(retentionSetting.value); }, [retentionSetting?.value]);
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -259,6 +328,29 @@ export default function SettingsPage() {
       toast.error("알림 정책 저장에 실패했습니다.");
     }
   });
+  const saveOnCallMutation = useMutation({
+    mutationFn: () => {
+      const normalized = onCallDraft.trim();
+      if (!normalized) throw new Error("온콜 담당자 또는 인수인계 채널을 입력하세요.");
+      return upsertOpsSetting({
+        key: "alert.on_call",
+        value: normalized,
+        description: "현재 온콜 담당자와 에스컬레이션 채널",
+        category: "alert",
+        riskLevel: "high",
+        editable: true,
+        updatedBy: profileEmail || "admin",
+        changeReason: "온콜 및 에스컬레이션 연락처 변경"
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.settings() });
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.auditLogs() });
+      toast.success("온콜 정보를 저장했습니다.");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "온콜 정보 저장에 실패했습니다.")
+  });
+  const saveRetentionMutation = useMutation({ mutationFn: () => { JSON.parse(retentionDraft); return upsertOpsSetting({ key: "data.retention", value: retentionDraft, description: "운영 데이터 보관·익명화 정책", category: "governance", riskLevel: "high", editable: true, updatedBy: profileEmail || "admin", changeReason: "데이터 보존 정책 변경" }); }, onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.settings() }); toast.success("데이터 보존 정책을 저장했습니다."); }, onError: () => toast.error("보존 정책 JSON 형식을 확인하세요.") });
 
   const logoutAllMutation = useMutation({
     mutationFn: async () => {
@@ -359,6 +451,31 @@ export default function SettingsPage() {
         </OpsSectionCard>
       </Box>
 
+      {authSession?.user.role === "admin" ? (
+        <OpsSectionCard title="사용자 관리" description="사용자 역할과 계정 활성 상태를 관리합니다.">
+          <UserManagementPanel
+            users={usersQuery.data ?? []}
+            currentUserId={authSession.user.id}
+            isLoading={usersQuery.isLoading}
+            pendingUserId={updateUserMutation.variables?.userId}
+            onUpdate={(user, input) => updateUserMutation.mutate({ userId: user.id, input })}
+          />
+        </OpsSectionCard>
+      ) : null}
+
+      <OpsSectionCard title="외부 연동" description="실제 secret은 배포 환경에만 주입하고, 여기서는 연결 준비 상태와 감사 이력만 관리합니다.">
+        <IntegrationCatalogPanel
+          settings={settings}
+          isAdmin={authSession?.user.role === "admin"}
+          pendingId={integrationMutation.variables?.id}
+          onSetEnabled={(id, enabled) => integrationMutation.mutate({ id, enabled })}
+        />
+      </OpsSectionCard>
+
+      <OpsSectionCard title="서비스 카탈로그" description="서비스 오너, 온콜, 런북, SLO를 팀 공용 운영 데이터로 관리합니다.">
+        <ServiceCatalogPanel setting={settings.find((setting) => setting.key === "service.catalog")} isAdmin={authSession?.user.role === "admin"} saving={serviceCatalogMutation.isPending} onSave={(value) => serviceCatalogMutation.mutate(value)} />
+      </OpsSectionCard>
+
       <Box ref={workspaceSectionRef}>
         <OpsSectionCard title="운영 설정" description="운영 정책을 검토하고 변경 사유와 함께 저장합니다.">
           <OpsSettingsPanel
@@ -381,7 +498,21 @@ export default function SettingsPage() {
               setSettingValueDraft(parseJsonLabel(selectedSetting.value));
               setSettingReasonDraft("");
             }}
-            onSave={() => saveOpsSettingMutation.mutate()}
+            onSave={() => {
+              if (selectedSetting?.riskLevel !== "critical") {
+                saveOpsSettingMutation.mutate();
+                return;
+              }
+              void confirm({
+                title: "중요 운영 설정을 변경할까요?",
+                description: "변경 내용은 감사 로그에 기록되며 운영 환경에 즉시 영향을 줄 수 있습니다.",
+                confirmText: "변경 저장",
+                cancelText: "취소",
+                confirmVariant: "danger"
+              }).then((confirmed) => {
+                if (confirmed) saveOpsSettingMutation.mutate();
+              });
+            }}
           />
         </OpsSectionCard>
       </Box>
@@ -397,6 +528,24 @@ export default function SettingsPage() {
           />
         </OpsSectionCard>
       </Box>
+
+      <OpsSectionCard title="온콜 및 에스컬레이션" description="중요 인시던트의 최초 대응자와 인수인계 채널을 단일 운영 기록으로 관리합니다.">
+        <Textarea
+          label="온콜 담당자 / 채널"
+          value={onCallDraft}
+          onChange={(event) => setOnCallDraft(event.target.value)}
+          rows={4}
+          disabled={authSession?.user.role !== "admin"}
+          placeholder="예: Primary: minji@company.com · Backup: jun@company.com · Slack: #incident-response"
+        />
+        <Typography as="p" variant="caption" color="muted" className="mt-[var(--space-2)]">변경 내용은 감사 로그에 남으며, 커맨드 센터에서 바로 확인할 수 있습니다.</Typography>
+        {authSession?.user.role === "admin" ? <Button type="button" size="sm" className="mt-[var(--space-3)]" loading={saveOnCallMutation.isPending} disabled={onCallDraft.trim() === (onCallSetting?.value ?? "").trim()} onClick={() => saveOnCallMutation.mutate()}>온콜 정보 저장</Button> : null}
+      </OpsSectionCard>
+
+      <OpsSectionCard title="데이터 보존 정책" description="로그·알림·감사 로그의 보관 기간과 개인정보 익명화 기준을 관리합니다.">
+        <Textarea label="보존 정책 JSON" value={retentionDraft} onChange={(event) => setRetentionDraft(event.target.value)} rows={4} disabled={authSession?.user.role !== "admin"} className="font-mono text-caption" />
+        {authSession?.user.role === "admin" ? <Button type="button" size="sm" className="mt-[var(--space-2)]" loading={saveRetentionMutation.isPending} onClick={() => saveRetentionMutation.mutate()}>보존 정책 저장</Button> : null}
+      </OpsSectionCard>
 
       <Box ref={auditSectionRef}>
         <OpsSectionCard
@@ -419,9 +568,17 @@ export default function SettingsPage() {
               setAuditSeverity("all");
               setAuditTargetType("all");
             }}
+            onExport={exportAuditLogs}
           />
         </OpsSectionCard>
       </Box>
+
+      {authSession?.user.role === "admin" ? <OpsSectionCard title="알림 delivery" description="Slack 전송 상태와 실패 재시도를 관리합니다.">
+        <Box className="space-y-[var(--space-2)]">
+          <Button type="button" size="sm" variant="secondary" loading={retryDeliveriesMutation.isPending} onClick={() => retryDeliveriesMutation.mutate()}>실패 delivery 재시도</Button>
+          {(deliveriesQuery.data ?? []).length === 0 ? <Typography as="p" variant="bodySm" color="muted">아직 기록된 알림 delivery가 없습니다.</Typography> : (deliveriesQuery.data ?? []).map((delivery) => <Box key={delivery.id} className="border-default flex flex-wrap items-center justify-between gap-[var(--space-2)] rounded-[var(--radius-md)] border p-[var(--space-3)]"><Typography as="p" variant="bodySm" className="font-semibold">{delivery.channel} · {delivery.status}</Typography><Typography as="p" variant="caption" color="muted">시도 {delivery.attempts}회 {delivery.lastError ? `· ${delivery.lastError}` : ""}</Typography></Box>)}
+        </Box>
+      </OpsSectionCard> : null}
     </OpsPageShell>
   );
 }

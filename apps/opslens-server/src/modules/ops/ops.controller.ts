@@ -8,11 +8,13 @@ import {
   Query,
   ServiceUnavailableException,
   Sse,
-  UnauthorizedException
+  UnauthorizedException,
+  UseGuards
 } from "@nestjs/common";
 import { interval, from, of, type Observable } from "rxjs";
 import { catchError, filter, map, switchMap } from "rxjs/operators";
 import { env } from "../../config/env.js";
+import { OpsAuthGuard } from "../auth/auth.guard.js";
 import { verifyIngestionKey } from "./ingestion-auth.js";
 import { OpsService } from "./ops.service.js";
 
@@ -28,6 +30,15 @@ type LogIngestionBody = {
   source?: string;
   deploymentVersion?: string;
   logs?: string | string[];
+};
+
+type SentryIngestionBody = {
+  environment?: string;
+  project?: string;
+  message?: string;
+  level?: string;
+  timestamp?: string;
+  tags?: { service?: string; release?: string };
 };
 
 @Controller("ops")
@@ -65,6 +76,25 @@ export class OpsController {
     });
   }
 
+  @Post("ingest/sentry")
+  ingestSentry(
+    @Headers("x-opslens-ingestion-key") ingestionKey: string | undefined,
+    @Body() body: SentryIngestionBody
+  ) {
+    const serviceName = body.tags?.service?.trim() || body.project?.trim() || "sentry";
+    const message = body.message?.trim();
+    if (!message) throw new BadRequestException("Sentry message 값이 필요합니다.");
+    const timestamp = body.timestamp?.trim() || new Date().toISOString();
+    return this.ingestLogs(ingestionKey, {
+      environment: body.environment?.trim() || "prod",
+      serviceName,
+      source: "sentry",
+      deploymentVersion: body.tags?.release?.trim(),
+      logs: `${timestamp} ${body.level?.trim() || "error"} ${message}`
+    });
+  }
+
+  @UseGuards(OpsAuthGuard)
   @Sse("log-tail")
   logTail(@Query() query: LogTailQuery): Observable<MessageEvent> {
     let lastSentId = "";

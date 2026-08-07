@@ -7,7 +7,7 @@ import { AiService } from "../ai/ai.service.js";
 import type { DashboardFilterInput } from "./ops.inputs.js";
 import { buildIssueWhere, toEnvironment } from "./ops.filters.js";
 import { toIssueTitleKey } from "./ops.mappers.js";
-import type { DashboardSummaryType } from "./ops.types.js";
+import type { DashboardSummaryType, ServiceHealthType } from "./ops.types.js";
 
 @Injectable()
 export class OpsDashboardService {
@@ -294,6 +294,29 @@ export class OpsDashboardService {
 
     this.writeDashboardSummaryCache(cacheKey, summary);
     return summary;
+  }
+
+  async getServiceHealth(filter?: DashboardFilterInput): Promise<ServiceHealthType[]> {
+    const issues = await this.prisma.issue.findMany({
+      where: buildIssueWhere(filter),
+      select: { serviceName: true, severity: true, status: true, lastOccurredAt: true }
+    });
+    const services = new Map<string, ServiceHealthType>();
+    for (const issue of issues) {
+      const current = services.get(issue.serviceName) ?? {
+        serviceName: issue.serviceName,
+        status: "healthy",
+        openIssueCount: 0,
+        criticalHighCount: 0,
+        lastOccurredAt: null
+      };
+      if (issue.status !== "resolved") current.openIssueCount += 1;
+      if (issue.status !== "resolved" && (issue.severity === "critical" || issue.severity === "high")) current.criticalHighCount += 1;
+      if (!current.lastOccurredAt || current.lastOccurredAt < issue.lastOccurredAt) current.lastOccurredAt = issue.lastOccurredAt;
+      current.status = current.criticalHighCount > 0 ? "incident" : current.openIssueCount > 0 ? "degraded" : "healthy";
+      services.set(issue.serviceName, current);
+    }
+    return [...services.values()].sort((a, b) => b.criticalHighCount - a.criticalHighCount || b.openIssueCount - a.openIssueCount || a.serviceName.localeCompare(b.serviceName));
   }
 
   async aiBriefing(filter?: DashboardFilterInput): Promise<string> {

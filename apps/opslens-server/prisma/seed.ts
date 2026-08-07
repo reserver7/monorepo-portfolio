@@ -654,6 +654,21 @@ async function main(): Promise<void> {
         editable: true,
         updatedBy: "OpsLens Admin",
         changeReason: "배포 가드레일 기본값 구성"
+      },
+      {
+        id: "setting-oncall-primary",
+        key: "oncall.primary",
+        value: {
+          primary: "ops-oncall",
+          escalationMinutes: { critical: 15, high: 60 },
+          escalationTarget: "tech-lead"
+        },
+        description: "Critical/High 알림의 1차 담당자와 에스컬레이션 기준",
+        category: "oncall",
+        riskLevel: "high",
+        editable: true,
+        updatedBy: "OpsLens Admin",
+        changeReason: "온콜 및 에스컬레이션 기본 정책 구성"
       }
     ]
   });

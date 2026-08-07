@@ -1,4 +1,5 @@
 import { Field, InputType, Int } from "@nestjs/graphql";
+import { IsUrl } from "class-validator";
 
 @InputType()
 export class DashboardFilterInput {
@@ -86,6 +87,9 @@ export class RegisterDeploymentInput {
   @Field(() => String, { nullable: true })
   approver?: string;
 
+  @Field(() => String, { nullable: true })
+  overrideReason?: string;
+
   @Field(() => [String], { nullable: true })
   scopeTags?: string[];
 
@@ -121,12 +125,37 @@ export class UpdateIssueStatusInput {
 }
 
 @InputType()
+export class UpdateIncidentClosureInput {
+  @Field(() => String)
+  issueId!: string;
+
+  @Field(() => String, { nullable: true })
+  rootCause?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsUrl({ require_tld: false }, { message: "postmortemUrl은 올바른 URL이어야 합니다." })
+  postmortemUrl?: string;
+}
+
+@InputType()
 export class AssignIssueInput {
   @Field(() => String)
   issueId!: string;
 
   @Field(() => String)
   assignee!: string;
+}
+
+@InputType()
+export class BulkUpdateIssuesInput {
+  @Field(() => [String])
+  issueIds!: string[];
+
+  @Field(() => String, { nullable: true })
+  status?: string;
+
+  @Field(() => String, { nullable: true })
+  assignee?: string;
 }
 
 @InputType()
@@ -247,6 +276,18 @@ export class UpdateReportSnapshotInput {
 
   @Field(() => Boolean, { nullable: true })
   markShared?: boolean;
+
+  @Field(() => String, { nullable: true })
+  actor?: string;
+}
+
+@InputType()
+export class UpdateReportActionInput {
+  @Field(() => String)
+  actionId!: string;
+
+  @Field(() => Boolean)
+  completed!: boolean;
 
   @Field(() => String, { nullable: true })
   actor?: string;
