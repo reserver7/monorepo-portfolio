@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Badge, Box, Button, Flex, Grid, StatCard, Typography } from "@repo/ui";
+import { Badge, Box, Button, Flex, Grid, Input, StatCard, Textarea, Typography, toast } from "@repo/ui";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
-import { getDeploymentImpact, getDeploymentReadiness, getDeployments, opslensQueryKeys, registerDeployment } from "@repo/opslens";
+import { getDeploymentImpact, getDeploymentReadiness, getDeployments, opslensQueryKeys, registerDeployment, updateDeploymentDecision } from "@repo/opslens";
 import { OpsPageShell, OpsSectionCard } from "@/features";
 import { useOpsQueryOptions } from "@/features/common/hooks/use-ops-query-options";
 import { useOpsPermissions } from "@/features/common/hooks/use-ops-permissions";
@@ -31,6 +31,8 @@ export default function DeploymentsPage() {
   const deployments = deploymentsQuery.data ?? [];
   const latestVersion = useMemo(() => deployments[0]?.version, [deployments]);
   const [selectedVersion, setSelectedVersion] = useState<string | undefined>(undefined);
+  const [decisionActor, setDecisionActor] = useState("");
+  const [decisionReason, setDecisionReason] = useState("");
 
   const impactQuery = useQuery(useOpsQueryOptions("default", {
     queryKey: opslensQueryKeys.deploymentImpact(environment, selectedVersion),
@@ -54,6 +56,7 @@ export default function DeploymentsPage() {
         checklist: values.checklist,
         rollbackCriteria: values.rollbackCriteria.trim() || undefined,
         monitoringWindowMin: values.monitoringWindowMin,
+        ciUrl: values.ciUrl.trim() || undefined,
         changelog: values.changelog.trim(),
         environment
       }),
@@ -69,6 +72,15 @@ export default function DeploymentsPage() {
   );
   const increasedIssueCount = impactQuery.data?.increasedIssueCount ?? 0;
   const totalAfterErrorCount = impactQuery.data?.totalAfterErrorCount ?? 0;
+  const decisionMutation = useMutation({
+    mutationFn: (decision: "approved" | "rejected" | "rollback_requested" | "rolled_back") => updateDeploymentDecision({ deploymentId: selectedDeployment!.id, decision, approver: decision === "approved" || decision === "rejected" ? decisionActor : undefined, reason: decision === "rollback_requested" || decision === "rolled_back" ? decisionReason : undefined }),
+    onSuccess: async () => {
+      setDecisionReason("");
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.deployments(environment) });
+      toast.success("배포 결정을 기록했습니다.");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "배포 결정을 저장하지 못했습니다.")
+  });
 
   return (
     <OpsPageShell>
@@ -164,6 +176,14 @@ export default function DeploymentsPage() {
                 selectedVersion={selectedVersion}
               />
             </OpsSectionCard>
+
+            {selectedDeployment ? <OpsSectionCard title="승인 및 롤백 기록" description="승인자, CI 링크, 롤백 판단을 배포 이력에 남깁니다.">
+              <Box className="space-y-[var(--space-3)]">
+                <Flex className="flex-wrap gap-[var(--space-2)]"><Badge size="sm" variant={selectedDeployment.approvalStatus === "approved" ? "success" : selectedDeployment.approvalStatus === "rejected" ? "danger" : "secondary"}>승인 {selectedDeployment.approvalStatus}</Badge><Badge size="sm" variant={selectedDeployment.rollbackStatus === "rolled_back" ? "danger" : selectedDeployment.rollbackStatus === "rollback_requested" ? "warning" : "secondary"}>롤백 {selectedDeployment.rollbackStatus}</Badge></Flex>
+                {selectedDeployment.ciUrl ? <Button asChild variant="outline" size="sm"><a href={selectedDeployment.ciUrl} target="_blank" rel="noreferrer">CI / 배포 실행 보기</a></Button> : null}
+                {canOperate ? <><Input label="승인/반려자" value={decisionActor} onChange={(event) => setDecisionActor(event.target.value)} placeholder="예: tech-lead@company.com" /><Flex className="flex-wrap gap-[var(--space-2)]"><Button type="button" size="sm" variant="secondary" loading={decisionMutation.isPending} disabled={!decisionActor.trim()} onClick={() => decisionMutation.mutate("approved")}>승인 기록</Button><Button type="button" size="sm" variant="outline" loading={decisionMutation.isPending} disabled={!decisionActor.trim()} onClick={() => decisionMutation.mutate("rejected")}>반려 기록</Button></Flex><Textarea label="롤백 사유" value={decisionReason} onChange={(event) => setDecisionReason(event.target.value)} rows={2} placeholder="예: 결제 오류 증가로 이전 안정 버전으로 복구" /><Flex className="flex-wrap gap-[var(--space-2)]"><Button type="button" size="sm" variant="secondary" loading={decisionMutation.isPending} disabled={!decisionReason.trim()} onClick={() => decisionMutation.mutate("rollback_requested")}>롤백 요청</Button><Button type="button" size="sm" variant="danger" loading={decisionMutation.isPending} disabled={!decisionReason.trim()} onClick={() => decisionMutation.mutate("rolled_back")}>롤백 완료</Button></Flex></> : null}
+              </Box>
+            </OpsSectionCard> : null}
           </Grid>
         </Box>
 

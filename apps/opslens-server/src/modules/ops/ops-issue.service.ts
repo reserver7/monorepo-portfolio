@@ -1,5 +1,5 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from "@nestjs/common";
+import { Prisma, type OpsAlert } from "@prisma/client";
 
 import { env } from "../../config/env.js";
 import { PrismaService } from "../../integration/db/prisma.service.js";
@@ -9,19 +9,48 @@ import type {
   BulkUpdateIssuesInput,
   IssueFilterInput,
   UpdateIssueStatusInput,
+  UpdateIncidentResponseInput,
   UpdateIncidentClosureInput
 } from "./ops.inputs.js";
 import { writeOpsAuditLog } from "./ops-audit-writer.js";
 import { buildIssueWhere, toStatus } from "./ops.filters.js";
 import { toIssueType } from "./ops.mappers.js";
+import { OpsAlertDeliveryService } from "./ops-alert-delivery.service.js";
 import type { IncidentTimelineItemType, IssueListPayloadType, IssueSummaryType, IssueType } from "./ops.types.js";
 
 @Injectable()
-export class OpsIssueService {
+export class OpsIssueService implements OnModuleInit {
   private readonly issueListCache = new Map<string, { value: IssueListPayloadType; expiresAt: number }>();
   private readonly logger = new Logger(OpsIssueService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly deliveryService: OpsAlertDeliveryService) {}
+
+  onModuleInit(): void {
+    const timer = setInterval(() => void this.escalateOverdueResponses().catch((error) => this.logger.warn(`인시던트 자동 에스컬레이션 오류: ${error instanceof Error ? error.message : String(error)}`)), 60_000);
+    timer.unref();
+  }
+
+  async escalateOverdueResponses(): Promise<number> {
+    const overdue = await this.prisma.issue.findMany({
+      where: { status: { not: "resolved" }, nextUpdateAt: { lte: new Date() } },
+      take: 50
+    });
+    let escalatedCount = 0;
+    for (const issue of overdue) {
+      const escalationLevel = Math.min(issue.escalationLevel + 1, 5);
+      const claim = await this.prisma.issue.updateMany({
+        where: { id: issue.id, status: { not: "resolved" }, nextUpdateAt: { lte: new Date() } },
+        data: { escalationLevel, nextUpdateAt: null }
+      });
+      if (claim.count === 0) continue;
+      escalatedCount += 1;
+      const alert: OpsAlert = await this.prisma.opsAlert.create({ data: { level: issue.severity === "critical" ? "critical" : "high", title: `상태 공지 지연: ${issue.title}`, message: `다음 상태 공지 시각을 넘겼습니다. 지휘자 ${issue.commander || issue.assignee || "미지정"}에게 L${escalationLevel} 에스컬레이션이 필요합니다.`, source: "incident-escalation", link: `/issues/${issue.id}` } });
+      void this.deliveryService.enqueue(alert);
+      await writeOpsAuditLog(this.prisma, this.logger, { action: "incident.auto_escalated", targetType: "Issue", targetId: issue.id, summary: `${issue.title} 상태 공지 지연으로 L${escalationLevel} 자동 에스컬레이션`, metadata: { escalationLevel } });
+    }
+    if (escalatedCount > 0) this.clearCache();
+    return escalatedCount;
+  }
 
   private getIssueListCacheKey(filter?: IssueFilterInput): string {
     return JSON.stringify({
@@ -174,8 +203,11 @@ export class OpsIssueService {
     }
 
     const now = new Date();
-    const existing = await this.prisma.issue.findUnique({ where: { id: input.issueId }, select: { acknowledgedAt: true, resolvedAt: true } });
+    const existing = await this.prisma.issue.findUnique({ where: { id: input.issueId }, select: { acknowledgedAt: true, resolvedAt: true, rootCause: true, postmortemUrl: true, title: true, environment: true } });
     if (!existing) throw new NotFoundException("이슈를 찾을 수 없습니다.");
+    if (status === "resolved" && (!existing.rootCause?.trim() || !existing.postmortemUrl?.trim())) {
+      throw new BadRequestException("해결 처리 전 Root cause와 Postmortem URL을 기록해야 합니다.");
+    }
     const updated = await this.prisma.issue.update({
       where: { id: input.issueId },
       data: {
@@ -187,6 +219,15 @@ export class OpsIssueService {
     });
 
     this.clearCache();
+    if (status === "resolved") {
+      const snapshot = await this.prisma.opsReportSnapshot.findFirst({ where: { environment: updated.environment }, orderBy: { generatedAt: "desc" } })
+        ?? await this.prisma.opsReportSnapshot.create({ data: { title: `${updated.environment} 인시던트 후속 조치`, environment: updated.environment, riskLevel: "follow_up", executiveSummary: "해결된 인시던트의 재발 방지 조치를 추적합니다.", technicalSummary: "자동 생성된 운영 후속 조치 리포트입니다.", shareText: "OpsLens 인시던트 후속 조치" } });
+      await this.prisma.opsReportAction.upsert({
+        where: { snapshotId_actionKey: { snapshotId: snapshot.id, actionKey: `incident-follow-up:${updated.id}` } },
+        update: {},
+        create: { snapshotId: snapshot.id, actionKey: `incident-follow-up:${updated.id}`, title: `${updated.title} 재발 방지 확인`, description: "Postmortem의 재발 방지 조치를 검증하고 완료 증빙을 남기세요.", owner: updated.assignee || actor || "운영 담당자", priority: updated.severity === "critical" ? "P0" : "P1", dueAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) }
+      });
+    }
     await writeOpsAuditLog(this.prisma, this.logger, {
       actor,
       action: "issue.status_updated",
@@ -214,6 +255,36 @@ export class OpsIssueService {
       include: { deployment: true }
     });
     await writeOpsAuditLog(this.prisma, this.logger, { actor, action: "issue.closure_updated", targetType: "Issue", targetId: updated.id, summary: `${updated.title} 종료 정보 업데이트` });
+    return toIssueType({ ...updated, logs: [], comments: [] });
+  }
+
+  async updateIncidentResponse(input: UpdateIncidentResponseInput, actor?: string): Promise<IssueType> {
+    const nextUpdateAt = input.nextUpdateAt?.trim() ? new Date(input.nextUpdateAt) : undefined;
+    if (nextUpdateAt && Number.isNaN(nextUpdateAt.getTime())) {
+      throw new BadRequestException("다음 공지 시각이 올바르지 않습니다.");
+    }
+    if (input.escalationLevel != null && (input.escalationLevel < 0 || input.escalationLevel > 5)) {
+      throw new BadRequestException("에스컬레이션 단계는 0~5 사이여야 합니다.");
+    }
+    const updated = await this.prisma.issue.update({
+      where: { id: input.issueId },
+      data: {
+        commander: input.commander?.trim() || undefined,
+        escalationLevel: input.escalationLevel,
+        lastStatusUpdate: input.statusUpdate?.trim() || undefined,
+        nextUpdateAt
+      },
+      include: { deployment: true }
+    });
+    this.clearCache();
+    await writeOpsAuditLog(this.prisma, this.logger, {
+      actor,
+      action: "incident.response_updated",
+      targetType: "Issue",
+      targetId: updated.id,
+      summary: `${updated.title} 대응 지휘 및 공지 정보 업데이트`,
+      metadata: { commander: updated.commander, escalationLevel: updated.escalationLevel, nextUpdateAt: updated.nextUpdateAt?.toISOString() ?? null }
+    });
     return toIssueType({ ...updated, logs: [], comments: [] });
   }
 

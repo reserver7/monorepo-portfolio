@@ -5,6 +5,8 @@ import { OpsPermissionGuard, RequireOpsPermission } from "../auth/auth.roles.js"
 import {
   AddIssueCommentInput,
   AnalyzeLogsInputModel,
+  IngestServiceMetricInput,
+  UpsertLogSavedViewInput,
   AssignIssueInput,
   BulkUpdateIssuesInput,
   CreateOpsAlertInput,
@@ -18,12 +20,15 @@ import {
   UpdateReportSnapshotInput,
   UpdateIssueStatusInput,
   UpdateIncidentClosureInput,
-  UpdateReportActionInput
+  UpdateIncidentResponseInput,
+  UpdateReportActionInput,
+  UpdateDeploymentDecisionInput
 } from "./ops.inputs.js";
 import {
   AnalyzeLogsPayloadType,
   DashboardSummaryType,
   ServiceHealthType,
+  ServiceSloType,
   DeploymentImpactReportType,
   DeploymentReadinessType,
   DeploymentType,
@@ -34,6 +39,8 @@ import {
   LogAnalysisSessionType,
   OpsAuditLogType,
   OpsAlertType,
+  OpsLogSavedViewType,
+  LogSourceFreshnessType,
   OpsNotificationDeliveryType,
   OpsReportType,
   OpsReportActionType,
@@ -66,6 +73,11 @@ export class OpsResolver {
     filter?: DashboardFilterInput
   ): Promise<ServiceHealthType[]> {
     return this.opsService.getServiceHealth(filter);
+  }
+
+  @Query(() => ServiceSloType)
+  serviceSlo(@Args("serviceName", { type: () => String }) serviceName: string, @Args("environment", { type: () => String }) environment: string): Promise<ServiceSloType> {
+    return this.opsService.getServiceSlo(serviceName, environment);
   }
 
   @Query(() => IssueListPayloadType)
@@ -157,6 +169,12 @@ export class OpsResolver {
     return this.opsService.listLogAnalysisSessions();
   }
 
+  @Query(() => [OpsLogSavedViewType])
+  logSavedViews(@Context() context: { req?: AuthenticatedRequest }) { return this.opsService.listLogSavedViews(this.actor(context)); }
+
+  @Query(() => [LogSourceFreshnessType])
+  logSourceFreshness() { return this.opsService.getLogSourceFreshness(); }
+
   @Query(() => [OpsSettingType])
   opsSettings(): Promise<OpsSettingType[]> {
     return this.opsService.listOpsSettings();
@@ -183,6 +201,20 @@ export class OpsResolver {
   ): Promise<AnalyzeLogsPayloadType> {
     return this.opsService.analyzeLogs(input);
   }
+
+  @Mutation(() => Boolean)
+  @RequireOpsPermission("operate")
+  ingestServiceMetric(@Args("input", { type: () => IngestServiceMetricInput }) input: IngestServiceMetricInput): Promise<boolean> {
+    return this.opsService.ingestServiceMetric(input);
+  }
+
+  @Mutation(() => OpsLogSavedViewType)
+  @RequireOpsPermission("operate")
+  upsertLogSavedView(@Args("input", { type: () => UpsertLogSavedViewInput }) input: UpsertLogSavedViewInput, @Context() context: { req?: AuthenticatedRequest }) { return this.opsService.upsertLogSavedView(input, this.actor(context)); }
+
+  @Mutation(() => Boolean)
+  @RequireOpsPermission("operate")
+  deleteLogSavedView(@Args("id", { type: () => String }) id: string, @Context() context: { req?: AuthenticatedRequest }) { return this.opsService.deleteLogSavedView(id, this.actor(context)); }
 
   @Mutation(() => OpsAlertType)
   @RequireOpsPermission("operate")
@@ -275,6 +307,15 @@ export class OpsResolver {
 
   @Mutation(() => IssueType)
   @RequireOpsPermission("operate")
+  updateIncidentResponse(
+    @Args("input", { type: () => UpdateIncidentResponseInput }) input: UpdateIncidentResponseInput,
+    @Context() context: { req?: AuthenticatedRequest }
+  ): Promise<IssueType> {
+    return this.opsService.updateIncidentResponse(input, this.actor(context));
+  }
+
+  @Mutation(() => IssueType)
+  @RequireOpsPermission("operate")
   assignIssue(
     @Args("input", { type: () => AssignIssueInput })
     input: AssignIssueInput,
@@ -307,6 +348,15 @@ export class OpsResolver {
     @Context() context: { req?: AuthenticatedRequest }
   ): Promise<DeploymentType> {
     return this.opsService.registerDeployment(input, this.actor(context));
+  }
+
+  @Mutation(() => DeploymentType)
+  @RequireOpsPermission("operate")
+  updateDeploymentDecision(
+    @Args("input", { type: () => UpdateDeploymentDecisionInput }) input: UpdateDeploymentDecisionInput,
+    @Context() context: { req?: AuthenticatedRequest }
+  ): Promise<DeploymentType> {
+    return this.opsService.updateDeploymentDecision(input, this.actor(context));
   }
 
   @Mutation(() => QaScenarioType)

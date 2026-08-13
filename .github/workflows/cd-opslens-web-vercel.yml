@@ -128,3 +128,21 @@ jobs:
       - name: Skip notice
         if: ${{ steps.vercel.outputs.enabled != 'true' }}
         run: echo "Deployment skipped because OpsLens Web production Vercel project is not configured."
+
+      - name: Sync deployment status to OpsLens (optional)
+        if: ${{ always() }}
+        env:
+          OPSLENS_CI_WEBHOOK_URL: ${{ secrets.OPSLENS_CI_WEBHOOK_URL }}
+          OPSLENS_INGESTION_KEY: ${{ secrets.OPSLENS_INGESTION_KEY }}
+          RELEASE_TAG: ${{ needs.verify-tag-on-main.outputs.release_tag }}
+          CI_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          if [ -z "${OPSLENS_CI_WEBHOOK_URL}" ] || [ -z "${OPSLENS_INGESTION_KEY}" ]; then
+            echo "OpsLens CI webhook secrets are missing. Skipping status sync."
+            exit 0
+          fi
+          curl --fail-with-body --retry 2 --retry-all-errors -sS -X POST "${OPSLENS_CI_WEBHOOK_URL}" \
+            -H "content-type: application/json" \
+            -H "x-opslens-ingestion-key: ${OPSLENS_INGESTION_KEY}" \
+            --data "{\"environment\":\"prod\",\"version\":\"${RELEASE_TAG}\",\"status\":\"${CI_STATUS}\"}"

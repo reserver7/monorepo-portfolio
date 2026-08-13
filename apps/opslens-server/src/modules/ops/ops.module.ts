@@ -9,6 +9,7 @@ import { OpsDashboardService } from "./ops-dashboard.service.js";
 import { OpsDeploymentService } from "./ops-deployment.service.js";
 import { OpsIssueService } from "./ops-issue.service.js";
 import { OpsLogAnalysisService } from "./ops-log-analysis.service.js";
+import { OpsMetricsService } from "./ops-metrics.service.js";
 import { OpsQaService } from "./ops-qa.service.js";
 import { OpsReportService } from "./ops-report.service.js";
 import { OpsSettingsService } from "./ops-settings.service.js";
@@ -29,6 +30,7 @@ import { OpsService } from "./ops.service.js";
     OpsDeploymentService,
     OpsIssueService,
     OpsLogAnalysisService,
+    OpsMetricsService,
     OpsQaService,
     OpsReportService,
     OpsSettingsService,

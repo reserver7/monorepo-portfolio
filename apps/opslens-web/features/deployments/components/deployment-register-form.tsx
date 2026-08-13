@@ -82,6 +82,10 @@ export function DeploymentRegisterForm({
           />
         </FormField>
 
+        <FormField label="CI / 배포 링크" htmlFor="deployment-ci-url" size="sm">
+          <Input id="deployment-ci-url" type="url" {...form.register("ciUrl")} placeholder="https://github.com/.../actions/runs/..." size="md" />
+        </FormField>
+
         <FormField label="Override 사유" htmlFor="deployment-override-reason" size="sm">
           <Textarea
             id="deployment-override-reason"

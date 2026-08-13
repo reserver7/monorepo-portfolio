@@ -109,7 +109,7 @@ export function LogClusterResults({
               </Badge>
             ))}
             <Badge size="sm" variant="outline" interactive onClick={onClearSavedViews} className="cursor-pointer">
-              전체 삭제
+              내 뷰 삭제
             </Badge>
           </Flex>
         ) : null}

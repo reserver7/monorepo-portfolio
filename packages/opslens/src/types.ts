@@ -44,6 +44,7 @@ export type ServiceHealth = {
 };
 
 export type ErrorCluster = {
+  issueId: string;
   title: string;
   normalizedMessage: string;
   severity: Severity;
@@ -66,6 +67,9 @@ export type Issue = {
   slaDueAt?: string | null;
   escalationLevel: number;
   acknowledgedAt?: string | null;
+  commander?: string | null;
+  lastStatusUpdate?: string | null;
+  nextUpdateAt?: string | null;
   resolvedAt?: string | null;
   rootCause?: string | null;
   postmortemUrl?: string | null;
@@ -128,6 +132,12 @@ export type Deployment = {
   status: string;
   owner: string;
   approver?: string | null;
+  approvalStatus: string;
+  approvedAt?: string | null;
+  ciUrl?: string | null;
+  rollbackStatus: string;
+  rollbackReason?: string | null;
+  rolledBackAt?: string | null;
   scopeTags: string[];
   checklist: string[];
   rollbackCriteria?: string | null;
@@ -191,8 +201,10 @@ export type OpsReportAction = {
   description: string;
   owner: string;
   priority: string;
+  dueAt?: string | null;
   completedAt?: string | null;
   completedBy?: string | null;
+  reopenedReason?: string | null;
 };
 
 export type OpsReportSnapshot = {
@@ -260,6 +272,12 @@ export type LogAnalysisSession = {
   topClusterTitle?: string | null;
   createdAt: string;
 };
+
+export type OpsLogSavedView = { id: string; name: string; owner: string; visibility: string; severity: string; query: string; sort: string; isFavorite: boolean; updatedAt: string };
+
+export type LogSourceFreshness = { serviceName: string; source: string; lastReceivedAt?: string | null; receivedLastHour: number; stale: boolean };
+
+export type ServiceSlo = { serviceName: string; environment: Environment; target: number; requestCount: number; errorCount: number; availability?: number | null; budgetConsumed?: number | null; latencyP95Ms?: number | null; observedAt?: string | null };
 
 export type OpsSetting = {
   id: string;

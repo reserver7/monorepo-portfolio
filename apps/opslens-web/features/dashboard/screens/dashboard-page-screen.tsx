@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -212,14 +213,14 @@ export default function DashboardPage() {
         ) : serviceHealthQuery.data?.length ? (
           <Grid className="gap-[var(--space-3)] md:grid-cols-2 xl:grid-cols-4">
             {serviceHealthQuery.data.map((item) => (
-              <Box key={item.serviceName} role="button" tabIndex={0} onClick={() => { setServiceName(item.serviceName); router.push("/issues"); }} onKeyDown={(event) => { if (event.key === "Enter") { setServiceName(item.serviceName); router.push("/issues"); } }} className="border-default bg-surface hover:border-primary/40 cursor-pointer rounded-[var(--radius-lg)] border p-[var(--space-3)]">
+              <Link key={item.serviceName} href={`/services/${encodeURIComponent(item.serviceName)}`} onClick={() => setServiceName(item.serviceName)} className="border-default bg-surface hover:border-primary/40 block rounded-[var(--radius-lg)] border p-[var(--space-3)]">
                 <Flex className="items-center justify-between gap-[var(--space-2)]">
                   <Typography as="p" variant="bodySm" className="font-semibold">{resolveServiceLabel(item.serviceName, tService)}</Typography>
                   <Badge size="sm" variant={item.status === "incident" ? "danger" : item.status === "degraded" ? "warning" : "success"}>{item.status === "incident" ? "장애" : item.status === "degraded" ? "주의" : "정상"}</Badge>
                 </Flex>
                 <Typography as="p" variant="caption" color="muted" className="mt-[var(--space-3)]">열린 이슈 {formatNumber(item.openIssueCount)} · Critical/High {formatNumber(item.criticalHighCount)}</Typography>
                 <Typography as="p" variant="caption" color="subtle" className="mt-[var(--space-1)]">최근 이벤트 {item.lastOccurredAt ? formatDateTimeByLocale(item.lastOccurredAt, locale) : "없음"}</Typography>
-              </Box>
+              </Link>
             ))}
           </Grid>
         ) : (

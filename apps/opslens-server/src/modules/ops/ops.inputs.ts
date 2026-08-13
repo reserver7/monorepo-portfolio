@@ -44,6 +44,27 @@ export class AnalyzeLogsInputModel {
 }
 
 @InputType()
+export class IngestServiceMetricInput {
+  @Field(() => String) serviceName!: string;
+  @Field(() => String) environment!: string;
+  @Field(() => Int) requests!: number;
+  @Field(() => Int) errors!: number;
+  @Field(() => Int, { nullable: true }) latencyP95Ms?: number;
+  @Field(() => String, { nullable: true }) occurredAt?: string;
+}
+
+@InputType()
+export class UpsertLogSavedViewInput {
+  @Field(() => String, { nullable: true }) id?: string;
+  @Field(() => String) name!: string;
+  @Field(() => String) severity!: string;
+  @Field(() => String) query!: string;
+  @Field(() => String) sort!: string;
+  @Field(() => String, { nullable: true }) visibility?: string;
+  @Field(() => Boolean, { nullable: true }) isFavorite?: boolean;
+}
+
+@InputType()
 export class IssueFilterInput {
   @Field(() => String, { nullable: true })
   environment?: string;
@@ -88,6 +109,9 @@ export class RegisterDeploymentInput {
   approver?: string;
 
   @Field(() => String, { nullable: true })
+  ciUrl?: string;
+
+  @Field(() => String, { nullable: true })
   overrideReason?: string;
 
   @Field(() => [String], { nullable: true })
@@ -116,12 +140,45 @@ export class DeploymentImpactInput {
 }
 
 @InputType()
+export class UpdateDeploymentDecisionInput {
+  @Field(() => String)
+  deploymentId!: string;
+
+  @Field(() => String)
+  decision!: string;
+
+  @Field(() => String, { nullable: true })
+  approver?: string;
+
+  @Field(() => String, { nullable: true })
+  reason?: string;
+}
+
+@InputType()
 export class UpdateIssueStatusInput {
   @Field(() => String)
   issueId!: string;
 
   @Field(() => String)
   status!: string;
+}
+
+@InputType()
+export class UpdateIncidentResponseInput {
+  @Field(() => String)
+  issueId!: string;
+
+  @Field(() => String, { nullable: true })
+  commander?: string;
+
+  @Field(() => Int, { nullable: true })
+  escalationLevel?: number;
+
+  @Field(() => String, { nullable: true })
+  statusUpdate?: string;
+
+  @Field(() => String, { nullable: true })
+  nextUpdateAt?: string;
 }
 
 @InputType()
@@ -288,6 +345,15 @@ export class UpdateReportActionInput {
 
   @Field(() => Boolean)
   completed!: boolean;
+
+  @Field(() => String, { nullable: true })
+  dueAt?: string;
+
+  @Field(() => String, { nullable: true })
+  owner?: string;
+
+  @Field(() => String, { nullable: true })
+  reopenedReason?: string;
 
   @Field(() => String, { nullable: true })
   actor?: string;

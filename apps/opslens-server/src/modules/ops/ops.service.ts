@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 import {
   type AddIssueCommentInput,
   type AnalyzeLogsInputModel,
+  type IngestServiceMetricInput,
+  type UpsertLogSavedViewInput,
   type AssignIssueInput,
   type BulkUpdateIssuesInput,
   type CreateOpsAlertInput,
@@ -15,7 +17,9 @@ import {
   type UpdateReportSnapshotInput,
   type UpdateReportActionInput,
   type UpdateIssueStatusInput,
-  type UpdateIncidentClosureInput
+  type UpdateIncidentResponseInput,
+  type UpdateIncidentClosureInput,
+  type UpdateDeploymentDecisionInput
 } from "./ops.inputs.js";
 import { OpsAlertService } from "./ops-alert.service.js";
 import { OpsAlertDeliveryService } from "./ops-alert-delivery.service.js";
@@ -23,6 +27,7 @@ import { OpsDashboardService } from "./ops-dashboard.service.js";
 import { OpsDeploymentService } from "./ops-deployment.service.js";
 import { OpsIssueService } from "./ops-issue.service.js";
 import { OpsLogAnalysisService } from "./ops-log-analysis.service.js";
+import { OpsMetricsService } from "./ops-metrics.service.js";
 import { OpsQaService } from "./ops-qa.service.js";
 import { OpsReportService } from "./ops-report.service.js";
 import { OpsSettingsService } from "./ops-settings.service.js";
@@ -55,6 +60,7 @@ export class OpsService {
     private readonly deploymentService: OpsDeploymentService,
     private readonly issueService: OpsIssueService,
     private readonly logAnalysisService: OpsLogAnalysisService,
+    private readonly metricsService: OpsMetricsService,
     private readonly alertService: OpsAlertService,
     private readonly alertDeliveryService: OpsAlertDeliveryService,
     private readonly qaService: OpsQaService,
@@ -133,6 +139,11 @@ export class OpsService {
     return this.logAnalysisService.listLogAnalysisSessions();
   }
 
+  async listLogSavedViews(actor?: string) { return this.logAnalysisService.listSavedViews(actor); }
+  async getLogSourceFreshness() { return this.logAnalysisService.getLogSourceFreshness(); }
+  async upsertLogSavedView(input: UpsertLogSavedViewInput, actor?: string) { return this.logAnalysisService.upsertSavedView(input, actor); }
+  async deleteLogSavedView(id: string, actor?: string): Promise<boolean> { return this.logAnalysisService.deleteSavedView(id, actor); }
+
   async listOpsSettings(): Promise<OpsSettingType[]> {
     return this.settingsService.listOpsSettings();
   }
@@ -150,6 +161,10 @@ export class OpsService {
     this.clearDerivedCaches();
     return result;
   }
+
+  async ingestServiceMetric(input: IngestServiceMetricInput): Promise<boolean> { return this.metricsService.ingest(input); }
+  async getServiceSlo(serviceName: string, environment: string) { return this.metricsService.getSlo(serviceName, environment); }
+  async syncDeploymentCiStatus(input: { version: string; environment: string; status: string; ciUrl?: string }): Promise<boolean> { return this.deploymentService.syncCiStatus(input); }
 
   async listRecentLogEvents(input?: {
     environment?: string;
@@ -195,6 +210,10 @@ export class OpsService {
     return this.issueService.updateIncidentClosure(input, actor);
   }
 
+  async updateIncidentResponse(input: UpdateIncidentResponseInput, actor?: string): Promise<IssueType> {
+    return this.issueService.updateIncidentResponse(input, actor);
+  }
+
   async assignIssue(input: AssignIssueInput, actor?: string): Promise<IssueType> {
     this.clearDerivedCaches();
     return this.issueService.assignIssue(input, actor);
@@ -212,6 +231,11 @@ export class OpsService {
   async registerDeployment(input: RegisterDeploymentInput, actor?: string): Promise<DeploymentType> {
     this.clearDerivedCaches();
     return this.deploymentService.registerDeployment(input, actor);
+  }
+
+  async updateDeploymentDecision(input: UpdateDeploymentDecisionInput, actor?: string): Promise<DeploymentType> {
+    this.clearDerivedCaches();
+    return this.deploymentService.updateDeploymentDecision(input, actor);
   }
 
   async listDeployments(environment?: string): Promise<DeploymentType[]> {

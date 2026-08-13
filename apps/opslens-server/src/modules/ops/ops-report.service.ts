@@ -174,7 +174,8 @@ export class OpsReportService {
         title: item.title,
         description: item.description,
         owner: item.owner,
-        priority: item.priority
+        priority: item.priority,
+        dueAt: new Date(Date.now() + (item.priority === "P0" ? 24 : item.priority === "P1" ? 72 : 7 * 24) * 60 * 60 * 1000)
       }))
     });
     await writeOpsAuditLog(this.prisma, this.logger, {
@@ -201,15 +202,21 @@ export class OpsReportService {
       description: action.description,
       owner: action.owner,
       priority: action.priority,
+      dueAt: action.dueAt,
       completedAt: action.completedAt,
-      completedBy: action.completedBy
+      completedBy: action.completedBy,
+      reopenedReason: action.reopenedReason
     }));
   }
 
   async updateReportAction(input: UpdateReportActionInput, actor?: string): Promise<OpsReportActionType> {
+    const dueAt = input.dueAt?.trim() ? new Date(input.dueAt) : input.dueAt === undefined ? undefined : null;
+    if (dueAt instanceof Date && Number.isNaN(dueAt.getTime())) throw new BadRequestException("기한이 올바르지 않습니다.");
     const action = await this.prisma.opsReportAction.update({
       where: { id: input.actionId },
-      data: input.completed ? { completedAt: new Date(), completedBy: actor ?? input.actor ?? "unknown" } : { completedAt: null, completedBy: null }
+      data: input.completed
+        ? { completedAt: new Date(), completedBy: actor ?? input.actor ?? "unknown", reopenedReason: null, dueAt, owner: input.owner?.trim() || undefined }
+        : { completedAt: null, completedBy: null, reopenedReason: input.reopenedReason?.trim() || null, dueAt, owner: input.owner?.trim() || undefined }
     });
     await writeOpsAuditLog(this.prisma, this.logger, {
       actor: actor ?? input.actor,
@@ -226,8 +233,10 @@ export class OpsReportService {
       description: action.description,
       owner: action.owner,
       priority: action.priority,
+      dueAt: action.dueAt,
       completedAt: action.completedAt,
-      completedBy: action.completedBy
+      completedBy: action.completedBy,
+      reopenedReason: action.reopenedReason
     };
   }
 
