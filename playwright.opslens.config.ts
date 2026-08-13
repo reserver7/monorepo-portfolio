@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { devices, defineConfig } from "@playwright/test";
 
 const opslensUrl = process.env.OPSLENS_E2E_BASE_URL ?? "http://127.0.0.1:3002";
 
@@ -15,5 +15,9 @@ export default defineConfig({
     trace: process.env.CI ? "retain-on-failure" : "off",
     screenshot: "only-on-failure",
     video: "off"
-  }
+  },
+  projects: [
+    { name: "desktop-chromium", use: { browserName: "chromium" } },
+    { name: "mobile-chrome", use: { ...devices["Pixel 5"] } }
+  ]
 });
