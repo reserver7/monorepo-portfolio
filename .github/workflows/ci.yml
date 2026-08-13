@@ -55,8 +55,8 @@ jobs:
               - 'playwright.opslens.config.ts'
               - 'tests/e2e/opslens-*.spec.ts'
             collab:
-              - 'apps/server/**'
-              - 'apps/web/**'
+              - 'apps/collab-server/**'
+              - 'apps/collab-web/**'
               - 'packages/**'
               - 'package.json'
               - 'pnpm-lock.yaml'
