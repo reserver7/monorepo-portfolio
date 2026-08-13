@@ -4,133 +4,137 @@ on:
   pull_request:
     branches: ["main"]
   workflow_dispatch:
+    inputs:
+      full_validation:
+        description: "Run every validation scope"
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    - cron: "17 18 * * 1-5"
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  core-checks:
-    name: Validate Monorepo (Fast PR Checks)
+  changes:
+    name: Detect impacted scopes
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
+    timeout-minutes: 5
+    outputs:
+      opslens: ${{ steps.filter.outputs.opslens }}
+      collab: ${{ steps.filter.outputs.collab }}
+      ui: ${{ steps.filter.outputs.ui }}
+      checks: ${{ steps.filter.outputs.checks }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.3
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Detect changed areas
-        id: changes
+      - uses: actions/checkout@v4
+      - id: filter
         uses: dorny/paths-filter@v3
         with:
           filters: |
-            ui_storybook:
+            opslens:
+              - 'apps/opslens-server/**'
+              - 'apps/opslens-web/**'
+              - 'packages/opslens/**'
+              - 'packages/react-query/**'
+              - 'packages/ui/**'
+              - 'packages/theme/**'
+              - 'packages/utils/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'turbo.json'
+              - 'playwright.opslens.config.ts'
+              - 'tests/e2e/opslens-*.spec.ts'
+            collab:
+              - 'apps/server/**'
+              - 'apps/web/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'turbo.json'
+            ui:
               - 'packages/ui/**'
               - 'packages/theme/**'
               - 'apps/storybook/**'
               - 'scripts/generate-ui-stories.mjs'
               - 'scripts/watch-ui-stories.mjs'
+            checks:
+              - '.github/workflows/**'
+              - 'scripts/i18n/**'
+              - 'apps/**/lib/i18n/**'
+              - 'compose.infrastructure.yml'
+              - 'scripts/audit-workspace.mjs'
+              - 'pnpm-workspace.yaml'
 
-      - name: i18n key consistency
-        run: pnpm i18n:check
+  opslens:
+    name: Validate OpsLens
+    needs: changes
+    if: ${{ needs.changes.outputs.opslens == 'true' || github.event_name == 'schedule' || inputs.full_validation }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.12.3 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run lint typecheck --filter=@repo/opslens-server --filter=@repo/opslens-web
+      - run: pnpm test:opslens-server
 
-      - name: i18n extract fail-fast
-        run: pnpm i18n:extract:check
+  collab:
+    name: Validate Collab
+    needs: changes
+    if: ${{ needs.changes.outputs.collab == 'true' || github.event_name == 'schedule' || inputs.full_validation }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.12.3 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run lint typecheck --filter=@repo/collab-server --filter=@repo/collab-web
+      - run: pnpm test:collab-server
 
-      - name: i18n missing-key fail-fast
-        run: pnpm i18n:sync:check
-
-      - name: Validate workspace boundaries
-        run: pnpm audit:workspace
-
-      - name: Validate infrastructure Compose config
-        run: pnpm infra:check
-
-      - name: Verify Storybook Auto Stories Are Up To Date
-        if: steps.changes.outputs.ui_storybook == 'true'
-        run: |
-          pnpm storybook:gen
-          git diff --exit-code -- packages/ui/stories/components/generated
-
-      - name: Verify Storybook Coverage
-        if: steps.changes.outputs.ui_storybook == 'true'
+  repository-checks:
+    name: Validate repository checks
+    needs: changes
+    if: ${{ needs.changes.outputs.checks == 'true' || needs.changes.outputs.ui == 'true' || github.event_name == 'schedule' || inputs.full_validation }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.12.3 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm i18n:check && pnpm i18n:extract:check && pnpm i18n:sync:check
+      - run: pnpm audit:workspace && pnpm infra:check
+      - if: ${{ needs.changes.outputs.ui == 'true' || github.event_name == 'schedule' || inputs.full_validation }}
         run: pnpm storybook:check
-
-      - name: Lint
-        run: pnpm turbo run lint
-
-      - name: Typecheck
-        run: pnpm turbo run typecheck
-
-      - name: Test Collab server
-        run: pnpm test:collab-server
-
-      - name: Test OpsLens server
-        run: pnpm test:opslens-server
 
   chromatic:
     name: Validate UI Visual Regressions (Chromatic)
+    needs: changes
+    if: ${{ needs.changes.outputs.ui == 'true' || github.event_name == 'schedule' || inputs.full_validation }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: core-checks
-
     steps:
-      - name: Check Chromatic token
-        id: chromatic-token
-        env:
-          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ -z "${CHROMATIC_PROJECT_TOKEN}" ]; then
-            echo "enabled=false" >> "${GITHUB_OUTPUT}"
-            echo "CHROMATIC_PROJECT_TOKEN is missing. Skipping Chromatic."
-            exit 0
-          fi
-          echo "enabled=true" >> "${GITHUB_OUTPUT}"
-
-      - name: Checkout
-        if: ${{ steps.chromatic-token.outputs.enabled == 'true' }}
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup pnpm
-        if: ${{ steps.chromatic-token.outputs.enabled == 'true' }}
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.3
-
-      - name: Setup Node
-        if: ${{ steps.chromatic-token.outputs.enabled == 'true' }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-
-      - name: Install dependencies
-        if: ${{ steps.chromatic-token.outputs.enabled == 'true' }}
-        run: pnpm install --frozen-lockfile
-
-      - name: Publish to Chromatic
-        if: ${{ steps.chromatic-token.outputs.enabled == 'true' }}
-        uses: chromaui/action@v13
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.12.3 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - uses: chromaui/action@v13
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           buildScriptName: build:storybook

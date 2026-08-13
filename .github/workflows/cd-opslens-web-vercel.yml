@@ -120,6 +120,10 @@ jobs:
         working-directory: apps/opslens-web
         run: pnpm dlx vercel@latest build --prod --token="${VERCEL_TOKEN}"
 
+      - name: Stage prebuilt output at repository root
+        if: ${{ steps.vercel.outputs.enabled == 'true' }}
+        run: mv apps/opslens-web/.vercel .vercel
+
       - name: Deploy OpsLens Web
         if: ${{ steps.vercel.outputs.enabled == 'true' }}
         run: pnpm dlx vercel@latest deploy --prebuilt --prod --token="${VERCEL_TOKEN}"
