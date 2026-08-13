@@ -122,8 +122,7 @@ jobs:
 
       - name: Deploy OpsLens Web
         if: ${{ steps.vercel.outputs.enabled == 'true' }}
-        working-directory: apps/opslens-web
-        run: pnpm dlx vercel@latest deploy --prebuilt --prod --token="${VERCEL_TOKEN}"
+        run: pnpm dlx vercel@latest deploy apps/opslens-web --prebuilt --prod --token="${VERCEL_TOKEN}"
 
       - name: Skip notice
         if: ${{ steps.vercel.outputs.enabled != 'true' }}
