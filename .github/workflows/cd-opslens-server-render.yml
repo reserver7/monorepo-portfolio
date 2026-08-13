@@ -87,13 +87,18 @@ jobs:
           echo "has_hook=true" >> "${GITHUB_OUTPUT}"
 
       - name: Trigger Render deploy hook
+        id: deploy
         if: ${{ steps.hook.outputs.has_hook == 'true' }}
         env:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.OPSLENS_RENDER_DEPLOY_HOOK_URL }}
         run: |
           set -euo pipefail
-          curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}" >/dev/null
-          echo "OpsLens Render deploy hook triggered."
+          response="$(curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}")"
+          deploy_id="$(printf '%s' "${response}" | jq -r '.id // empty')"
+          if [ -n "${deploy_id}" ]; then
+            echo "deploy_id=${deploy_id}" >> "${GITHUB_OUTPUT}"
+          fi
+          echo "OpsLens Render deploy hook accepted."
 
       - name: Validate health check URL
         id: health
@@ -110,24 +115,15 @@ jobs:
 
           echo "has_health=true" >> "${GITHUB_OUTPUT}"
 
-      - name: Verify server health (optional)
+      - name: Verify public endpoint reachability (optional)
         if: ${{ steps.hook.outputs.has_hook == 'true' && steps.health.outputs.has_health == 'true' }}
         env:
           SERVER_HEALTHCHECK_URL: ${{ secrets.OPSLENS_SERVER_HEALTHCHECK_URL }}
         run: |
           set -euo pipefail
-          for attempt in $(seq 1 24); do
-            if curl -fsS "${SERVER_HEALTHCHECK_URL}" >/dev/null; then
-              echo "OpsLens server health check passed."
-              exit 0
-            fi
-
-            echo "Waiting for health check... (${attempt}/24)"
-            sleep 10
-          done
-
-          echo "OpsLens server health check failed."
-          exit 1
+          curl --fail-with-body --retry 2 --retry-all-errors --max-time 15 -sS \
+            "${SERVER_HEALTHCHECK_URL}" >/dev/null
+          echo "OpsLens public endpoint is reachable."
 
       - name: Skip notice (missing deploy hook)
         if: ${{ steps.hook.outputs.has_hook != 'true' }}

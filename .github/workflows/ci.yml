@@ -27,6 +27,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       opslens: ${{ steps.filter.outputs.opslens }}
+      opslens_e2e: ${{ steps.filter.outputs.opslens_e2e }}
       collab: ${{ steps.filter.outputs.collab }}
       ui: ${{ steps.filter.outputs.ui }}
       checks: ${{ steps.filter.outputs.checks }}
@@ -56,6 +57,14 @@ jobs:
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'turbo.json'
+            opslens_e2e:
+              - 'apps/opslens-web/app/**'
+              - 'apps/opslens-web/features/logs/**'
+              - 'apps/opslens-web/features/issues/**'
+              - 'apps/opslens-web/features/services/**'
+              - 'apps/opslens-web/features/common/components/**'
+              - 'tests/e2e/opslens-*.spec.ts'
+              - 'playwright.opslens.config.ts'
             ui:
               - 'packages/ui/**'
               - 'packages/theme/**'
@@ -85,6 +94,26 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm turbo run lint typecheck --filter=@repo/opslens-server --filter=@repo/opslens-web
       - run: pnpm test:opslens-server
+
+  opslens-e2e:
+    name: Smoke test OpsLens flows
+    needs: changes
+    if: ${{ needs.changes.outputs.opslens_e2e == 'true' || github.event_name == 'schedule' || inputs.full_validation }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.12.3 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e:opslens --project=desktop-chromium --workers=1 --reporter=line
 
   collab:
     name: Validate Collab

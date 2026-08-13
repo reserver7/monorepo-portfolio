@@ -93,40 +93,9 @@ jobs:
           fi
           echo "enabled=true" >> "${GITHUB_OUTPUT}"
 
-      - name: Setup pnpm
+      - name: Deploy OpsLens Web from source
         if: ${{ steps.vercel.outputs.enabled == 'true' }}
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.3
-
-      - name: Setup Node
-        if: ${{ steps.vercel.outputs.enabled == 'true' }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-
-      - name: Install dependencies
-        if: ${{ steps.vercel.outputs.enabled == 'true' }}
-        run: pnpm install --frozen-lockfile
-
-      - name: Pull Vercel Environment Information (OpsLens Web)
-        if: ${{ steps.vercel.outputs.enabled == 'true' }}
-        working-directory: apps/opslens-web
-        run: pnpm dlx vercel@latest pull --yes --environment=production --token="${VERCEL_TOKEN}"
-
-      - name: Build OpsLens Web
-        if: ${{ steps.vercel.outputs.enabled == 'true' }}
-        working-directory: apps/opslens-web
-        run: pnpm dlx vercel@latest build --prod --token="${VERCEL_TOKEN}"
-
-      - name: Stage prebuilt output at repository root
-        if: ${{ steps.vercel.outputs.enabled == 'true' }}
-        run: mv apps/opslens-web/.vercel .vercel
-
-      - name: Deploy OpsLens Web
-        if: ${{ steps.vercel.outputs.enabled == 'true' }}
-        run: pnpm dlx vercel@latest deploy --prebuilt --prod --token="${VERCEL_TOKEN}"
+        run: npx --yes vercel@latest deploy --prod --yes --token="${VERCEL_TOKEN}"
 
       - name: Skip notice
         if: ${{ steps.vercel.outputs.enabled != 'true' }}
