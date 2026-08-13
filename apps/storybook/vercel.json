@@ -1,5 +1,7 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "buildCommand": "pnpm run build",
-  "outputDirectory": "storybook-static"
+  "outputDirectory": "storybook-static",
+  "ignoreCommand": "node ../../scripts/vercel-preview-ignore.mjs apps/storybook"
 }
