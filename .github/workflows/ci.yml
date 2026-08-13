@@ -46,9 +46,12 @@ jobs:
               - 'apps/opslens-web/**'
               - 'packages/opslens/**'
               - 'packages/react-query/**'
+              - 'packages/forms/**'
               - 'packages/ui/**'
               - 'packages/theme/**'
               - 'packages/utils/**'
+              - 'packages/zustand/**'
+              - 'packages/configs/**'
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'turbo.json'
@@ -62,11 +65,12 @@ jobs:
               - 'pnpm-lock.yaml'
               - 'turbo.json'
             opslens_e2e:
-              - 'apps/opslens-web/app/**'
+              - 'apps/opslens-web/app/(app)/logs/**'
+              - 'apps/opslens-web/app/(app)/services/**'
               - 'apps/opslens-web/features/logs/**'
-              - 'apps/opslens-web/features/issues/**'
               - 'apps/opslens-web/features/services/**'
-              - 'apps/opslens-web/features/common/components/**'
+              - 'packages/opslens/**'
+              - 'packages/react-query/**'
               - 'tests/e2e/opslens-*.spec.ts'
               - 'playwright.opslens.config.ts'
             ui:
@@ -116,8 +120,31 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test:e2e:opslens --project=desktop-chromium --workers=1 --reporter=line
+      - name: Start isolated OpsLens test database
+        run: docker compose -f compose.infrastructure.yml up -d postgres --wait
+      - name: Prepare OpsLens test data
+        env:
+          DATABASE_URL: postgresql://portfolio:portfolio-local-password@127.0.0.1:5433/opslens?schema=public
+          DIRECT_DATABASE_URL: postgresql://portfolio:portfolio-local-password@127.0.0.1:5433/opslens?schema=public
+        run: pnpm db:opslens:generate && pnpm db:opslens:migrate:deploy && pnpm db:opslens:seed
+      - name: Build OpsLens web test target
+        env:
+          NEXT_PUBLIC_API_URL: http://127.0.0.1:4100/graphql
+          NEXT_PUBLIC_APP_URL: http://127.0.0.1:3002
+          NEXTAUTH_SECRET: opslens-e2e-nextauth-secret
+          NEXTAUTH_URL: http://127.0.0.1:3002
+          OPSLENS_AUTH_BRIDGE_SECRET: opslens-e2e-bridge-secret
+        run: pnpm --filter @repo/opslens-web build
+      - run: pnpm exec playwright install chromium
+      - run: pnpm test:e2e:opslens --project=desktop-chromium --workers=1 --retries=0 --reporter=line
+      - name: Upload Playwright failure report
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: opslens-playwright-report-${{ github.run_id }}
+          path: playwright-report-opslens
+          if-no-files-found: ignore
+          retention-days: 7
 
   collab:
     name: Validate Collab
