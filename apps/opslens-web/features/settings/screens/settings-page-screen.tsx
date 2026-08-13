@@ -29,7 +29,8 @@ import {
   ProfileSecurityForm,
   UserManagementPanel,
   IntegrationCatalogPanel,
-  ServiceCatalogPanel
+  ServiceCatalogPanel,
+  EscalationPolicyPanel
 } from "../components";
 import type { PasswordFormValues, ProfileFormValues } from "../types";
 import { formatSettingsDateTime, parseJsonLabel } from "../utils/settings-utils";
@@ -123,6 +124,11 @@ export default function SettingsPage() {
   const serviceCatalogMutation = useMutation({
     mutationFn: (value: string) => upsertOpsSetting({ key: "service.catalog", value, description: "서비스 오너·온콜·런북·SLO 카탈로그", category: "service", riskLevel: "high", editable: true, updatedBy: profileEmail || "admin", changeReason: "서비스 카탈로그 갱신" }),
     onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.settings() }); toast.success("서비스 카탈로그를 저장했습니다."); }
+  });
+  const escalationPolicyMutation = useMutation({
+    mutationFn: (value: string) => upsertOpsSetting({ key: "alert.escalation_policy", value, description: "중요 인시던트 확인·상태 공지 기한 및 에스컬레이션 대상", category: "alert", riskLevel: "high", editable: true, updatedBy: profileEmail || "admin", changeReason: "에스컬레이션 정책 갱신" }),
+    onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.settings() }); await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.auditLogs() }); toast.success("에스컬레이션 정책을 저장했습니다."); },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "에스컬레이션 정책 저장에 실패했습니다.")
   });
   const auditLogsQuery = useQuery({
     queryKey: [...opslensQueryKeys.auditLogs(), auditQuery, auditSeverity, auditTargetType],
@@ -540,6 +546,10 @@ export default function SettingsPage() {
         />
         <Typography as="p" variant="caption" color="muted" className="mt-[var(--space-2)]">변경 내용은 감사 로그에 남으며, 커맨드 센터에서 바로 확인할 수 있습니다.</Typography>
         {authSession?.user.role === "admin" ? <Button type="button" size="sm" className="mt-[var(--space-3)]" loading={saveOnCallMutation.isPending} disabled={onCallDraft.trim() === (onCallSetting?.value ?? "").trim()} onClick={() => saveOnCallMutation.mutate()}>온콜 정보 저장</Button> : null}
+      </OpsSectionCard>
+
+      <OpsSectionCard title="에스컬레이션 정책" description="확인·공지 기한을 넘긴 중요 인시던트를 커맨드 센터에서 즉시 구분합니다.">
+        <EscalationPolicyPanel setting={settings.find((setting) => setting.key === "alert.escalation_policy")} isAdmin={authSession?.user.role === "admin"} saving={escalationPolicyMutation.isPending} onSave={(value) => escalationPolicyMutation.mutate(value)} />
       </OpsSectionCard>
 
       <OpsSectionCard title="데이터 보존 정책" description="로그·알림·감사 로그의 보관 기간과 개인정보 익명화 기준을 관리합니다.">

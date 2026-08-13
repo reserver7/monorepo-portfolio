@@ -24,6 +24,15 @@ import { ISSUE_DETAIL_STATUS_OPTIONS } from "../constants";
 import { IncidentTimeline, IssueCommentsPanel, IssueLogList } from "../components";
 import { readAuthSession } from "@/lib/auth";
 
+const formatElapsed = (from?: string | null, to?: string | null) => {
+  if (!from) return "—";
+  const milliseconds = Math.max(0, new Date(to ?? new Date().toISOString()).getTime() - new Date(from).getTime());
+  const totalMinutes = Math.floor(milliseconds / 60_000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours > 0 ? `${hours}시간 ${minutes}분` : `${minutes}분`;
+};
+
 export default function IssueDetailPage() {
   const params = useParams<{ id: string }>();
   const issueId = params.id;
@@ -156,6 +165,7 @@ export default function IssueDetailPage() {
     { label: "사후 분석", complete: Boolean(issue.postmortemUrl) }
   ] : [];
   const responseProgress = responseChecklist.length === 0 ? 0 : Math.round((responseChecklist.filter((item) => item.complete).length / responseChecklist.length) * 100);
+  const responseStartedAt = issue?.acknowledgedAt ?? issue?.firstOccurredAt;
   const copyIncidentSummary = async () => {
     if (!issue) return;
     const summary = `[${issue.severity.toUpperCase()}] ${issue.title}\n상태: ${statusLabel} · 담당: ${issue.assignee || "미지정"}\n서비스: ${issue.serviceName} (${issue.environment})\n최근 발생: ${formatDateTime(issue.lastOccurredAt)}\n대응: ${issue.suggestedActions[0] || "확인 필요"}`;
@@ -216,6 +226,10 @@ export default function IssueDetailPage() {
           <OpsInfoItem label="최근 발생" value={formatDateTime(issue.lastOccurredAt)} />
           <OpsInfoItem label="최초 확인" value={issue.acknowledgedAt ? formatDateTime(issue.acknowledgedAt) : "미확인"} />
           <OpsInfoItem label="해결 시각" value={issue.resolvedAt ? formatDateTime(issue.resolvedAt) : "미해결"} />
+          <OpsInfoItem label="확인까지" value={issue.acknowledgedAt ? formatElapsed(issue.firstOccurredAt, issue.acknowledgedAt) : "미확인"} />
+          <OpsInfoItem label="대응 경과" value={formatElapsed(responseStartedAt, issue.resolvedAt)} />
+          <OpsInfoItem label="다음 공지" value={issue.nextUpdateAt ? formatDateTime(issue.nextUpdateAt) : "미설정"} />
+          <OpsInfoItem label="대응 완료율" value={`${responseProgress}%`} />
         </Grid>
         <Box className="border-default bg-surface-elevated mt-[var(--space-4)] rounded-[var(--radius-md)] border p-[var(--space-3)]">
           <Flex className="items-center justify-between gap-[var(--space-3)]"><Typography as="p" variant="bodySm" className="font-semibold">대응 체크리스트</Typography><Typography as="p" variant="caption" color="muted">{responseChecklist.filter((item) => item.complete).length}/{responseChecklist.length} 완료</Typography></Flex>
