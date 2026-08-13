@@ -55,6 +55,11 @@ jobs:
             release_sha="$(git rev-list -n 1 "refs/tags/${release_tag}")"
           fi
 
+          if ! [[ "${release_tag}" =~ ^sb-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Storybook 릴리스 태그는 sb-vX.Y.Z 형식이어야 합니다: ${release_tag}"
+            exit 1
+          fi
+
           git fetch --no-tags origin main --depth=1
           if ! git merge-base --is-ancestor "${release_sha}" "origin/main"; then
             echo "릴리스 태그는 main 이력 위 커밋만 허용됩니다: ${release_tag} (${release_sha})"
@@ -88,25 +93,5 @@ jobs:
           [ -n "${VERCEL_ORG_ID}" ] || { echo "Missing secret: VERCEL_ORG_ID"; exit 1; }
           [ -n "${VERCEL_PROJECT_ID}" ] || { echo "Missing secret: VERCEL_PROJECT_ID_STORYBOOK"; exit 1; }
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.12.3
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Pull Vercel Environment Information (Storybook)
-        run: pnpm dlx vercel@latest pull --yes --environment=production --token="${VERCEL_TOKEN}"
-
-      - name: Build Storybook (Vercel Prebuilt)
-        run: pnpm dlx vercel@latest build --prod --token="${VERCEL_TOKEN}"
-
-      - name: Deploy Storybook (Vercel Prebuilt)
-        run: pnpm dlx vercel@latest deploy --prebuilt --prod --yes --token="${VERCEL_TOKEN}"
+      - name: Deploy Storybook from source
+        run: npx --yes vercel@latest deploy --prod --yes --token="${VERCEL_TOKEN}"

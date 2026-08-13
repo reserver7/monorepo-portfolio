@@ -170,9 +170,7 @@ pnpm audit:workspace
 - Collab Web은 Vercel 프로젝트 1개로 운영합니다.
   - Project Name: `monorepo-portfolio-collab-web`
   - Root Directory: `apps/collab-web`
-- OpsLens는 현재 운영 배포 도메인이 없습니다.
-  - 로컬/개발 DB 확인 중심으로 운영합니다.
-  - `opslens-v*` 태그 CD는 준비되어 있지만, Vercel/Render 대상과 secrets가 설정되지 않으면 배포를 건너뜁니다.
+- OpsLens Web과 Server는 각각 Vercel과 Render에서 운영 배포합니다.
 - 배포 시 필요한 GitHub Actions 시크릿:
   - `VERCEL_TOKEN`
   - `VERCEL_ORG_ID`
@@ -180,29 +178,33 @@ pnpm audit:workspace
   - `VERCEL_PROJECT_ID_OPSLENS_WEB` (OpsLens Web Vercel 배포용)
   - `VERCEL_PROJECT_ID_STORYBOOK` (Storybook Vercel 배포용)
   - `CHROMATIC_PROJECT_TOKEN` (Storybook 시각 회귀 검사용)
+  - `TURBO_TEAM`은 Vercel 팀 slug(`reserver7-projects`)로 CI에 설정되어 있으며, 기존 `VERCEL_TOKEN`으로 Turbo Remote Cache를 인증합니다.
+  - `RENDER_DEPLOY_HOOK_URL`, `SERVER_HEALTHCHECK_URL` (Collab Server Render 배포/확인용)
   - `OPSLENS_RENDER_DEPLOY_HOOK_URL` (OpsLens Server Render 배포용)
   - `OPSLENS_SERVER_HEALTHCHECK_URL` (OpsLens Server 배포 후 헬스체크용, 선택)
+  - `RENDER_API_KEY`, `RENDER_SERVICE_ID` (Collab Render의 특정 커밋 배포·완료 상태 확인용, 선택)
+  - `OPSLENS_RENDER_API_KEY`, `OPSLENS_RENDER_SERVICE_ID` (OpsLens Render의 특정 커밋 배포·완료 상태 확인용, 선택)
 - 릴리스 배포:
   - `main` 머지 후 태그 규칙에 따라 CD 워크플로우가 실행됩니다.
-    - `collab-v*`: Collab Web + Collab Server 배포
-    - `sb-v*`: Storybook 배포
-    - `opslens-v*`: OpsLens Web + OpsLens Server 배포 준비 확인, 배포 대상 설정 시 배포
+    - `collab-vX.Y.Z`: Collab Web + Collab Server 배포
+    - `sb-vX.Y.Z`: Storybook 배포
+    - `opslens-vX.Y.Z`: OpsLens Web + OpsLens Server 배포
   - CI는 PR(`main` 대상)과 수동 실행에서 동작합니다.
 
 ## 태그 배포
 
 ```bash
-git tag -a collab-v0.2.x -m "release: collab web"
-git push origin collab-v0.2.x
+git tag -a collab-v0.2.0 -m "release: collab web"
+git push origin collab-v0.2.0
 
-git tag -a sb-v0.2.x -m "release: storybook"
-git push origin sb-v0.2.x
+git tag -a sb-v0.2.0 -m "release: storybook"
+git push origin sb-v0.2.0
 
-git tag -a opslens-v0.2.x -m "release: opslens"
-git push origin opslens-v0.2.x
+git tag -a opslens-v0.2.0 -m "release: opslens"
+git push origin opslens-v0.2.0
 ```
 
-- 태그 접두사에 맞는 CD만 실행됩니다.
+- 태그는 날짜가 아닌 SemVer(`X.Y.Z`)로 관리하며, 접두사에 맞는 CD만 실행됩니다.
 - 일반 개발 흐름: 기능 브랜치 → PR → Squash Merge(main) → 태그 생성/푸시
 
 ## 관련 문서
