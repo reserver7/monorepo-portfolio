@@ -87,17 +87,12 @@ jobs:
           echo "has_hook=true" >> "${GITHUB_OUTPUT}"
 
       - name: Trigger Render deploy hook
-        id: deploy
         if: ${{ steps.hook.outputs.has_hook == 'true' }}
         env:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.OPSLENS_RENDER_DEPLOY_HOOK_URL }}
         run: |
           set -euo pipefail
-          response="$(curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}")"
-          deploy_id="$(printf '%s' "${response}" | jq -r '.id // empty')"
-          if [ -n "${deploy_id}" ]; then
-            echo "deploy_id=${deploy_id}" >> "${GITHUB_OUTPUT}"
-          fi
+          curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}" >/dev/null
           echo "OpsLens Render deploy hook accepted."
 
       - name: Validate health check URL
