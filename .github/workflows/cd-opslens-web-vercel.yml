@@ -60,7 +60,7 @@ jobs:
             exit 1
           fi
 
-          git fetch --no-tags origin main --depth=1
+          git fetch --no-tags origin main
           if ! git merge-base --is-ancestor "${release_sha}" "origin/main"; then
             echo "릴리스 태그는 main 이력 위 커밋만 허용됩니다: ${release_tag} (${release_sha})"
             exit 1
