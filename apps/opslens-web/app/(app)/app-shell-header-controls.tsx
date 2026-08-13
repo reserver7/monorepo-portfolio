@@ -277,8 +277,8 @@ export default function AppShellHeaderControls({
     toast.info(nextEnabled ? "운영 집중 모드가 켜졌습니다." : "운영 집중 모드가 꺼졌습니다.");
   };
 
-  const commitSearch = () => {
-    const next = watchSearch.trim();
+  const commitSearch = (value = watchSearch) => {
+    const next = value.trim();
     setSearch(next);
     if (next) {
       pushRecentSearch(next);
@@ -527,7 +527,7 @@ export default function AppShellHeaderControls({
                 filterForm.setValue("search", event.target.value);
                 setSearchPanelOpen(true);
               }}
-              onEnter={() => commitSearch()}
+              onEnter={(value) => commitSearch(value)}
               onEscape={() => setSearchPanelOpen(false)}
               prefix={<Search className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />}
               clearable

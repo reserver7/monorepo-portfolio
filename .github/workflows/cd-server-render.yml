@@ -11,7 +11,7 @@ on:
         type: string
 
 concurrency:
-  group: cd-server-render-${{ github.event_name }}-${{ github.ref }}
+  group: cd-server-render-${{ github.event.inputs.release_tag || github.ref_name }}
   cancel-in-progress: true
 
 permissions:

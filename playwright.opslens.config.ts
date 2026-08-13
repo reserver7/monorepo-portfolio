@@ -19,5 +19,34 @@ export default defineConfig({
   projects: [
     { name: "desktop-chromium", use: { browserName: "chromium" } },
     { name: "mobile-chrome", use: { ...devices["Pixel 5"] } }
+  ],
+  webServer: [
+    {
+      command: "pnpm --filter @repo/opslens-server dev",
+      url: "http://127.0.0.1:4100/health",
+      timeout: 120_000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        PORT: "4100",
+        DATABASE_URL: "postgresql://portfolio:portfolio-local-password@127.0.0.1:5433/opslens?schema=public",
+        DIRECT_DATABASE_URL: "postgresql://portfolio:portfolio-local-password@127.0.0.1:5433/opslens?schema=public",
+        AUTH_JWT_SECRET: "opslens-e2e-jwt-secret",
+        AUTH_BRIDGE_SECRET: "opslens-e2e-bridge-secret",
+        CORS_ORIGINS: opslensUrl
+      }
+    },
+    {
+      command: "pnpm --filter @repo/opslens-web exec next start -p 3002",
+      url: `${opslensUrl}/login`,
+      timeout: 120_000,
+      reuseExistingServer: !process.env.CI,
+      env: {
+        NEXT_PUBLIC_API_URL: "http://127.0.0.1:4100/graphql",
+        NEXT_PUBLIC_APP_URL: opslensUrl,
+        NEXTAUTH_SECRET: "opslens-e2e-nextauth-secret",
+        NEXTAUTH_URL: opslensUrl,
+        OPSLENS_AUTH_BRIDGE_SECRET: "opslens-e2e-bridge-secret"
+      }
+    }
   ]
 });
