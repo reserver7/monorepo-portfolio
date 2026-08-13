@@ -2,9 +2,10 @@ import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { IssueSeverity, Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../integration/db/prisma.service.js";
-import type { AnalyzeLogsInputModel } from "./ops.inputs.js";
+import type { AnalyzeLogsInputModel, UpsertLogSavedViewInput } from "./ops.inputs.js";
 import { clusterLogs, parseLogLines } from "./log-parser.js";
 import { toEnvironment, toLogSource } from "./ops.filters.js";
+import { writeOpsAuditLog } from "./ops-audit-writer.js";
 import type { AnalyzeLogsPayloadType, LogAnalysisSessionType } from "./ops.types.js";
 
 @Injectable()
@@ -12,6 +13,41 @@ export class OpsLogAnalysisService {
   private readonly logger = new Logger(OpsLogAnalysisService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async listSavedViews(actor?: string) {
+    return this.prisma.opsLogSavedView.findMany({ where: actor ? { OR: [{ visibility: "team" }, { owner: actor }] } : { visibility: "team" }, orderBy: [{ isFavorite: "desc" }, { updatedAt: "desc" }], take: 30 });
+  }
+
+  async getLogSourceFreshness(): Promise<Array<{ serviceName: string; source: string; lastReceivedAt: Date | null; receivedLastHour: number; stale: boolean }>> {
+    const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const staleBefore = new Date(Date.now() - 30 * 60 * 1000);
+    const rows = await this.prisma.$queryRaw<Array<{ serviceName: string; source: string; lastReceivedAt: Date | null; receivedLastHour: number }>>(Prisma.sql`
+      SELECT issue."serviceName" AS "serviceName", event."source"::text AS "source", MAX(event."occurredAt") AS "lastReceivedAt",
+        COUNT(*) FILTER (WHERE event."occurredAt" >= ${hourAgo})::int AS "receivedLastHour"
+      FROM "LogEvent" event INNER JOIN "Issue" issue ON issue.id = event."issueId"
+      WHERE event."occurredAt" >= ${new Date(Date.now() - 24 * 60 * 60 * 1000)}
+      GROUP BY issue."serviceName", event."source" ORDER BY issue."serviceName", event."source"
+    `);
+    return rows.map((row) => ({ ...row, receivedLastHour: Number(row.receivedLastHour), stale: !row.lastReceivedAt || row.lastReceivedAt < staleBefore }));
+  }
+
+  async upsertSavedView(input: UpsertLogSavedViewInput, actor?: string) {
+    const owner = actor ?? "unknown";
+    if (!input.name.trim()) throw new BadRequestException("뷰 이름이 필요합니다.");
+    const view = input.id
+      ? await this.prisma.opsLogSavedView.update({ where: { id: input.id, owner }, data: { name: input.name.trim(), severity: input.severity, query: input.query, sort: input.sort, visibility: input.visibility === "private" ? "private" : "team", isFavorite: Boolean(input.isFavorite) } })
+      : await this.prisma.opsLogSavedView.create({ data: { name: input.name.trim(), owner, severity: input.severity, query: input.query, sort: input.sort, visibility: input.visibility === "private" ? "private" : "team", isFavorite: Boolean(input.isFavorite) } });
+    await writeOpsAuditLog(this.prisma, this.logger, { actor, action: input.id ? "log_saved_view.updated" : "log_saved_view.created", targetType: "OpsLogSavedView", targetId: view.id, summary: `${view.name} 로그 뷰 ${input.id ? "수정" : "생성"}`, metadata: { visibility: view.visibility, severity: view.severity, sort: view.sort } });
+    return view;
+  }
+
+  async deleteSavedView(id: string, actor?: string): Promise<boolean> {
+    const view = await this.prisma.opsLogSavedView.findFirst({ where: { id, owner: actor ?? "unknown" } });
+    if (!view) return false;
+    const result = await this.prisma.opsLogSavedView.deleteMany({ where: { id, owner: actor ?? "unknown" } });
+    await writeOpsAuditLog(this.prisma, this.logger, { actor, action: "log_saved_view.deleted", targetType: "OpsLogSavedView", targetId: id, summary: `${view.name} 로그 뷰 삭제`, metadata: { visibility: view.visibility } });
+    return result.count > 0;
+  }
 
   async listLogAnalysisSessions(): Promise<LogAnalysisSessionType[]> {
     const sessions = await this.prisma.logAnalysisSession.findMany({
@@ -81,6 +117,7 @@ export class OpsLogAnalysisService {
 
     let createdIssues = 0;
     let updatedIssues = 0;
+    const issueIdBySignature = new Map<string, string>();
 
     for (const cluster of clusters) {
       const signature = `${environment}:${input.serviceName}:${cluster.normalizedMessage}`;
@@ -143,6 +180,7 @@ export class OpsLogAnalysisService {
       } else {
         createdIssues += 1;
       }
+      issueIdBySignature.set(signature, issue.id);
 
       const logRows = cluster.lines.slice(0, 200).map((line) => ({
         issueId: issue.id,
@@ -188,6 +226,7 @@ export class OpsLogAnalysisService {
       clusterTotalCount,
       clusterDisplayedCount: displayedClusters.length,
       clusters: displayedClusters.map((cluster) => ({
+        issueId: issueIdBySignature.get(`${environment}:${input.serviceName}:${cluster.normalizedMessage}`)!,
         title: cluster.title,
         normalizedMessage: cluster.normalizedMessage,
         severity: cluster.severity,

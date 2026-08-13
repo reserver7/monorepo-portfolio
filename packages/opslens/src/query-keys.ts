@@ -73,6 +73,7 @@ export const opslensQueryKeys = {
     ),
   issueDetail: (issueId: string) => opslensKeysBase.custom("issue-detail", issueId),
   serviceHealth: (filter: OpsFilterParams) => opslensKeysBase.custom("service-health", filter.environment, filter.serviceName, filter.search),
+  serviceSlo: (serviceName: string, environment: Environment) => opslensKeysBase.custom("service-slo", serviceName, environment),
   incidentTimeline: (issueId: string) => opslensKeysBase.custom("incident-timeline", issueId),
   deployments: (environment: Environment) => opslensKeysBase.custom("deployments", environment),
   deploymentImpact: (environment: Environment, version?: string) =>
@@ -81,6 +82,8 @@ export const opslensQueryKeys = {
   qaScenarios: () => opslensKeysBase.custom("qa-scenarios"),
   alerts: () => opslensKeysBase.custom("alerts"),
   logAnalysisSessions: () => opslensKeysBase.custom("log-analysis-sessions"),
+  logSourceFreshness: () => opslensKeysBase.custom("log-source-freshness"),
+  logSavedViews: () => opslensKeysBase.custom("log-saved-views"),
   reportSnapshots: () => opslensKeysBase.custom("report-snapshots"),
   reportActions: (snapshotId: string) => opslensKeysBase.custom("report-actions", snapshotId),
   settings: () => opslensKeysBase.custom("settings"),

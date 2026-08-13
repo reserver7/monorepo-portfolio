@@ -1,4 +1,4 @@
-import { Field, GraphQLISODateTime, Int, ObjectType } from "@nestjs/graphql";
+import { Field, Float, GraphQLISODateTime, Int, ObjectType } from "@nestjs/graphql";
 
 @ObjectType()
 export class SeverityCountType {
@@ -73,6 +73,19 @@ export class ServiceHealthType {
 
   @Field(() => GraphQLISODateTime, { nullable: true })
   lastOccurredAt?: Date | null;
+}
+
+@ObjectType()
+export class ServiceSloType {
+  @Field(() => String) serviceName!: string;
+  @Field(() => String) environment!: string;
+  @Field(() => Float) target!: number;
+  @Field(() => Int) requestCount!: number;
+  @Field(() => Int) errorCount!: number;
+  @Field(() => Float, { nullable: true }) availability?: number | null;
+  @Field(() => Float, { nullable: true }) budgetConsumed?: number | null;
+  @Field(() => Int, { nullable: true }) latencyP95Ms?: number | null;
+  @Field(() => GraphQLISODateTime, { nullable: true }) observedAt?: Date | null;
 }
 
 @ObjectType()
@@ -180,10 +193,16 @@ export class OpsReportActionType {
   priority!: string;
 
   @Field(() => GraphQLISODateTime, { nullable: true })
+  dueAt?: Date | null;
+
+  @Field(() => GraphQLISODateTime, { nullable: true })
   completedAt?: Date | null;
 
   @Field(() => String, { nullable: true })
   completedBy?: string | null;
+
+  @Field(() => String, { nullable: true })
+  reopenedReason?: string | null;
 }
 
 @ObjectType()
@@ -348,6 +367,28 @@ export class LogAnalysisSessionType {
 }
 
 @ObjectType()
+export class OpsLogSavedViewType {
+  @Field(() => String) id!: string;
+  @Field(() => String) name!: string;
+  @Field(() => String) owner!: string;
+  @Field(() => String) visibility!: string;
+  @Field(() => String) severity!: string;
+  @Field(() => String) query!: string;
+  @Field(() => String) sort!: string;
+  @Field(() => Boolean) isFavorite!: boolean;
+  @Field(() => GraphQLISODateTime) updatedAt!: Date;
+}
+
+@ObjectType()
+export class LogSourceFreshnessType {
+  @Field(() => String) serviceName!: string;
+  @Field(() => String) source!: string;
+  @Field(() => GraphQLISODateTime, { nullable: true }) lastReceivedAt?: Date | null;
+  @Field(() => Int) receivedLastHour!: number;
+  @Field(() => Boolean) stale!: boolean;
+}
+
+@ObjectType()
 export class OpsSettingType {
   @Field(() => String)
   id!: string;
@@ -382,6 +423,9 @@ export class OpsSettingType {
 
 @ObjectType()
 export class ErrorClusterType {
+  @Field(() => String)
+  issueId!: string;
+
   @Field(() => String)
   title!: string;
 
@@ -529,6 +573,15 @@ export class IssueType {
   @Field(() => GraphQLISODateTime, { nullable: true })
   acknowledgedAt?: Date | null;
 
+  @Field(() => String, { nullable: true })
+  commander?: string | null;
+
+  @Field(() => String, { nullable: true })
+  lastStatusUpdate?: string | null;
+
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  nextUpdateAt?: Date | null;
+
   @Field(() => GraphQLISODateTime, { nullable: true })
   resolvedAt?: Date | null;
 
@@ -642,6 +695,24 @@ export class DeploymentType {
 
   @Field(() => String, { nullable: true })
   approver?: string | null;
+
+  @Field(() => String)
+  approvalStatus!: string;
+
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  approvedAt?: Date | null;
+
+  @Field(() => String, { nullable: true })
+  ciUrl?: string | null;
+
+  @Field(() => String)
+  rollbackStatus!: string;
+
+  @Field(() => String, { nullable: true })
+  rollbackReason?: string | null;
+
+  @Field(() => GraphQLISODateTime, { nullable: true })
+  rolledBackAt?: Date | null;
 
   @Field(() => [String])
   scopeTags!: string[];

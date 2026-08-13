@@ -87,6 +87,11 @@ export async function getServiceHealth(filter: {
   return data.serviceHealth;
 }
 
+export async function getServiceSlo(serviceName: string, environment: Environment): Promise<import("./types").ServiceSlo> {
+  const data = await graphqlRequest<{ serviceSlo: import("./types").ServiceSlo }>(getOpslensApiUrl(), `query ServiceSlo($serviceName: String!, $environment: String!) { serviceSlo(serviceName: $serviceName, environment: $environment) { serviceName environment target requestCount errorCount availability budgetConsumed latencyP95Ms observedAt } }`, { serviceName, environment });
+  return data.serviceSlo;
+}
+
 export async function analyzeLogs(input: {
   rawLogs: string;
   source: string;
@@ -120,6 +125,7 @@ export async function analyzeLogs(input: {
         clusterTotalCount
         clusterDisplayedCount
         clusters {
+          issueId
           title
           normalizedMessage
           severity
@@ -343,6 +349,16 @@ export async function updateIncidentClosure(input: { issueId: string; rootCause?
   return data.updateIncidentClosure;
 }
 
+export async function updateIncidentResponse(input: { issueId: string; commander?: string; escalationLevel?: number; statusUpdate?: string; nextUpdateAt?: string }): Promise<Issue> {
+  const data = await graphqlRequest<{ updateIncidentResponse: Issue }>(
+    getOpslensApiUrl(),
+    `mutation UpdateIncidentResponse($input: UpdateIncidentResponseInput!) { updateIncidentResponse(input: $input) { id commander escalationLevel lastStatusUpdate nextUpdateAt } }`,
+    { input },
+    { successMessage: "인시던트 대응 정보를 저장했습니다." }
+  );
+  return data.updateIncidentResponse;
+}
+
 export async function assignIssue(issueId: string, assignee: string): Promise<Issue> {
   const data = await graphqlRequest<{ assignIssue: Issue }>(
     getOpslensApiUrl(),
@@ -429,6 +445,7 @@ export async function registerDeployment(input: {
   status?: string;
   owner?: string;
   approver?: string;
+  ciUrl?: string;
   overrideReason?: string;
   scopeTags?: string[];
   checklist?: string[];
@@ -448,6 +465,18 @@ export async function registerDeployment(input: {
         status
         owner
         approver
+        approvalStatus
+        approvedAt
+        ciUrl
+        rollbackStatus
+        rollbackReason
+        rolledBackAt
+        approvalStatus
+        approvedAt
+        ciUrl
+        rollbackStatus
+        rollbackReason
+        rolledBackAt
         scopeTags
         checklist
         rollbackCriteria
@@ -461,6 +490,16 @@ export async function registerDeployment(input: {
   );
 
   return data.registerDeployment;
+}
+
+export async function updateDeploymentDecision(input: { deploymentId: string; decision: "approved" | "rejected" | "rollback_requested" | "rolled_back"; approver?: string; reason?: string }): Promise<Deployment> {
+  const data = await graphqlRequest<{ updateDeploymentDecision: Deployment }>(
+    getOpslensApiUrl(),
+    `mutation UpdateDeploymentDecision($input: UpdateDeploymentDecisionInput!) { updateDeploymentDecision(input: $input) { id status approver approvalStatus approvedAt rollbackStatus rollbackReason rolledBackAt } }`,
+    { input },
+    { successMessage: "배포 결정을 저장했습니다." }
+  );
+  return data.updateDeploymentDecision;
 }
 
 export async function getNotificationDeliveries(): Promise<import("./types").OpsNotificationDelivery[]> {
@@ -486,6 +525,12 @@ export async function getDeployments(environment?: Environment): Promise<Deploym
         status
         owner
         approver
+        approvalStatus
+        approvedAt
+        ciUrl
+        rollbackStatus
+        rollbackReason
+        rolledBackAt
         scopeTags
         checklist
         rollbackCriteria
@@ -816,6 +861,26 @@ export async function getLogAnalysisSessions(): Promise<LogAnalysisSession[]> {
   return data.logAnalysisSessions;
 }
 
+export async function getLogSourceFreshness(): Promise<import("./types").LogSourceFreshness[]> {
+  const data = await graphqlRequest<{ logSourceFreshness: import("./types").LogSourceFreshness[] }>(getOpslensApiUrl(), `query LogSourceFreshness { logSourceFreshness { serviceName source lastReceivedAt receivedLastHour stale } }`);
+  return data.logSourceFreshness;
+}
+
+export async function getLogSavedViews(): Promise<import("./types").OpsLogSavedView[]> {
+  const data = await graphqlRequest<{ logSavedViews: import("./types").OpsLogSavedView[] }>(getOpslensApiUrl(), `query LogSavedViews { logSavedViews { id name owner visibility severity query sort isFavorite updatedAt } }`);
+  return data.logSavedViews;
+}
+
+export async function upsertLogSavedView(input: { id?: string; name: string; severity: string; query: string; sort: string; visibility?: string; isFavorite?: boolean }): Promise<import("./types").OpsLogSavedView> {
+  const data = await graphqlRequest<{ upsertLogSavedView: import("./types").OpsLogSavedView }>(getOpslensApiUrl(), `mutation UpsertLogSavedView($input: UpsertLogSavedViewInput!) { upsertLogSavedView(input: $input) { id name owner visibility severity query sort isFavorite updatedAt } }`, { input });
+  return data.upsertLogSavedView;
+}
+
+export async function deleteLogSavedView(id: string): Promise<boolean> {
+  const data = await graphqlRequest<{ deleteLogSavedView: boolean }>(getOpslensApiUrl(), `mutation DeleteLogSavedView($id: String!) { deleteLogSavedView(id: $id) }`, { id });
+  return data.deleteLogSavedView;
+}
+
 export async function getReportSnapshots(): Promise<OpsReportSnapshot[]> {
   const data = await graphqlRequest<{ reportSnapshots: OpsReportSnapshot[] }>(
     getOpslensApiUrl(),
@@ -844,16 +909,16 @@ export async function getReportSnapshots(): Promise<OpsReportSnapshot[]> {
 export async function getReportActions(snapshotId: string): Promise<import("./types").OpsReportAction[]> {
   const data = await graphqlRequest<{ reportActions: import("./types").OpsReportAction[] }>(
     getOpslensApiUrl(),
-    `query ReportActions($snapshotId: String!) { reportActions(snapshotId: $snapshotId) { id snapshotId title description owner priority completedAt completedBy } }`,
+    `query ReportActions($snapshotId: String!) { reportActions(snapshotId: $snapshotId) { id snapshotId title description owner priority dueAt completedAt completedBy reopenedReason } }`,
     { snapshotId }
   );
   return data.reportActions;
 }
 
-export async function updateReportAction(input: { actionId: string; completed: boolean; actor?: string }): Promise<import("./types").OpsReportAction> {
+export async function updateReportAction(input: { actionId: string; completed: boolean; actor?: string; dueAt?: string; owner?: string; reopenedReason?: string }): Promise<import("./types").OpsReportAction> {
   const data = await graphqlRequest<{ updateReportAction: import("./types").OpsReportAction }>(
     getOpslensApiUrl(),
-    `mutation UpdateReportAction($input: UpdateReportActionInput!) { updateReportAction(input: $input) { id snapshotId title description owner priority completedAt completedBy } }`,
+    `mutation UpdateReportAction($input: UpdateReportActionInput!) { updateReportAction(input: $input) { id snapshotId title description owner priority dueAt completedAt completedBy reopenedReason } }`,
     { input },
     { notifyOnSuccess: false }
   );

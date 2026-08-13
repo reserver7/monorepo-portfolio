@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 
 import { env } from "../../config/env.js";
 import { PrismaService } from "../../integration/db/prisma.service.js";
-import type { DeploymentImpactInput, RegisterDeploymentInput } from "./ops.inputs.js";
+import type { DeploymentImpactInput, RegisterDeploymentInput, UpdateDeploymentDecisionInput } from "./ops.inputs.js";
 import { writeOpsAuditLog } from "./ops-audit-writer.js";
 import { toEnvironment } from "./ops.filters.js";
 import {
@@ -85,7 +85,10 @@ export class OpsDeploymentService {
       status: input.status?.trim() || "completed",
       owner: input.owner?.trim() || "운영담당자",
       approver: input.approver?.trim() || null,
+      approvalStatus: input.approver?.trim() ? "approved" : criticalHighCount > 0 ? "pending" : "not_required",
+      approvedAt: input.approver?.trim() ? new Date() : null,
       overrideReason: input.overrideReason?.trim() || null,
+      ciUrl: input.ciUrl?.trim() || null,
       scopeTags: normalizeStringList(input.scopeTags) as Prisma.JsonArray,
       checklist: normalizeStringList(input.checklist) as Prisma.JsonArray,
       rollbackCriteria: input.rollbackCriteria?.trim() || null,
@@ -119,6 +122,34 @@ export class OpsDeploymentService {
     });
 
     return toDeploymentType(deployment);
+  }
+
+  async updateDeploymentDecision(input: UpdateDeploymentDecisionInput, actor?: string): Promise<DeploymentType> {
+    const decision = input.decision.trim();
+    if (!["approved", "rejected", "rollback_requested", "rolled_back"].includes(decision)) throw new BadRequestException("지원하지 않는 배포 결정입니다.");
+    if ((decision === "approved" || decision === "rejected") && !input.approver?.trim()) throw new BadRequestException("승인 또는 반려자는 필수입니다.");
+    if ((decision === "rollback_requested" || decision === "rolled_back") && !input.reason?.trim()) throw new BadRequestException("롤백 사유는 필수입니다.");
+    const now = new Date();
+    const deployment = await this.prisma.deployment.update({
+      where: { id: input.deploymentId },
+      data: decision === "approved" || decision === "rejected"
+        ? { approvalStatus: decision, approver: input.approver?.trim(), approvedAt: now }
+        : { rollbackStatus: decision, rollbackReason: input.reason?.trim(), rolledBackAt: decision === "rolled_back" ? now : undefined, status: decision === "rolled_back" ? "rolled_back" : undefined }
+    });
+    this.clearCache();
+    await writeOpsAuditLog(this.prisma, this.logger, { actor, action: `deployment.${decision}`, targetType: "Deployment", targetId: deployment.id, summary: `${deployment.version} ${decision}`, metadata: { approver: deployment.approver, rollbackReason: deployment.rollbackReason } });
+    return toDeploymentType(deployment);
+  }
+
+  async syncCiStatus(input: { version: string; environment: string; status: string; ciUrl?: string }, actor = "ci-webhook"): Promise<boolean> {
+    const environment = toEnvironment(input.environment);
+    if (!environment || !input.version.trim() || !input.status.trim()) throw new BadRequestException("CI 배포 상태 값이 올바르지 않습니다.");
+    const deployment = await this.prisma.deployment.findUnique({ where: { version_environment: { version: input.version.trim(), environment } } });
+    if (!deployment) return false;
+    const updated = await this.prisma.deployment.update({ where: { id: deployment.id }, data: { status: input.status.trim().slice(0, 64), ciUrl: input.ciUrl?.trim() || deployment.ciUrl } });
+    this.clearCache();
+    await writeOpsAuditLog(this.prisma, this.logger, { actor, action: "deployment.ci_status_synced", targetType: "Deployment", targetId: updated.id, summary: `${updated.version} CI 상태 동기화: ${updated.status}`, metadata: { ciUrl: updated.ciUrl } });
+    return true;
   }
 
   async listDeployments(environment?: string): Promise<DeploymentType[]> {

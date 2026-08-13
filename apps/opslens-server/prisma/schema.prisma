@@ -85,7 +85,13 @@ model Deployment {
   status              String         @default("completed")
   owner               String         @default("운영담당자")
   approver            String?
+  approvalStatus      String         @default("not_required")
+  approvedAt          DateTime?
   overrideReason      String?
+  ciUrl               String?
+  rollbackStatus      String         @default("not_requested")
+  rollbackReason      String?
+  rolledBackAt        DateTime?
   scopeTags           Json           @default("[]")
   checklist           Json           @default("[]")
   rollbackCriteria    String?
@@ -108,6 +114,9 @@ model Issue {
   slaDueAt              DateTime?
   escalationLevel       Int            @default(0)
   acknowledgedAt        DateTime?
+  commander             String?
+  lastStatusUpdate      String?
+  nextUpdateAt          DateTime?
   resolvedAt            DateTime?
   rootCause             String?
   postmortemUrl         String?
@@ -169,6 +178,20 @@ model LogAnalysisSession {
   updatedIssues         Int            @default(0)
   topClusterTitle       String?
   createdAt             DateTime       @default(now())
+}
+
+model ServiceMetricEvent {
+  id           String         @id @default(cuid())
+  serviceName  String
+  environment  OpsEnvironment
+  requests     Int
+  errors       Int
+  latencyP95Ms Int?
+  occurredAt   DateTime
+  createdAt    DateTime       @default(now())
+
+  @@index([serviceName, environment, occurredAt])
+  @@index([environment, occurredAt])
 }
 
 model IssueComment {
@@ -252,8 +275,10 @@ model OpsReportAction {
   description String
   owner       String
   priority    String
+  dueAt       DateTime?
   completedAt DateTime?
   completedBy String?
+  reopenedReason String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -276,6 +301,22 @@ model OpsSetting {
 
   @@index([category])
   @@index([riskLevel])
+}
+
+model OpsLogSavedView {
+  id          String   @id @default(cuid())
+  name        String
+  owner       String
+  visibility  String   @default("team")
+  severity    String   @default("all")
+  query       String   @default("")
+  sort        String   @default("countDesc")
+  isFavorite  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([visibility, updatedAt])
+  @@index([owner, updatedAt])
 }
 
 model OpsAuditLog {

@@ -104,15 +104,21 @@ type DeploymentReadinessType {
 }
 
 type DeploymentType {
+  approvalStatus: String!
+  approvedAt: DateTime
   approver: String
   changelog: String!
   checklist: [String!]!
+  ciUrl: String
   deployedAt: DateTime!
   environment: String!
   id: String!
   monitoringWindowMin: Int!
   owner: String!
   rollbackCriteria: String
+  rollbackReason: String
+  rollbackStatus: String!
+  rolledBackAt: DateTime
   scopeTags: [String!]!
   status: String!
   version: String!
@@ -123,6 +129,7 @@ type ErrorClusterType {
   count: Int!
   deploymentCorrelation: String!
   firstSeen: DateTime!
+  issueId: String!
   lastSeen: DateTime!
   normalizedMessage: String!
   probableCauses: [String!]!
@@ -140,6 +147,15 @@ type IncidentTimelineItemType {
   occurredAt: DateTime!
   title: String!
   tone: String!
+}
+
+input IngestServiceMetricInput {
+  environment: String!
+  errors: Int!
+  latencyP95Ms: Int
+  occurredAt: String
+  requests: Int!
+  serviceName: String!
 }
 
 type IssueCommentType {
@@ -177,6 +193,7 @@ type IssueType {
   acknowledgedAt: DateTime
   affectedArea: String
   assignee: String
+  commander: String
   comments: [IssueCommentType!]!
   createdAt: DateTime!
   deploymentCorrelation: String
@@ -186,7 +203,9 @@ type IssueType {
   firstOccurredAt: DateTime!
   id: String!
   lastOccurredAt: DateTime!
+  lastStatusUpdate: String
   logs: [LogEventType!]!
+  nextUpdateAt: DateTime
   occurrenceCount: Int!
   postmortemUrl: String
   priority: String!
@@ -232,24 +251,37 @@ type LogEventType {
   userId: String
 }
 
+type LogSourceFreshnessType {
+  lastReceivedAt: DateTime
+  receivedLastHour: Int!
+  serviceName: String!
+  source: String!
+  stale: Boolean!
+}
+
 type Mutation {
   addIssueComment(input: AddIssueCommentInput!): IssueType!
   analyzeLogs(input: AnalyzeLogsInputModel!): AnalyzeLogsPayloadType!
   assignIssue(input: AssignIssueInput!): IssueType!
   bulkUpdateIssues(input: BulkUpdateIssuesInput!): Int!
   createOpsAlert(input: CreateOpsAlertInput!): OpsAlertType!
+  deleteLogSavedView(id: String!): Boolean!
   deleteOpsAlert(alertId: String!): Boolean!
   deleteQaScenario(scenarioId: String!): Boolean!
   deleteReportSnapshot(actor: String, snapshotId: String!): Boolean!
   generateQaScenario(input: QaAssistantInputModel!): QaScenarioType!
+  ingestServiceMetric(input: IngestServiceMetricInput!): Boolean!
   markAllOpsAlertsRead: Boolean!
   markOpsAlertRead(alertId: String!): OpsAlertType!
   registerDeployment(input: RegisterDeploymentInput!): DeploymentType!
   retryPendingAlertDeliveries: Float!
+  updateDeploymentDecision(input: UpdateDeploymentDecisionInput!): DeploymentType!
   updateIncidentClosure(input: UpdateIncidentClosureInput!): IssueType!
+  updateIncidentResponse(input: UpdateIncidentResponseInput!): IssueType!
   updateIssueStatus(input: UpdateIssueStatusInput!): IssueType!
   updateReportAction(input: UpdateReportActionInput!): OpsReportActionType!
   updateReportSnapshot(input: UpdateReportSnapshotInput!): OpsReportSnapshotType!
+  upsertLogSavedView(input: UpsertLogSavedViewInput!): OpsLogSavedViewType!
   upsertOpsSetting(input: UpsertOpsSettingInput!): OpsSettingType!
 }
 
@@ -289,6 +321,18 @@ type OpsAuditLogType {
   targetType: String!
 }
 
+type OpsLogSavedViewType {
+  id: String!
+  isFavorite: Boolean!
+  name: String!
+  owner: String!
+  query: String!
+  severity: String!
+  sort: String!
+  updatedAt: DateTime!
+  visibility: String!
+}
+
 type OpsNotificationDeliveryType {
   alertId: String!
   attempts: Int!
@@ -304,9 +348,11 @@ type OpsReportActionType {
   completedAt: DateTime
   completedBy: String
   description: String!
+  dueAt: DateTime
   id: String!
   owner: String!
   priority: String!
+  reopenedReason: String
   snapshotId: String!
   title: String!
 }
@@ -388,6 +434,8 @@ type Query {
   issueSummary(filter: IssueFilterInput): IssueSummaryType!
   issues(filter: IssueFilterInput): IssueListPayloadType!
   logAnalysisSessions: [LogAnalysisSessionType!]!
+  logSavedViews: [OpsLogSavedViewType!]!
+  logSourceFreshness: [LogSourceFreshnessType!]!
   notificationDeliveries: [OpsNotificationDeliveryType!]!
   opsAlerts: [OpsAlertType!]!
   opsAuditLogs(filter: OpsAuditLogFilterInput): [OpsAuditLogType!]!
@@ -397,12 +445,14 @@ type Query {
   reportActions(snapshotId: String!): [OpsReportActionType!]!
   reportSnapshots: [OpsReportSnapshotType!]!
   serviceHealth(filter: DashboardFilterInput): [ServiceHealthType!]!
+  serviceSlo(environment: String!, serviceName: String!): ServiceSloType!
 }
 
 input RegisterDeploymentInput {
   approver: String
   changelog: String!
   checklist: [String!]
+  ciUrl: String
   deployedAt: String
   environment: String!
   monitoringWindowMin: Int
@@ -453,6 +503,18 @@ type ServiceHealthType {
   status: String!
 }
 
+type ServiceSloType {
+  availability: Float
+  budgetConsumed: Float
+  environment: String!
+  errorCount: Int!
+  latencyP95Ms: Int
+  observedAt: DateTime
+  requestCount: Int!
+  serviceName: String!
+  target: Float!
+}
+
 type SeverityCountType {
   count: Int!
   severity: String!
@@ -463,10 +525,25 @@ type TrendPointType {
   hour: String!
 }
 
+input UpdateDeploymentDecisionInput {
+  approver: String
+  decision: String!
+  deploymentId: String!
+  reason: String
+}
+
 input UpdateIncidentClosureInput {
   issueId: String!
   postmortemUrl: String
   rootCause: String
+}
+
+input UpdateIncidentResponseInput {
+  commander: String
+  escalationLevel: Int
+  issueId: String!
+  nextUpdateAt: String
+  statusUpdate: String
 }
 
 input UpdateIssueStatusInput {
@@ -478,6 +555,9 @@ input UpdateReportActionInput {
   actionId: String!
   actor: String
   completed: Boolean!
+  dueAt: String
+  owner: String
+  reopenedReason: String
 }
 
 input UpdateReportSnapshotInput {
@@ -485,6 +565,16 @@ input UpdateReportSnapshotInput {
   markShared: Boolean
   pinned: Boolean
   snapshotId: String!
+}
+
+input UpsertLogSavedViewInput {
+  id: String
+  isFavorite: Boolean
+  name: String!
+  query: String!
+  severity: String!
+  sort: String!
+  visibility: String
 }
 
 input UpsertOpsSettingInput {
