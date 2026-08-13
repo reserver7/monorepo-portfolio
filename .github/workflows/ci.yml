@@ -20,6 +20,10 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  TURBO_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  TURBO_TEAM: reserver7-projects
+
 jobs:
   changes:
     name: Detect impacted scopes

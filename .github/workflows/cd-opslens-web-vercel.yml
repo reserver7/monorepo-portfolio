@@ -55,6 +55,11 @@ jobs:
             release_sha="$(git rev-list -n 1 "refs/tags/${release_tag}")"
           fi
 
+          if ! [[ "${release_tag}" =~ ^opslens-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "OpsLens 릴리스 태그는 opslens-vX.Y.Z 형식이어야 합니다: ${release_tag}"
+            exit 1
+          fi
+
           git fetch --no-tags origin main --depth=1
           if ! git merge-base --is-ancestor "${release_sha}" "origin/main"; then
             echo "릴리스 태그는 main 이력 위 커밋만 허용됩니다: ${release_tag} (${release_sha})"
