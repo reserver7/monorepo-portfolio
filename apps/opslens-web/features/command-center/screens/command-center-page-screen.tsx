@@ -12,6 +12,7 @@ import { useOpsFilters } from "@/features/common/stores";
 import { formatDateTime, formatNumber } from "@repo/utils";
 import { isIssueSlaRisk } from "@/features/issues/utils/issues-utils";
 import { useOpsPermissions } from "@/features/common/hooks/use-ops-permissions";
+import { parseEscalationPolicy } from "@/features/settings/components";
 
 const isActiveIncident = (issue: Issue) =>
   issue.status !== "resolved" && (issue.severity === "critical" || issue.severity === "high" || isIssueSlaRisk(issue));
@@ -58,6 +59,7 @@ export default function CommandCenterPage() {
   const unassigned = incidents.filter((incident) => !incident.assignee).length;
   const slaRisk = incidents.filter(isIssueSlaRisk).length;
   const onCall = settingsQuery.data?.find((setting) => setting.key === "alert.on_call")?.value;
+  const escalationPolicy = useMemo(() => parseEscalationPolicy(settingsQuery.data?.find((setting) => setting.key === "alert.escalation_policy")?.value), [settingsQuery.data]);
   const updateTimes = [issuesQuery.dataUpdatedAt, alertsQuery.dataUpdatedAt, deploymentsQuery.dataUpdatedAt].filter((value) => value > 0);
   const dataUpdatedAt = updateTimes.length > 0 ? Math.min(...updateTimes) : null;
   const dataAgeSec = dataUpdatedAt == null ? null : Math.max(0, Math.floor((Date.now() - dataUpdatedAt) / 1000));
@@ -66,6 +68,13 @@ export default function CommandCenterPage() {
     try { return (raw ? JSON.parse(raw) : { services: [] }) as { services?: Array<{ name?: string; slo?: string; owner?: string; onCall?: string; runbook?: string }> }; } catch { return { services: [] }; }
   }, [settingsQuery.data]);
   const compareItems = incidents.filter((incident) => compareIds.includes(incident.id));
+  const escalationQueue = incidents.filter((incident) => {
+    const acknowledgementDueAt = new Date(incident.firstOccurredAt).getTime() + escalationPolicy.acknowledgeWithinMinutes * 60_000;
+    const statusDueAt = incident.nextUpdateAt
+      ? new Date(incident.nextUpdateAt).getTime()
+      : new Date(incident.acknowledgedAt ?? incident.firstOccurredAt).getTime() + escalationPolicy.statusUpdateWithinMinutes * 60_000;
+    return (!incident.acknowledgedAt && acknowledgementDueAt < Date.now()) || statusDueAt < Date.now();
+  });
   const toggleCompare = (id: string) => setCompareIds((previous) => previous.includes(id) ? previous.filter((item) => item !== id) : previous.length < 2 ? [...previous, id] : [previous[1]!, id]);
 
   return (
@@ -83,8 +92,9 @@ export default function CommandCenterPage() {
         </Flex>
       </Box>
 
-      <Grid className="gap-[var(--space-3)] md:grid-cols-3">
+      <Grid className="gap-[var(--space-3)] md:grid-cols-4">
         <Metric icon={<Siren className="h-4 w-4 text-danger" />} label="즉시 대응" value={incidents.length} helper="Critical/High 또는 SLA 위험" tone="danger" />
+        <Metric icon={<Siren className="h-4 w-4 text-danger" />} label="에스컬레이션" value={escalationQueue.length} helper={`확인 ${escalationPolicy.acknowledgeWithinMinutes}분 · 공지 ${escalationPolicy.statusUpdateWithinMinutes}분`} tone="danger" />
         <Metric icon={<ShieldAlert className="h-4 w-4 text-warning" />} label="담당자 미지정" value={unassigned} helper="소유권 확인 필요" tone="warning" />
         <Metric icon={<AlertTriangle className="h-4 w-4 text-primary" />} label="SLA 위험" value={slaRisk} helper="기한 초과 또는 임박" tone="primary" />
       </Grid>
@@ -105,6 +115,11 @@ export default function CommandCenterPage() {
         </OpsSectionCard>
 
         <Box className="space-y-[var(--space-4)]">
+          <OpsSectionCard title="에스컬레이션 큐" description="확인 또는 다음 상태 공지 기한을 넘긴 중요 인시던트입니다.">
+            {escalationQueue.length ? <Box className="space-y-[var(--space-2)]">{escalationQueue.slice(0, 4).map((incident) => <Box key={incident.id} className="border-danger/30 bg-danger/5 rounded-[var(--radius-md)] border p-[var(--space-2)]"><Flex className="items-start justify-between gap-[var(--space-2)]"><Box className="min-w-0"><Typography as="p" variant="caption" className="font-semibold">{incident.title}</Typography><Typography as="p" variant="caption" color="muted" className="mt-[var(--space-1)]">L{incident.escalationLevel} · {incident.acknowledgedAt ? "상태 공지 필요" : "최초 확인 필요"}</Typography></Box><Button asChild variant="outline" size="sm"><Link href={`/issues/${incident.id}`}>대응</Link></Button></Flex></Box>)}</Box> : <Typography as="p" variant="bodySm" color="muted">기한을 넘긴 중요 인시던트가 없습니다.</Typography>}
+            <Typography as="p" variant="caption" color="muted" className="mt-[var(--space-3)]">대상: {escalationPolicy.escalationTargets}</Typography>
+            <Button asChild variant="ghost" size="sm" className="mt-[var(--space-2)]"><Link href="/settings?tab=notifications">정책 조정</Link></Button>
+          </OpsSectionCard>
           <OpsSectionCard title="최근 배포 판단" description="영향 분석 결과로 롤백 검토 여부를 확인합니다.">
             <Select aria-label="분석할 배포 버전" value={deploymentVersion ?? ""} onChange={(value) => setSelectedVersion(String(value))} options={(deploymentsQuery.data ?? []).map((deployment) => ({ label: deployment.version, value: deployment.version }))} className="mb-[var(--space-3)]" />
             {impactQuery.isLoading ? <OpsSectionSkeleton rows={3} /> : impactQuery.data ? <Box className="space-y-[var(--space-2)]"><Badge size="sm" variant={impactQuery.data.riskLevel === "rollback_review" ? "danger" : impactQuery.data.riskLevel === "caution" ? "warning" : "success"}>{impactQuery.data.riskLevel === "rollback_review" ? "롤백 검토" : impactQuery.data.riskLevel === "caution" ? "관찰 필요" : "정상"}</Badge><Typography as="p" variant="bodySm">{impactQuery.data.recommendedAction}</Typography><Typography as="p" variant="caption" color="muted">증가 이슈 {formatNumber(impactQuery.data.increasedIssueCount)}건 · 배포 후 오류 {formatNumber(impactQuery.data.totalAfterErrorCount)}건</Typography><Button asChild variant="outline" size="sm"><Link href="/deployments">배포 상세 보기</Link></Button></Box> : <StateView variant="empty" size="sm" title="분석할 배포 이력이 없습니다." />}
