@@ -142,7 +142,9 @@ jobs:
             echo "OpsLens CI webhook secrets are missing. Skipping status sync."
             exit 0
           fi
-          curl --fail-with-body --retry 2 --retry-all-errors -sS -X POST "${OPSLENS_CI_WEBHOOK_URL}" \
+          if ! curl --fail-with-body --retry 2 --retry-all-errors -sS -X POST "${OPSLENS_CI_WEBHOOK_URL}" \
             -H "content-type: application/json" \
             -H "x-opslens-ingestion-key: ${OPSLENS_INGESTION_KEY}" \
-            --data "{\"environment\":\"prod\",\"version\":\"${RELEASE_TAG}\",\"status\":\"${CI_STATUS}\"}"
+            --data "{\"environment\":\"prod\",\"version\":\"${RELEASE_TAG}\",\"status\":\"${CI_STATUS}\"}"; then
+            echo "::warning::OpsLens deployment status sync failed; the deployment result is unaffected."
+          fi
