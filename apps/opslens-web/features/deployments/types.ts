@@ -5,6 +5,7 @@ export type DeploymentFormValues = {
   status: "planned" | "deploying" | "completed" | "failed" | "rolled_back";
   owner: string;
   approver: string;
+  ciUrl: string;
   overrideReason: string;
   scopeTags: string[];
   monitoringWindowMin: number;

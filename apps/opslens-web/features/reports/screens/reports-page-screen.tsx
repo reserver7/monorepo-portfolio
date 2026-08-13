@@ -155,7 +155,7 @@ export default function ReportsPage() {
 
               <OpsSectionCard title="액션 아이템" description="공유 후 바로 담당자와 우선순위를 정리할 항목입니다.">
                 <Flex className="mb-[var(--space-3)] flex-wrap justify-end gap-[var(--space-2)]"><Button type="button" variant={openActionsOnly ? "primary" : "secondary"} size="sm" onClick={() => setOpenActionsOnly((value) => !value)}>{openActionsOnly ? "전체 보기" : "미완료만 보기"}</Button><Button type="button" variant="secondary" size="sm" onClick={exportActions} disabled={visibleActions.length === 0}>CSV 내보내기</Button></Flex>
-                <ReportActionList actions={visibleActions} disabled={updateActionMutation.isPending} onToggle={(action, completed) => updateActionMutation.mutate({ actionId: action.id, completed, actor: "web" })} />
+                <ReportActionList actions={visibleActions} disabled={updateActionMutation.isPending} onToggle={(action, completed) => updateActionMutation.mutate({ actionId: action.id, completed, actor: "web" })} onUpdate={(action, values) => updateActionMutation.mutate({ actionId: action.id, completed: Boolean(action.completedAt), owner: values.owner, dueAt: values.dueAt, actor: "web" })} />
               </OpsSectionCard>
 
               <OpsSectionCard title="기술 상세" description="개발/운영 담당자가 원인 확인에 사용할 상세 요약입니다.">

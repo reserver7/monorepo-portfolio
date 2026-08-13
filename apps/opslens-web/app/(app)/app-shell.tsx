@@ -7,7 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { subscribeHttpUnauthorized } from "@repo/react-query";
-import { Box, ConsoleAppLayout, toast, useDisclosure } from "@repo/ui";
+import { Box, ConsoleAppLayout, Skeleton, toast, useDisclosure } from "@repo/ui";
 import {
   clearAuthSession,
   logoutCurrentSession,
@@ -159,7 +159,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [closeMobile, filterStoreApi]);
 
   if (!authReady || !authenticated) {
-    return <Box className="bg-surface min-h-screen" />;
+    return (
+      <Box className="bg-surface min-h-screen space-y-[var(--space-4)] p-[var(--space-5)]" aria-busy="true" aria-label="세션을 확인하는 중입니다.">
+        <Skeleton className="h-10 w-44 rounded-[var(--radius-md)]" />
+        <Skeleton className="h-24 w-full rounded-[var(--radius-lg)]" />
+        <Skeleton className="h-64 w-full rounded-[var(--radius-lg)]" />
+      </Box>
+    );
   }
 
   return (

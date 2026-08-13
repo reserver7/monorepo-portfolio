@@ -5,6 +5,7 @@ export const DEPLOYMENT_FORM_DEFAULT_VALUES: DeploymentFormValues = {
   status: "completed",
   owner: "운영담당자",
   approver: "",
+  ciUrl: "",
   overrideReason: "",
   scopeTags: [],
   monitoringWindowMin: 60,

@@ -2,24 +2,20 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Box, Button, ConsolePageStack, ConsoleSectionCard, Flex, FormField, Grid, Input, Select, SplitWorkspaceLayout, Textarea, Badge, StatCard, Typography, toast } from "@repo/ui";
-import { useMutation } from "@repo/react-query";
+import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
-import { analyzeLogs, createOpsLogTailEventSource, type OpsLogTailEvent } from "@repo/opslens";
+import { analyzeLogs, createOpsLogTailEventSource, deleteLogSavedView, getLogSavedViews, getLogSourceFreshness, opslensQueryKeys, upsertLogSavedView, type OpsLogTailEvent } from "@repo/opslens";
 import { useOpsFilters } from "@/features/common/stores";
 import { formatDateTimeByLocale, resolveServiceLabel } from "@/features/common/utils/ops-display";
 import { downloadCsv } from "@/features/common/utils/download-csv";
+import { readAuthSession } from "@/lib/auth";
 import { formatNumber } from "@repo/utils";
 import { LogAnalysisSidebar, LogClusterResults } from "../components";
-import {
-  LOGS_DEFAULT_CLUSTER_LIMIT,
-  LOGS_SAMPLE,
-  LOGS_SAVED_VIEWS_KEY
-} from "../constants";
+import { LOGS_DEFAULT_CLUSTER_LIMIT, LOGS_SAMPLE } from "../constants";
 import type { LogsFormValues, LogsSavedView, LogsSavedViewsState, LogsSeverityFilter, LogsSortKey } from "../types";
 import {
-  createLogsSavedViewId,
   extractCorrelationTokens,
   getAnalyzeErrorMessage,
   getLogsLineCount,
@@ -27,6 +23,8 @@ import {
 } from "../utils/logs-utils";
 
 export default function LogsPage() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
   const { environment, locale, serviceName } = useOpsFilters();
   const searchParams = useSearchParams();
   const tService = useTranslations("service");
@@ -47,38 +45,27 @@ export default function LogsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryInputRef = useRef<HTMLInputElement>(null);
   const lastSubmittedRef = useRef<LogsFormValues | null>(null);
+  const sourceFreshnessQuery = useQuery({ queryKey: opslensQueryKeys.logSourceFreshness(), queryFn: getLogSourceFreshness, staleTime: 15_000, refetchInterval: 30_000 });
+  const savedViewsQuery = useQuery({ queryKey: opslensQueryKeys.logSavedViews(), queryFn: getLogSavedViews, staleTime: 15_000 });
+  const sourceFreshness = useMemo(() => {
+    return ["server", "client", "api", "console", "sentry"].map((source) => {
+      const item = (sourceFreshnessQuery.data ?? []).find((entry) => entry.source === source && (serviceName === "all" || entry.serviceName === serviceName));
+      const ageMinutes = item?.lastReceivedAt ? Math.max(0, Math.floor((Date.now() - new Date(item.lastReceivedAt).getTime()) / 60_000)) : null;
+      return { source, session: item ? { createdAt: item.lastReceivedAt, rawLineCount: item.receivedLastHour } : null, ageMinutes, stale: item?.stale ?? true };
+    });
+  }, [serviceName, sourceFreshnessQuery.data]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const role = window.localStorage.getItem("opslens.role");
+    const role = readAuthSession()?.user.role;
     if (role === "viewer" || role === "operator" || role === "admin") {
       setOperatorRole(role);
     }
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const parsed = JSON.parse(window.localStorage.getItem(LOGS_SAVED_VIEWS_KEY) ?? "[]");
-      if (Array.isArray(parsed)) {
-        const normalized = parsed.filter((item): item is LogsSavedView => (
-          typeof item?.id === "string" &&
-          typeof item?.name === "string" &&
-          typeof item?.severity === "string" &&
-          typeof item?.query === "string" &&
-          typeof item?.sort === "string"
-        ));
-        setSavedViewsState((prev) => ({ ...prev, items: normalized }));
-      }
-    } catch {
-      setSavedViewsState((prev) => ({ ...prev, items: [] }));
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(LOGS_SAVED_VIEWS_KEY, JSON.stringify(savedViewsState.items));
-  }, [savedViewsState.items]);
+    if (!savedViewsQuery.data) return;
+    setSavedViewsState((previous) => ({ ...previous, items: savedViewsQuery.data.map((view) => ({ id: view.id, name: view.name, owner: view.owner, visibility: view.visibility === "private" ? "private" : "team", isFavorite: view.isFavorite, severity: view.severity as LogsSeverityFilter, query: view.query, sort: view.sort as LogsSortKey })) }));
+  }, [savedViewsQuery.data]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -210,31 +197,35 @@ export default function LogsPage() {
 
   const saveCurrentView = () => {
     const baseName = `View ${savedViewsState.items.length + 1}`;
-    const nextId = createLogsSavedViewId();
     const next: LogsSavedView = {
-      id: nextId,
+      id: "new",
       name: baseName,
       severity: severityFilter,
       query: searchQuery,
       sort: sortKey
     };
-    setSavedViewsState((prev) => ({
-      items: [next, ...prev.items].slice(0, 8),
-      activeId: nextId
-    }));
-    toast.success("현재 필터 구성을 저장했습니다.");
+    saveViewMutation.mutate(next);
   };
 
   const removeSavedView = (id: string) => {
-    setSavedViewsState((prev) => ({
-      items: prev.items.filter((view) => view.id !== id),
-      activeId: prev.activeId === id ? null : prev.activeId
-    }));
+    const view = savedViewsState.items.find((item) => item.id === id);
+    if (view?.owner && view.owner !== readAuthSession()?.user.email) {
+      toast.error("팀 공유 뷰는 생성자만 삭제할 수 있습니다.");
+      return;
+    }
+    deleteViewMutation.mutate(id);
   };
 
-  const clearSavedViews = () => {
-    setSavedViewsState({ items: [], activeId: null });
-    toast.success("저장된 뷰를 모두 삭제했습니다.");
+  const saveViewMutation = useMutation({ mutationFn: (view: LogsSavedView) => upsertLogSavedView({ name: view.name, severity: view.severity, query: view.query, sort: view.sort, visibility: "team" }), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.logSavedViews() }); toast.success("팀 공유 로그 뷰를 저장했습니다."); } });
+  const deleteViewMutation = useMutation({ mutationFn: deleteLogSavedView, onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.logSavedViews() }); toast.success("저장 뷰를 삭제했습니다."); } });
+
+  const clearSavedViews = async () => {
+    const actor = readAuthSession()?.user.email;
+    const ownedViews = savedViewsState.items.filter((view) => view.owner === actor);
+    await Promise.all(ownedViews.map((view) => deleteLogSavedView(view.id)));
+    await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.logSavedViews() });
+    setSavedViewsState((previous) => ({ ...previous, activeId: null }));
+    toast.success("내가 저장한 로그 뷰를 삭제했습니다.");
   };
 
   const applySavedView = (id: string) => {
@@ -257,7 +248,7 @@ export default function LogsPage() {
 
   const createIssueFromCluster = () => {
     if (!selectedCluster) return;
-    toast.success(`이슈 생성 요청: ${selectedCluster.title}`);
+    router.push(`/issues/${selectedCluster.issueId}`);
   };
 
   const exportClusters = () => {
@@ -284,6 +275,12 @@ export default function LogsPage() {
           </Flex>
         </Flex>
       </Box>
+
+      <ConsoleSectionCard title="로그 수집 신선도" description="서비스·소스별 실제 로그 수신 시각입니다. 30분을 넘기면 수집 상태를 확인하세요.">
+        <Grid className="gap-[var(--space-2)] sm:grid-cols-2 xl:grid-cols-5">
+          {sourceFreshness.map((item) => <Box key={item.source} className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]"><Flex className="items-center justify-between gap-[var(--space-2)]"><Typography as="p" variant="bodySm" className="font-semibold">{item.source}</Typography><Badge size="sm" variant={item.stale ? "warning" : "success"}>{item.stale ? "확인 필요" : "정상"}</Badge></Flex><Typography as="p" variant="caption" color="muted" className="mt-[var(--space-2)]">{item.ageMinutes == null ? "수신 이력 없음" : `${item.ageMinutes}분 전 수신`}</Typography><Typography as="p" variant="caption" color="subtle">{item.session ? `최근 1시간 ${item.session.rawLineCount}건` : "로그 소스를 연결하세요"}</Typography></Box>)}
+        </Grid>
+      </ConsoleSectionCard>
 
       <SplitWorkspaceLayout
         sidebarWidthClassName="xl:grid-cols-[minmax(0,1fr)_372px]"

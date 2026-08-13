@@ -13,6 +13,9 @@ export type LogsSortKey = "countDesc" | "latestDesc" | "severityDesc";
 export type LogsSavedView = {
   id: string;
   name: string;
+  owner?: string;
+  visibility?: "private" | "team";
+  isFavorite?: boolean;
   severity: LogsSeverityFilter;
   query: string;
   sort: LogsSortKey;

@@ -10,6 +10,7 @@ import {
   addIssueComment,
   assignIssue,
   getIncidentTimeline,
+  updateIncidentResponse,
   updateIncidentClosure,
   getIssueDetail,
   opslensQueryKeys,
@@ -41,6 +42,9 @@ export default function IssueDetailPage() {
     }
   });
   const closureForm = useAppForm<{ rootCause: string; postmortemUrl: string }>({ defaultValues: { rootCause: "", postmortemUrl: "" } });
+  const responseForm = useAppForm<{ commander: string; escalationLevel: string; statusUpdate: string; nextUpdateAt: string }>({
+    defaultValues: { commander: "", escalationLevel: "0", statusUpdate: "", nextUpdateAt: "" }
+  });
 
   const assignee = assigneeForm.watch("assignee");
 
@@ -54,7 +58,13 @@ export default function IssueDetailPage() {
   useEffect(() => {
     if (!issue) return;
     closureForm.reset({ rootCause: issue.rootCause ?? "", postmortemUrl: issue.postmortemUrl ?? "" });
-  }, [closureForm, issue]);
+    responseForm.reset({
+      commander: issue.commander ?? "",
+      escalationLevel: String(issue.escalationLevel ?? 0),
+      statusUpdate: issue.lastStatusUpdate ?? "",
+      nextUpdateAt: issue.nextUpdateAt ? issue.nextUpdateAt.slice(0, 16) : ""
+    });
+  }, [closureForm, issue, responseForm]);
   const timelineQuery = useQuery(useOpsQueryOptions("detail", {
     queryKey: opslensQueryKeys.incidentTimeline(issueId),
     queryFn: () => getIncidentTimeline(issueId),
@@ -112,6 +122,24 @@ export default function IssueDetailPage() {
       toast.success("종료 정보를 저장했습니다.");
     },
     onError: (error) => toast.error(error instanceof Error ? error.message : "종료 정보 저장에 실패했습니다.")
+  });
+  const responseMutation = useMutation({
+    mutationFn: (values: { commander: string; escalationLevel: string; statusUpdate: string; nextUpdateAt: string }) => updateIncidentResponse({
+      issueId,
+      commander: values.commander,
+      escalationLevel: Number(values.escalationLevel),
+      statusUpdate: values.statusUpdate,
+      nextUpdateAt: values.nextUpdateAt ? new Date(values.nextUpdateAt).toISOString() : undefined
+    }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: opslensQueryKeys.issueDetail(issueId) }),
+        queryClient.invalidateQueries({ queryKey: opslensQueryKeys.incidentTimeline(issueId) }),
+        queryClient.invalidateQueries({ queryKey: opslensQueryKeys.all })
+      ]);
+      toast.success("대응 지휘 및 공지 정보를 저장했습니다.");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "대응 정보를 저장하지 못했습니다.")
   });
 
   const statusLabel = useMemo(() => {
@@ -180,6 +208,8 @@ export default function IssueDetailPage() {
           <OpsInfoItem label="상태" value={statusLabel} />
           <OpsInfoItem label="발생 횟수" value={`${formatNumber(issue.occurrenceCount)}회`} />
           <OpsInfoItem label="담당자" value={issue.assignee || "미지정"} />
+          <OpsInfoItem label="지휘자" value={issue.commander || "미지정"} />
+          <OpsInfoItem label="에스컬레이션" value={`L${issue.escalationLevel}`} />
           <OpsInfoItem label="서비스" value={issue.serviceName} />
           <OpsInfoItem label="환경" value={issue.environment} />
           <OpsInfoItem label="최초 발생" value={formatDateTime(issue.firstOccurredAt)} />
@@ -238,6 +268,19 @@ export default function IssueDetailPage() {
               </form>
             </Grid>
           </Grid>
+        </OpsSectionCard>
+
+        <OpsSectionCard title="대응 지휘 및 상태 공지" description="인시던트 지휘자와 다음 공지 시각을 팀 공용 대응 기록으로 남깁니다.">
+          <form className="mt-[var(--space-3)] grid gap-[var(--space-3)]" onSubmit={responseForm.handleSubmit((values) => responseMutation.mutate(values))}>
+            <Grid className="gap-[var(--space-3)] md:grid-cols-2">
+              <Input label="인시던트 지휘자" placeholder="예: oncall@company.com" control={responseForm.control} name="commander" disabled={!canOperate} />
+              <Select label="에스컬레이션 단계" value={responseForm.watch("escalationLevel")} onChange={(value) => responseForm.setValue("escalationLevel", String(value))} disabled={!canOperate} options={[0, 1, 2, 3, 4, 5].map((value) => ({ label: `L${value}`, value: String(value) }))} />
+            </Grid>
+            <Input label="다음 상태 공지" type="datetime-local" control={responseForm.control} name="nextUpdateAt" disabled={!canOperate} />
+            <Input label="현재 상태 공지" placeholder="예: 결제 요청 지연 원인을 분석 중이며 15분 내 다음 공지를 공유합니다." control={responseForm.control} name="statusUpdate" disabled={!canOperate} />
+            {issue.lastStatusUpdate ? <Flex className="flex-wrap items-center gap-[var(--space-2)]"><Typography as="p" variant="caption" color="muted">최근 공지: {issue.lastStatusUpdate}{issue.nextUpdateAt ? ` · 다음 ${formatDateTime(issue.nextUpdateAt)}` : ""}</Typography><Button type="button" variant="ghost" size="sm" onClick={() => void navigator.clipboard.writeText(`[${issue.serviceName}] ${issue.lastStatusUpdate}`).then(() => toast.success("상태 공지를 복사했습니다.")).catch(() => toast.error("상태 공지를 복사하지 못했습니다."))}>공지 복사</Button></Flex> : null}
+            {canOperate ? <Button type="submit" size="sm" className="w-fit" loading={responseMutation.isPending}>대응 정보 저장</Button> : null}
+          </form>
         </OpsSectionCard>
 
         <OpsSectionCard title="AI 원인 후보 / 대응 액션">
