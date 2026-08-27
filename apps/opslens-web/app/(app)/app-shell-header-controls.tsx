@@ -16,7 +16,7 @@ import {
   opslensQueryKeys,
   type OpsAlert as ApiOpsAlert
 } from "@repo/opslens";
-import { Bell, Keyboard, Menu, Search, SlidersHorizontal } from "lucide-react";
+import { Bell, Keyboard, Link2, Menu, Search, SlidersHorizontal } from "lucide-react";
 import { OPS_ALERT_EVENT_NAME, useOpsAlertStore, type CreateOpsAlertInput } from "@/features/alerts";
 import { ProfileMenu, type OpsFilterFormValues } from "@/features/modals";
 import type { OpsAlert } from "@/features/alerts";
@@ -250,6 +250,14 @@ export default function AppShellHeaderControls({
     const next = term.trim();
     if (!next) return;
     setRecentSearches((prev) => [next, ...prev.filter((item) => item !== next)].slice(0, 8));
+  };
+  const copyCurrentViewLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success("현재 필터가 적용된 보기 링크를 복사했습니다.");
+    } catch {
+      toast.error("보기 링크를 복사하지 못했습니다.");
+    }
   };
 
   const applySearchTerm = (term: string) => {
@@ -592,6 +600,7 @@ export default function AppShellHeaderControls({
         </Flex>
 
         <Flex className="items-center gap-[var(--space-1)] md:gap-[var(--space-2)]">
+          <Button variant="ghost" size="sm" iconOnly leftIcon={<Link2 />} aria-label="현재 보기 링크 복사" onClick={() => void copyCurrentViewLink()} className="hidden md:inline-flex" />
           <Button variant="ghost" size="sm" iconOnly leftIcon={<Keyboard />} aria-label="키보드 단축키 도움말" onClick={() => setShortcutHelpOpen((open) => !open)} className="hidden md:inline-flex" />
           <Button
             variant="ghost"

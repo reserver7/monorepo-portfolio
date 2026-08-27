@@ -14,6 +14,7 @@
   },
   "nav": {
     "dashboard": "대시보드",
+    "commandCenter": "커맨드 센터",
     "logs": "로그",
     "issues": "이슈",
     "qaAssistant": "QA 어시스턴트",

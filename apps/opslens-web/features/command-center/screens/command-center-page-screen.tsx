@@ -76,18 +76,19 @@ export default function CommandCenterPage() {
     return (!incident.acknowledgedAt && acknowledgementDueAt < Date.now()) || statusDueAt < Date.now();
   });
   const toggleCompare = (id: string) => setCompareIds((previous) => previous.includes(id) ? previous.filter((item) => item !== id) : previous.length < 2 ? [...previous, id] : [previous[1]!, id]);
+  const criticalQueryError = issuesQuery.isError || settingsQuery.isError;
 
   return (
     <OpsPageShell>
-      <Box className="border-default bg-surface rounded-[var(--radius-xl)] border px-[var(--space-4)] py-[var(--space-3)] md:px-[var(--space-5)]">
+      <Box className="border-default bg-surface rounded-[var(--radius-xl)] border px-[var(--space-4)] py-[var(--space-4)] shadow-sm md:px-[var(--space-6)]">
         <Flex className="flex-col items-stretch justify-between gap-[var(--space-3)] sm:flex-row sm:items-center">
           <Box className="min-w-0">
             <Typography as="h2" variant="headingMd">인시던트 커맨드 센터</Typography>
             <Flex className="mt-[var(--space-1)] flex-wrap gap-[var(--space-2)]"><Typography as="p" variant="caption" color="muted">{environment} 환경의 실시간 대응 큐 · 30초마다 갱신</Typography><Badge size="sm" variant={dataAgeSec != null && dataAgeSec > 90 ? "warning" : "success"}>{dataAgeSec == null ? "데이터 대기" : `${dataAgeSec}초 전 갱신`}</Badge></Flex>
           </Box>
           <Flex className="grid grid-cols-2 gap-[var(--space-2)] sm:flex sm:flex-wrap">
-            <Button asChild variant="secondary" size="sm" className="w-full sm:w-auto"><Link href="/issues?assignee=me">내 대응 큐</Link></Button>
-            <Button asChild variant="primary" size="sm" className="w-full sm:w-auto"><Link href="/logs">로그 탐색</Link></Button>
+            <Button asChild variant="secondary" size="md" className="w-full sm:w-auto"><Link href="/issues?assignee=me">내 대응 큐</Link></Button>
+            <Button asChild variant="primary" size="md" className="w-full sm:w-auto"><Link href="/logs">로그 탐색</Link></Button>
           </Flex>
         </Flex>
       </Box>
@@ -100,13 +101,13 @@ export default function CommandCenterPage() {
       </Grid>
 
       <Grid className="items-start gap-[var(--space-4)] xl:grid-cols-[minmax(0,1fr)_360px]">
-        <OpsSectionCard title="활성 인시던트" description="SLA 위험, 심각도, 최근 발생 시각 순으로 정렬됩니다.">
-          {issuesQuery.isLoading ? <OpsSectionSkeleton rows={4} /> : issuesQuery.isError ? <StateView variant="error" size="sm" title="대응 큐를 불러오지 못했습니다." /> : incidents.length === 0 ? <StateView variant="empty" size="sm" title="즉시 대응이 필요한 인시던트가 없습니다." /> : (
+        <OpsSectionCard title="지금 대응할 인시던트" description="SLA 위험, 심각도, 최근 발생 시각 순으로 정렬됩니다.">
+          {issuesQuery.isLoading || settingsQuery.isLoading ? <OpsSectionSkeleton rows={4} /> : criticalQueryError ? <StateView variant="error" size="sm" title="커맨드 센터 데이터를 불러오지 못했습니다." description="대응 큐와 운영 정책을 확인할 수 없습니다." action={<Button type="button" variant="secondary" size="sm" loading={issuesQuery.isFetching || settingsQuery.isFetching} onClick={() => { void Promise.all([issuesQuery.refetch(), settingsQuery.refetch()]); }}>다시 시도</Button>} /> : incidents.length === 0 ? <StateView variant="empty" size="sm" title="즉시 대응이 필요한 인시던트가 없습니다." /> : (
             <Box className="space-y-[var(--space-2)]">
-              {incidents.map((incident) => { const service = serviceCatalog.services?.find((item) => item.name === incident.serviceName); return <Box key={incident.id} className="border-default bg-surface-elevated rounded-[var(--radius-md)] border p-[var(--space-3)]">
+              {incidents.map((incident) => { const service = serviceCatalog.services?.find((item) => item.name === incident.serviceName); return <Box key={incident.id} className="border-default bg-surface-elevated rounded-[var(--radius-lg)] border p-[var(--space-4)]">
                 <Flex className="flex-col items-stretch justify-between gap-[var(--space-3)] sm:flex-row sm:items-start">
                   <Box className="min-w-0"><Flex className="flex-wrap gap-[var(--space-1)]"><SeverityBadge severity={incident.severity} /><StatusBadge status={incident.status} />{isIssueSlaRisk(incident) ? <Badge variant="warning" size="sm">SLA 위험</Badge> : null}</Flex><Typography as="p" variant="bodySm" className="mt-[var(--space-2)] font-semibold">{incident.title}</Typography><Typography as="p" variant="caption" color="muted" className="mt-[var(--space-1)]">{incident.serviceName} · 담당자 {incident.assignee || service?.owner || "미지정"} · 최근 {formatDateTime(incident.lastOccurredAt)}</Typography>{service ? <Flex className="mt-[var(--space-1)] flex-wrap gap-[var(--space-1)]"><Badge size="sm" variant="outline">SLO {service.slo || "미설정"}</Badge>{service.onCall ? <Badge size="sm" variant="secondary">온콜 {service.onCall}</Badge> : null}{service.runbook ? <Link href={service.runbook} target="_blank" className="text-primary text-caption font-semibold hover:underline">런북 열기</Link> : null}</Flex> : null}</Box>
-                  <Flex className="flex flex-col gap-[var(--space-1)] sm:shrink-0"><Button type="button" variant={compareIds.includes(incident.id) ? "secondary" : "ghost"} size="sm" className="w-full" onClick={() => toggleCompare(incident.id)}>{compareIds.includes(incident.id) ? "비교 해제" : "비교 추가"}</Button><Button asChild variant="outline" size="sm" className="w-full"><Link href={`/issues/${incident.id}`}>상세 <ExternalLink className="ml-1 h-3.5 w-3.5" /></Link></Button>{canOperate && incident.status === "new" ? <Button type="button" size="sm" className="w-full" loading={startResponseMutation.isPending && startResponseMutation.variables === incident.id} onClick={() => startResponseMutation.mutate(incident.id)}>대응 시작</Button> : null}</Flex>
+                  <Flex className="grid grid-cols-2 gap-[var(--space-2)] sm:flex sm:flex-col sm:shrink-0"><Button type="button" variant={compareIds.includes(incident.id) ? "secondary" : "ghost"} size="sm" className="w-full" onClick={() => toggleCompare(incident.id)}>{compareIds.includes(incident.id) ? "비교 해제" : "비교 추가"}</Button><Button asChild variant="outline" size="sm" className="w-full"><Link href={`/issues/${incident.id}`}>상세 보기 <ExternalLink className="ml-1 h-3.5 w-3.5" /></Link></Button><Button asChild variant="ghost" size="sm" className="w-full"><Link href={`/services/${encodeURIComponent(incident.serviceName)}`}>서비스 보기</Link></Button><Button asChild variant="ghost" size="sm" className="w-full"><Link href={`/logs?service=${encodeURIComponent(incident.serviceName)}`}>로그 탐색</Link></Button>{canOperate && incident.status === "new" ? <Button type="button" size="sm" className="col-span-2 w-full" loading={startResponseMutation.isPending && startResponseMutation.variables === incident.id} onClick={() => startResponseMutation.mutate(incident.id)}>대응 시작</Button> : null}</Flex>
                 </Flex>
               </Box>; })}
             </Box>

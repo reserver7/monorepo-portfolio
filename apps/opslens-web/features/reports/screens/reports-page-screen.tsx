@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Clipboard } from "lucide-react";
+import { Clipboard, Printer } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { Badge, Box, Button, Flex, SplitWorkspaceLayout, StateView, Textarea, Typography, confirm, toast } from "@repo/ui";
 import {
@@ -127,6 +127,7 @@ export default function ReportsPage() {
             <Badge variant="secondary" size="sm" shape="rounded" className="border border-default bg-surface-elevated font-semibold">
               환경: {environment}
             </Badge>
+            <Button type="button" variant="secondary" size="sm" leftIcon={<Printer className="h-4 w-4" />} onClick={() => window.print()}>인쇄 / PDF</Button>
           </Flex>
         </Flex>
       </Box>

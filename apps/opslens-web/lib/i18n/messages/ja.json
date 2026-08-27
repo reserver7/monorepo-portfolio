@@ -14,6 +14,7 @@
   },
   "nav": {
     "dashboard": "ダッシュボード",
+    "commandCenter": "コマンドセンター",
     "logs": "ログ",
     "issues": "課題",
     "qaAssistant": "QA アシスタント",
