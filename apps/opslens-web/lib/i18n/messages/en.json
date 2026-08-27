@@ -14,6 +14,7 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "commandCenter": "Command Center",
     "logs": "Logs",
     "issues": "Issues",
     "qaAssistant": "QA Assistant",

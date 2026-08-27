@@ -37,7 +37,8 @@ export default function IssueDetailPage() {
   const params = useParams<{ id: string }>();
   const issueId = params.id;
   const queryClient = useQueryClient();
-  const canOperate = readAuthSession()?.user.role === "admin" || readAuthSession()?.user.role === "operator";
+  const authSession = readAuthSession();
+  const canOperate = authSession?.user.role === "admin" || authSession?.user.role === "operator";
 
   const assigneeForm = useAppForm<{ assignee: string }>({
     defaultValues: {
@@ -160,7 +161,9 @@ export default function IssueDetailPage() {
   }, [issue]);
   const responseChecklist = issue ? [
     { label: "담당자 지정", complete: Boolean(issue.assignee) },
+    { label: "지휘자 지정", complete: Boolean(issue.commander) },
     { label: "대응 시작", complete: issue.status !== "new" },
+    { label: "상태 공지 예약", complete: Boolean(issue.nextUpdateAt) },
     { label: "원인 기록", complete: Boolean(issue.rootCause) },
     { label: "사후 분석", complete: Boolean(issue.postmortemUrl) }
   ] : [];
@@ -194,7 +197,7 @@ export default function IssueDetailPage() {
 
   return (
     <OpsPageShell>
-      <OpsSectionCard title="Issue Detail">
+      <OpsSectionCard title="인시던트 워룸" description="상태·담당·지휘·다음 공지를 먼저 정리하고, 조사와 종료 기록을 이어가세요.">
         <Flex className="flex-wrap items-start justify-between gap-[var(--space-3)]">
           <Box>
             <Typography as="h2" variant="h2" className="text-heading-xl">
@@ -207,7 +210,7 @@ export default function IssueDetailPage() {
           <Link href="/issues" className="text-primary text-sm font-semibold hover:underline">
             목록으로 이동
           </Link>
-          <Button type="button" variant="secondary" size="sm" onClick={() => void copyIncidentSummary()}>공유 요약 복사</Button>
+          <Button type="button" variant="secondary" size="md" onClick={() => void copyIncidentSummary()}>공유 요약 복사</Button>
           <Link href={`/logs?service=${encodeURIComponent(issue.serviceName)}${issue.deploymentVersion ? `&deployment=${encodeURIComponent(issue.deploymentVersion)}` : ""}`} className="text-primary text-sm font-semibold hover:underline">
             관련 로그 탐색
           </Link>
@@ -231,20 +234,20 @@ export default function IssueDetailPage() {
           <OpsInfoItem label="다음 공지" value={issue.nextUpdateAt ? formatDateTime(issue.nextUpdateAt) : "미설정"} />
           <OpsInfoItem label="대응 완료율" value={`${responseProgress}%`} />
         </Grid>
-        <Box className="border-default bg-surface-elevated mt-[var(--space-4)] rounded-[var(--radius-md)] border p-[var(--space-3)]">
+        <Box className="border-primary/20 bg-primary/5 mt-[var(--space-4)] rounded-[var(--radius-lg)] border p-[var(--space-4)]">
           <Flex className="items-center justify-between gap-[var(--space-3)]"><Typography as="p" variant="bodySm" className="font-semibold">대응 체크리스트</Typography><Typography as="p" variant="caption" color="muted">{responseChecklist.filter((item) => item.complete).length}/{responseChecklist.length} 완료</Typography></Flex>
           <Progress value={responseProgress} className="mt-[var(--space-2)]" aria-label="인시던트 대응 진행률" />
           <Flex className="mt-[var(--space-3)] flex-wrap gap-[var(--space-2)]">{responseChecklist.map((item) => <Typography key={item.label} as="span" variant="caption" className={item.complete ? "text-success" : "text-muted"}>{item.complete ? "✓" : "○"} {item.label}</Typography>)}</Flex>
         </Box>
       </OpsSectionCard>
 
-      <Grid className="gap-[var(--space-6)] xl:grid-cols-2">
-        <OpsSectionCard title="대응 템플릿" description="반복되는 운영 절차를 메모에 빠르게 적용합니다.">
+      <Grid className="gap-[var(--space-5)] xl:grid-cols-2">
+        <OpsSectionCard title="1. 빠른 대응 시작" description="역할과 초기 대응 절차를 메모에 바로 적용합니다.">
           <Flex className="flex-wrap gap-[var(--space-2)]">
-            {[{ label: "초기 대응", body: "[초기 대응]\n- 영향 범위 확인\n- 담당자 지정\n- 고객 영향 여부 확인" }, { label: "배포 확인", body: "[배포 영향 확인]\n- 최근 배포 버전 대조\n- 오류 증가량 확인\n- 롤백 기준 검토" }, { label: "종료 점검", body: "[종료 점검]\n- Root cause 기록\n- 재발 방지 액션 등록\n- Postmortem 링크 첨부" }].map((template) => <Button key={template.label} type="button" variant="secondary" size="sm" onClick={() => { commentForm.setValue("body", template.body); toast.info(`${template.label} 템플릿을 메모에 적용했습니다.`); }}>{template.label}</Button>)}
+            {[{ label: "초기 대응", body: "[초기 대응]\n- 영향 범위 확인\n- 담당자 지정\n- 고객 영향 여부 확인" }, { label: "역할 배정", body: "[워룸 역할]\n- 지휘자: 의사결정·에스컬레이션\n- 조사 담당: 로그·배포 원인 분석\n- 공지 담당: 내부/고객 상태 공지" }, { label: "배포 확인", body: "[배포 영향 확인]\n- 최근 배포 버전 대조\n- 오류 증가량 확인\n- 롤백 기준 검토" }, { label: "종료 점검", body: "[종료 점검]\n- Root cause 기록\n- 재발 방지 액션 등록\n- Postmortem 링크 첨부" }].map((template) => <Button key={template.label} type="button" variant="secondary" size="sm" onClick={() => { commentForm.setValue("body", template.body); toast.info(`${template.label} 템플릿을 메모에 적용했습니다.`); }}>{template.label}</Button>)}
           </Flex>
         </OpsSectionCard>
-        <OpsSectionCard title="상태/담당자 관리" description={canOperate ? undefined : "조회 전용 역할에서는 변경할 수 없습니다."}>
+        <OpsSectionCard title="2. 담당·상태 정리" description={canOperate ? "대응을 시작할 때 담당자와 상태를 함께 정리하세요." : "조회 전용 역할에서는 변경할 수 없습니다."}>
           <Grid className="mt-[var(--space-3)] gap-[var(--space-3)] md:grid-cols-2">
             <Grid className="gap-[var(--space-1)]">
               <Label htmlFor="issue-status">상태 변경</Label>
@@ -279,12 +282,13 @@ export default function IssueDetailPage() {
                 >
                   저장
                 </Button>
+                {authSession?.user.name && issue.assignee !== authSession.user.name ? <Button type="button" variant="secondary" disabled={!canOperate || assigneeMutation.isPending} onClick={() => assigneeMutation.mutate({ assignee: authSession.user.name })}>내게 할당</Button> : null}
               </form>
             </Grid>
           </Grid>
         </OpsSectionCard>
 
-        <OpsSectionCard title="대응 지휘 및 상태 공지" description="인시던트 지휘자와 다음 공지 시각을 팀 공용 대응 기록으로 남깁니다.">
+        <OpsSectionCard title="3. 지휘·상태 공지" description="지휘자와 다음 공지 시각을 팀 공용 대응 기록으로 남깁니다.">
           <form className="mt-[var(--space-3)] grid gap-[var(--space-3)]" onSubmit={responseForm.handleSubmit((values) => responseMutation.mutate(values))}>
             <Grid className="gap-[var(--space-3)] md:grid-cols-2">
               <Input label="인시던트 지휘자" placeholder="예: oncall@company.com" control={responseForm.control} name="commander" disabled={!canOperate} />
@@ -297,7 +301,7 @@ export default function IssueDetailPage() {
           </form>
         </OpsSectionCard>
 
-        <OpsSectionCard title="AI 원인 후보 / 대응 액션">
+        <OpsSectionCard title="4. 조사 가이드" description="원인 후보와 권장 액션을 로그·배포 조사에 연결합니다.">
           <Box className="mt-[var(--space-3)] space-y-[var(--space-3)] text-sm">
             <Box>
               <Box as="p" className="text-foreground mb-[var(--space-1)] font-semibold">원인 후보</Box>
@@ -375,6 +379,7 @@ export default function IssueDetailPage() {
           )}
         </OpsSectionCard>
       </Grid>
+      {canOperate && issue.status !== "resolved" ? <><Box className="h-[calc(var(--size-control-md)+var(--space-6))] md:hidden" /><Box className="border-default bg-surface/95 fixed inset-x-0 bottom-0 z-30 border-t p-[var(--space-2)] pb-[max(var(--space-2),env(safe-area-inset-bottom))] shadow-lg backdrop-blur md:hidden"><Flex className="mx-auto max-w-[var(--content-max-width)] gap-[var(--space-2)]"><Button type="button" size="sm" className="flex-1" loading={statusMutation.isPending} onClick={() => statusMutation.mutate(issue.status === "new" ? "analyzing" : "in_progress")}>{issue.status === "new" ? "대응 시작" : "대응 계속"}</Button><Button type="button" variant="secondary" size="sm" className="flex-1" onClick={() => void copyIncidentSummary()}>공유 복사</Button></Flex></Box></> : null}
     </OpsPageShell>
   );
 }

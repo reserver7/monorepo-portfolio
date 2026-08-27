@@ -286,6 +286,9 @@ export default function DashboardPage() {
                   ))}
                 </Box>
               )}
+              <Button asChild variant="outline" size="sm" className="mt-[var(--space-3)] w-full">
+                <Link href="/command-center">커맨드 센터에서 전체 대응 보기</Link>
+              </Button>
             </OpsSectionCard>
           </Box>
         }

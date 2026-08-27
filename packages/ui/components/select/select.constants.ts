@@ -40,7 +40,7 @@ export const SELECT_POPOVER_CONTENT_BASE_CLASS =
 export const SELECT_SCROLL_LIST_CLASS = "space-y-[var(--space-1)] overflow-auto p-[var(--space-1)]";
 
 export const SELECT_SIZE_CLASS: Record<SelectTriggerSize, string> = {
-  sm: "h-[var(--size-control-md)] text-body-sm",
+  sm: "h-[var(--size-control-lg)] text-body-sm",
   md: "h-[var(--size-control-xl)] text-body-md",
   lg: "h-[var(--size-control-2xl)] text-body-md"
 };

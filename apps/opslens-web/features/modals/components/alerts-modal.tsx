@@ -1,8 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
-import { CheckCheck, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CheckCheck, Clock3, X } from "lucide-react";
 import {
   Badge,
   Box,
@@ -44,6 +44,16 @@ export function AlertsModal({
   const [levelFilter, setLevelFilter] = useState("all");
   const [readFilter, setReadFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
+  useEffect(() => {
+    try { setSnoozedUntil(JSON.parse(window.localStorage.getItem("opslens-alert-snoozes") ?? "{}") as Record<string, number>); } catch { setSnoozedUntil({}); }
+  }, []);
+  const snoozeAlert = (id: string) => {
+    const next = { ...snoozedUntil, [id]: Date.now() + 60 * 60_000 };
+    setSnoozedUntil(next);
+    window.localStorage.setItem("opslens-alert-snoozes", JSON.stringify(next));
+  };
+  const activeSnoozeCount = Object.values(snoozedUntil).filter((until) => until > Date.now()).length;
   const sourceOptions = useMemo(() => [{ label: "모든 소스", value: "all" }, ...Array.from(new Set(alerts.map((alert) => alert.source).filter(Boolean))).map((source) => ({ label: source, value: source }))], [alerts]);
   const groupedSummary = useMemo(() => Array.from(alerts.reduce((groups, alert) => {
     const key = `${alert.source}:${alert.title}`;
@@ -56,8 +66,9 @@ export function AlertsModal({
   const recentAlerts = useMemo(() => alerts.filter((item) =>
     (levelFilter === "all" || item.level === levelFilter) &&
     (sourceFilter === "all" || item.source === sourceFilter) &&
-    (readFilter === "all" || (readFilter === "unread" ? !item.readAt : Boolean(item.readAt)))
-  ).slice(0, 30), [alerts, levelFilter, readFilter, sourceFilter]);
+    (readFilter === "all" || (readFilter === "unread" ? !item.readAt : Boolean(item.readAt))) &&
+    (snoozedUntil[item.id] ?? 0) <= Date.now()
+  ).slice(0, 30), [alerts, levelFilter, readFilter, snoozedUntil, sourceFilter]);
   const levelLabelMap = {
     critical: "critical",
     high: "high",
@@ -120,6 +131,7 @@ export function AlertsModal({
             <Select className="min-w-0" aria-label="알림 읽음 상태 필터" value={readFilter} onChange={(value) => setReadFilter(String(value))} options={[{ label: "전체", value: "all" }, { label: "미확인", value: "unread" }, { label: "확인됨", value: "read" }]} />
             <Select className="min-w-0 sm:col-span-2" aria-label="알림 소스 필터" value={sourceFilter} onChange={(value) => setSourceFilter(String(value))} options={sourceOptions} />
           </Box>
+          {activeSnoozeCount > 0 ? <Typography as="p" variant="caption" color="muted">1시간 동안 숨긴 알림 {activeSnoozeCount}건</Typography> : null}
 
           {groupedSummary.length > 0 ? <Box className="border-default bg-surface-elevated rounded-[var(--radius-md)] border p-[var(--space-2)]"><Typography as="p" variant="caption" color="muted">반복 알림 묶음</Typography><Box className="mt-[var(--space-1)] space-y-[var(--space-1)]">{groupedSummary.map((group) => <Flex key={group.key} className="items-center justify-between gap-[var(--space-2)]"><Typography as="p" variant="caption" className="truncate">{group.source} · {group.title}</Typography><Badge size="sm" variant={group.unread > 0 ? "warning" : "secondary"}>{group.count}건</Badge></Flex>)}</Box></Box> : null}
 
@@ -178,6 +190,7 @@ export function AlertsModal({
                           ) : null}
                         </Flex>
                       </Box>
+                      <Button type="button" variant="ghost" size="sm" className="shrink-0" leftIcon={<Clock3 className="h-3.5 w-3.5" />} onClick={(event) => { event.stopPropagation(); snoozeAlert(alert.id); }}>1시간 숨김</Button>
                     </Flex>
                     <Button
                       type="button"

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from "@nestjs/common";
 import { IssueSeverity, Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../integration/db/prisma.service.js";
@@ -9,13 +9,42 @@ import { OpsDashboardService } from "./ops-dashboard.service.js";
 import type { OpsReportActionType, OpsReportSnapshotType, OpsReportType } from "./ops.types.js";
 
 @Injectable()
-export class OpsReportService {
+export class OpsReportService implements OnModuleInit {
   private readonly logger = new Logger(OpsReportService.name);
+  private scheduleRunning = false;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly dashboardService: OpsDashboardService
   ) {}
+
+  onModuleInit(): void {
+    const timer = setInterval(() => void this.runScheduledReport().catch((error) => this.logger.warn(`예약 리포트 생성 오류: ${error instanceof Error ? error.message : String(error)}`)), 60 * 60_000);
+    timer.unref();
+    void this.runScheduledReport().catch((error) => this.logger.warn(`예약 리포트 초기 점검 오류: ${error instanceof Error ? error.message : String(error)}`));
+  }
+
+  private async runScheduledReport(): Promise<void> {
+    if (this.scheduleRunning) return;
+    const setting = await this.prisma.opsSetting.findUnique({ where: { key: "report.schedule" }, select: { value: true } });
+    const schedule = setting?.value as { enabled?: unknown; weekday?: unknown; hour?: unknown } | undefined;
+    if (schedule?.enabled !== true) return;
+    const weekday = typeof schedule.weekday === "number" ? Math.min(6, Math.max(0, schedule.weekday)) : 1;
+    const hour = typeof schedule.hour === "number" ? Math.min(23, Math.max(0, schedule.hour)) : 9;
+    const now = new Date();
+    if (now.getUTCDay() !== weekday || now.getUTCHours() < hour) return;
+    const runKey = now.toISOString().slice(0, 10);
+    const lastRun = await this.prisma.opsSetting.findUnique({ where: { key: "report.schedule.last_run" }, select: { value: true } });
+    if ((lastRun?.value as { date?: string } | null)?.date === runKey) return;
+    this.scheduleRunning = true;
+    try {
+      await this.getOpsReport();
+      await this.prisma.opsSetting.upsert({ where: { key: "report.schedule.last_run" }, update: { value: { date: runKey, generatedAt: now.toISOString() }, updatedBy: "system" }, create: { key: "report.schedule.last_run", value: { date: runKey, generatedAt: now.toISOString() }, description: "예약 리포트 마지막 생성 시각", category: "report", riskLevel: "low", editable: false, updatedBy: "system" } });
+      this.logger.log(`예약 운영 리포트 생성 완료: ${runKey}`);
+    } finally {
+      this.scheduleRunning = false;
+    }
+  }
 
   async getOpsReport(filter?: DashboardFilterInput): Promise<OpsReportType> {
     const summary = await this.dashboardService.getDashboardSummary(filter);

@@ -27,12 +27,22 @@ export class OpsAlertService {
     if (!level) {
       throw new BadRequestException("level 값이 필요합니다.");
     }
+    const source = input.source.trim() || "system";
+    const title = input.title.trim();
+    const recentDuplicate = source !== "web" ? await this.prisma.opsAlert.findFirst({
+      where: { source, title, readAt: null, createdAt: { gte: new Date(Date.now() - 10 * 60_000) } },
+      orderBy: { createdAt: "desc" }
+    }) : null;
+    if (recentDuplicate) {
+      this.logger.debug(`중복 자동 알림 억제: ${source} / ${title}`);
+      return toOpsAlertType(recentDuplicate);
+    }
     const created = await this.prisma.opsAlert.create({
       data: {
         level,
-        title: input.title.trim(),
+        title,
         message: input.message.trim(),
-        source: input.source.trim() || "system",
+        source,
         link: input.link?.trim() || null
       }
     });

@@ -25,6 +25,7 @@ const DynamicAppShellHeaderControls = dynamic(() => import("./app-shell-header-c
 
 const NAV_LABEL_KEYS: Record<string, string> = {
   "/": "dashboard",
+  "/command-center": "commandCenter",
   "/logs": "logs",
   "/issues": "issues",
   "/qa-assistant": "qaAssistant",

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAppForm } from "@repo/forms";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { getNotificationDeliveries, getOpsAuditLogs, getOpsSettings, getOpslensUsers, opslensQueryKeys, retryPendingAlertDeliveries, updateOpslensUser, upsertOpsSetting } from "@repo/opslens";
-import { Box, Button, confirm, Textarea, toast, Typography } from "@repo/ui";
+import { Box, Button, confirm, Select, Textarea, toast, Typography } from "@repo/ui";
 import { OpsPageShell, OpsSectionCard } from "@/features";
 import {
   changeCurrentPassword,
@@ -66,6 +66,7 @@ export default function SettingsPage() {
   const [selectedAuditId, setSelectedAuditId] = useState("");
   const [onCallDraft, setOnCallDraft] = useState("");
   const [retentionDraft, setRetentionDraft] = useState('{"logsDays":30,"alertsDays":90,"auditDays":365,"anonymizeUserIds":true}');
+  const [reportSchedule, setReportSchedule] = useState({ enabled: false, weekday: "1", hour: "9" });
   const profileForm = useAppForm<ProfileFormValues>({
     mode: "onSubmit",
     reValidateMode: "onChange",
@@ -130,6 +131,11 @@ export default function SettingsPage() {
     onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.settings() }); await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.auditLogs() }); toast.success("에스컬레이션 정책을 저장했습니다."); },
     onError: (error) => toast.error(error instanceof Error ? error.message : "에스컬레이션 정책 저장에 실패했습니다.")
   });
+  const reportScheduleMutation = useMutation({
+    mutationFn: () => upsertOpsSetting({ key: "report.schedule", value: JSON.stringify({ enabled: reportSchedule.enabled, weekday: Number(reportSchedule.weekday), hour: Number(reportSchedule.hour) }), description: "주간 운영 리포트 자동 생성 일정(UTC)", category: "report", riskLevel: "medium", editable: true, updatedBy: profileEmail || "admin", changeReason: "예약 리포트 일정 갱신" }),
+    onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.settings() }); toast.success("예약 리포트 일정을 저장했습니다."); },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "예약 리포트 일정 저장에 실패했습니다.")
+  });
   const auditLogsQuery = useQuery({
     queryKey: [...opslensQueryKeys.auditLogs(), auditQuery, auditSeverity, auditTargetType],
     queryFn: () =>
@@ -174,6 +180,7 @@ export default function SettingsPage() {
   const settings = opsSettingsQuery.data ?? [];
   const onCallSetting = settings.find((setting) => setting.key === "alert.on_call");
   const retentionSetting = settings.find((setting) => setting.key === "data.retention");
+  const reportScheduleSetting = settings.find((setting) => setting.key === "report.schedule");
   const auditLogs = auditLogsQuery.data ?? [];
   const selectedSetting = settings.find((setting) => setting.key === selectedSettingKey) ?? settings[0];
   const selectedAuditLog = auditLogs.find((log) => log.id === selectedAuditId) ?? auditLogs[0];
@@ -203,6 +210,13 @@ export default function SettingsPage() {
     setOnCallDraft(onCallSetting.value);
   }, [onCallSetting?.value]);
   useEffect(() => { if (retentionSetting?.value) setRetentionDraft(retentionSetting.value); }, [retentionSetting?.value]);
+  useEffect(() => {
+    const raw = reportScheduleSetting?.value;
+    try {
+      const parsed = JSON.parse(raw ?? "{}") as { enabled?: boolean; weekday?: number; hour?: number };
+      setReportSchedule({ enabled: parsed.enabled === true, weekday: String(parsed.weekday ?? 1), hour: String(parsed.hour ?? 9) });
+    } catch { setReportSchedule({ enabled: false, weekday: "1", hour: "9" }); }
+  }, [reportScheduleSetting?.value]);
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -482,6 +496,8 @@ export default function SettingsPage() {
         <ServiceCatalogPanel setting={settings.find((setting) => setting.key === "service.catalog")} isAdmin={authSession?.user.role === "admin"} saving={serviceCatalogMutation.isPending} onSave={(value) => serviceCatalogMutation.mutate(value)} />
       </OpsSectionCard>
 
+      <Box className="border-default bg-surface-elevated rounded-[var(--radius-lg)] border px-[var(--space-4)] py-[var(--space-3)]"><Typography as="p" variant="bodySm" className="font-semibold">운영 대응 설정</Typography><Typography as="p" variant="caption" color="muted" className="mt-[var(--space-1)]">온콜, 에스컬레이션, 알림, 리포트 일정을 한 흐름으로 관리합니다.</Typography></Box>
+
       <Box ref={workspaceSectionRef}>
         <OpsSectionCard title="운영 설정" description="운영 정책을 검토하고 변경 사유와 함께 저장합니다.">
           <OpsSettingsPanel
@@ -524,7 +540,7 @@ export default function SettingsPage() {
       </Box>
 
       <Box ref={notificationSectionRef}>
-        <OpsSectionCard title="알림 정책" description="인앱 알림 노출 기준과 조용한 시간대를 설정합니다.">
+      <OpsSectionCard title="1. 알림 정책" description="인앱 알림 노출 기준과 조용한 시간대를 설정합니다.">
           <NotificationPolicyPanel
             policy={notificationPolicy}
             dirty={isNotificationDirty}
@@ -535,7 +551,7 @@ export default function SettingsPage() {
         </OpsSectionCard>
       </Box>
 
-      <OpsSectionCard title="온콜 및 에스컬레이션" description="중요 인시던트의 최초 대응자와 인수인계 채널을 단일 운영 기록으로 관리합니다.">
+      <OpsSectionCard title="2. 온콜 및 에스컬레이션" description="중요 인시던트의 최초 대응자와 인수인계 채널을 단일 운영 기록으로 관리합니다.">
         <Textarea
           label="온콜 담당자 / 채널"
           value={onCallDraft}
@@ -548,14 +564,22 @@ export default function SettingsPage() {
         {authSession?.user.role === "admin" ? <Button type="button" size="sm" className="mt-[var(--space-3)]" loading={saveOnCallMutation.isPending} disabled={onCallDraft.trim() === (onCallSetting?.value ?? "").trim()} onClick={() => saveOnCallMutation.mutate()}>온콜 정보 저장</Button> : null}
       </OpsSectionCard>
 
-      <OpsSectionCard title="에스컬레이션 정책" description="확인·공지 기한을 넘긴 중요 인시던트를 커맨드 센터에서 즉시 구분합니다.">
+      <OpsSectionCard title="3. 에스컬레이션 정책" description="확인·공지 기한을 넘긴 중요 인시던트를 커맨드 센터에서 즉시 구분합니다.">
         <EscalationPolicyPanel setting={settings.find((setting) => setting.key === "alert.escalation_policy")} isAdmin={authSession?.user.role === "admin"} saving={escalationPolicyMutation.isPending} onSave={(value) => escalationPolicyMutation.mutate(value)} />
       </OpsSectionCard>
 
-      <OpsSectionCard title="데이터 보존 정책" description="로그·알림·감사 로그의 보관 기간과 개인정보 익명화 기준을 관리합니다.">
+      <Box className="border-default bg-surface-elevated rounded-[var(--radius-lg)] border px-[var(--space-4)] py-[var(--space-3)]"><Typography as="p" variant="bodySm" className="font-semibold">자동화·거버넌스</Typography><Typography as="p" variant="caption" color="muted" className="mt-[var(--space-1)]">예약 리포트와 데이터 보존 정책을 관리합니다.</Typography></Box>
+
+      <OpsSectionCard title="1. 예약 운영 리포트" description="설정된 UTC 요일·시간에 전체 운영 리포트 스냅샷과 액션 아이템을 자동 생성합니다.">
+        <Box className="grid gap-[var(--space-2)] sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto]"><Button type="button" variant={reportSchedule.enabled ? "primary" : "secondary"} size="md" disabled={authSession?.user.role !== "admin"} onClick={() => setReportSchedule((previous) => ({ ...previous, enabled: !previous.enabled }))}>{reportSchedule.enabled ? "자동 생성 사용" : "자동 생성 중지"}</Button><Select aria-label="예약 리포트 요일" value={reportSchedule.weekday} onChange={(value) => setReportSchedule((previous) => ({ ...previous, weekday: String(value) }))} disabled={authSession?.user.role !== "admin"} options={[{ label: "일요일", value: "0" }, { label: "월요일", value: "1" }, { label: "화요일", value: "2" }, { label: "수요일", value: "3" }, { label: "목요일", value: "4" }, { label: "금요일", value: "5" }, { label: "토요일", value: "6" }]} /><Select aria-label="예약 리포트 시각" value={reportSchedule.hour} onChange={(value) => setReportSchedule((previous) => ({ ...previous, hour: String(value) }))} disabled={authSession?.user.role !== "admin"} options={[0, 3, 6, 9, 12, 15, 18, 21].map((hour) => ({ label: `${String(hour).padStart(2, "0")}:00 UTC`, value: String(hour) }))} />{authSession?.user.role === "admin" ? <Button type="button" size="md" loading={reportScheduleMutation.isPending} onClick={() => reportScheduleMutation.mutate()}>일정 저장</Button> : null}</Box>
+        <Typography as="p" variant="caption" color="muted" className="mt-[var(--space-2)]">한국 시간은 UTC보다 9시간 빠릅니다. 예: 월요일 00:00 KST는 일요일 15:00 UTC입니다.</Typography>
+      </OpsSectionCard>
+
+      <OpsSectionCard title="2. 데이터 보존 정책" description="로그·알림·감사 로그의 보관 기간과 개인정보 익명화 기준을 관리합니다.">
         <Textarea label="보존 정책 JSON" value={retentionDraft} onChange={(event) => setRetentionDraft(event.target.value)} rows={4} disabled={authSession?.user.role !== "admin"} className="font-mono text-caption" />
         {authSession?.user.role === "admin" ? <Button type="button" size="sm" className="mt-[var(--space-2)]" loading={saveRetentionMutation.isPending} onClick={() => saveRetentionMutation.mutate()}>보존 정책 저장</Button> : null}
       </OpsSectionCard>
+
 
       <Box ref={auditSectionRef}>
         <OpsSectionCard

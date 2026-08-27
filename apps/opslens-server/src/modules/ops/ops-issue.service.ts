@@ -31,25 +31,41 @@ export class OpsIssueService implements OnModuleInit {
   }
 
   async escalateOverdueResponses(): Promise<number> {
-    const overdue = await this.prisma.issue.findMany({
-      where: { status: { not: "resolved" }, nextUpdateAt: { lte: new Date() } },
+    const policy = await this.getEscalationPolicy();
+    const now = new Date();
+    const acknowledgementCutoff = new Date(now.getTime() - policy.acknowledgeWithinMinutes * 60_000);
+    const overdueAcknowledgements = await this.prisma.issue.findMany({
+      where: { status: { not: "resolved" }, severity: { in: ["critical", "high"] }, acknowledgedAt: null, escalationLevel: 0, firstOccurredAt: { lte: acknowledgementCutoff } },
+      take: 50
+    });
+    const overdueUpdates = await this.prisma.issue.findMany({
+      where: { status: { not: "resolved" }, nextUpdateAt: { lte: now }, escalationLevel: { lt: policy.maxLevel } },
       take: 50
     });
     let escalatedCount = 0;
-    for (const issue of overdue) {
-      const escalationLevel = Math.min(issue.escalationLevel + 1, 5);
+    for (const [issue, reason] of [...overdueAcknowledgements.map((issue) => [issue, "최초 확인 지연"] as const), ...overdueUpdates.map((issue) => [issue, "상태 공지 지연"] as const)]) {
+      const escalationLevel = Math.min(issue.escalationLevel + 1, policy.maxLevel);
       const claim = await this.prisma.issue.updateMany({
-        where: { id: issue.id, status: { not: "resolved" }, nextUpdateAt: { lte: new Date() } },
+        where: { id: issue.id, status: { not: "resolved" }, escalationLevel: issue.escalationLevel, ...(reason === "최초 확인 지연" ? { acknowledgedAt: null } : { nextUpdateAt: { lte: now } }) },
         data: { escalationLevel, nextUpdateAt: null }
       });
       if (claim.count === 0) continue;
       escalatedCount += 1;
-      const alert: OpsAlert = await this.prisma.opsAlert.create({ data: { level: issue.severity === "critical" ? "critical" : "high", title: `상태 공지 지연: ${issue.title}`, message: `다음 상태 공지 시각을 넘겼습니다. 지휘자 ${issue.commander || issue.assignee || "미지정"}에게 L${escalationLevel} 에스컬레이션이 필요합니다.`, source: "incident-escalation", link: `/issues/${issue.id}` } });
+      const alert: OpsAlert = await this.prisma.opsAlert.create({ data: { level: issue.severity === "critical" ? "critical" : "high", title: `${reason}: ${issue.title}`, message: `${reason}이 감지되었습니다. 지휘자 ${issue.commander || issue.assignee || "미지정"}에게 L${escalationLevel} 에스컬레이션이 필요합니다. 대상: ${policy.escalationTargets}`, source: "incident-escalation", link: `/issues/${issue.id}` } });
       void this.deliveryService.enqueue(alert);
-      await writeOpsAuditLog(this.prisma, this.logger, { action: "incident.auto_escalated", targetType: "Issue", targetId: issue.id, summary: `${issue.title} 상태 공지 지연으로 L${escalationLevel} 자동 에스컬레이션`, metadata: { escalationLevel } });
+      await writeOpsAuditLog(this.prisma, this.logger, { action: "incident.auto_escalated", targetType: "Issue", targetId: issue.id, summary: `${issue.title} ${reason}(으)로 L${escalationLevel} 자동 에스컬레이션`, metadata: { escalationLevel, reason, policy } });
     }
     if (escalatedCount > 0) this.clearCache();
     return escalatedCount;
+  }
+
+  private async getEscalationPolicy(): Promise<{ acknowledgeWithinMinutes: number; maxLevel: number; escalationTargets: string }> {
+    const setting = await this.prisma.opsSetting.findUnique({ where: { key: "alert.escalation_policy" }, select: { value: true } });
+    const value = setting?.value as { acknowledgeWithinMinutes?: unknown; maxLevel?: unknown; escalationTargets?: unknown } | undefined;
+    const acknowledgeWithinMinutes = typeof value?.acknowledgeWithinMinutes === "number" && value.acknowledgeWithinMinutes > 0 ? value.acknowledgeWithinMinutes : 10;
+    const maxLevel = typeof value?.maxLevel === "number" ? Math.min(5, Math.max(1, value.maxLevel)) : 3;
+    const escalationTargets = typeof value?.escalationTargets === "string" && value.escalationTargets.trim() ? value.escalationTargets.trim() : "Primary on-call → Backup on-call → Incident commander";
+    return { acknowledgeWithinMinutes, maxLevel, escalationTargets };
   }
 
   private getIssueListCacheKey(filter?: IssueFilterInput): string {
@@ -220,6 +236,10 @@ export class OpsIssueService implements OnModuleInit {
 
     this.clearCache();
     if (status === "resolved") {
+      await this.prisma.opsAlert.updateMany({
+        where: { link: `/issues/${updated.id}`, readAt: null },
+        data: { readAt: now }
+      });
       const snapshot = await this.prisma.opsReportSnapshot.findFirst({ where: { environment: updated.environment }, orderBy: { generatedAt: "desc" } })
         ?? await this.prisma.opsReportSnapshot.create({ data: { title: `${updated.environment} 인시던트 후속 조치`, environment: updated.environment, riskLevel: "follow_up", executiveSummary: "해결된 인시던트의 재발 방지 조치를 추적합니다.", technicalSummary: "자동 생성된 운영 후속 조치 리포트입니다.", shareText: "OpsLens 인시던트 후속 조치" } });
       await this.prisma.opsReportAction.upsert({
