@@ -1,8 +1,8 @@
 import { defineConfig } from "@playwright/test";
 
 const editorAccessKey = "integration-editor-key";
-const serverUrl = "http://127.0.0.1:4000";
-const collabWebUrl = "http://127.0.0.1:3000";
+const serverUrl = "http://127.0.0.1:4010";
+const collabWebUrl = "http://127.0.0.1:3010";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -16,6 +16,10 @@ export default defineConfig({
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
     baseURL: collabWebUrl,
+    locale: "ko-KR",
+    extraHTTPHeaders: {
+      "accept-language": "ko-KR,ko;q=0.9"
+    },
     trace: process.env.CI ? "retain-on-failure" : "off",
     screenshot: "only-on-failure",
     video: "off"
@@ -25,12 +29,13 @@ export default defineConfig({
       command: "pnpm --filter @repo/collab-server exec tsx src/index.ts",
       url: `${serverUrl}/health`,
       timeout: 120_000,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
       env: {
-        PORT: "4000",
+        PORT: "4010",
+        STATE_BACKEND: "file",
         STATE_FILE_PATH: "/tmp/monorepo-portfolio-e2e-state.json",
         CORS_ORIGINS:
-          "http://127.0.0.1:3000,http://localhost:3000",
+          "http://127.0.0.1:3010,http://localhost:3010",
         COLLAB_SESSION_SECRET: "e2e-collab-session-secret",
         EDITOR_ACCESS_KEY: editorAccessKey,
         SOCKET_RATE_LIMIT_WINDOW_MS: "10000",
@@ -41,11 +46,12 @@ export default defineConfig({
       }
     },
     {
-      command: "pnpm --filter @repo/collab-web dev",
-      url: collabWebUrl,
+      command: "pnpm --filter @repo/collab-web exec next dev -p 3010",
+      url: `${collabWebUrl}/docs`,
       timeout: 120_000,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
       env: {
+        PORT: "3010",
         NEXT_PUBLIC_API_URL: serverUrl,
         NEXT_PUBLIC_APP_URL: collabWebUrl,
         NEXT_PUBLIC_DEFAULT_DOC_ROLE: "editor",

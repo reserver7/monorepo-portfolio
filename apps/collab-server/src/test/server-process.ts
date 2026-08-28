@@ -90,6 +90,7 @@ export const startTestServerProcess = async (
     env: {
       ...process.env,
       NODE_ENV: "test",
+      STATE_BACKEND: "file",
       PORT: String(port),
       STATE_FILE_PATH: stateFilePath,
       CORS_ORIGINS: "http://localhost:3000",

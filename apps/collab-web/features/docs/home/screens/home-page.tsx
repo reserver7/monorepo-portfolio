@@ -118,27 +118,6 @@ export default function HomePage() {
     retry: 1
   });
 
-  useEffect(() => {
-    const refetchDocuments = () => {
-      void documentsQuery.refetch();
-    };
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        refetchDocuments();
-      }
-    };
-
-    window.addEventListener("online", refetchDocuments);
-    window.addEventListener("focus", refetchDocuments);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener("online", refetchDocuments);
-      window.removeEventListener("focus", refetchDocuments);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [documentsQuery.refetch]);
-
   const createDocumentMutation = useMutation({
     mutationFn: (input: { title: string; actor: string; editorAccessKey?: string }) => createDocument(input),
     onSuccess: async ({ document }) => {

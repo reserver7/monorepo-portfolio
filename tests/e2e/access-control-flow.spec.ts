@@ -1,8 +1,8 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 
-const serverUrl = "http://127.0.0.1:4000";
-const docsUrl = "http://127.0.0.1:3000";
-const whiteboardUrl = "http://127.0.0.1:3000/whiteboard";
+const serverUrl = "http://127.0.0.1:4010";
+const docsUrl = "http://127.0.0.1:3010";
+const whiteboardUrl = "http://127.0.0.1:3010/whiteboard";
 
 const uniqueName = (prefix: string): string => {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -49,7 +49,7 @@ test.describe("권한 및 보호 키 플로우", () => {
     const editorAccessKey = "docs-correct-key";
     const documentId = await createProtectedDocument(request, uniqueName("문서-권한-복구"), editorAccessKey);
 
-    await page.goto(docsUrl);
+    await page.goto(`${docsUrl}/docs`);
     await page.evaluate(() => {
       localStorage.setItem("reserver7.displayName", "E2E 권한 사용자");
       localStorage.setItem("reserver7.document.role", "editor");
@@ -70,9 +70,9 @@ test.describe("권한 및 보호 키 플로우", () => {
     await editorKeyInput.fill(editorAccessKey);
     await page
       .getByTestId("document-requested-role-select")
-      .getByRole("button", { name: /viewer|editor/i })
+      .getByRole("combobox")
       .click();
-    await page.getByRole("option", { name: "editor (편집 가능)" }).click();
+    await page.getByRole("option", { name: "editor" }).click();
 
     await expect(roleBadge).toHaveText("권한: editor", { timeout: 15_000 });
     await expect(contentTextarea).toBeEditable();
@@ -106,9 +106,9 @@ test.describe("권한 및 보호 키 플로우", () => {
     await editorKeyInput.fill(editorAccessKey);
     await page
       .getByTestId("board-requested-role-select")
-      .getByRole("button", { name: /viewer|editor/i })
+      .getByRole("combobox")
       .click();
-    await page.getByRole("option", { name: "editor (편집 가능)" }).click();
+    await page.getByRole("option", { name: "editor" }).click();
 
     await expect(roleBadge).toHaveText("권한: editor", { timeout: 15_000 });
     await expect(addShapeButton).toBeEnabled();
@@ -119,7 +119,7 @@ test.describe("권한 및 보호 키 플로우", () => {
     const title = uniqueName("문서-삭제-보호");
     const documentId = await createProtectedDocument(request, title, editorAccessKey);
 
-    await page.goto(docsUrl);
+    await page.goto(`${docsUrl}/docs`);
 
     const targetCard = page.getByTestId(`document-card-${documentId}`);
     const deleteButton = page.getByTestId(`document-delete-${documentId}`);
@@ -130,13 +130,13 @@ test.describe("권한 및 보호 키 플로우", () => {
     const deleteDialog = page.getByRole("dialog", { name: "문서를 삭제할까요?" });
     const deleteKeyInput = page.getByPlaceholder("삭제 비밀번호");
     await deleteKeyInput.fill("wrong-delete-key");
-    await deleteDialog.getByRole("button", { name: "문서 삭제" }).click();
+    await page.getByRole("button", { name: "문서 삭제", exact: true }).click();
 
-    await expect(deleteDialog.getByText("문서 삭제 비밀번호가 올바르지 않습니다.")).toBeVisible();
+    await expect(page.getByText("삭제 비밀번호가 올바르지 않습니다.", { exact: true })).toBeVisible();
     await expect(deleteKeyInput).toHaveValue("");
 
     await deleteKeyInput.fill(editorAccessKey);
-    await deleteDialog.getByRole("button", { name: "문서 삭제" }).click();
+    await page.getByRole("button", { name: "문서 삭제", exact: true }).click();
 
     await expect(targetCard).toHaveCount(0);
   });
@@ -160,13 +160,13 @@ test.describe("권한 및 보호 키 플로우", () => {
     const deleteDialog = page.getByRole("dialog", { name: "화이트보드를 삭제할까요?" });
     const deleteKeyInput = page.getByPlaceholder("삭제 비밀번호");
     await deleteKeyInput.fill("wrong-delete-key");
-    await deleteDialog.getByRole("button", { name: "화이트보드 삭제" }).click();
+    await page.getByRole("button", { name: "화이트보드 삭제", exact: true }).click();
 
-    await expect(deleteDialog.getByText("화이트보드 삭제 비밀번호가 올바르지 않습니다.")).toBeVisible();
+    await expect(page.getByText("삭제 비밀번호가 올바르지 않습니다.", { exact: true })).toBeVisible();
     await expect(deleteKeyInput).toHaveValue("");
 
     await deleteKeyInput.fill(editorAccessKey);
-    await deleteDialog.getByRole("button", { name: "화이트보드 삭제" }).click();
+    await page.getByRole("button", { name: "화이트보드 삭제", exact: true }).click();
 
     await expect(targetCard).toHaveCount(0);
   });

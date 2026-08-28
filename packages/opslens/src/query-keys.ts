@@ -87,5 +87,7 @@ export const opslensQueryKeys = {
   reportSnapshots: () => opslensKeysBase.custom("report-snapshots"),
   reportActions: (snapshotId: string) => opslensKeysBase.custom("report-actions", snapshotId),
   settings: () => opslensKeysBase.custom("settings"),
-  auditLogs: () => opslensKeysBase.custom("audit-logs")
+  auditLogs: () => opslensKeysBase.custom("audit-logs"),
+  users: () => opslensKeysBase.custom("users"),
+  notificationDeliveries: () => opslensKeysBase.custom("notification-deliveries")
 };
