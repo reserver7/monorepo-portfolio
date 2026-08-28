@@ -9,8 +9,8 @@ import { OpsPageShell, OpsSectionCard, OpsSectionSkeleton, SeverityBadge } from 
 import { useOpsQueryOptions } from "@/features/common/hooks/use-ops-query-options";
 import { useOpsFilters } from "@/features/common/stores";
 import { formatDateTime, formatNumber } from "@repo/utils";
+import { parseServiceCatalog, type ServiceCatalog } from "@/features/common/utils/ops-display";
 
-type CatalogService = { name?: string; owner?: string; onCall?: string; runbook?: string; slo?: string; repository?: string; dashboard?: string; dependencies?: string };
 
 export default function ServiceDetailPage() {
   const params = useParams<{ name: string }>();
@@ -27,7 +27,7 @@ export default function ServiceDetailPage() {
   const openIssues = issues.filter((issue) => issue.status !== "resolved");
   const criticalHigh = openIssues.filter((issue) => issue.severity === "critical" || issue.severity === "high");
   const slaRisk = openIssues.filter((issue) => issue.slaDueAt && new Date(issue.slaDueAt).getTime() < Date.now());
-  const catalog = (() => { try { return JSON.parse(settingsQuery.data?.find((item) => item.key === "service.catalog")?.value ?? "{}") as { services?: CatalogService[] }; } catch { return {}; } })();
+  const catalog: ServiceCatalog = parseServiceCatalog(settingsQuery.data?.find((item) => item.key === "service.catalog")?.value);
   const service = catalog.services?.find((item) => item.name === serviceName);
   const dependencies = (service?.dependencies ?? "").split(",").map((item) => item.trim()).filter(Boolean);
   const dependents = (catalog.services ?? []).filter((item) => item.name !== serviceName && (item.dependencies ?? "").split(",").map((dependency) => dependency.trim()).includes(serviceName));

@@ -2,6 +2,29 @@ import { toCalendarLocale, type OpsLocale } from "@/lib/i18n/messages";
 
 type ServiceTranslator = (key: "all" | "docs" | "whiteboard" | "billing" | "checkout") => string;
 
+export type ServiceCatalogItem = {
+  name?: string;
+  owner?: string;
+  onCall?: string;
+  runbook?: string;
+  slo?: string;
+  repository?: string;
+  dashboard?: string;
+  dependencies?: string;
+};
+
+export type ServiceCatalog = { services?: ServiceCatalogItem[] };
+
+export function parseServiceCatalog(value: string | undefined): ServiceCatalog {
+  if (!value) return { services: [] };
+  try {
+    const parsed = JSON.parse(value) as ServiceCatalog;
+    return Array.isArray(parsed.services) ? parsed : { services: [] };
+  } catch {
+    return { services: [] };
+  }
+}
+
 export function resolveServiceLabel(serviceName: string, tService: ServiceTranslator): string {
   if (serviceName === "all") return tService("all");
   if (serviceName === "docs") return tService("docs");

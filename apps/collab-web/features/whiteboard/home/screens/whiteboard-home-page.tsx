@@ -117,27 +117,6 @@ export default function WhiteboardHomePage() {
     retry: 1
   });
 
-  useEffect(() => {
-    const refetchBoards = () => {
-      void boardsQuery.refetch();
-    };
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        refetchBoards();
-      }
-    };
-
-    window.addEventListener("online", refetchBoards);
-    window.addEventListener("focus", refetchBoards);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener("online", refetchBoards);
-      window.removeEventListener("focus", refetchBoards);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [boardsQuery.refetch]);
-
   const createBoardMutation = useMutation({
     mutationFn: (input: { title: string; actor: string; editorAccessKey?: string }) => createBoard(input),
     onSuccess: async ({ board }) => {

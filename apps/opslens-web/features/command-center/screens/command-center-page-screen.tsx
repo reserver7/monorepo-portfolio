@@ -13,6 +13,7 @@ import { formatDateTime, formatNumber } from "@repo/utils";
 import { isIssueSlaRisk } from "@/features/issues/utils/issues-utils";
 import { useOpsPermissions } from "@/features/common/hooks/use-ops-permissions";
 import { parseEscalationPolicy } from "@/features/settings/components";
+import { parseServiceCatalog } from "@/features/common/utils/ops-display";
 
 const isActiveIncident = (issue: Issue) =>
   issue.status !== "resolved" && (issue.severity === "critical" || issue.severity === "high" || isIssueSlaRisk(issue));
@@ -63,10 +64,7 @@ export default function CommandCenterPage() {
   const updateTimes = [issuesQuery.dataUpdatedAt, alertsQuery.dataUpdatedAt, deploymentsQuery.dataUpdatedAt].filter((value) => value > 0);
   const dataUpdatedAt = updateTimes.length > 0 ? Math.min(...updateTimes) : null;
   const dataAgeSec = dataUpdatedAt == null ? null : Math.max(0, Math.floor((Date.now() - dataUpdatedAt) / 1000));
-  const serviceCatalog = useMemo(() => {
-    const raw = settingsQuery.data?.find((setting) => setting.key === "service.catalog")?.value;
-    try { return (raw ? JSON.parse(raw) : { services: [] }) as { services?: Array<{ name?: string; slo?: string; owner?: string; onCall?: string; runbook?: string }> }; } catch { return { services: [] }; }
-  }, [settingsQuery.data]);
+  const serviceCatalog = useMemo(() => parseServiceCatalog(settingsQuery.data?.find((setting) => setting.key === "service.catalog")?.value), [settingsQuery.data]);
   const compareItems = incidents.filter((incident) => compareIds.includes(incident.id));
   const escalationQueue = incidents.filter((incident) => {
     const acknowledgementDueAt = new Date(incident.firstOccurredAt).getTime() + escalationPolicy.acknowledgeWithinMinutes * 60_000;

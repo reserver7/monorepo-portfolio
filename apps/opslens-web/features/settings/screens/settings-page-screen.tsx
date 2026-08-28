@@ -89,7 +89,7 @@ export default function SettingsPage() {
   });
   const authSession = readAuthSession();
   const usersQuery = useQuery({
-    queryKey: ["opslens", "users"],
+    queryKey: opslensQueryKeys.users(),
     queryFn: () => getOpslensUsers(authSession!.accessToken),
     enabled: authSession?.user.role === "admin"
   });
@@ -97,7 +97,7 @@ export default function SettingsPage() {
     mutationFn: ({ userId, input }: { userId: string; input: { role?: "admin" | "operator" | "viewer"; isActive?: boolean } }) =>
       updateOpslensUser(authSession!.accessToken, userId, input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["opslens", "users"] });
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.users() });
       await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.auditLogs() });
       toast.success("사용자 권한을 변경했습니다.");
     },
@@ -147,7 +147,7 @@ export default function SettingsPage() {
       }),
     staleTime: 15_000
   });
-  const deliveriesQuery = useQuery({ queryKey: ["opslens", "notification-deliveries"], queryFn: getNotificationDeliveries, enabled: authSession?.user.role === "admin" });
+  const deliveriesQuery = useQuery({ queryKey: opslensQueryKeys.notificationDeliveries(), queryFn: getNotificationDeliveries, enabled: authSession?.user.role === "admin", staleTime: 15_000 });
   const retryDeliveriesMutation = useMutation({
     mutationFn: retryPendingAlertDeliveries,
     onSuccess: async () => {

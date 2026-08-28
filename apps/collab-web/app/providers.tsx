@@ -15,7 +15,7 @@ function CollabI18nProvider({ children }: { children: React.ReactNode }) {
     document.cookie = `collab-locale=${resolvedLocale}; path=/; max-age=31536000; samesite=lax`;
   }, [resolvedLocale]);
 
-  return <NextIntlClientProvider locale={resolvedLocale} messages={messages}>{children}</NextIntlClientProvider>;
+  return <NextIntlClientProvider locale={resolvedLocale} messages={messages} timeZone="Asia/Seoul">{children}</NextIntlClientProvider>;
 }
 
 export function Providers({

@@ -1,8 +1,8 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 
-const serverUrl = "http://127.0.0.1:4000";
-const docsUrl = "http://127.0.0.1:3000";
-const whiteboardUrl = "http://127.0.0.1:3000/whiteboard";
+const serverUrl = "http://127.0.0.1:4010";
+const docsUrl = "http://127.0.0.1:3010";
+const whiteboardUrl = "http://127.0.0.1:3010/whiteboard";
 
 const uniqueName = (prefix: string): string => {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -38,7 +38,7 @@ test.describe("UI 상태 동기화", () => {
   test("문서 방 입장 후 목록 복귀 시 홈 편집 키 입력값이 초기화된다", async ({ page, request }) => {
     const documentId = await createDocument(request, uniqueName("문서-키-초기화"));
 
-    await page.goto(docsUrl);
+    await page.goto(`${docsUrl}/docs`);
     const homeEditorKeyInput = page.getByTestId("docs-home-editor-access-key-input");
     await homeEditorKeyInput.fill("임시-편집-키");
 
@@ -47,7 +47,7 @@ test.describe("UI 상태 동기화", () => {
     await targetCard.getByRole("button", { name: "문서 입장" }).click();
     await expect(page).toHaveURL(new RegExp(`/docs/${documentId}$`));
 
-    await page.getByRole("link", { name: "문서 목록으로" }).click();
+    await page.getByRole("main").getByRole("button", { name: "문서 목록으로" }).click();
     await expect(page).toHaveURL(`${docsUrl}/docs`);
 
     await expect(homeEditorKeyInput).toHaveValue("");
@@ -65,7 +65,7 @@ test.describe("UI 상태 동기화", () => {
     await targetCard.getByRole("button", { name: "보드 입장" }).click();
     await expect(page).toHaveURL(new RegExp(`/whiteboard/${boardId}$`));
 
-    await page.getByRole("link", { name: "보드 목록" }).click();
+    await page.getByRole("main").getByRole("button", { name: "보드 목록으로" }).click();
     await expect(page).toHaveURL(`${whiteboardUrl}`);
 
     await expect(homeEditorKeyInput).toHaveValue("");
@@ -76,7 +76,7 @@ test.describe("UI 상태 동기화", () => {
       return page.locator("html").evaluate((element) => element.classList.contains("dark"));
     };
 
-    await page.goto(docsUrl);
+    await page.goto(`${docsUrl}/docs`);
 
     const toggleButton = page.getByRole("button", { name: /모드로 전환/ });
     const currentLabel = await toggleButton.getAttribute("aria-label");
