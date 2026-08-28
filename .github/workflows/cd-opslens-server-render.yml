@@ -145,16 +145,6 @@ jobs:
 
           echo "has_health=true" >> "${GITHUB_OUTPUT}"
 
-      - name: Verify public endpoint reachability (optional)
-        if: ${{ (steps.hook.outputs.has_hook == 'true' || steps.render-api.outputs.enabled == 'true') && steps.health.outputs.has_health == 'true' }}
-        env:
-          SERVER_HEALTHCHECK_URL: ${{ secrets.OPSLENS_SERVER_HEALTHCHECK_URL }}
-        run: |
-          set -euo pipefail
-          curl --fail-with-body --retry 2 --retry-all-errors --max-time 15 -sS \
-            "${SERVER_HEALTHCHECK_URL}" >/dev/null
-          echo "OpsLens public endpoint is reachable."
-
       - name: Verify Render deployment status (optional)
         if: ${{ steps.render-api.outputs.enabled == 'true' && steps.deploy.outputs.deploy_id != '' }}
         env:
@@ -186,6 +176,16 @@ jobs:
           done
           echo "Timed out waiting for Render deployment status."
           exit 1
+
+      - name: Verify public endpoint reachability (optional)
+        if: ${{ (steps.hook.outputs.has_hook == 'true' || steps.render-api.outputs.enabled == 'true') && steps.health.outputs.has_health == 'true' }}
+        env:
+          SERVER_HEALTHCHECK_URL: ${{ secrets.OPSLENS_SERVER_HEALTHCHECK_URL }}
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --retry 5 --retry-all-errors --retry-delay 5 --max-time 30 -sS \
+            "${SERVER_HEALTHCHECK_URL}" >/dev/null
+          echo "OpsLens public endpoint is reachable."
 
       - name: Skip notice (missing deploy hook)
         if: ${{ steps.hook.outputs.has_hook != 'true' && steps.render-api.outputs.enabled != 'true' }}
