@@ -16,19 +16,19 @@
     "react-dom": ">=18.0.0"
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.9.1",
+    "@hookform/resolvers": "^5.9.1",
     "@repo/utils": "workspace:*",
-    "react-hook-form": "^7.62.0",
-    "zod": "^3.25.76"
+    "react-hook-form": "^7.87.0",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@repo/configs": "workspace:*",
     "@repo/eslint-config": "workspace:*",
-    "@types/node": "^20.12.7",
-    "@types/react": "^19.0.10",
-    "@types/react-dom": "^19.0.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "typescript": "^5.4.5"
+    "@types/node": "^26.4.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "typescript": "^7.0.2"
   }
 }
