@@ -1,8 +1,10 @@
 "use client";
 
+import { FeedbackState } from "@/features/common/components/feedback-state";
+
 import Link from "next/link";
 import { AlertTriangle, BarChart3 } from "lucide-react";
-import { Badge, Box, Flex, Grid, StateView, Typography } from "@repo/ui";
+import { Badge, Box, Flex, Grid, Typography } from "@repo/ui";
 import { formatDateTime, formatNumber } from "@repo/utils";
 import { OpsInfoItem, OpsSectionSkeleton, SeverityBadge } from "@/features";
 import type { DeploymentImpact } from "../types";
@@ -22,7 +24,7 @@ export function DeploymentImpactPanel({
   selectedVersion
 }: DeploymentImpactPanelProps) {
   if (!selectedVersion) {
-    return <StateView variant="info" size="sm" title="분석할 배포 버전을 선택해 주세요." className="mt-[var(--space-3)]" />;
+    return <FeedbackState variant="info" size="sm" title="분석할 배포 버전을 선택해 주세요." className="mt-[var(--space-3)]" />;
   }
 
   if (isLoading) {
@@ -35,7 +37,7 @@ export function DeploymentImpactPanel({
   }
 
   if (isError || !impact) {
-    return <StateView variant="error" size="sm" title="영향 분석에 실패했습니다." className="mt-[var(--space-3)]" />;
+    return <FeedbackState variant="error" size="sm" title="영향 분석에 실패했습니다." className="mt-[var(--space-3)]" />;
   }
 
   const hasIncreasedIssues = impact.increasedIssues.length > 0;

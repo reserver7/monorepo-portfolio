@@ -1,5 +1,6 @@
 import type { useAppForm } from "@repo/forms";
-import { Box, Button, Input, StateView, Textarea } from "@repo/ui";
+import { Box, Button, Input, Textarea } from "@repo/ui";
+import { FeedbackState } from "@/features/common/components/feedback-state";
 import { formatDateTime } from "@repo/utils";
 import type { Issue } from "@repo/opslens";
 
@@ -38,7 +39,7 @@ export function IssueCommentsPanel({ comments, form, isSubmitting, onSubmit }: I
 
       <Box className="mt-[var(--space-4)] space-y-[var(--space-2)]">
         {comments.length === 0 ? (
-          <StateView variant="empty" size="sm" title="등록된 댓글이 없습니다." />
+          <FeedbackState variant="empty" size="sm" title="등록된 댓글이 없습니다." />
         ) : (
           comments.map((comment) => (
             <Box key={comment.id} className="border-default rounded-lg border p-[var(--space-3)] text-sm">

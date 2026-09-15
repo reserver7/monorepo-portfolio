@@ -8,11 +8,7 @@ const EXCLUDED_EXPORTS = new Set([
   "useAlertConfirm"
 ]);
 
-const EXCLUDED_EXACT = new Set([
-  "AlertConfirmProvider",
-  "DataTableColumnHeader",
-  "SelectRoot"
-]);
+const EXCLUDED_EXACT = new Set(["AlertConfirmProvider", "DataTableColumnHeader", "SelectRoot"]);
 
 const EXCLUDED_SUFFIXES = [
   "Provider",
@@ -52,9 +48,11 @@ const toPascalCase = (value) =>
 
 export const shouldSkipExport = (name) => {
   if (!name) return true;
+  if (["", "TourStep", "AlertType", "DescriptionItem", "TimelineItem"].includes(name)) return true;
   if (name === "Input") return false;
   if (name === "RadioGroup") return false;
   if (name === "Separator") return false;
+  if (name === "Image") return false;
   if (EXCLUDED_EXPORTS.has(name)) return true;
   if (EXCLUDED_EXACT.has(name)) return true;
   if (!/^[A-Z]/.test(name)) return true;
@@ -92,6 +90,9 @@ export const parseExportedNames = (source) => {
 
     const primary = pickPrimaryExportFromModule(modulePath, tokens);
     if (primary) names.add(primary);
+    if (["./navigation", "./overlay", "./feedback", "./data-display", "./media"].includes(modulePath)) {
+      for (const name of tokens.filter((token) => !shouldSkipExport(token))) names.add(name);
+    }
   }
 
   return [...names].sort((a, b) => a.localeCompare(b));

@@ -10,10 +10,12 @@ const WATCH_ROOTS = [
 ];
 
 const POLL_INTERVAL_MS = 1200;
+const QUIET_PERIOD_MS = Number(process.env.STORYBOOK_WATCH_QUIET_MS ?? 4000);
 let isGenerating = false;
 let hasQueuedGeneration = false;
 let isTicking = false;
 let lastSignature = "";
+let lastChangeAt = 0;
 
 const collectFiles = async (targetPath) => {
   const stat = await fs.stat(targetPath);
@@ -99,8 +101,14 @@ const tick = async () => {
 
   try {
     const signature = await buildSignature();
-    if (signature === lastSignature) return;
-    lastSignature = signature;
+    if (signature !== lastSignature) {
+      const initialized = Boolean(lastSignature);
+      lastSignature = signature;
+      lastChangeAt = Date.now();
+      if (initialized) return;
+    }
+    if (lastChangeAt && Date.now() - lastChangeAt < QUIET_PERIOD_MS) return;
+    lastChangeAt = 0;
     await runGenerate();
   } finally {
     isTicking = false;
@@ -108,7 +116,7 @@ const tick = async () => {
 };
 
 const start = async () => {
-  console.log("[storybook:watch] watching UI components for story auto-generation...");
+  console.log(`[storybook:watch] watching UI components; generating after ${QUIET_PERIOD_MS}ms of quiet...`);
   await tick();
   setInterval(() => {
     void tick();

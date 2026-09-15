@@ -113,7 +113,7 @@ const TextareaBase = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           aria-invalid={activeStatus === "error" ? true : undefined}
           aria-describedby={describedByIds}
           className={cn(
-            "text-foreground placeholder:text-muted w-full rounded-[var(--radius-md)] border px-3 py-2 outline-none ring-0 transition-colors focus:ring-1 disabled:cursor-not-allowed disabled:opacity-50",
+            "text-foreground placeholder:text-muted w-full rounded-[var(--radius-md)] border px-3 py-2 outline-none ring-0 transition-colors focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50",
             TEXTAREA_SIZE_CLASS[resolvedSize],
             TEXTAREA_VARIANT_CLASS[resolvedVariant],
             TEXTAREA_STATUS_CLASS[resolvedStatus],
@@ -174,7 +174,9 @@ const TextareaComponent = React.forwardRef<HTMLTextAreaElement, TextareaProps>((
     );
   }
 
-  return <TextareaBase {...rest} ref={ref} name={name} required={required} onChange={onChange} onBlur={onBlur} />;
+  return (
+    <TextareaBase {...rest} ref={ref} name={name} required={required} onChange={onChange} onBlur={onBlur} />
+  );
 });
 TextareaComponent.displayName = "Textarea";
 

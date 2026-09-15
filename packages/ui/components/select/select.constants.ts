@@ -29,7 +29,7 @@ export const SELECT_DEFAULTS = {
 export const SELECT_ROW_HEIGHT_PX = 36;
 
 export const SELECT_TRIGGER_BASE_CLASS =
-  "inline-flex w-full cursor-pointer items-center justify-between rounded-[var(--radius-md)] border px-[var(--space-3)] py-[var(--space-2)] text-foreground outline-none transition-colors focus:ring-1 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex w-full cursor-pointer items-center justify-between rounded-[var(--radius-md)] border px-[var(--space-3)] py-[var(--space-2)] text-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50";
 
 export const SELECT_CONTENT_BASE_CLASS =
   "z-[70] max-h-[var(--size-select-content-max-h)] min-w-[var(--radix-select-trigger-width)] w-[var(--radix-select-trigger-width)] overflow-hidden rounded-[var(--radius-md)] border border-default bg-surface shadow-[var(--shadow-card)]";
@@ -48,11 +48,12 @@ export const SELECT_SIZE_CLASS: Record<SelectTriggerSize, string> = {
 export const SELECT_VARIANT_CLASS: Record<SelectTriggerVariant, string> = {
   default: "border-default bg-surface shadow-none hover:border-primary/35",
   filled: "border border-transparent bg-surface-elevated shadow-none hover:bg-[rgb(var(--color-bg-surface))]",
-  ghost: "border border-transparent bg-transparent shadow-none hover:bg-surface-elevated/70 focus:bg-surface-elevated/80"
+  ghost:
+    "border border-transparent bg-transparent shadow-none hover:bg-surface-elevated/70 focus-visible:bg-surface-elevated/80"
 };
 
 export const SELECT_STATUS_CLASS: Record<SelectTriggerStatus, string> = {
-  default: "focus:border-primary focus:ring-primary/30",
-  error: "border-danger/40 focus:border-danger focus:ring-danger/25",
-  success: "border-success/40 focus:border-success focus:ring-success/25"
+  default: "focus-visible:border-primary focus-visible:ring-primary/30",
+  error: "border-danger/40 focus-visible:border-danger focus-visible:ring-danger/25",
+  success: "border-success/40 focus-visible:border-success focus-visible:ring-success/25"
 };

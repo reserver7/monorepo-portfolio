@@ -1,7 +1,9 @@
 "use client";
 
+import { MetricCard } from "@/features/common/components/feedback-state";
+
 import { useMemo, useState } from "react";
-import { Badge, Box, Button, Flex, Grid, Input, StatCard, Textarea, Typography, toast } from "@repo/ui";
+import { Badge, Box, Button, Flex, Grid, Input, Textarea, Typography, toast } from "@repo/ui";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
 import { getDeploymentImpact, getDeploymentReadiness, getDeployments, opslensQueryKeys, registerDeployment, updateDeploymentDecision } from "@repo/opslens";
@@ -101,14 +103,14 @@ export default function DeploymentsPage() {
 
       <Grid className="gap-[var(--space-3)] xl:grid-cols-[minmax(0,1fr)_420px]">
         <Grid className="gap-[var(--space-3)] md:grid-cols-2">
-          <StatCard
+          <MetricCard
             label="배포 이력"
             value={formatNumber(deployments.length)}
             helper={latestVersion ? `최신 ${latestVersion}` : "등록된 배포 없음"}
             size="sm"
             className="h-full rounded-[var(--radius-lg)]"
           />
-          <StatCard
+          <MetricCard
             label="증가 이슈"
             value={formatNumber(increasedIssueCount)}
             helper={selectedVersion ? "선택 배포 기준" : "분석 대기"}
@@ -117,7 +119,7 @@ export default function DeploymentsPage() {
             className="h-full rounded-[var(--radius-lg)]"
           />
         </Grid>
-        <StatCard
+        <MetricCard
           label="배포 후 에러"
           value={formatNumber(totalAfterErrorCount)}
           helper={selectedDeployment ? selectedDeployment.version : "버전을 선택하세요"}

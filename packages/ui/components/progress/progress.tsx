@@ -26,7 +26,11 @@ const ProgressComponent = React.forwardRef<React.ElementRef<typeof ProgressPrimi
     const resolvedSize = resolveOption(size, PROGRESS_SIZE_CLASS, PROGRESS_DEFAULTS.size);
     const hasPresetColor = Object.prototype.hasOwnProperty.call(PROGRESS_COLOR_CLASS, color);
     const resolvedColor = hasPresetColor
-      ? resolveOption(color as keyof typeof PROGRESS_COLOR_CLASS, PROGRESS_COLOR_CLASS, PROGRESS_DEFAULTS.color)
+      ? resolveOption(
+          color as keyof typeof PROGRESS_COLOR_CLASS,
+          PROGRESS_COLOR_CLASS,
+          PROGRESS_DEFAULTS.color
+        )
       : PROGRESS_DEFAULTS.color;
     const tokenColorValue = hasPresetColor ? undefined : resolveUiColorValue(color);
     const normalizedValue = Math.max(0, Math.min(100, value ?? 0));
@@ -52,16 +56,19 @@ const ProgressComponent = React.forwardRef<React.ElementRef<typeof ProgressPrimi
         >
           <ProgressPrimitive.Indicator
             className={cn(
-              "h-full w-full flex-1 transition-all",
+              "h-full w-full flex-1 transition-[width] duration-200",
               PROGRESS_COLOR_CLASS[resolvedColor],
               indeterminate && "animate-pulse",
-              striped && "bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,.18)_25%,rgba(255,255,255,.18)_50%,transparent_50%,transparent_75%,rgba(255,255,255,.18)_75%)] bg-[length:1rem_1rem]"
+              striped &&
+                "bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,.18)_25%,rgba(255,255,255,.18)_50%,transparent_50%,transparent_75%,rgba(255,255,255,.18)_75%)] bg-[length:1rem_1rem]"
             )}
             style={indicatorStyle}
           />
         </ProgressPrimitive.Root>
         {showValue ? (
-          <p className="text-caption text-muted mt-1 text-right">{indeterminate ? "..." : `${normalizedValue}%`}</p>
+          <p className="text-caption text-muted mt-1 text-right">
+            {indeterminate ? "..." : `${normalizedValue}%`}
+          </p>
         ) : null}
         {label ? <p className="text-caption text-muted mt-1">{label}</p> : null}
       </div>

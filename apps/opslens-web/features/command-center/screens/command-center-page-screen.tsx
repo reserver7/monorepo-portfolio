@@ -1,10 +1,12 @@
 "use client";
 
+import { FeedbackState } from "@/features/common/components/feedback-state";
+
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { getDeploymentImpact, getDeployments, getOpsAlerts, getOpsSettings, listIssues, opslensQueryKeys, type Issue, updateIssueStatus } from "@repo/opslens";
-import { Badge, Box, Button, Flex, Grid, Select, StateView, Typography } from "@repo/ui";
+import { Badge, Box, Button, Flex, Grid, Select, Typography } from "@repo/ui";
 import { AlertTriangle, ExternalLink, ShieldAlert, Siren } from "lucide-react";
 import { OpsPageShell, OpsSectionCard, OpsSectionSkeleton, SeverityBadge, StatusBadge } from "@/features";
 import { useOpsQueryOptions } from "@/features/common/hooks/use-ops-query-options";
@@ -100,7 +102,7 @@ export default function CommandCenterPage() {
 
       <Grid className="items-start gap-[var(--space-4)] xl:grid-cols-[minmax(0,1fr)_360px]">
         <OpsSectionCard title="지금 대응할 인시던트" description="SLA 위험, 심각도, 최근 발생 시각 순으로 정렬됩니다.">
-          {issuesQuery.isLoading || settingsQuery.isLoading ? <OpsSectionSkeleton rows={4} /> : criticalQueryError ? <StateView variant="error" size="sm" title="커맨드 센터 데이터를 불러오지 못했습니다." description="대응 큐와 운영 정책을 확인할 수 없습니다." action={<Button type="button" variant="secondary" size="sm" loading={issuesQuery.isFetching || settingsQuery.isFetching} onClick={() => { void Promise.all([issuesQuery.refetch(), settingsQuery.refetch()]); }}>다시 시도</Button>} /> : incidents.length === 0 ? <StateView variant="empty" size="sm" title="즉시 대응이 필요한 인시던트가 없습니다." /> : (
+          {issuesQuery.isLoading || settingsQuery.isLoading ? <OpsSectionSkeleton rows={4} /> : criticalQueryError ? <FeedbackState variant="error" size="sm" title="커맨드 센터 데이터를 불러오지 못했습니다." description="대응 큐와 운영 정책을 확인할 수 없습니다." action={<Button type="button" variant="secondary" size="sm" loading={issuesQuery.isFetching || settingsQuery.isFetching} onClick={() => { void Promise.all([issuesQuery.refetch(), settingsQuery.refetch()]); }}>다시 시도</Button>} /> : incidents.length === 0 ? <FeedbackState variant="empty" size="sm" title="즉시 대응이 필요한 인시던트가 없습니다." /> : (
             <Box className="space-y-[var(--space-2)]">
               {incidents.map((incident) => { const service = serviceCatalog.services?.find((item) => item.name === incident.serviceName); return <Box key={incident.id} className="border-default bg-surface-elevated rounded-[var(--radius-lg)] border p-[var(--space-4)]">
                 <Flex className="flex-col items-stretch justify-between gap-[var(--space-3)] sm:flex-row sm:items-start">
@@ -121,7 +123,7 @@ export default function CommandCenterPage() {
           </OpsSectionCard>
           <OpsSectionCard title="최근 배포 판단" description="영향 분석 결과로 롤백 검토 여부를 확인합니다.">
             <Select aria-label="분석할 배포 버전" value={deploymentVersion ?? ""} onChange={(value) => setSelectedVersion(String(value))} options={(deploymentsQuery.data ?? []).map((deployment) => ({ label: deployment.version, value: deployment.version }))} className="mb-[var(--space-3)]" />
-            {impactQuery.isLoading ? <OpsSectionSkeleton rows={3} /> : impactQuery.data ? <Box className="space-y-[var(--space-2)]"><Badge size="sm" variant={impactQuery.data.riskLevel === "rollback_review" ? "danger" : impactQuery.data.riskLevel === "caution" ? "warning" : "success"}>{impactQuery.data.riskLevel === "rollback_review" ? "롤백 검토" : impactQuery.data.riskLevel === "caution" ? "관찰 필요" : "정상"}</Badge><Typography as="p" variant="bodySm">{impactQuery.data.recommendedAction}</Typography><Typography as="p" variant="caption" color="muted">증가 이슈 {formatNumber(impactQuery.data.increasedIssueCount)}건 · 배포 후 오류 {formatNumber(impactQuery.data.totalAfterErrorCount)}건</Typography><Button asChild variant="outline" size="sm"><Link href="/deployments">배포 상세 보기</Link></Button></Box> : <StateView variant="empty" size="sm" title="분석할 배포 이력이 없습니다." />}
+            {impactQuery.isLoading ? <OpsSectionSkeleton rows={3} /> : impactQuery.data ? <Box className="space-y-[var(--space-2)]"><Badge size="sm" variant={impactQuery.data.riskLevel === "rollback_review" ? "danger" : impactQuery.data.riskLevel === "caution" ? "warning" : "success"}>{impactQuery.data.riskLevel === "rollback_review" ? "롤백 검토" : impactQuery.data.riskLevel === "caution" ? "관찰 필요" : "정상"}</Badge><Typography as="p" variant="bodySm">{impactQuery.data.recommendedAction}</Typography><Typography as="p" variant="caption" color="muted">증가 이슈 {formatNumber(impactQuery.data.increasedIssueCount)}건 · 배포 후 오류 {formatNumber(impactQuery.data.totalAfterErrorCount)}건</Typography><Button asChild variant="outline" size="sm"><Link href="/deployments">배포 상세 보기</Link></Button></Box> : <FeedbackState variant="empty" size="sm" title="분석할 배포 이력이 없습니다." />}
           </OpsSectionCard>
           <OpsSectionCard title="알림 및 온콜" description="알림 정책과 전달 실패를 운영 설정에서 점검하세요.">
             <Typography as="p" variant="bodySm" color="muted">미확인 중요 알림 {unacknowledgedAlerts.length}건입니다. {onCall ? `현재 온콜: ${onCall}` : "온콜 담당자와 채널을 아직 등록하지 않았습니다."}</Typography>

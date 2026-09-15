@@ -10,7 +10,12 @@ import { cn } from "../cn";
 import { Button } from "../button";
 import { Calendar } from "../calendar";
 import { FieldSupportText, RequiredMark } from "../field/field-utils";
-import { INPUT_DEFAULTS, INPUT_SIZE_CLASS, INPUT_STATUS_CLASS, INPUT_VARIANT_CLASS } from "../input/input.constants";
+import {
+  INPUT_DEFAULTS,
+  INPUT_SIZE_CLASS,
+  INPUT_STATUS_CLASS,
+  INPUT_VARIANT_CLASS
+} from "../input/input.constants";
 import { resolveInputStatus } from "../input/input.utils";
 import { Label } from "../label";
 import { Popover, PopoverContent, PopoverTrigger } from "../popover";
@@ -26,7 +31,12 @@ import {
   toDateInputValue,
   toDateRangeValue
 } from "./date-picker.utils";
-import type { DatePickerFieldProps, DatePickerProps, DateRangeStringValue } from "./date-picker.types";
+import type {
+  DatePickerFieldProps,
+  DatePickerProps,
+  DateRangePickerProps,
+  DateRangeStringValue
+} from "./date-picker.types";
 
 const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
   (
@@ -38,6 +48,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
       defaultRange,
       minDate,
       maxDate,
+      disabledDate,
       size = INPUT_DEFAULTS.size,
       variant = INPUT_DEFAULTS.variant,
       status,
@@ -58,6 +69,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
       icon,
       id,
       name,
+      onClear: propsOnClear,
       onBlur,
       onChange,
       className,
@@ -84,7 +96,11 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
     });
     const selectedDate = React.useMemo(() => parseDateValue(currentSingleValue), [currentSingleValue]);
     const [singleTimeValue, setSingleTimeValue] = React.useState<string>(() => {
-      const parsed = parseTimeValue(typeof currentSingleValue === "string" && currentSingleValue.includes("T") ? currentSingleValue.split("T")[1] : "");
+      const parsed = parseTimeValue(
+        typeof currentSingleValue === "string" && currentSingleValue.includes("T")
+          ? currentSingleValue.split("T")[1]
+          : ""
+      );
       if (!parsed) return showSeconds ? "00:00:00" : "00:00";
       return showSeconds
         ? `${String(parsed.hour).padStart(2, "0")}:${String(parsed.minute).padStart(2, "0")}:${String(parsed.second).padStart(2, "0")}`
@@ -105,8 +121,12 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
     }, [currentRangeValue.from, currentRangeValue.to, isRangeMode]);
     const selectedRangeFrom = selectedRange?.from;
     const selectedRangeTo = selectedRange?.to;
-    const [rangeFromTimeValue, setRangeFromTimeValue] = React.useState<string>(showSeconds ? "00:00:00" : "00:00");
-    const [rangeToTimeValue, setRangeToTimeValue] = React.useState<string>(showSeconds ? "23:59:59" : "23:59");
+    const [rangeFromTimeValue, setRangeFromTimeValue] = React.useState<string>(
+      showSeconds ? "00:00:00" : "00:00"
+    );
+    const [rangeToTimeValue, setRangeToTimeValue] = React.useState<string>(
+      showSeconds ? "23:59:59" : "23:59"
+    );
 
     const activeStatus = resolveInputStatus(status ?? state, Boolean(errorMessage));
     const resolvedSize = resolveOption(size, INPUT_SIZE_CLASS, INPUT_DEFAULTS.size);
@@ -173,7 +193,9 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
 
     const handleRangeSelect = React.useCallback(
       (nextRange: DateRange | undefined) => {
-        const fromWithTime = nextRange?.from ? applyTimeToDate(nextRange.from, rangeFromTimeValue) : undefined;
+        const fromWithTime = nextRange?.from
+          ? applyTimeToDate(nextRange.from, rangeFromTimeValue)
+          : undefined;
         const toWithTime = nextRange?.to ? applyTimeToDate(nextRange.to, rangeToTimeValue) : undefined;
         const nextValue: DateRangeStringValue = {
           from: fromWithTime
@@ -198,10 +220,12 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
     const handleClear = React.useCallback(() => {
       if (isRangeMode) {
         emitRangeChange({});
+        propsOnClear?.();
         return;
       }
       emitSingleChange("");
-    }, [emitRangeChange, emitSingleChange, isRangeMode]);
+      propsOnClear?.();
+    }, [emitRangeChange, emitSingleChange, isRangeMode, propsOnClear]);
 
     const triggerLabel = React.useMemo(() => {
       const dateTimeFormatter = new Intl.DateTimeFormat(locale, {
@@ -229,7 +253,9 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
       }
 
       if (!selectedDate) return placeholder;
-      return withTime ? dateTimeFormatter.format(applyTimeToDate(selectedDate, singleTimeValue)) : formatDateText(selectedDate, locale);
+      return withTime
+        ? dateTimeFormatter.format(applyTimeToDate(selectedDate, singleTimeValue))
+        : formatDateText(selectedDate, locale);
     }, [
       isRangeMode,
       locale,
@@ -306,9 +332,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
           INPUT_SIZE_CLASS[resolvedSize],
           INPUT_VARIANT_CLASS[resolvedVariant],
           INPUT_STATUS_CLASS[resolvedStatus],
-          triggerLabel !== placeholder
-            ? "text-foreground"
-            : "text-muted",
+          triggerLabel !== placeholder ? "text-foreground" : "text-muted",
           readOnly ? "cursor-default bg-surface text-muted hover:bg-surface active:bg-surface" : null,
           className
         ),
@@ -330,10 +354,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
           <RequiredMark />
         ) : null}
 
-        <Popover
-          open={isOpen}
-          onOpenChange={handleOpenChange}
-        >
+        <Popover open={isOpen} onOpenChange={handleOpenChange}>
           <PopoverTrigger asChild>
             <Button
               id={resolvedId}
@@ -348,8 +369,8 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
               <span className="truncate text-left">{triggerLabel}</span>
               <span className="flex shrink-0 items-center gap-[var(--space-1)]">
                 {showClearButton ? (
-                  <span
-                    role="button"
+                  <button
+                    type="button"
                     tabIndex={-1}
                     onMouseDown={(event) => {
                       event.preventDefault();
@@ -361,12 +382,16 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
                       handleClear();
                     }}
                     aria-label="선택한 날짜 지우기"
-                    className="text-muted hover:bg-surface-elevated hover:text-foreground inline-flex h-[var(--size-icon-lg)] w-[var(--size-icon-lg)] items-center justify-center rounded-[var(--radius-round)] transition-colors"
+                    className="text-muted hover:bg-surface-elevated hover:text-foreground focus-visible:ring-primary inline-flex h-[var(--size-icon-lg)] w-[var(--size-icon-lg)] items-center justify-center rounded-[var(--radius-round)] transition-colors focus-visible:outline-none focus-visible:ring-2"
                   >
                     <X className="h-[var(--size-icon-sm)] w-[var(--size-icon-sm)]" aria-hidden />
-                  </span>
+                  </button>
                 ) : null}
-                {showIcon ? (icon ?? <CalendarDays className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" aria-hidden />) : null}
+                {showIcon
+                  ? (icon ?? (
+                      <CalendarDays className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" aria-hidden />
+                    ))
+                  : null}
               </span>
             </Button>
           </PopoverTrigger>
@@ -377,13 +402,13 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
                   mode="range"
                   selected={selectedRange}
                   onSelect={handleRangeSelect as (value: unknown) => void}
-                  disabled={disabled || readOnly}
+                  disabled={disabled || readOnly ? true : disabledDate}
                   fromDate={minDateValue}
                   toDate={maxDateValue}
                   initialFocus
                 />
                 {withTime ? (
-                  <div className="grid gap-[var(--space-2)] border-default border-t pt-[var(--space-2)] md:grid-cols-2">
+                  <div className="border-default grid gap-[var(--space-2)] border-t pt-[var(--space-2)] md:grid-cols-2">
                     <div className="grid gap-[var(--space-1)]">
                       <Label size="sm">시작 시간</Label>
                       <TimePicker
@@ -395,9 +420,15 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
                           setRangeFromTimeValue(next);
                           if (selectedRangeFrom) {
                             emitRangeChange({
-                              from: formatDateTimeInputValue(applyTimeToDate(selectedRangeFrom, next), showSeconds),
+                              from: formatDateTimeInputValue(
+                                applyTimeToDate(selectedRangeFrom, next),
+                                showSeconds
+                              ),
                               to: selectedRangeTo
-                                ? formatDateTimeInputValue(applyTimeToDate(selectedRangeTo, rangeToTimeValue), showSeconds)
+                                ? formatDateTimeInputValue(
+                                    applyTimeToDate(selectedRangeTo, rangeToTimeValue),
+                                    showSeconds
+                                  )
                                 : undefined
                             });
                           }
@@ -419,9 +450,15 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
                           setRangeToTimeValue(next);
                           if (selectedRangeFrom) {
                             emitRangeChange({
-                              from: formatDateTimeInputValue(applyTimeToDate(selectedRangeFrom, rangeFromTimeValue), showSeconds),
+                              from: formatDateTimeInputValue(
+                                applyTimeToDate(selectedRangeFrom, rangeFromTimeValue),
+                                showSeconds
+                              ),
                               to: selectedRangeTo
-                                ? formatDateTimeInputValue(applyTimeToDate(selectedRangeTo, next), showSeconds)
+                                ? formatDateTimeInputValue(
+                                    applyTimeToDate(selectedRangeTo, next),
+                                    showSeconds
+                                  )
                                 : undefined
                             });
                           }
@@ -442,13 +479,13 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
                   mode="single"
                   selected={selectedDate}
                   onSelect={handleSingleSelect as (value: unknown) => void}
-                  disabled={disabled || readOnly}
+                  disabled={disabled || readOnly ? true : disabledDate}
                   fromDate={minDateValue}
                   toDate={maxDateValue}
                   initialFocus
                 />
                 {withTime ? (
-                  <div className="grid gap-[var(--space-1)] border-default border-t pt-[var(--space-2)]">
+                  <div className="border-default grid gap-[var(--space-1)] border-t pt-[var(--space-2)]">
                     <Label size="sm">시간</Label>
                     <TimePicker
                       value={singleTimeValue}
@@ -458,7 +495,9 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
                         const next = event.target.value;
                         setSingleTimeValue(next);
                         if (selectedDate) {
-                          emitSingleChange(formatDateTimeInputValue(applyTimeToDate(selectedDate, next), showSeconds));
+                          emitSingleChange(
+                            formatDateTimeInputValue(applyTimeToDate(selectedDate, next), showSeconds)
+                          );
                         }
                       }}
                       size={resolvedSize}
@@ -473,14 +512,16 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
           </PopoverContent>
         </Popover>
 
-        <FieldSupportText
-          message={supportText}
-          error={Boolean(errorMessage)}
-          className={helperClassName}
-        />
+        <FieldSupportText message={supportText} error={Boolean(errorMessage)} className={helperClassName} />
 
         {!isRangeMode ? (
-          <input ref={mergedRef} type="hidden" name={name} value={currentSingleValue ?? ""} required={required} />
+          <input
+            ref={mergedRef}
+            type="hidden"
+            name={name}
+            value={currentSingleValue ?? ""}
+            required={required}
+          />
         ) : (
           <>
             <input
@@ -505,7 +546,16 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
 DatePickerBase.displayName = "DatePickerBase";
 
 const DatePickerComponent = React.forwardRef<HTMLInputElement, DatePickerProps>((props, ref) => {
-  const { control, rules, name, mode = DATE_PICKER_DEFAULTS.mode, onValueChange, onRangeChange, onBlur, ...rest } = props;
+  const {
+    control,
+    rules,
+    name,
+    mode = DATE_PICKER_DEFAULTS.mode,
+    onValueChange,
+    onRangeChange,
+    onBlur,
+    ...rest
+  } = props;
 
   if (control && typeof name === "string" && name.length > 0) {
     return (
@@ -571,6 +621,10 @@ const DatePickerComponent = React.forwardRef<HTMLInputElement, DatePickerProps>(
 DatePickerComponent.displayName = "DatePicker";
 
 export const DatePicker = React.memo(DatePickerComponent);
+
+export function RangePicker(props: DateRangePickerProps) {
+  return <DatePicker {...props} mode="range" />;
+}
 DatePicker.displayName = "DatePicker";
 
 export const DatePickerField = React.forwardRef<HTMLInputElement, DatePickerFieldProps>(
@@ -607,7 +661,9 @@ export const DatePickerField = React.forwardRef<HTMLInputElement, DatePickerFiel
           helperClassName={helperClassName}
           {...props}
         />
-        {description ? <p className={cn("text-caption text-muted", descriptionClassName)}>{description}</p> : null}
+        {description ? (
+          <p className={cn("text-caption text-muted", descriptionClassName)}>{description}</p>
+        ) : null}
       </>
     );
   }

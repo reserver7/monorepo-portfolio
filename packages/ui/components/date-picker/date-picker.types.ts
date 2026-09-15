@@ -16,8 +16,10 @@ export interface DateRangeStringValue {
   to?: string;
 }
 
-export interface DatePickerProps
-  extends Omit<InputProps, "type" | "value" | "defaultValue" | "min" | "max" | "onChange" | "prefix" | "suffix"> {
+export interface DatePickerProps extends Omit<
+  InputProps,
+  "type" | "value" | "defaultValue" | "min" | "max" | "onChange" | "prefix" | "suffix"
+> {
   mode?: DatePickerMode;
   value?: DateValue;
   defaultValue?: DateValue;
@@ -25,6 +27,7 @@ export interface DatePickerProps
   defaultRange?: DateRangeValue;
   minDate?: DateValue;
   maxDate?: DateValue;
+  disabledDate?: (date: Date) => boolean;
   state?: InputStatus;
   showIcon?: boolean;
   icon?: React.ReactNode;
@@ -53,7 +56,10 @@ export interface DatePickerFieldProps extends Omit<DatePickerProps, "label" | "h
   helperClassName?: string;
 }
 
-export interface DateRangePickerFieldProps extends Omit<DatePickerFieldProps, "mode" | "value" | "defaultValue" | "onValueChange"> {
+export interface DateRangePickerFieldProps extends Omit<
+  DatePickerFieldProps,
+  "mode" | "value" | "defaultValue" | "onValueChange"
+> {
   label?: React.ReactNode;
   description?: React.ReactNode;
   helperText?: React.ReactNode;

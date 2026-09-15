@@ -406,6 +406,17 @@
   color-scheme: dark;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
 .ui-button svg {
   width: 16px !important;
   height: 16px !important;

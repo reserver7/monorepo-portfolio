@@ -1,5 +1,7 @@
 "use client";
 
+import { FeedbackState } from "@/features/common/components/feedback-state";
+
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -16,8 +18,7 @@ import {
   Label,
   Select,
   Skeleton,
-  Spinner,
-  StateView,
+  Spin,
   confirm,
   promptConfirm,
   Typography
@@ -371,14 +372,14 @@ export default function WhiteboardHomePage() {
                 ))}
               </div>
             ) : boardsQuery.isError ? (
-              <StateView
+              <FeedbackState
                 variant="error"
                 size="lg"
                 title={t("list.errorTitle")}
                 description={t("list.errorDescription")}
               />
             ) : boards.length === 0 ? (
-              <StateView
+              <FeedbackState
                 variant="empty"
                 size="lg"
                 title={t("list.emptyTitle")}
@@ -507,7 +508,7 @@ export default function WhiteboardHomePage() {
           </section>
         </MarketingSection>
 
-        <Spinner open={isActionPending} fullscreen size="lg" color="primary" />
+        <Spin open={isActionPending} fullscreen size="lg" color="primary" />
       </main>
     </>
   );

@@ -1,4 +1,5 @@
-import { Box, Badge, Button, ConsoleSectionCard, Flex, StateView, StatCard, Typography } from "@repo/ui";
+import { Box, Badge, Button, ConsoleSectionCard, Flex, Typography } from "@repo/ui";
+import { FeedbackState, MetricCard } from "@/features/common/components/feedback-state";
 import { formatDateTime, formatNumber } from "@repo/utils";
 
 import { LOGS_SEVERITY_VARIANT_MAP } from "../constants";
@@ -12,12 +13,12 @@ type LogAnalysisSidebarProps = {
 
 export function LogAnalysisSidebar({ selectedCluster, summary, onCreateIssue }: LogAnalysisSidebarProps) {
   if (!summary) {
-    return <StateView variant="info" size="sm" title="로그를 분석하면 요약 카드가 표시됩니다." />;
+    return <FeedbackState variant="info" size="sm" title="로그를 분석하면 요약 카드가 표시됩니다." />;
   }
 
   return (
     <Box className="space-y-[var(--space-3)]">
-      <StatCard
+      <MetricCard
         label="신규 이슈 생성"
         value={`${formatNumber(summary.createdIssues)}건`}
         helper="새로 생성된 항목"
@@ -25,7 +26,7 @@ export function LogAnalysisSidebar({ selectedCluster, summary, onCreateIssue }: 
         size="sm"
         className="rounded-[var(--radius-lg)]"
       />
-      <StatCard
+      <MetricCard
         label="기존 이슈 업데이트"
         value={`${formatNumber(summary.updatedIssues)}건`}
         helper="기존 항목에 반영"

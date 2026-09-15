@@ -12,8 +12,6 @@ export interface ModalContentProps extends React.ComponentPropsWithoutRef<typeof
   intent?: ModalContentIntent;
   closeOnEscape?: boolean;
   closeOnOutsideClick?: boolean;
-  preventEscapeClose?: boolean;
-  preventOutsideClose?: boolean;
   hideCloseButton?: boolean;
   closeAriaLabel?: string;
   overlayClassName?: string;

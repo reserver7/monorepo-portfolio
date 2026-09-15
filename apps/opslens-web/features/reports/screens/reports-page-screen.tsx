@@ -1,9 +1,11 @@
 "use client";
 
+import { FeedbackState } from "@/features/common/components/feedback-state";
+
 import { useEffect, useMemo, useState } from "react";
 import { Clipboard, Printer } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
-import { Badge, Box, Button, Flex, SplitWorkspaceLayout, StateView, Textarea, Typography, confirm, toast } from "@repo/ui";
+import { Badge, Box, Button, Flex, SplitWorkspaceLayout, Textarea, Typography, confirm, toast } from "@repo/ui";
 import {
   deleteReportSnapshot,
   getReportActions,
@@ -133,7 +135,7 @@ export default function ReportsPage() {
       </Box>
 
       {reportQuery.isError ? (
-        <StateView variant="error" size="sm" title="운영 리포트 생성에 실패했습니다." className="border-default bg-surface rounded-[var(--radius-xl)] border p-[var(--space-4)]" />
+        <FeedbackState variant="error" size="sm" title="운영 리포트 생성에 실패했습니다." className="border-default bg-surface rounded-[var(--radius-xl)] border p-[var(--space-4)]" />
       ) : report ? (
         <SplitWorkspaceLayout
           sidebarWidthClassName="xl:grid-cols-[minmax(0,1fr)_360px]"

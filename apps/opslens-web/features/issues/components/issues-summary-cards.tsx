@@ -1,4 +1,5 @@
-import { Grid, StatCard } from "@repo/ui";
+import { Grid } from "@repo/ui";
+import { MetricCard } from "@/features/common/components/feedback-state";
 import { formatNumber } from "@repo/utils";
 
 import { ISSUE_TONE } from "../constants";
@@ -18,8 +19,8 @@ const STAT_CARD_CLASS =
 export function IssuesSummaryCards({ summary }: IssuesSummaryCardsProps) {
   return (
     <Grid className="mb-[var(--space-3)] grid-cols-2 gap-[var(--space-2)] md:grid-cols-4">
-      <StatCard label="Open Issues" value={formatNumber(summary.open)} helper="현재 미해결 이슈" size="md" className={STAT_CARD_CLASS} />
-      <StatCard
+      <MetricCard label="Open Issues" value={formatNumber(summary.open)} helper="현재 미해결 이슈" size="md" className={STAT_CARD_CLASS} />
+      <MetricCard
         label="Critical / High"
         value={formatNumber(summary.criticalHigh)}
         helper="우선 대응 대상"
@@ -27,7 +28,7 @@ export function IssuesSummaryCards({ summary }: IssuesSummaryCardsProps) {
         size="md"
         className={STAT_CARD_CLASS}
       />
-      <StatCard
+      <MetricCard
         label="Unassigned"
         value={formatNumber(summary.unassigned)}
         helper="담당자 미지정"
@@ -35,7 +36,7 @@ export function IssuesSummaryCards({ summary }: IssuesSummaryCardsProps) {
         size="md"
         className={STAT_CARD_CLASS}
       />
-      <StatCard
+      <MetricCard
         label="SLA Risk"
         value={formatNumber(summary.slaRisk)}
         helper="지연 임계치 초과"

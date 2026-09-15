@@ -44,6 +44,8 @@ const meta: Meta<typeof Progress> = {
     striped: false,
     showValue: false,
     indeterminate: false,
+    percent: 68,
+    showInfo: true,
     value: 64,
     label: "64%"
   },

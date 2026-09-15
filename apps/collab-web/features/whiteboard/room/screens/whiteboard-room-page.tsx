@@ -1,5 +1,7 @@
 "use client";
 
+import { FeedbackState } from "@/features/common/components/feedback-state";
+
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -22,7 +24,6 @@ import {
   Label,
   SplitWorkspaceLayout,
   Select,
-  StateView,
   PRIMITIVE_COLOR_PALETTE,
   confirm,
   useDisclosure
@@ -637,7 +638,7 @@ export default function WhiteboardRoomPage() {
       </section>
 
       {activeTool === "connector" && !isReadOnly ? (
-        <StateView
+        <FeedbackState
           variant="info"
           size="sm"
           align="left"
@@ -742,10 +743,10 @@ export default function WhiteboardRoomPage() {
       </Modal>
 
       {conflictMessage ? (
-        <StateView variant="warning" size="sm" align="left" className="mb-4" title={conflictMessage} />
+        <FeedbackState variant="warning" size="sm" align="left" className="mb-4" title={conflictMessage} />
       ) : null}
       {isReadOnly ? (
-        <StateView
+        <FeedbackState
           variant="info"
           size="sm"
           align="left"

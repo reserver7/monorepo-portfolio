@@ -32,6 +32,6 @@ export const DROPDOWN_MENU_LABEL_SIZE_CLASS: Record<DropdownMenuLabelSize, strin
 };
 
 export const DROPDOWN_MENU_ITEM_COLOR_CLASS = {
-  default: "text-foreground focus:bg-surface-elevated data-[state=open]:bg-surface-elevated",
-  danger: "text-danger focus:bg-danger/10 data-[state=open]:bg-danger/10"
+  default: "text-foreground focus-visible:bg-surface-elevated data-[state=open]:bg-surface-elevated",
+  danger: "text-danger focus-visible:bg-danger/10 data-[state=open]:bg-danger/10"
 } as const;

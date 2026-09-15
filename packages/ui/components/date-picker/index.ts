@@ -1,11 +1,12 @@
-export { DatePicker, DatePickerField } from "./date-picker";
+export { DatePicker, DatePickerField, RangePicker } from "./date-picker";
 export type {
   DatePickerProps,
   DatePickerFieldProps,
   DateValue,
   DatePickerMode,
   DateRangeValue,
-  DateRangeStringValue
+  DateRangeStringValue,
+  DateRangePickerProps
 } from "./date-picker.types";
 export { DATE_PICKER_DEFAULTS } from "./date-picker.constants";
 export {

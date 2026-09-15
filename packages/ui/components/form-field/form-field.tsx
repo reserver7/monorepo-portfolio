@@ -23,14 +23,23 @@ export function FormField({
   return (
     <div className={cn("grid", bySize.gap, className)} style={style}>
       {label ? (
-        <Label htmlFor={htmlFor} size={bySize.label} required={requiredMark} className="inline-flex items-center gap-[var(--space-1)]">
+        <Label
+          htmlFor={htmlFor}
+          size={bySize.label}
+          required={requiredMark}
+          className="inline-flex items-center gap-[var(--space-1)]"
+        >
           <span>{label}</span>
           {!requiredMark && optionalLabel ? <span className="text-muted">({optionalLabel})</span> : null}
         </Label>
       ) : null}
       {children}
       {description ? <p className={cn("text-muted", bySize.description)}>{description}</p> : null}
-      {error ? <p className={cn("text-danger", bySize.error)}>{error}</p> : null}
+      {error ? (
+        <p role="alert" aria-live="polite" className={cn("text-danger", bySize.error)}>
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

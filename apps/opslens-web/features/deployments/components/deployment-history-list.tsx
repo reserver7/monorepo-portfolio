@@ -1,7 +1,9 @@
 "use client";
 
+import { FeedbackState } from "@/features/common/components/feedback-state";
+
 import { CheckCircle2, GitBranch, History } from "lucide-react";
-import { Badge, Box, Button, Flex, StateView, Typography } from "@repo/ui";
+import { Badge, Box, Button, Flex, Typography } from "@repo/ui";
 import { formatDateTime } from "@repo/utils";
 import { OpsCardListSkeleton } from "@/features";
 import type { DeploymentItem } from "../types";
@@ -25,8 +27,8 @@ export function DeploymentHistoryList({
   onSelectVersion
 }: DeploymentHistoryListProps) {
   if (isLoading) return <OpsCardListSkeleton count={5} />;
-  if (isError) return <StateView variant="error" size="sm" title="배포 이력 조회에 실패했습니다." className="mt-[var(--space-3)]" />;
-  if (deployments.length === 0) return <StateView variant="empty" size="sm" title="등록된 배포가 없습니다." className="mt-[var(--space-3)]" />;
+  if (isError) return <FeedbackState variant="error" size="sm" title="배포 이력 조회에 실패했습니다." className="mt-[var(--space-3)]" />;
+  if (deployments.length === 0) return <FeedbackState variant="empty" size="sm" title="등록된 배포가 없습니다." className="mt-[var(--space-3)]" />;
 
   return (
     <Box className="mt-[var(--space-3)] space-y-[var(--space-2)]">

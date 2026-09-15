@@ -9,10 +9,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "../popover";
 import { Select } from "../select";
 import { Typography } from "../typography";
 
-type ColorPickerProps = {
+export type ColorPickerProps = {
   value?: string;
+  defaultValue?: string;
   onChange?: (color: string) => void;
+  onClear?: () => void;
   disabled?: boolean;
+  allowClear?: boolean;
+  showText?: boolean;
   label?: string;
   presets?: string[];
 };
@@ -147,7 +151,9 @@ const parseColor = (input?: string): Hsva => {
   }
   const rgbaMatch = trimmed.match(RGBA_PATTERN);
   if (rgbaMatch?.[1]) {
-    const [rRaw = "59", gRaw = "130", bRaw = "246", aRaw = "1"] = rgbaMatch[1].split(",").map((part) => part.trim());
+    const [rRaw = "59", gRaw = "130", bRaw = "246", aRaw = "1"] = rgbaMatch[1]
+      .split(",")
+      .map((part) => part.trim());
     const r = clamp(Number.parseInt(rRaw, 10) || 59, 0, 255);
     const g = clamp(Number.parseInt(gRaw, 10) || 130, 0, 255);
     const b = clamp(Number.parseInt(bRaw, 10) || 246, 0, 255);
@@ -169,14 +175,25 @@ const toHexText = (hsva: Hsva) => {
   return rgbToHex(rgb.r, rgb.g, rgb.b, hsva.a);
 };
 
-export function ColorPicker({ value, onChange, disabled, label = "Color" }: ColorPickerProps) {
+export function ColorPicker({
+  value,
+  defaultValue,
+  onChange,
+  onClear,
+  disabled,
+  allowClear = false,
+  showText = true,
+  label = "Color",
+  presets = []
+}: ColorPickerProps) {
   const [open, setOpen] = React.useState(false);
   const [format, setFormat] = React.useState<Format>("hex");
-  const [hsva, setHsva] = React.useState<Hsva>(() => parseColor(value));
+  const [hsva, setHsva] = React.useState<Hsva>(() => parseColor(value ?? defaultValue));
   const [rawValue, setRawValue] = React.useState("");
   const [isRawEditing, setIsRawEditing] = React.useState(false);
 
   React.useEffect(() => {
+    if (value === undefined) return;
     setHsva(parseColor(value));
   }, [value]);
 
@@ -187,7 +204,7 @@ export function ColorPicker({ value, onChange, disabled, label = "Color" }: Colo
   const currentCss = toCss(hsva);
   const currentHex = toHexText(hsva);
   const rgb = hsvToRgb(hsva);
-  const pureHue = rgbToHex(...Object.values(hsvToRgb({ h: hue, s: 1, v: 1 })) as [number, number, number]);
+  const pureHue = rgbToHex(...(Object.values(hsvToRgb({ h: hue, s: 1, v: 1 })) as [number, number, number]));
   const svRef = React.useRef<HTMLDivElement | null>(null);
   const hsvaRef = React.useRef<Hsva>(hsva);
 
@@ -365,7 +382,9 @@ export function ColorPicker({ value, onChange, disabled, label = "Color" }: Colo
 
   const pickFromScreen = async () => {
     if (disabled) return;
-    const eyeDropperCtor = (window as Window & { EyeDropper?: new () => { open: () => Promise<{ sRGBHex: string }> } }).EyeDropper;
+    const eyeDropperCtor = (
+      window as Window & { EyeDropper?: new () => { open: () => Promise<{ sRGBHex: string }> } }
+    ).EyeDropper;
     if (!eyeDropperCtor) return;
     try {
       const picker = new eyeDropperCtor();
@@ -387,15 +406,56 @@ export function ColorPicker({ value, onChange, disabled, label = "Color" }: Colo
           disabled={disabled}
           className="border-default bg-surface text-foreground h-10 w-full justify-between rounded-[var(--radius-md)] border px-3"
           aria-label={label}
+          onKeyDown={(event) => {
+            if (
+              !allowClear ||
+              (!event.currentTarget.matches(":focus-visible") &&
+                event.key !== "Backspace" &&
+                event.key !== "Delete")
+            )
+              return;
+            if (event.key === "Backspace" || event.key === "Delete") {
+              event.preventDefault();
+              const next = parseColor();
+              setHsva(next);
+              emit(next);
+              onClear?.();
+            }
+          }}
         >
           <Box className="flex items-center gap-2">
-            <Box className="h-4 w-4 rounded-[4px] border border-white/60 shadow-sm" style={{ background: currentCss }} />
-            <Typography className="text-body-sm font-medium uppercase">{currentHex}</Typography>
+            <Box
+              className="h-4 w-4 rounded-[4px] border border-white/60 shadow-sm"
+              style={{ background: currentCss }}
+            />
+            {showText ? (
+              <Typography className="text-body-sm font-medium uppercase">{currentHex}</Typography>
+            ) : null}
           </Box>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="bg-surface-elevated border-default w-[336px] rounded-[var(--radius-lg)] border p-3 shadow-lg">
         <Box className="space-y-3">
+          {presets.length ? (
+            <Box className="flex flex-wrap gap-2" aria-label="Color presets">
+              {presets.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  disabled={disabled}
+                  aria-label={`Use ${preset}`}
+                  className="focus-visible:ring-primary h-6 w-6 rounded-full border border-white/60 shadow-sm focus-visible:outline-none focus-visible:ring-2 disabled:opacity-50"
+                  style={{ background: preset }}
+                  onClick={() => {
+                    const next = parseColor(preset);
+                    hsvaRef.current = next;
+                    setHsva(next);
+                    emit(next);
+                  }}
+                />
+              ))}
+            </Box>
+          ) : null}
           <Box
             ref={svRef}
             onPointerDown={onSvPointerDown}
@@ -452,7 +512,12 @@ export function ColorPicker({ value, onChange, disabled, label = "Color" }: Colo
                   backgroundPosition: "0 0, 0 6px, 6px -6px, -6px 0"
                 }}
               >
-                <Box className="absolute inset-0 rounded-full" style={{ background: `linear-gradient(90deg, rgba(0,0,0,0), ${rgbToHex(rgb.r, rgb.g, rgb.b)})` }} />
+                <Box
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background: `linear-gradient(90deg, rgba(0,0,0,0), ${rgbToHex(rgb.r, rgb.g, rgb.b)})`
+                  }}
+                />
                 <Input
                   type="range"
                   min={0}
@@ -495,7 +560,11 @@ export function ColorPicker({ value, onChange, disabled, label = "Color" }: Colo
             <Input
               value={`${alphaPercent}%`}
               onChange={(event) => {
-                const next = clamp(Number.parseInt(event.target.value.replace(/[^0-9]/g, ""), 10) || 0, 0, 100);
+                const next = clamp(
+                  Number.parseInt(event.target.value.replace(/[^0-9]/g, ""), 10) || 0,
+                  0,
+                  100
+                );
                 patch({ a: next / 100 });
               }}
               onKeyDown={(event) => {

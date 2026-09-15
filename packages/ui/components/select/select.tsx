@@ -140,7 +140,7 @@ function SelectSingle<T = SelectPrimitiveValue>({
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const searchInputRef = React.useRef<HTMLInputElement | null>(null);
-  const triggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const triggerRef = React.useRef<HTMLDivElement | null>(null);
   const triggerWidth = usePopoverTriggerWidth(triggerRef, open);
   const keyedOptions = useKeyedSelectOptions(options);
   const { optionByKey } = useSelectOptionMaps(options);
@@ -211,17 +211,27 @@ function SelectSingle<T = SelectPrimitiveValue>({
 
   if (searchable) {
     return (
-      <PopoverPrimitive.Root
-        open={open}
-        onOpenChange={handleSearchableOpenChange}
-      >
+      <PopoverPrimitive.Root open={open} onOpenChange={handleSearchableOpenChange}>
         <PopoverPrimitive.Trigger asChild>
-          <button
+          <div
             ref={triggerRef}
-            type="button"
-            disabled={isDisabled}
-            className={triggerClassName}
+            role="button"
+            tabIndex={isDisabled ? -1 : 0}
+            aria-disabled={isDisabled || undefined}
+            aria-expanded={open}
+            className={cn(triggerClassName, "focus-within:ring-1")}
             style={style}
+            onKeyDown={(event) => {
+              if (isDisabled) return;
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setOpen(!open);
+              }
+              if (event.key === "Escape" && open) {
+                event.preventDefault();
+                setOpen(false);
+              }
+            }}
           >
             {open ? (
               <input
@@ -229,6 +239,7 @@ function SelectSingle<T = SelectPrimitiveValue>({
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
                 placeholder={placeholder}
                 className="text-body-sm text-foreground placeholder:text-muted min-w-0 flex-1 border-0 bg-transparent p-0 outline-none"
               />
@@ -238,7 +249,7 @@ function SelectSingle<T = SelectPrimitiveValue>({
               <span className="text-muted truncate">{placeholder}</span>
             )}
             <ChevronDown className="text-muted ml-2 h-[var(--size-icon-md)] w-[var(--size-icon-md)] shrink-0" />
-          </button>
+          </div>
         </PopoverPrimitive.Trigger>
         <PopoverPrimitive.Portal>
           <PopoverPrimitive.Content
@@ -248,7 +259,9 @@ function SelectSingle<T = SelectPrimitiveValue>({
             style={popoverContentStyle}
           >
             {loading ? (
-              <div className="text-body-sm text-muted px-2 py-2">불러오는 중...</div>
+              <div role="status" className="text-body-sm text-muted px-2 py-2">
+                불러오는 중…
+              </div>
             ) : filteredOptions.length === 0 ? (
               <div className="text-body-sm text-muted px-2 py-2">{emptyMessage}</div>
             ) : (
@@ -292,14 +305,24 @@ function SelectSingle<T = SelectPrimitiveValue>({
       disabled={isDisabled}
       onOpenChange={handleOpenChange}
     >
-      <SelectTrigger size={resolvedSize} variant={resolvedVariant} status={activeStatus} className={className} style={style}>
+      <SelectTrigger
+        size={resolvedSize}
+        variant={resolvedVariant}
+        status={activeStatus}
+        className={className}
+        style={style}
+      >
         <span className="flex min-w-0 flex-1 items-center gap-[var(--space-1)]">
           <SelectValue placeholder={placeholder} />
         </span>
       </SelectTrigger>
       <SelectContent className={contentClassName} style={contentStyle}>
         {loading ? (
-          <div className="text-body-sm text-muted px-2 py-2">불러오는 중...</div>
+          <div role="status" className="text-body-sm text-muted px-2 py-2">
+            불러오는 중…
+          </div>
+        ) : keyedOptions.length === 0 ? (
+          <div className="text-body-sm text-muted px-2 py-2">{emptyMessage}</div>
         ) : (
           <div
             className={SELECT_SCROLL_LIST_CLASS}
@@ -344,7 +367,7 @@ function SelectMultiple<T = SelectPrimitiveValue>({
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const searchInputRef = React.useRef<HTMLInputElement | null>(null);
-  const triggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const triggerRef = React.useRef<HTMLDivElement | null>(null);
   const triggerWidth = usePopoverTriggerWidth(triggerRef, open);
   const keyedOptions = useKeyedSelectOptions(options);
   const { labelByKey } = useSelectOptionMaps(options);
@@ -367,9 +390,15 @@ function SelectMultiple<T = SelectPrimitiveValue>({
   }, [selectedValues]);
   const selectedKeys = React.useMemo(() => selectedValues.map((item) => toSelectKey(item)), [selectedValues]);
   const selectedValueSet = React.useMemo(() => new Set(selectedKeys), [selectedKeys]);
-  const selectableOptions = React.useMemo(() => keyedOptions.filter(({ option }) => !option.disabled), [keyedOptions]);
+  const selectableOptions = React.useMemo(
+    () => keyedOptions.filter(({ option }) => !option.disabled),
+    [keyedOptions]
+  );
   const selectableKeys = React.useMemo(() => selectableOptions.map(({ key }) => key), [selectableOptions]);
-  const allSelectableValues = React.useMemo(() => selectableOptions.map(({ option }) => option.value as T), [selectableOptions]);
+  const allSelectableValues = React.useMemo(
+    () => selectableOptions.map(({ option }) => option.value as T),
+    [selectableOptions]
+  );
   const selectedSelectableCount = React.useMemo(
     () => selectableKeys.reduce((count, key) => count + (selectedValueSet.has(key) ? 1 : 0), 0),
     [selectableKeys, selectedValueSet]
@@ -460,12 +489,25 @@ function SelectMultiple<T = SelectPrimitiveValue>({
       }}
     >
       <PopoverPrimitive.Trigger asChild>
-        <button
+        <div
           ref={triggerRef}
-          type="button"
-          disabled={isDisabled}
-          className={triggerClassName}
+          role="button"
+          tabIndex={isDisabled ? -1 : 0}
+          aria-disabled={isDisabled || undefined}
+          aria-expanded={open}
+          className={cn(triggerClassName, "focus-within:ring-1")}
           style={style}
+          onKeyDown={(event) => {
+            if (isDisabled) return;
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setOpen(!open);
+            }
+            if (event.key === "Escape" && open) {
+              event.preventDefault();
+              setOpen(false);
+            }
+          }}
         >
           {shouldShowSearchInput ? (
             <input
@@ -475,6 +517,7 @@ function SelectMultiple<T = SelectPrimitiveValue>({
               onClick={(event) => {
                 event.stopPropagation();
               }}
+              onKeyDown={(event) => event.stopPropagation()}
               placeholder={placeholder}
               className="text-body-sm text-foreground placeholder:text-muted min-w-0 flex-1 border-0 bg-transparent p-0 outline-none"
             />
@@ -498,7 +541,7 @@ function SelectMultiple<T = SelectPrimitiveValue>({
             </span>
           )}
           <ChevronDown className="text-muted ml-2 h-[var(--size-icon-md)] w-[var(--size-icon-md)] shrink-0" />
-        </button>
+        </div>
       </PopoverPrimitive.Trigger>
       <PopoverPrimitive.Portal>
         <PopoverPrimitive.Content
@@ -513,11 +556,15 @@ function SelectMultiple<T = SelectPrimitiveValue>({
             onClick={handleToggleAll}
           >
             <span>{isAllSelected ? "전체 해제" : "전체 선택"}</span>
-            <span className="text-caption text-muted">{selectedSelectableCount}/{selectableKeys.length}</span>
+            <span className="text-caption text-muted">
+              {selectedSelectableCount}/{selectableKeys.length}
+            </span>
           </button>
 
           {loading ? (
-            <div className="text-body-sm text-muted px-[var(--space-2)] py-[var(--space-2)]">불러오는 중...</div>
+            <div role="status" className="text-body-sm text-muted px-[var(--space-2)] py-[var(--space-2)]">
+              불러오는 중…
+            </div>
           ) : filteredOptions.length === 0 ? (
             <div className="text-body-sm text-muted px-2 py-2">{emptyMessage}</div>
           ) : (
@@ -543,7 +590,9 @@ function SelectMultiple<T = SelectPrimitiveValue>({
                         checked ? "border-primary/40 bg-primary/10" : null
                       )}
                     >
-                      {checked ? <Check className="text-primary h-[var(--size-icon-sm)] w-[var(--size-icon-sm)]" /> : null}
+                      {checked ? (
+                        <Check className="text-primary h-[var(--size-icon-sm)] w-[var(--size-icon-sm)]" />
+                      ) : null}
                     </span>
                     <span className="truncate">{option.label}</span>
                   </button>

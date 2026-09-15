@@ -4,8 +4,7 @@ import * as React from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { cn } from "../cn";
 import { Pagination } from "../pagination";
-import { Spinner } from "../spinner";
-import { StateView } from "../state-view";
+import { Alert, Empty, Spin } from "../feedback";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../table";
 import { DATA_TABLE_DEFAULTS } from "./data-table.constants";
 import { useDataTablePageInfo } from "./data-table.hooks";
@@ -40,7 +39,7 @@ const TableSelectCheckbox = React.memo(function TableSelectCheckbox({
     <input
       ref={ref}
       type="checkbox"
-      className="h-[var(--size-icon-md)] w-[var(--size-icon-md)] rounded border-default accent-primary"
+      className="border-default accent-primary h-[var(--size-icon-md)] w-[var(--size-icon-md)] rounded"
       checked={checked}
       disabled={disabled}
       onClick={(event) => event.stopPropagation()}
@@ -65,9 +64,15 @@ const resolveColumnWidth = (width: number | string | undefined, fallback: number
   return fallback;
 };
 
-const areSameOrder = (a: string[], b: string[]): boolean => a.length === b.length && a.every((value, index) => value === b[index]);
+const areSameOrder = (a: string[], b: string[]): boolean =>
+  a.length === b.length && a.every((value, index) => value === b[index]);
 
-export const DataTableColumnHeader = React.memo(function DataTableColumnHeader({ title }: { column?: { id: string }; title: string }) {
+export const DataTableColumnHeader = React.memo(function DataTableColumnHeader({
+  title
+}: {
+  column?: { id: string };
+  title: string;
+}) {
   return <span className="text-foreground text-xs font-semibold">{title}</span>;
 });
 DataTableColumnHeader.displayName = "DataTableColumnHeader";
@@ -110,87 +115,105 @@ type InternalColumnViewModel = {
   cellStyle: React.CSSProperties;
 };
 
-const DataTableRowItem = React.memo(function DataTableRowItem({
-  row,
-  rowSelected,
-  selectable,
-  striped,
-  rowClassName,
-  onActivateRow,
-  onToggleRow,
-  columnDivider,
-  columnViewModelById,
-  fallbackCellAlignClass
-}: {
-  row: InternalDataTableRow;
-  rowSelected: boolean;
-  selectable: boolean;
-  striped: boolean;
-  rowClassName?: string | ((ctx: { row: InternalDataTableRow["rowContext"]; selected: boolean }) => string | undefined);
-  onActivateRow: (event: React.MouseEvent<HTMLTableRowElement>, row: InternalDataTableRow) => void;
-  onToggleRow: (rowKey: string, checked: boolean) => void;
-  columnDivider: boolean;
-  columnViewModelById: Map<string, InternalColumnViewModel>;
-  fallbackCellAlignClass: string;
-}) {
-  return (
-    <TableRow
-      key={row.key}
-      className={cn(
-        "last:border-none",
-        selectable && "cursor-pointer",
-        striped && row.rowIndex % 2 === 1 && "bg-surface-elevated/30",
-        selectable && rowSelected && "bg-primary/10 hover:bg-primary/20",
-        typeof rowClassName === "function" ? rowClassName({ row: row.rowContext, selected: rowSelected }) : rowClassName
-      )}
-      aria-selected={selectable ? rowSelected : undefined}
-      onClick={(event) => onActivateRow(event, row)}
-    >
-      {selectable ? (
-        <TableCell className={cn("w-11 px-3 text-center", rowSelected && "bg-primary/10", columnDivider && "border-default border-r")}>
-          <div className="flex items-center justify-center" data-no-row-select="true">
-            <TableSelectCheckbox checked={rowSelected} onChange={(checked) => onToggleRow(row.key, checked)} />
-          </div>
-        </TableCell>
-      ) : null}
-      {row.cells.map((cell) => {
-        const viewModel = columnViewModelById.get(cell.id);
-        const alignClass = viewModel?.cellAlignClass ?? fallbackCellAlignClass;
-        const resolvedCellClassName =
-          typeof cell.column.cellClassName === "function" ? cell.column.cellClassName(cell.context) : cell.column.cellClassName;
-        return (
+const DataTableRowItem = React.memo(
+  function DataTableRowItem({
+    row,
+    rowSelected,
+    selectable,
+    striped,
+    rowClassName,
+    onActivateRow,
+    onToggleRow,
+    columnDivider,
+    columnViewModelById,
+    fallbackCellAlignClass
+  }: {
+    row: InternalDataTableRow;
+    rowSelected: boolean;
+    selectable: boolean;
+    striped: boolean;
+    rowClassName?:
+      | string
+      | ((ctx: { row: InternalDataTableRow["rowContext"]; selected: boolean }) => string | undefined);
+    onActivateRow: (event: React.MouseEvent<HTMLTableRowElement>, row: InternalDataTableRow) => void;
+    onToggleRow: (rowKey: string, checked: boolean) => void;
+    columnDivider: boolean;
+    columnViewModelById: Map<string, InternalColumnViewModel>;
+    fallbackCellAlignClass: string;
+  }) {
+    return (
+      <TableRow
+        key={row.key}
+        className={cn(
+          "last:border-none",
+          selectable && "cursor-pointer",
+          striped && row.rowIndex % 2 === 1 && "bg-surface-elevated/30",
+          selectable && rowSelected && "bg-primary/10 hover:bg-primary/20",
+          typeof rowClassName === "function"
+            ? rowClassName({ row: row.rowContext, selected: rowSelected })
+            : rowClassName
+        )}
+        aria-selected={selectable ? rowSelected : undefined}
+        onClick={(event) => onActivateRow(event, row)}
+      >
+        {selectable ? (
           <TableCell
-            key={`${row.key}-${cell.id}`}
             className={cn(
-              "text-foreground px-3 align-middle",
-              alignClass,
-              columnDivider && "border-default border-r last:border-r-0",
+              "w-11 px-3 text-center",
               rowSelected && "bg-primary/10",
-              cell.column.fixed && (rowSelected ? "bg-primary/10" : "bg-surface"),
-              resolvedCellClassName
+              columnDivider && "border-default border-r"
             )}
-            style={viewModel?.cellStyle}
           >
-            {cell.rendered ?? "-"}
+            <div className="flex items-center justify-center" data-no-row-select="true">
+              <TableSelectCheckbox
+                checked={rowSelected}
+                onChange={(checked) => onToggleRow(row.key, checked)}
+              />
+            </div>
           </TableCell>
-        );
-      })}
-    </TableRow>
-  );
-}, (prev, next) => {
-  return (
-    prev.row === next.row &&
-    prev.rowSelected === next.rowSelected &&
-    prev.selectable === next.selectable &&
-    prev.striped === next.striped &&
-    prev.rowClassName === next.rowClassName &&
-    prev.onActivateRow === next.onActivateRow &&
-    prev.onToggleRow === next.onToggleRow &&
-    prev.columnDivider === next.columnDivider &&
-    prev.columnViewModelById === next.columnViewModelById &&
-    prev.fallbackCellAlignClass === next.fallbackCellAlignClass
-  );
-});
+        ) : null}
+        {row.cells.map((cell) => {
+          const viewModel = columnViewModelById.get(cell.id);
+          const alignClass = viewModel?.cellAlignClass ?? fallbackCellAlignClass;
+          const resolvedCellClassName =
+            typeof cell.column.cellClassName === "function"
+              ? cell.column.cellClassName(cell.context)
+              : cell.column.cellClassName;
+          return (
+            <TableCell
+              key={`${row.key}-${cell.id}`}
+              className={cn(
+                "text-foreground px-3 align-middle",
+                alignClass,
+                columnDivider && "border-default border-r last:border-r-0",
+                rowSelected && "bg-primary/10",
+                cell.column.fixed && (rowSelected ? "bg-primary/10" : "bg-surface"),
+                resolvedCellClassName
+              )}
+              style={viewModel?.cellStyle}
+            >
+              {cell.rendered ?? "-"}
+            </TableCell>
+          );
+        })}
+      </TableRow>
+    );
+  },
+  (prev, next) => {
+    return (
+      prev.row === next.row &&
+      prev.rowSelected === next.rowSelected &&
+      prev.selectable === next.selectable &&
+      prev.striped === next.striped &&
+      prev.rowClassName === next.rowClassName &&
+      prev.onActivateRow === next.onActivateRow &&
+      prev.onToggleRow === next.onToggleRow &&
+      prev.columnDivider === next.columnDivider &&
+      prev.columnViewModelById === next.columnViewModelById &&
+      prev.fallbackCellAlignClass === next.fallbackCellAlignClass
+    );
+  }
+);
 DataTableRowItem.displayName = "DataTableRowItem";
 
 export function DataTable<T>({
@@ -281,12 +304,14 @@ export function DataTable<T>({
   const deferredFilters = React.useDeferredValue(currentFilters);
 
   const isSelectionControlled = selectedRowKeys !== undefined;
-  const [internalSelectedRowKeys, setInternalSelectedRowKeys] = React.useState<string[]>(defaultSelectedRowKeys);
+  const [internalSelectedRowKeys, setInternalSelectedRowKeys] =
+    React.useState<string[]>(defaultSelectedRowKeys);
   const currentSelectedRowKeys = isSelectionControlled ? selectedRowKeys : internalSelectedRowKeys;
   const currentSelectedRowKeysRef = React.useRef<string[]>(currentSelectedRowKeys);
 
   const isColumnVisibilityControlled = columnVisibility !== undefined;
-  const [internalColumnVisibility, setInternalColumnVisibility] = React.useState<Record<string, boolean>>(defaultColumnVisibility);
+  const [internalColumnVisibility, setInternalColumnVisibility] =
+    React.useState<Record<string, boolean>>(defaultColumnVisibility);
   const currentColumnVisibility = isColumnVisibilityControlled ? columnVisibility : internalColumnVisibility;
 
   const isColumnOrderControlled = columnOrder !== undefined;
@@ -294,7 +319,8 @@ export function DataTable<T>({
   const currentColumnOrder = isColumnOrderControlled ? columnOrder : internalColumnOrder;
 
   const isColumnWidthsControlled = columnWidths !== undefined;
-  const [internalColumnWidths, setInternalColumnWidths] = React.useState<Record<string, number>>(defaultColumnWidths);
+  const [internalColumnWidths, setInternalColumnWidths] =
+    React.useState<Record<string, number>>(defaultColumnWidths);
   const currentColumnWidths = isColumnWidthsControlled ? columnWidths : internalColumnWidths;
   const currentColumnWidthsRef = React.useRef<Record<string, number>>(currentColumnWidths);
   const [virtualScrollTop, setVirtualScrollTop] = React.useState(0);
@@ -374,7 +400,9 @@ export function DataTable<T>({
       columns.map((column, index) => ({
         ...column,
         __id: column.id ?? String(column.accessorKey ?? index),
-        __sortable: column.sortable ?? (sortable && (column.accessorKey !== undefined || column.sortAccessor !== undefined))
+        __sortable:
+          column.sortable ??
+          (sortable && (column.accessorKey !== undefined || column.sortAccessor !== undefined))
       })),
     [columns, sortable]
   );
@@ -385,7 +413,9 @@ export function DataTable<T>({
 
   React.useEffect(() => {
     const allIds = normalizedColumns.map((column) => column.__id);
-    const baseOrder = (currentColumnOrder?.length ? currentColumnOrder : defaultColumnOrder).filter((id) => allIds.includes(id));
+    const baseOrder = (currentColumnOrder?.length ? currentColumnOrder : defaultColumnOrder).filter((id) =>
+      allIds.includes(id)
+    );
     const missing = allIds.filter((id) => !baseOrder.includes(id));
     const nextOrder = [...baseOrder, ...missing];
     if (!isColumnOrderControlled) {
@@ -395,11 +425,20 @@ export function DataTable<T>({
     if (!areSameOrder(currentColumnOrder ?? [], nextOrder)) {
       onColumnOrderChange?.(nextOrder);
     }
-  }, [currentColumnOrder, defaultColumnOrder, isColumnOrderControlled, normalizedColumns, onColumnOrderChange]);
+  }, [
+    currentColumnOrder,
+    defaultColumnOrder,
+    isColumnOrderControlled,
+    normalizedColumns,
+    onColumnOrderChange
+  ]);
 
   React.useEffect(() => {
     const allIds = normalizedColumns.map((column) => column.__id);
-    const mergedVisibility: Record<string, boolean> = { ...defaultColumnVisibility, ...currentColumnVisibility };
+    const mergedVisibility: Record<string, boolean> = {
+      ...defaultColumnVisibility,
+      ...currentColumnVisibility
+    };
     let changed = false;
     allIds.forEach((id) => {
       if (mergedVisibility[id] === undefined) {
@@ -425,7 +464,9 @@ export function DataTable<T>({
     const orderedIds = currentColumnOrder?.length
       ? currentColumnOrder
       : normalizedColumns.map((column) => column.__id);
-    const base = orderedIds.map((id) => normalizedColumnById.get(id)).filter(Boolean) as typeof normalizedColumns;
+    const base = orderedIds
+      .map((id) => normalizedColumnById.get(id))
+      .filter(Boolean) as typeof normalizedColumns;
     const missing = normalizedColumns.filter((column) => !orderedIds.includes(column.__id));
     return [...base, ...missing];
   }, [currentColumnOrder, normalizedColumnById, normalizedColumns]);
@@ -474,7 +515,9 @@ export function DataTable<T>({
       if (typeof normalizedA === "number" && typeof normalizedB === "number") {
         return (normalizedA - normalizedB) * directionMultiplier;
       }
-      return String(normalizedA).localeCompare(String(normalizedB), "ko", { numeric: true }) * directionMultiplier;
+      return (
+        String(normalizedA).localeCompare(String(normalizedB), "ko", { numeric: true }) * directionMultiplier
+      );
     });
     return nextRows;
   }, [currentSortState, filteredRowsWithMeta, normalizedColumnById]);
@@ -537,7 +580,8 @@ export function DataTable<T>({
     selectedRowKeySetRef.current = selectedRowKeySet;
   }, [selectedRowKeySet]);
   const visibleRowKeys = React.useMemo(() => rows.map((row) => row.key), [rows]);
-  const allVisibleSelected = visibleRowKeys.length > 0 && visibleRowKeys.every((key) => selectedRowKeySet.has(key));
+  const allVisibleSelected =
+    visibleRowKeys.length > 0 && visibleRowKeys.every((key) => selectedRowKeySet.has(key));
   const someVisibleSelected = visibleRowKeys.some((key) => selectedRowKeySet.has(key)) && !allVisibleSelected;
 
   const columnWidthsById = React.useMemo(() => {
@@ -577,9 +621,19 @@ export function DataTable<T>({
       const base: React.CSSProperties = { width, minWidth: width, maxWidth: width };
       if (!fixed) return base;
       if (fixed === "left") {
-        return { ...base, position: "sticky", left: stickyOffsets.left[columnId] ?? 0, zIndex: isHeader ? 6 : 4 };
+        return {
+          ...base,
+          position: "sticky",
+          left: stickyOffsets.left[columnId] ?? 0,
+          zIndex: isHeader ? 6 : 4
+        };
       }
-      return { ...base, position: "sticky", right: stickyOffsets.right[columnId] ?? 0, zIndex: isHeader ? 6 : 4 };
+      return {
+        ...base,
+        position: "sticky",
+        right: stickyOffsets.right[columnId] ?? 0,
+        zIndex: isHeader ? 6 : 4
+      };
     },
     [columnWidthsById, defaultColumnWidth, stickyOffsets.left, stickyOffsets.right]
   );
@@ -746,7 +800,14 @@ export function DataTable<T>({
       sort: currentSortState,
       filters: currentFilters
     });
-  }, [currentFilters, currentPageSize, currentSortState, isVirtualInfiniteMode, onQueryChange, pageInfo.safePage]);
+  }, [
+    currentFilters,
+    currentPageSize,
+    currentSortState,
+    isVirtualInfiniteMode,
+    onQueryChange,
+    pageInfo.safePage
+  ]);
 
   const rowMetas = React.useMemo(() => rows.map((row) => row.rowContext), [rows]);
   const virtualizationActive = virtualized && !isLoading && !isError && rows.length > 0;
@@ -763,7 +824,14 @@ export function DataTable<T>({
     const topPadding = start * safeVirtualRowHeight;
     const bottomPadding = Math.max(0, (rows.length - end) * safeVirtualRowHeight);
     return { start, end, topPadding, bottomPadding };
-  }, [rows.length, safeVirtualOverscan, safeVirtualRowHeight, virtualScrollTop, virtualViewportHeight, virtualizationActive]);
+  }, [
+    rows.length,
+    safeVirtualOverscan,
+    safeVirtualRowHeight,
+    virtualScrollTop,
+    virtualViewportHeight,
+    virtualizationActive
+  ]);
   const renderedRows = React.useMemo(
     () => (virtualizationActive ? rows.slice(virtualRange.start, virtualRange.end) : rows),
     [rows, virtualRange.end, virtualRange.start, virtualizationActive]
@@ -857,7 +925,9 @@ export function DataTable<T>({
 
   return (
     <div className={cn("space-y-3", className)} style={style}>
-      {toolbarPosition === "top" && renderedToolbar ? <div className="px-[var(--space-1)]">{renderedToolbar}</div> : null}
+      {toolbarPosition === "top" && renderedToolbar ? (
+        <div className="px-[var(--space-1)]">{renderedToolbar}</div>
+      ) : null}
 
       <div className="border-default bg-surface overflow-x-auto rounded-[var(--radius-xl)] border">
         <Table
@@ -870,7 +940,9 @@ export function DataTable<T>({
           <TableHeader className="bg-surface-elevated">
             <TableRow>
               {selectable ? (
-                <TableHead className={cn("w-11 px-3 text-center", columnDivider && "border-default border-r")}>
+                <TableHead
+                  className={cn("w-11 px-3 text-center", columnDivider && "border-default border-r")}
+                >
                   {rowSelectionMode === "multiple" ? (
                     <div className="flex items-center justify-center" data-no-row-select="true">
                       <TableSelectCheckbox
@@ -920,19 +992,27 @@ export function DataTable<T>({
                         )}
                         onClick={() => handleToggleSort(id)}
                       >
-                        <span>{typeof column.header === "function" ? column.header({ column: { id } }) : column.header}</span>
+                        <span>
+                          {typeof column.header === "function"
+                            ? column.header({ column: { id } })
+                            : column.header}
+                        </span>
                         <span className="text-muted">{sortIcon}</span>
                       </button>
+                    ) : typeof column.header === "function" ? (
+                      column.header({ column: { id } })
                     ) : (
-                      typeof column.header === "function" ? column.header({ column: { id } }) : column.header
+                      column.header
                     )}
                     {canResize ? (
                       <span
                         role="separator"
                         aria-label={`${id} 열 너비 조절`}
                         data-no-row-select="true"
-                        className="absolute right-0 top-0 h-full w-2 cursor-col-resize opacity-0 transition-opacity group-hover:opacity-100"
-                        onMouseDown={(event) => handleResizeStart(event, id, column.minWidth, column.maxWidth)}
+                        className="pointer-events-none absolute right-0 top-0 h-full w-2 cursor-col-resize opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100"
+                        onMouseDown={(event) =>
+                          handleResizeStart(event, id, column.minWidth, column.maxWidth)
+                        }
                       >
                         <span className="bg-border/70 absolute right-0 top-1/2 h-4 w-px -translate-y-1/2" />
                       </span>
@@ -947,51 +1027,71 @@ export function DataTable<T>({
               <TableRow>
                 <TableCell colSpan={colSpan} className="py-14">
                   <div className="flex items-center justify-center">
-                    <Spinner open size="md" color="primary" />
+                    <Spin open size="md" color="primary" />
                   </div>
                 </TableCell>
               </TableRow>
             ) : isError ? (
               <TableRow>
                 <TableCell colSpan={colSpan} className="py-8">
-                  <StateView variant="error" size="sm" title={errorTitle} />
+                  <Alert type="error" message={errorTitle} />
                 </TableCell>
               </TableRow>
             ) : rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={colSpan} className="py-8">
-                  <StateView variant="empty" size="sm" title={emptyTitle} />
+                  <Empty description={emptyTitle} />
                 </TableCell>
               </TableRow>
             ) : (
               <>
                 {virtualizationActive && virtualRange.topPadding > 0 ? (
                   <TableRow aria-hidden="true">
-                    <TableCell colSpan={colSpan} className="p-0" style={{ height: `${virtualRange.topPadding}px` }} />
+                    <TableCell
+                      colSpan={colSpan}
+                      className="p-0"
+                      style={{ height: `${virtualRange.topPadding}px` }}
+                    />
                   </TableRow>
                 ) : null}
 
                 {renderedRows.map((row) => (
-                <DataTableRowItem
-                  key={row.key}
-                  row={row as unknown as InternalDataTableRow}
-                  rowSelected={selectedRowKeySet.has(row.key)}
-                  selectable={selectable}
-                  striped={striped}
-                  rowClassName={
-                    rowClassName as string | ((ctx: { row: InternalDataTableRow["rowContext"]; selected: boolean }) => string | undefined)
-                  }
-                  onActivateRow={handleRowClick as (event: React.MouseEvent<HTMLTableRowElement>, row: InternalDataTableRow) => void}
-                  onToggleRow={handleToggleRow}
-                  columnDivider={columnDivider}
-                  columnViewModelById={columnViewModelById as unknown as Map<string, InternalColumnViewModel>}
-                  fallbackCellAlignClass={fallbackCellAlignClass}
-                />
+                  <DataTableRowItem
+                    key={row.key}
+                    row={row as unknown as InternalDataTableRow}
+                    rowSelected={selectedRowKeySet.has(row.key)}
+                    selectable={selectable}
+                    striped={striped}
+                    rowClassName={
+                      rowClassName as
+                        | string
+                        | ((ctx: {
+                            row: InternalDataTableRow["rowContext"];
+                            selected: boolean;
+                          }) => string | undefined)
+                    }
+                    onActivateRow={
+                      handleRowClick as (
+                        event: React.MouseEvent<HTMLTableRowElement>,
+                        row: InternalDataTableRow
+                      ) => void
+                    }
+                    onToggleRow={handleToggleRow}
+                    columnDivider={columnDivider}
+                    columnViewModelById={
+                      columnViewModelById as unknown as Map<string, InternalColumnViewModel>
+                    }
+                    fallbackCellAlignClass={fallbackCellAlignClass}
+                  />
                 ))}
 
                 {virtualizationActive && virtualRange.bottomPadding > 0 ? (
                   <TableRow aria-hidden="true">
-                    <TableCell colSpan={colSpan} className="p-0" style={{ height: `${virtualRange.bottomPadding}px` }} />
+                    <TableCell
+                      colSpan={colSpan}
+                      className="p-0"
+                      style={{ height: `${virtualRange.bottomPadding}px` }}
+                    />
                   </TableRow>
                 ) : null}
               </>
@@ -1006,7 +1106,9 @@ export function DataTable<T>({
         </div>
       ) : null}
 
-      {toolbarPosition === "bottom" && renderedToolbar ? <div className="px-[var(--space-1)]">{renderedToolbar}</div> : null}
+      {toolbarPosition === "bottom" && renderedToolbar ? (
+        <div className="px-[var(--space-1)]">{renderedToolbar}</div>
+      ) : null}
     </div>
   );
 }

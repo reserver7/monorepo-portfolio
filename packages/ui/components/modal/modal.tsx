@@ -18,17 +18,18 @@ import type { ModalContentProps, ModalFooterProps } from "./modal.types";
 export const Modal = DialogPrimitive.Root;
 export const ModalTrigger = DialogPrimitive.Trigger;
 
-export const ModalContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, ModalContentProps>(
+export const ModalContent = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Content>,
+  ModalContentProps
+>(
   (
     {
       className,
       children,
       size = MODAL_CONTENT_DEFAULTS.size,
       intent = MODAL_CONTENT_DEFAULTS.intent,
-      closeOnEscape,
-      closeOnOutsideClick,
-      preventEscapeClose = MODAL_CONTENT_DEFAULTS.preventEscapeClose,
-      preventOutsideClose = MODAL_CONTENT_DEFAULTS.preventOutsideClose,
+      closeOnEscape = true,
+      closeOnOutsideClick = true,
       hideCloseButton = MODAL_CONTENT_DEFAULTS.hideCloseButton,
       closeAriaLabel = MODAL_CONTENT_DEFAULTS.closeAriaLabel,
       overlayClassName,
@@ -39,11 +40,13 @@ export const ModalContent = React.forwardRef<React.ElementRef<typeof DialogPrimi
     },
     ref
   ) => {
-    const allowEscapeClose = closeOnEscape ?? !preventEscapeClose;
-    const allowOutsideClose = closeOnOutsideClick ?? !preventOutsideClose;
     const resolvedSize = resolveOption(size, MODAL_CONTENT_SIZE_CLASS, MODAL_CONTENT_DEFAULTS.size);
     const resolvedIntent = resolveOption(intent, MODAL_CONTENT_INTENT_CLASS, MODAL_CONTENT_DEFAULTS.intent);
-    const resolvedScrollBehavior = resolveOption(scrollBehavior, { inside: true, outside: true }, MODAL_CONTENT_DEFAULTS.scrollBehavior);
+    const resolvedScrollBehavior = resolveOption(
+      scrollBehavior,
+      { inside: true, outside: true },
+      MODAL_CONTENT_DEFAULTS.scrollBehavior
+    );
 
     return (
       <DialogPrimitive.Portal>
@@ -53,40 +56,40 @@ export const ModalContent = React.forwardRef<React.ElementRef<typeof DialogPrimi
             overlayClassName
           )}
         />
-      <DialogPrimitive.Content
-        ref={ref}
-        onEscapeKeyDown={(event) => {
-          if (!allowEscapeClose) {
-            event.preventDefault();
-          }
-          onEscapeKeyDown?.(event);
-        }}
-        onPointerDownOutside={(event) => {
-          if (!allowOutsideClose) {
-            event.preventDefault();
-          }
-          onPointerDownOutside?.(event);
-        }}
-        className={cn(
-          "border-default bg-surface fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-xl)] border p-[var(--space-6)] shadow-[var(--shadow-card)]",
-          resolvedScrollBehavior === "inside" &&
-            "max-h-[calc(100vh-var(--size-modal-viewport-inset))] overflow-hidden [&_[data-modal-body]]:max-h-[calc(100vh-var(--size-modal-body-offset))] [&_[data-modal-body]]:overflow-y-auto",
-          MODAL_CONTENT_SIZE_CLASS[resolvedSize],
-          MODAL_CONTENT_INTENT_CLASS[resolvedIntent],
-          className
-        )}
-        {...props}
-      >
-        {children}
-        {!hideCloseButton ? (
-          <DialogPrimitive.Close
-            aria-label={closeAriaLabel}
-            className="text-muted focus:ring-primary absolute right-[var(--space-4)] top-[var(--space-4)] rounded-[var(--radius-sm)] opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2"
-          >
-            <X className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />
-          </DialogPrimitive.Close>
-        ) : null}
-      </DialogPrimitive.Content>
+        <DialogPrimitive.Content
+          ref={ref}
+          onEscapeKeyDown={(event) => {
+            if (!closeOnEscape) {
+              event.preventDefault();
+            }
+            onEscapeKeyDown?.(event);
+          }}
+          onPointerDownOutside={(event) => {
+            if (!closeOnOutsideClick) {
+              event.preventDefault();
+            }
+            onPointerDownOutside?.(event);
+          }}
+          className={cn(
+            "border-default bg-surface fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[var(--radius-xl)] border p-[var(--space-6)] shadow-[var(--shadow-card)]",
+            resolvedScrollBehavior === "inside" &&
+              "[&_[data-modal-body]]:min-h-0 [&_[data-modal-body]]:flex-1 [&_[data-modal-body]]:overflow-y-auto [&_[data-modal-body]]:overscroll-contain",
+            MODAL_CONTENT_SIZE_CLASS[resolvedSize],
+            MODAL_CONTENT_INTENT_CLASS[resolvedIntent],
+            className
+          )}
+          {...props}
+        >
+          {children}
+          {!hideCloseButton ? (
+            <DialogPrimitive.Close
+              aria-label={closeAriaLabel}
+              className="text-muted focus-visible:ring-primary absolute right-[var(--space-4)] top-[var(--space-4)] rounded-[var(--radius-sm)] opacity-80 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2"
+            >
+              <X className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />
+            </DialogPrimitive.Close>
+          ) : null}
+        </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     );
   }
@@ -94,7 +97,12 @@ export const ModalContent = React.forwardRef<React.ElementRef<typeof DialogPrimi
 ModalContent.displayName = DialogPrimitive.Content.displayName;
 
 export function ModalHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("mb-[var(--space-4)] flex flex-col space-y-[var(--space-1-5)]", className)} {...props} />;
+  return (
+    <div
+      className={cn("mb-[var(--space-4)] flex flex-col space-y-[var(--space-1-5)]", className)}
+      {...props}
+    />
+  );
 }
 
 export function ModalFooter({
@@ -119,7 +127,11 @@ export function ModalFooter({
   ...props
 }: ModalFooterProps) {
   const withBuiltInActions = useBuiltInModalActions(onCancel, onConfirm);
-  const resolvedAlign = resolveOption(align, { start: true, center: true, end: true, between: true }, MODAL_FOOTER_DEFAULTS.align);
+  const resolvedAlign = resolveOption(
+    align,
+    { start: true, center: true, end: true, between: true },
+    MODAL_FOOTER_DEFAULTS.align
+  );
   const footerAlignClass = React.useMemo(
     () =>
       resolvedAlign === "start"
@@ -131,15 +143,18 @@ export function ModalFooter({
             : "sm:justify-end",
     [resolvedAlign]
   );
-  const actionWidthClass = React.useMemo(() => (fullWidthActions ? "w-full sm:w-auto" : ""), [fullWidthActions]);
+  const actionWidthClass = React.useMemo(
+    () => (fullWidthActions ? "w-full sm:w-auto" : ""),
+    [fullWidthActions]
+  );
 
   return (
     <div
       className={cn(
-        "mt-[var(--space-6)] flex flex-col-reverse gap-[var(--space-2)] sm:flex-row",
+        "mt-[var(--space-6)] flex shrink-0 flex-col-reverse gap-[var(--space-2)] sm:flex-row",
         footerAlignClass,
         sticky &&
-          "bg-surface border-default sticky bottom-0 -mx-[var(--space-6)] -mb-[var(--space-6)] border-t px-[var(--space-6)] py-[var(--space-4)]",
+          "bg-surface border-default sticky bottom-0 -mx-[var(--space-6)] -mb-[var(--space-6)] border-t px-[var(--space-6)] pb-[max(var(--space-4),env(safe-area-inset-bottom))] pt-[var(--space-4)]",
         className
       )}
       {...props}
@@ -208,7 +223,10 @@ export const ModalDescription = React.forwardRef<
 ));
 ModalDescription.displayName = DialogPrimitive.Description.displayName;
 
-export const ModalBody = React.memo(function ModalBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+export const ModalBody = React.memo(function ModalBody({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
   return <div data-modal-body className={cn("space-y-[var(--space-4)]", className)} {...props} />;
 });
 ModalBody.displayName = "ModalBody";

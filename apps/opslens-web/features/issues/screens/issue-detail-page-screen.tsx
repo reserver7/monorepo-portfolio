@@ -1,10 +1,12 @@
 "use client";
 
+import { FeedbackState } from "@/features/common/components/feedback-state";
+
 import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAppForm } from "@repo/forms";
-import { Box, Button, Flex, Grid, Input, Label, Progress, Select, StateView, Typography, toast } from "@repo/ui";
+import { Box, Button, Flex, Grid, Input, Label, Progress, Select, Typography, toast } from "@repo/ui";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import {
   addIssueComment,
@@ -181,7 +183,7 @@ export default function IssueDetailPage() {
 
   if (issueQuery.isError || !issue) {
     return (
-      <StateView
+      <FeedbackState
         variant="error"
         size="lg"
         title="이슈 상세 조회에 실패했습니다."

@@ -1,5 +1,7 @@
 "use client";
 
+import { FeedbackState } from "@/features/common/components/feedback-state";
+
 import { memo, useMemo } from "react";
 import {
   ArcElement,
@@ -17,7 +19,7 @@ import {
 } from "chart.js";
 import { useTranslations } from "next-intl";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
-import { Box, StateView, chartColorTokens } from "@repo/ui";
+import { Box, chartColorTokens } from "@repo/ui";
 import type { DashboardSummary } from "@repo/opslens";
 import {
   createBarValueLabelPlugin,
@@ -52,7 +54,7 @@ export const SeverityDistributionChart = memo(function SeverityDistributionChart
   if (total <= 0) {
     return (
       <Box className="h-[232px] w-full">
-        <StateView variant="empty" size="sm" title={tDashboard("empty.noSeverityData")} />
+        <FeedbackState variant="empty" size="sm" title={tDashboard("empty.noSeverityData")} />
       </Box>
     );
   }
@@ -145,7 +147,7 @@ export const ErrorTrendChart = memo(function ErrorTrendChart({ summary }: { summ
   if (total <= 0) {
     return (
       <Box className="h-[232px] w-full">
-        <StateView variant="empty" size="sm" title={tDashboard("empty.noTrendData")} />
+        <FeedbackState variant="empty" size="sm" title={tDashboard("empty.noTrendData")} />
       </Box>
     );
   }
@@ -258,7 +260,7 @@ export const TopRepeatedErrorsChart = memo(function TopRepeatedErrorsChart({ sum
   if (summary.topRepeatedErrors.length === 0 || total <= 0) {
     return (
       <Box className="h-[248px] w-full">
-        <StateView variant="empty" size="sm" title={tDashboard("empty.noTopRepeatedErrors")} />
+        <FeedbackState variant="empty" size="sm" title={tDashboard("empty.noTopRepeatedErrors")} />
       </Box>
     );
   }
