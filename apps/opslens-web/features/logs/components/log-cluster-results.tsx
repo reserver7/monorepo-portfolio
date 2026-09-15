@@ -1,5 +1,6 @@
 import type { RefObject } from "react";
-import { Box, Badge, Button, ConsoleSectionCard, Flex, Grid, Input, Select, StateView, Typography } from "@repo/ui";
+import { Box, Badge, Button, ConsoleSectionCard, Flex, Grid, Input, Select, Typography } from "@repo/ui";
+import { FeedbackState } from "@/features/common/components/feedback-state";
 import { formatDateTime, formatNumber } from "@repo/utils";
 
 import { LOGS_SEVERITY_VARIANT_MAP } from "../constants";
@@ -122,7 +123,7 @@ export function LogClusterResults({
       ) : null}
       {isError ? (
         <Box className="mb-[var(--space-2)]">
-          <StateView
+          <FeedbackState
             variant="error"
             size="sm"
             title={resolveErrorMessage(error)}
@@ -144,7 +145,7 @@ export function LogClusterResults({
         </Box>
       ) : null}
       {clusters.length === 0 ? (
-        <StateView variant="empty" size="sm" title="분석 결과가 없습니다." />
+        <FeedbackState variant="empty" size="sm" title="분석 결과가 없습니다." />
       ) : (
         <Box className="space-y-[var(--space-2)]">
           {clusters.map((cluster) => (

@@ -1,5 +1,7 @@
 "use client";
 
+import { FeedbackState, MetricCard } from "@/features/common/components/feedback-state";
+
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -12,8 +14,6 @@ import {
   Flex,
   Grid,
   SplitWorkspaceLayout,
-  StatCard,
-  StateView,
   Skeleton,
   Typography
 } from "@repo/ui";
@@ -106,7 +106,7 @@ export default function DashboardPage() {
 
   if (summaryQuery.isLoading) return <OpsDashboardSkeleton />;
   if (summaryQuery.isError || !summaryQuery.data) {
-    return <StateView variant="error" size="lg" title={tDashboard("errorLoadFailed")} />;
+    return <FeedbackState variant="error" size="lg" title={tDashboard("errorLoadFailed")} />;
   }
 
   const summary = summaryQuery.data;
@@ -174,14 +174,14 @@ export default function DashboardPage() {
       </OpsSectionCard>
 
       <Grid className="justify-items-stretch gap-[var(--space-3)] md:grid-cols-2 xl:grid-cols-4">
-        <StatCard
+        <MetricCard
           label={tDashboard("stats.todayIssues.label")}
           value={formatNumber(summary.todayIssueCount)}
           helper={topIssue ? tDashboard("stats.todayIssues.helperTopPrefix") : tDashboard("stats.todayIssues.helperNone")}
           className="h-full rounded-[var(--radius-lg)] [&>p:nth-of-type(2)]:text-[1.625rem] [&>p:nth-of-type(2)]:leading-[1.1] [&>p:last-child]:line-clamp-1 [&>p:last-child]:text-[11px]"
           size="md"
         />
-        <StatCard
+        <MetricCard
           label={tDashboard("stats.criticalHigh.label")}
           value={`${formatNumber(criticalCount)} / ${formatNumber(highCount)}`}
           helper={criticalCount > 0 ? tDashboard("stats.criticalHigh.helperAlert") : tDashboard("stats.criticalHigh.helperStable")}
@@ -189,7 +189,7 @@ export default function DashboardPage() {
           className="h-full rounded-[var(--radius-lg)] [&>p:nth-of-type(2)]:text-[1.625rem] [&>p:nth-of-type(2)]:leading-[1.1] [&>p:last-child]:line-clamp-1 [&>p:last-child]:text-[11px]"
           size="md"
         />
-        <StatCard
+        <MetricCard
           label={tDashboard("stats.newAfterDeploy.label")}
           value={formatNumber(summary.newAfterLatestDeployment.length)}
           helper={summary.newAfterLatestDeployment.length > 0 ? tDashboard("stats.newAfterDeploy.helperHasRisk") : tDashboard("stats.newAfterDeploy.helperNoRisk")}
@@ -197,7 +197,7 @@ export default function DashboardPage() {
           className="h-full rounded-[var(--radius-lg)] [&>p:nth-of-type(2)]:text-[1.625rem] [&>p:nth-of-type(2)]:leading-[1.1] [&>p:last-child]:line-clamp-1 [&>p:last-child]:text-[11px]"
           size="md"
         />
-        <StatCard
+        <MetricCard
           label={tDashboard("stats.total24h.label")}
           value={formatNumber(total24h)}
           helper={totalDelta === null ? tDashboard("stats.total24h.helper") : `이전 기간 대비 ${totalDelta > 0 ? "+" : ""}${formatNumber(totalDelta)}건`}
@@ -224,7 +224,7 @@ export default function DashboardPage() {
             ))}
           </Grid>
         ) : (
-          <StateView variant="empty" size="sm" title="현재 필터에 해당하는 서비스 이벤트가 없습니다." />
+          <FeedbackState variant="empty" size="sm" title="현재 필터에 해당하는 서비스 이벤트가 없습니다." />
         )}
       </OpsSectionCard>
 
@@ -252,7 +252,7 @@ export default function DashboardPage() {
           <Box className="space-y-[var(--space-5)]">
             <OpsSectionCard title={tDashboard("sections.priorityQueue")} description={tDashboard("sections.priorityQueueDescription")}>
               {responseQueue.length === 0 ? (
-                <StateView variant="empty" size="sm" title={tDashboard("empty.noQueue")} />
+                <FeedbackState variant="empty" size="sm" title={tDashboard("empty.noQueue")} />
               ) : (
                 <Box className="space-y-[var(--space-2)]">
                   {responseQueue.slice(0, 6).map((item, index) => (

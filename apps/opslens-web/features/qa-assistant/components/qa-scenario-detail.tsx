@@ -1,6 +1,8 @@
 "use client";
 
-import { Badge, Box, Flex, Grid, StateView, Typography } from "@repo/ui";
+import { FeedbackState } from "@/features/common/components/feedback-state";
+
+import { Badge, Box, Flex, Grid, Typography } from "@repo/ui";
 import { formatDateTime, formatNumber } from "@repo/utils";
 import { OpsSectionCard } from "@/features";
 import { QA_AUDIENCE_LABELS, QA_NEUTRAL_BADGE_CLASS, QA_STATUS_BADGE_CLASS } from "../constants";
@@ -14,7 +16,7 @@ export function QaScenarioDetail({ scenario }: QaScenarioDetailProps) {
   if (!scenario) {
     return (
       <OpsSectionCard title="생성 결과 상세" description="시나리오를 생성하거나 최근 산출물을 선택하면 상세가 표시됩니다.">
-        <StateView variant="info" size="sm" title="검토할 QA 산출물이 없습니다." className="mt-[var(--space-3)]" />
+        <FeedbackState variant="info" size="sm" title="검토할 QA 산출물이 없습니다." className="mt-[var(--space-3)]" />
       </OpsSectionCard>
     );
   }

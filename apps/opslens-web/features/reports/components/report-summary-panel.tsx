@@ -1,6 +1,8 @@
 "use client";
 
-import { Badge, Box, Flex, Grid, StatCard, Typography } from "@repo/ui";
+import { MetricCard } from "@/features/common/components/feedback-state";
+
+import { Badge, Box, Flex, Grid, Typography } from "@repo/ui";
 import type { OpsReport } from "@repo/opslens";
 import { getReportGeneratedLabel, getReportRiskBadge, getReportTone } from "../utils/report-utils";
 
@@ -29,7 +31,7 @@ export function ReportSummaryPanel({ report }: ReportSummaryPanelProps) {
 
       <Grid className="gap-[var(--space-3)] md:grid-cols-3">
         {report.kpis.map((kpi) => (
-          <StatCard
+          <MetricCard
             key={kpi.label}
             label={kpi.label}
             value={kpi.value}

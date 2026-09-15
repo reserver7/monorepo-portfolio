@@ -1,7 +1,9 @@
 "use client";
 
+import { FeedbackState } from "@/features/common/components/feedback-state";
+
 import type { AuthRole, OpsAuthUser } from "@repo/opslens";
-import { Badge, Box, Button, Flex, Select, StateView, Typography } from "@repo/ui";
+import { Badge, Box, Button, Flex, Select, Typography } from "@repo/ui";
 import { OpsSectionSkeleton } from "@/features";
 
 const roleOptions = [
@@ -24,7 +26,7 @@ export function UserManagementPanel({
   onUpdate: (user: OpsAuthUser, input: { role?: AuthRole; isActive?: boolean }) => void;
 }) {
   if (isLoading) return <OpsSectionSkeleton rows={4} />;
-  if (users.length === 0) return <StateView variant="empty" size="sm" title="등록된 사용자가 없습니다." />;
+  if (users.length === 0) return <FeedbackState variant="empty" size="sm" title="등록된 사용자가 없습니다." />;
 
   return (
     <Box className="divide-y divide-default border-y border-default">

@@ -1,7 +1,9 @@
 "use client";
 
+import { FeedbackState } from "@/features/common/components/feedback-state";
+
 import { Trash2 } from "lucide-react";
-import { Badge, Box, Button, Flex, StateView, Typography } from "@repo/ui";
+import { Badge, Box, Button, Flex, Typography } from "@repo/ui";
 import { formatDateTime, formatNumber } from "@repo/utils";
 import { OpsCardListSkeleton } from "@/features";
 import { QA_AUDIENCE_LABELS, QA_NEUTRAL_BADGE_CLASS } from "../constants";
@@ -32,11 +34,11 @@ export function QaScenarioList({
   }
 
   if (isError) {
-    return <StateView variant="error" size="sm" title="시나리오 조회에 실패했습니다." className="mt-[var(--space-3)]" />;
+    return <FeedbackState variant="error" size="sm" title="시나리오 조회에 실패했습니다." className="mt-[var(--space-3)]" />;
   }
 
   if (scenarios.length === 0) {
-    return <StateView variant="empty" size="sm" title="아직 생성된 시나리오가 없습니다." className="mt-[var(--space-3)]" />;
+    return <FeedbackState variant="empty" size="sm" title="아직 생성된 시나리오가 없습니다." className="mt-[var(--space-3)]" />;
   }
 
   return (

@@ -1,5 +1,7 @@
 "use client";
 
+import { FeedbackState } from "@/features/common/components/feedback-state";
+
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -16,7 +18,6 @@ import {
   Label,
   Select,
   SplitWorkspaceLayout,
-  StateView,
   Textarea,
   Typography
 } from "@repo/ui";
@@ -43,7 +44,7 @@ export default function DocumentRoomPage() {
   const panelLoadingState = useCallback(
     () => (
       <Card className="p-5">
-        <StateView variant="loading" title={t("panel.loadingTitle")} description={t("panel.loadingDescription")} />
+        <FeedbackState variant="loading" title={t("panel.loadingTitle")} description={t("panel.loadingDescription")} />
       </Card>
     ),
     [t]
@@ -313,11 +314,11 @@ export default function DocumentRoomPage() {
             </div>
 
             {conflictMessage ? (
-              <StateView variant="warning" size="sm" align="left" title={conflictMessage} className="mb-4" />
+              <FeedbackState variant="warning" size="sm" align="left" title={conflictMessage} className="mb-4" />
             ) : null}
 
             {isReadOnly ? (
-              <StateView
+              <FeedbackState
                 variant="info"
                 size="sm"
                 align="left"
@@ -368,7 +369,7 @@ export default function DocumentRoomPage() {
         />
 
       {documentQuery.isError ? (
-        <StateView
+        <FeedbackState
           variant="error"
           size="md"
           title={t("content.errorTitle")}

@@ -1,7 +1,9 @@
 "use client";
 
+import { MetricCard } from "@/features/common/components/feedback-state";
+
 import { useMemo } from "react";
-import { Badge, Box, Flex, Grid, SplitWorkspaceLayout, StatCard, Typography } from "@repo/ui";
+import { Badge, Box, Flex, Grid, SplitWorkspaceLayout, Typography } from "@repo/ui";
 import { useAppForm } from "@repo/forms";
 import { formatNumber } from "@repo/utils";
 import { OpsPageShell, OpsSectionCard } from "@/features";
@@ -59,7 +61,7 @@ export default function QaAssistantPage() {
       </Box>
 
       <Grid className="gap-[var(--space-3)] md:grid-cols-3">
-        <StatCard
+        <MetricCard
           label="준비도"
           value={`${readinessScore}%`}
           helper={`${readinessItems.filter((item) => item.ready).length}/${readinessItems.length} 조건 충족`}
@@ -67,14 +69,14 @@ export default function QaAssistantPage() {
           size="sm"
           className="h-full rounded-[var(--radius-lg)]"
         />
-        <StatCard
+        <MetricCard
           label="입력 범위"
           value={formatNumber(changedScreenItems.length + relatedApiItems.length)}
           helper={`화면 ${formatNumber(changedScreenItems.length)} / API ${formatNumber(relatedApiItems.length)}`}
           size="sm"
           className="h-full rounded-[var(--radius-lg)]"
         />
-        <StatCard
+        <MetricCard
           label="선택 산출물"
           value={formatNumber(selectedScenarioItemCount)}
           helper={`최근 산출물 ${formatNumber(scenarios.length)}건`}

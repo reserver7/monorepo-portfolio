@@ -1,7 +1,9 @@
 "use client";
 
+import { FeedbackState } from "@/features/common/components/feedback-state";
+
 import { useEffect } from "react";
-import { Box, Button, StateView } from "@repo/ui";
+import { Box, Button, } from "@repo/ui";
 
 export default function RootError({
   error,
@@ -17,7 +19,7 @@ export default function RootError({
   return (
     <Box className="bg-background flex min-h-screen items-center justify-center p-[var(--space-4)]">
       <Box className="w-full max-w-2xl">
-        <StateView
+        <FeedbackState
           variant="error"
           size="lg"
           align="center"

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { RotateCcw } from "lucide-react";
-import { Box, Button, DatePicker, Flex, Select, Sheet, SheetBody, SheetContent, SheetDescription, SheetHeader, SheetTitle, Typography } from "@repo/ui";
+import { Box, Button, DatePicker, Drawer, Flex, Select, Typography } from "@repo/ui";
 import { type OpsLocale } from "@/lib/i18n/messages";
 import ko from "@/lib/i18n/messages/ko.json";
 import { OPS_FILTER_LOCALE_KEYS, OPS_FILTER_SERVICE_KEYS } from "../constants";
@@ -63,7 +63,7 @@ export function OpsFilterSheet({
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
-      <Sheet open={open} onOpenChange={onOpenChange}>
+      <Drawer open={open} onClose={() => onOpenChange(false)} title={null}>
         <FilterSheetContent
           control={control}
           fromDate={fromDate}
@@ -73,7 +73,7 @@ export function OpsFilterSheet({
           onApply={onApply}
           calendarLocale={calendarLocale}
         />
-      </Sheet>
+      </Drawer>
     </NextIntlClientProvider>
   );
 }
@@ -108,13 +108,11 @@ function FilterSheetContent({
   );
 
   return (
-    <SheetContent side="right" size="md">
-      <SheetHeader>
-        <SheetTitle>{tFilter("title")}</SheetTitle>
-        <SheetDescription>{tFilter("description")}</SheetDescription>
-      </SheetHeader>
-
-      <SheetBody className="space-y-[var(--space-3)]">
+    <Box className="space-y-[var(--space-3)]">
+      <Box className="mb-4 space-y-1.5">
+        <Typography as="h2" variant="title">{tFilter("title")}</Typography>
+        <Typography as="p" variant="bodySm" color="muted">{tFilter("description")}</Typography>
+      </Box>
         <Flex className="items-center justify-between">
           <Typography as="p" variant="caption" color="muted">
             {tFilter("language")}
@@ -181,7 +179,6 @@ function FilterSheetContent({
             {tFilter("apply")}
           </Button>
         </Flex>
-      </SheetBody>
-    </SheetContent>
+    </Box>
   );
 }
