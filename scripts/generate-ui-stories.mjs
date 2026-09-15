@@ -89,6 +89,10 @@ const COMPONENT_DEFAULT_ARGS = {
 };
 
 const COMPONENT_BASE_ARGS = {
+  Tour: {
+    steps: [{ title: "첫 번째 단계", description: "제품 둘러보기를 시작합니다." }],
+    defaultOpen: true
+  },
   DataTable: {
     columns: STORYBOOK_DATA_TABLE_COLUMNS,
     data: STORYBOOK_DATA_TABLE_ROWS,
@@ -2509,6 +2513,7 @@ type TooltipStoryArgs = {
 const meta: Meta<TooltipStoryArgs> = {
   title: "Components/Tooltip",
   tags: ["autodocs"],
+  decorators: [(Story) => <TooltipProvider><Story /></TooltipProvider>],
   parameters: { layout: "centered", controls: { expanded: true } },
   args: { size: "md", color: "inverse", withArrow: true, placement: "top", alignment: "center", offset: 8 },
   argTypes: {
@@ -3169,7 +3174,7 @@ const createStorySource = (componentName) => {
   const override = QUALITY_STORY_OVERRIDES[componentName];
   if (override) {
     return ensureRequiredStorySections(toPlaygroundStatesOverrideSource(override()), componentName, {
-      placeholderOnly: false
+      placeholderOnly: componentName === "DataTable"
     });
   }
 

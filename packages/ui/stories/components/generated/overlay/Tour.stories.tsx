@@ -38,6 +38,10 @@ const meta: Meta<typeof Tour> = {
   /.*ClassName$/
 ] }
   },
+  args: {
+    steps: [{"title":"첫 번째 단계","description":"제품 둘러보기를 시작합니다."}],
+    defaultOpen: true
+  },
   argTypes: {
     children: {control:false,table:{disable:true}},
     asChild: {control:false,table:{disable:true}},

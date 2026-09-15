@@ -29,6 +29,7 @@ const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknow
 const meta: Meta<TooltipStoryArgs> = {
   title: "Components/Tooltip",
   tags: ["autodocs"],
+  decorators: [(Story) => <TooltipProvider><Story /></TooltipProvider>],
   parameters: { layout: "centered", controls: { expanded: true } },
   args: { size: "md", color: "inverse", withArrow: true, placement: "top", alignment: "center", offset: 8 },
   argTypes: {
