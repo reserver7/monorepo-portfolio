@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createNextConfig } from "../../packages/configs/src/next/create-next-config.mjs";
+import { createNextConfig } from "@repo/configs/next/create-config";
 
 /** @type {import('next').NextConfig} */
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
