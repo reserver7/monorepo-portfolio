@@ -2,8 +2,9 @@
 
 import type { PropsWithChildren } from "react";
 import { QueryClientProvider, createAppQueryClient, type QueryClientConfig } from "@repo/react-query";
-import { AlertConfirmProvider, AutoEllipsisTooltip, ErrorBoundary, Toast, useStableValue } from "@repo/ui";
-import type { ToastProps } from "@repo/ui";
+import { AutoEllipsisTooltip, ErrorBoundary, useStableValue } from "@repo/ui";
+import { AlertConfirmProvider, Toast } from "@repo/ui/internal";
+import type { ToastProps } from "@repo/ui/internal";
 import { AppThemeProvider } from "./theme-provider";
 import { ThemeToggle } from "./theme-toggle";
 

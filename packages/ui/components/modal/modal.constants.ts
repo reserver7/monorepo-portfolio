@@ -3,8 +3,6 @@ import type { ModalContentIntent, ModalContentSize } from "./modal.types";
 export const MODAL_CONTENT_DEFAULTS = {
   size: "md" as ModalContentSize,
   intent: "default" as ModalContentIntent,
-  preventEscapeClose: false,
-  preventOutsideClose: false,
   hideCloseButton: false,
   closeAriaLabel: "닫기",
   scrollBehavior: "inside" as const

@@ -109,7 +109,9 @@ const formatTime = (value: ParsedTime, format: TimeFormat, use12Hours: boolean) 
   if (use12Hours || format.includes("h:mm")) {
     const meridiem = hour >= 12 ? "PM" : "AM";
     const hour12 = hour % 12 === 0 ? 12 : hour % 12;
-    return withSeconds ? `${hour12}:${pad2(minute)}:${pad2(second)} ${meridiem}` : `${hour12}:${pad2(minute)} ${meridiem}`;
+    return withSeconds
+      ? `${hour12}:${pad2(minute)}:${pad2(second)} ${meridiem}`
+      : `${hour12}:${pad2(minute)} ${meridiem}`;
   }
 
   return withSeconds ? `${pad2(hour)}:${pad2(minute)}:${pad2(second)}` : `${pad2(hour)}:${pad2(minute)}`;
@@ -139,6 +141,7 @@ const TimePickerBase = React.forwardRef<HTMLInputElement, TimePickerProps>(
       defaultValue,
       onValueChange,
       onChange,
+      onClear: propsOnClear,
       onBlur,
       placeholder = TIME_PICKER_DEFAULTS.placeholder,
       size = INPUT_DEFAULTS.size,
@@ -180,7 +183,7 @@ const TimePickerBase = React.forwardRef<HTMLInputElement, TimePickerProps>(
     const resolvedShowSeconds = showSeconds ?? format.includes("ss");
 
     const [innerValue, setInnerValue] = React.useState<string>(defaultValue ?? "");
-    const currentValue = isControlled ? value ?? "" : innerValue;
+    const currentValue = isControlled ? (value ?? "") : innerValue;
 
     const [innerOpen, setInnerOpen] = React.useState(defaultOpen ?? false);
     const isOpen = open ?? innerOpen;
@@ -191,7 +194,12 @@ const TimePickerBase = React.forwardRef<HTMLInputElement, TimePickerProps>(
     };
 
     const parsed = React.useMemo(
-      () => parseTime(currentValue, Boolean(use12Hours || format.includes("h:mm"))) ?? { hour: 0, minute: 0, second: 0 },
+      () =>
+        parseTime(currentValue, Boolean(use12Hours || format.includes("h:mm"))) ?? {
+          hour: 0,
+          minute: 0,
+          second: 0
+        },
       [currentValue, format, use12Hours]
     );
 
@@ -200,7 +208,10 @@ const TimePickerBase = React.forwardRef<HTMLInputElement, TimePickerProps>(
       if (!isOpen) setDraft(parsed);
     }, [isOpen, parsed]);
 
-    const disabledHourSet = React.useMemo(() => new Set((disabledHours?.() ?? []).filter((v) => v >= 0 && v <= 23)), [disabledHours]);
+    const disabledHourSet = React.useMemo(
+      () => new Set((disabledHours?.() ?? []).filter((v) => v >= 0 && v <= 23)),
+      [disabledHours]
+    );
     const disabledMinuteSet = React.useMemo(
       () => new Set((disabledMinutes?.(draft.hour) ?? []).filter((v) => v >= 0 && v <= 59)),
       [disabledMinutes, draft.hour]
@@ -242,9 +253,17 @@ const TimePickerBase = React.forwardRef<HTMLInputElement, TimePickerProps>(
     const withSeconds = Boolean(resolvedShowSeconds);
 
     const underlinedClassName =
-      variant === "underlined" ? "rounded-none border-0 border-b border-default px-0 focus:border-primary" : "";
+      variant === "underlined"
+        ? "rounded-none border-0 border-b border-default px-0 focus-visible:border-primary"
+        : "";
 
-    const renderCell = (key: string, text: string, active: boolean, blocked: boolean, onClick: () => void) => (
+    const renderCell = (
+      key: string,
+      text: string,
+      active: boolean,
+      blocked: boolean,
+      onClick: () => void
+    ) => (
       <Button
         key={key}
         variant="ghost"
@@ -252,7 +271,7 @@ const TimePickerBase = React.forwardRef<HTMLInputElement, TimePickerProps>(
         fullWidth
         disabled={blocked}
         className={cn(
-          "h-7 rounded-none border-0 bg-transparent px-[var(--space-2)] text-body-sm",
+          "text-body-sm h-7 rounded-none border-0 bg-transparent px-[var(--space-2)]",
           active ? "bg-primary text-primary-foreground" : "text-foreground/85 hover:bg-surface-elevated"
         )}
         onClick={onClick}
@@ -281,10 +300,17 @@ const TimePickerBase = React.forwardRef<HTMLInputElement, TimePickerProps>(
               if (!isControlled) setInnerValue("");
               onValueChange?.("");
               onChange?.(toChangeEvent("", id, name));
+              propsOnClear?.();
             }}
-            className={cn("h-8 rounded-[var(--radius-sm)] pr-8 text-body-sm", underlinedClassName, className)}
+            className={cn("text-body-sm h-8 rounded-[var(--radius-sm)] pr-8", underlinedClassName, className)}
             prefix={prefix}
-            suffix={suffixIcon !== undefined ? suffixIcon : <Clock3 className="h-[var(--size-icon-md)] w-[var(--size-icon-md)] text-muted" />}
+            suffix={
+              suffixIcon !== undefined ? (
+                suffixIcon
+              ) : (
+                <Clock3 className="text-muted h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />
+              )
+            }
             {...rest}
           />
         </PopoverTrigger>
@@ -293,15 +319,23 @@ const TimePickerBase = React.forwardRef<HTMLInputElement, TimePickerProps>(
           align={place.align}
           side={place.side}
           sideOffset={6}
-          className={cn("bg-white p-[var(--space-2)] dark:bg-surface", withSeconds ? "w-[216px]" : "w-[160px]")}
+          className={cn(
+            "dark:bg-surface bg-white p-[var(--space-2)]",
+            withSeconds ? "w-[216px]" : "w-[160px]"
+          )}
         >
-          <Box className={cn("grid overflow-hidden rounded-[var(--radius-sm)] border border-default", withSeconds ? "grid-cols-3" : "grid-cols-2")}>
+          <Box
+            className={cn(
+              "border-default grid overflow-hidden rounded-[var(--radius-sm)] border",
+              withSeconds ? "grid-cols-3" : "grid-cols-2"
+            )}
+          >
             <ScrollArea
-              className="h-[224px] border-r border-default last:border-r-0"
+              className="border-default h-[224px] border-r last:border-r-0"
               onWheel={(event) => {
                 if (!changeOnScroll) return;
                 event.preventDefault();
-                const current = use12Hours ? ((draft.hour % 12) || 12) : draft.hour;
+                const current = use12Hours ? draft.hour % 12 || 12 : draft.hour;
                 const next = stepByWheel(current, hourValues, disabledHourSet, event.deltaY);
                 if (use12Hours) {
                   const hour24 = draft.hour >= 12 ? (next % 12) + 12 : next % 12;
@@ -320,7 +354,7 @@ const TimePickerBase = React.forwardRef<HTMLInputElement, TimePickerProps>(
                   })
                   .map((hour) => {
                     const hour24 = use12Hours ? (draft.hour >= 12 ? (hour % 12) + 12 : hour % 12) : hour;
-                    const active = use12Hours ? ((draft.hour % 12) || 12) === hour : draft.hour === hour;
+                    const active = use12Hours ? (draft.hour % 12 || 12) === hour : draft.hour === hour;
                     return renderCell(
                       `hour-${hour}`,
                       use12Hours ? String(hour) : pad2(hour),
@@ -333,7 +367,7 @@ const TimePickerBase = React.forwardRef<HTMLInputElement, TimePickerProps>(
             </ScrollArea>
 
             <ScrollArea
-              className="h-[224px] border-r border-default last:border-r-0"
+              className="border-default h-[224px] border-r last:border-r-0"
               onWheel={(event) => {
                 if (!changeOnScroll) return;
                 event.preventDefault();
@@ -345,8 +379,12 @@ const TimePickerBase = React.forwardRef<HTMLInputElement, TimePickerProps>(
                 {minuteValues
                   .filter((minute) => (hideDisabledOptions ? !disabledMinuteSet.has(minute) : true))
                   .map((minute) =>
-                    renderCell(`minute-${minute}`, pad2(minute), draft.minute === minute, disabledMinuteSet.has(minute), () =>
-                      updateDraft({ minute })
+                    renderCell(
+                      `minute-${minute}`,
+                      pad2(minute),
+                      draft.minute === minute,
+                      disabledMinuteSet.has(minute),
+                      () => updateDraft({ minute })
                     )
                   )}
               </Box>
@@ -366,8 +404,12 @@ const TimePickerBase = React.forwardRef<HTMLInputElement, TimePickerProps>(
                   {secondValues
                     .filter((second) => (hideDisabledOptions ? !disabledSecondSet.has(second) : true))
                     .map((second) =>
-                      renderCell(`second-${second}`, pad2(second), draft.second === second, disabledSecondSet.has(second), () =>
-                        updateDraft({ second })
+                      renderCell(
+                        `second-${second}`,
+                        pad2(second),
+                        draft.second === second,
+                        disabledSecondSet.has(second),
+                        () => updateDraft({ second })
                       )
                     )}
                 </Box>
@@ -377,8 +419,20 @@ const TimePickerBase = React.forwardRef<HTMLInputElement, TimePickerProps>(
 
           {use12Hours ? (
             <Box className="mt-[var(--space-2)] grid grid-cols-2 gap-[var(--space-2)]">
-              <Button variant={draft.hour < 12 ? "primary" : "secondary"} size="sm" onClick={() => updateDraft({ hour: draft.hour % 12 })}>AM</Button>
-              <Button variant={draft.hour >= 12 ? "primary" : "secondary"} size="sm" onClick={() => updateDraft({ hour: (draft.hour % 12) + 12 })}>PM</Button>
+              <Button
+                variant={draft.hour < 12 ? "primary" : "secondary"}
+                size="sm"
+                onClick={() => updateDraft({ hour: draft.hour % 12 })}
+              >
+                AM
+              </Button>
+              <Button
+                variant={draft.hour >= 12 ? "primary" : "secondary"}
+                size="sm"
+                onClick={() => updateDraft({ hour: (draft.hour % 12) + 12 })}
+              >
+                PM
+              </Button>
             </Box>
           ) : null}
 
@@ -388,7 +442,13 @@ const TimePickerBase = React.forwardRef<HTMLInputElement, TimePickerProps>(
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => updateDraft({ hour: new Date().getHours(), minute: new Date().getMinutes(), second: new Date().getSeconds() })}
+                  onClick={() =>
+                    updateDraft({
+                      hour: new Date().getHours(),
+                      minute: new Date().getMinutes(),
+                      second: new Date().getSeconds()
+                    })
+                  }
                 >
                   Now
                 </Button>
@@ -438,7 +498,16 @@ const TimePickerComponent = React.forwardRef<HTMLInputElement, TimePickerProps>(
     );
   }
 
-  return <TimePickerBase {...rest} ref={ref} name={name} onValueChange={onValueChange} onBlur={onBlur} onChange={onChange} />;
+  return (
+    <TimePickerBase
+      {...rest}
+      ref={ref}
+      name={name}
+      onValueChange={onValueChange}
+      onBlur={onBlur}
+      onChange={onChange}
+    />
+  );
 });
 TimePickerComponent.displayName = "TimePicker";
 
@@ -466,14 +535,14 @@ const TimeRangePickerComponent = React.forwardRef<HTMLDivElement, TimeRangePicke
   ) => {
     const isControlled = value !== undefined;
     const [innerValue, setInnerValue] = React.useState<TimeRangeValue>(defaultValue ?? {});
-    const current = isControlled ? value ?? {} : innerValue;
+    const current = isControlled ? (value ?? {}) : innerValue;
     const currentStartSeconds = toTotalSeconds(current.start, rest.use12Hours);
     const currentEndSeconds = toTotalSeconds(current.end, rest.use12Hours);
     const isInvalidOrder = Boolean(
       order === false &&
-        currentStartSeconds != null &&
-        currentEndSeconds != null &&
-        currentEndSeconds < currentStartSeconds
+      currentStartSeconds != null &&
+      currentEndSeconds != null &&
+      currentEndSeconds < currentStartSeconds
     );
 
     const emit = (next: TimeRangeValue) => {
@@ -496,11 +565,11 @@ const TimeRangePickerComponent = React.forwardRef<HTMLDivElement, TimeRangePicke
       <Box className="grid gap-[var(--space-1)]" ref={ref as never}>
         <Box
           className={cn(
-            "flex min-w-0 flex-1 items-center rounded-[var(--radius-sm)] border border-default bg-white px-[var(--space-2)] dark:bg-surface",
+            "border-default dark:bg-surface flex min-w-0 flex-1 items-center rounded-[var(--radius-sm)] border bg-white px-[var(--space-2)]",
             rangeHeightMap[size],
             variant === "filled" ? "bg-surface-elevated" : "",
             variant === "borderless" ? "border-transparent bg-transparent" : "",
-            variant === "underlined" ? "rounded-none border-0 border-b border-default px-0" : "",
+            variant === "underlined" ? "border-default rounded-none border-0 border-b px-0" : "",
             mappedStatus === "error" ? "border-danger/40" : "",
             mappedStatus === "success" ? "border-success/40" : ""
           )}
@@ -518,9 +587,11 @@ const TimeRangePickerComponent = React.forwardRef<HTMLDivElement, TimeRangePicke
             status={mappedStatus}
             allowClear={false}
             suffixIcon={null}
-            className="h-full min-w-0 border-0 bg-transparent px-0 pr-[var(--space-1)] text-foreground font-medium shadow-none focus:ring-0"
+            className="text-foreground h-full min-w-0 border-0 bg-transparent px-0 pr-[var(--space-1)] font-medium shadow-none focus-visible:ring-0"
           />
-          <Box as="p" className="px-[var(--space-2)] text-muted text-body-sm">{separator}</Box>
+          <Box as="p" className="text-muted text-body-sm px-[var(--space-2)]">
+            {separator}
+          </Box>
           <TimePicker
             {...rest}
             value={current.end ?? ""}
@@ -534,9 +605,9 @@ const TimeRangePickerComponent = React.forwardRef<HTMLDivElement, TimeRangePicke
             status={mappedStatus}
             allowClear={false}
             suffixIcon={null}
-            className="h-full min-w-0 border-0 bg-transparent px-0 pr-[var(--space-1)] text-foreground font-medium shadow-none focus:ring-0"
+            className="text-foreground h-full min-w-0 border-0 bg-transparent px-0 pr-[var(--space-1)] font-medium shadow-none focus-visible:ring-0"
           />
-          <Clock3 className="ml-[var(--space-1)] h-[var(--size-icon-sm)] w-[var(--size-icon-sm)] shrink-0 text-muted" />
+          <Clock3 className="text-muted ml-[var(--space-1)] h-[var(--size-icon-sm)] w-[var(--size-icon-sm)] shrink-0" />
         </Box>
         {isInvalidOrder ? (
           <Box as="p" className="text-danger text-caption">

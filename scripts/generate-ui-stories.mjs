@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { parseExportedNames } from "./lib/ui-storybook-targets.mjs";
+import { loadUiComponentManifest } from "./lib/ui-component-manifest.mjs";
 import { loadUiStorybookMetadata } from "./lib/ui-storybook-metadata.mjs";
 import {
   STORYBOOK_DATA_TABLE_COLUMNS,
@@ -19,6 +20,8 @@ const COMPONENT_INDEX_PATH = path.join(ROOT, "packages/ui/components/index.ts");
 const STORIES_ROOT = path.join(ROOT, "packages/ui/stories");
 const GENERATED_STORIES_DIR = path.join(STORIES_ROOT, "components/generated");
 const LEGACY_AUTO_STORIES_DIR = path.join(STORIES_ROOT, "components/auto");
+const COMPONENT_MANIFEST = loadUiComponentManifest(ROOT);
+const COMPONENT_MANIFEST_BY_NAME = new Map(COMPONENT_MANIFEST.map((entry) => [entry.name, entry]));
 
 const DERIVED_COMPONENT_OPTION_CATALOG = {};
 const DERIVED_COMPONENT_OPTION_DEFAULTS = {};
@@ -33,28 +36,36 @@ const CATEGORY_RULES = [
   {
     key: "forms-primitives",
     title: "Forms Primitives",
-    match: /^(Input|Textarea|Select|Checkbox|Switch|RadioGroup|Label|FormField|DatePicker|Calendar)$/
+    match:
+      /^(Input|Textarea|Select|Checkbox|Switch|RadioGroup|Label|FormField|Form|FormItem|InputNumber|AutoComplete|Cascader|DatePicker|TimePicker|Mentions|Password|Search|Rate|Slider|Calendar)$/
   },
   {
     key: "overlays",
     title: "Overlays",
-    match: /^(Modal|AlertConfirm|DropdownMenu|Popover|Sheet|Tooltip)$/
+    match: /^(Modal|AlertConfirm|DropdownMenu|Popover|Sheet|Tooltip|Drawer|Popconfirm|Tour|FloatButton)$/
   },
   {
     key: "feedback",
     title: "Feedback",
-    match: /^(ErrorBoundary|Progress|Skeleton|Spinner|StateView|Toast)$/
+    match: /^(ErrorBoundary|Progress|Skeleton|Spin|Toast|Alert|Message|Notification|Empty|Result)$/
   },
   {
     key: "data",
     title: "Data",
-    match: /^(Avatar|Badge|Card|StatCard|Typography|Table|DataTable)$/
+    match:
+      /^(Avatar|Badge|Card|Typography|Table|DataTable|List|Descriptions|Statistic|Tag|Timeline|Image|Watermark)$/
   },
-  { key: "navigation", title: "Navigation", match: /^(Accordion|Tabs|Pagination)$/ },
+  {
+    key: "navigation",
+    title: "Navigation",
+    match: /^(Accordion|Tabs|Pagination|Steps|Menu|Breadcrumb|Anchor|BackTop|Carousel)$/
+  },
   { key: "layout", title: "Layout", match: /^(ScrollArea|Box|Flex|Grid|Separator|Spacing)$/ }
 ];
 
 const resolveCategory = (componentName) => {
+  const manifestCategory = COMPONENT_MANIFEST_BY_NAME.get(componentName)?.category;
+  if (manifestCategory) return { key: manifestCategory, title: manifestCategory };
   const found = CATEGORY_RULES.find((rule) => rule.match.test(componentName));
   if (found) return found;
   return { key: "misc", title: "Misc" };
@@ -68,6 +79,7 @@ const COMPONENT_DEFAULT_ARGS = {
   Typography: { children: "Typography" },
   Progress: { value: 64, label: "64%" },
   Box: { children: "Box" },
+  Popconfirm: { children: "Delete item" },
   Flex: {
     children: toChipChildrenMarkup(STORYBOOK_FLEX_ITEMS)
   },
@@ -79,7 +91,10 @@ const COMPONENT_DEFAULT_ARGS = {
 const COMPONENT_BASE_ARGS = {
   DataTable: {
     columns: STORYBOOK_DATA_TABLE_COLUMNS,
-    data: STORYBOOK_DATA_TABLE_ROWS
+    data: STORYBOOK_DATA_TABLE_ROWS,
+    selectable: true,
+    sortable: true,
+    enablePagination: true
   },
   Select: {
     label: "",
@@ -124,6 +139,104 @@ const COMPONENT_BASE_ARGS = {
     rows: 4,
     maxLength: 200
   },
+  Mentions: {
+    label: "담당자 언급",
+    placeholder: "@를 입력해 담당자를 찾으세요…",
+    options: [{ value: "민지" }, { value: "현우" }, { value: "서연" }]
+  },
+  InputNumber: {
+    defaultValue: 12,
+    min: 0,
+    max: 100,
+    step: 1,
+    controls: true,
+    keyboard: true
+  },
+  AutoComplete: {
+    placeholder: "이름을 검색하세요",
+    options: [{ value: "민지" }, { value: "현우" }, { value: "서연" }],
+    allowClear: true
+  },
+  Cascader: {
+    placeholder: "지역을 선택하세요",
+    options: [
+      {
+        value: "kr",
+        label: "대한민국",
+        children: [
+          { value: "seoul", label: "서울" },
+          { value: "busan", label: "부산" }
+        ]
+      },
+      { value: "jp", label: "일본", children: [{ value: "tokyo", label: "도쿄" }] }
+    ],
+    allowClear: true
+  },
+  Password: {
+    label: "비밀번호",
+    placeholder: "비밀번호를 입력하세요",
+    visibilityToggle: true
+  },
+  Search: {
+    label: "검색",
+    placeholder: "검색어를 입력하세요",
+    enterButton: true,
+    allowClear: true
+  },
+  Tree: {
+    treeData: [
+      {
+        key: "platform",
+        title: "Platform",
+        children: [
+          { key: "web", title: "Web" },
+          { key: "api", title: "API" }
+        ]
+      },
+      { key: "docs", title: "Documentation" }
+    ],
+    defaultExpandedKeys: ["platform"]
+  },
+  TreeSelect: {
+    treeData: [
+      {
+        value: "platform",
+        title: "Platform",
+        children: [
+          { value: "web", title: "Web" },
+          { value: "api", title: "API" }
+        ]
+      },
+      { value: "docs", title: "Documentation" }
+    ],
+    defaultOpen: false,
+    showSearch: true
+  },
+  Rate: {
+    defaultValue: 3,
+    count: 5,
+    allowHalf: true,
+    allowClear: true
+  },
+  Transfer: {
+    dataSource: [
+      { key: "design", title: "디자인 리뷰" },
+      { key: "frontend", title: "프론트엔드" },
+      { key: "backend", title: "백엔드" },
+      { key: "qa", title: "품질 검증" }
+    ],
+    defaultTargetKeys: ["backend"],
+    showSearch: true,
+    titles: ["사용 가능", "선택됨"]
+  },
+  Upload: {
+    label: "첨부 파일",
+    helperText: "최대 10MB의 파일을 업로드할 수 있습니다.",
+    defaultFileList: [{ uid: "brief", name: "제품-요약.pdf", size: 248000, status: "done" }],
+    multiple: true,
+    maxCount: 3,
+    emptyText: "아직 첨부된 파일이 없습니다."
+  },
   DatePicker: {
     mode: "single",
     label: "",
@@ -162,15 +275,6 @@ const COMPONENT_BASE_ARGS = {
   ErrorBoundary: {
     fallbackTitle: "문제가 발생했습니다.",
     fallbackDescription: "잠시 후 다시 시도해 주세요."
-  },
-  StateView: {
-    title: "상태 제목",
-    description: "상태 설명"
-  },
-  StatCard: {
-    label: "지표",
-    value: "128",
-    helper: "전일 대비 +12%"
   },
   FormField: {
     label: "필드 라벨",
@@ -212,6 +316,69 @@ const COMPONENT_BASE_ARGS = {
     axis: "vertical",
     responsive: false,
     className: "rounded-sm bg-primary/25"
+  },
+  Alert: {
+    type: "info",
+    message: "동기화가 완료되었습니다.",
+    description: "모든 변경 사항이 안전하게 저장되었습니다.",
+    showIcon: true,
+    closable: true
+  },
+  Empty: {
+    description: "표시할 항목이 없습니다."
+  },
+  Result: {
+    status: "success",
+    title: "작업이 완료되었습니다.",
+    subTitle: "다음 단계로 이동할 수 있습니다."
+  },
+  Progress: {
+    percent: 68,
+    showInfo: true
+  },
+  List: {
+    dataSource: ["문서 권한 검토", "API 변경 사항", "배포 체크리스트"],
+    header: "최근 작업",
+    bordered: true
+  },
+  Descriptions: {
+    title: "프로젝트 정보",
+    items: [
+      { label: "상태", children: "진행 중" },
+      { label: "담당자", children: "제품 팀" },
+      { label: "최근 수정", children: "방금 전" }
+    ],
+    bordered: true
+  },
+  Statistic: {
+    title: "활성 사용자",
+    value: 128,
+    suffix: "명"
+  },
+  Tag: {
+    children: "검토 중",
+    color: "processing",
+    closable: true
+  },
+  Timeline: {
+    items: [
+      { label: "09:30", children: "디자인 리뷰 완료", color: "green" },
+      { label: "10:15", children: "개발 작업 진행", color: "blue" }
+    ],
+    mode: "left"
+  },
+  Carousel: {
+    items: ["첫 번째 안내", "두 번째 안내", "세 번째 안내"],
+    dots: true
+  },
+  Image: {
+    src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360'%3E%3Crect width='640' height='360' fill='%23e8edf5'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23334455' font-size='28'%3EPreview%3C/text%3E%3C/svg%3E",
+    alt: "미리보기 이미지",
+    preview: true
+  },
+  Watermark: {
+    content: "INTERNAL",
+    children: "검토용 콘텐츠"
   }
 };
 
@@ -362,26 +529,12 @@ const COMPONENT_OPTION_CATALOG = {
     variant: ["h1", "h2", "h3", "title", "body", "bodySm", "caption", "label"],
     color: ["default", "muted", "subtle", "primary", "success", "warning", "danger", "info"]
   },
-  Spinner: {
-    size: ["sm", "md", "lg"],
-    color: ["default", "primary", "danger"]
-  },
   Skeleton: {
     variant: ["text", "rounded", "rectangular", "circular"],
     size: ["xs", "sm", "md", "lg"],
     color: ["default", "muted", "subtle"],
     animation: ["pulse", "none"],
     speed: ["slow", "normal", "fast"]
-  },
-  StateView: {
-    variant: ["info", "success", "warning", "error", "empty", "loading"],
-    size: ["sm", "md", "lg"],
-    align: ["left", "center"],
-    layout: ["inline", "stacked"]
-  },
-  StatCard: {
-    color: ["default", "primary", "warning", "danger"],
-    size: ["sm", "md", "lg"]
   },
   FormField: {
     size: ["sm", "md", "lg"]
@@ -424,9 +577,6 @@ const COMPONENT_OPTION_MATRIX_KEYS = {
   Table: [],
   DataTable: [],
   Typography: [],
-  Spinner: [],
-  StateView: [],
-  StatCard: [],
   FormField: [],
   Pagination: ["variant", "size"],
   Separator: ["color", "lineStyle"],
@@ -456,10 +606,7 @@ const COMPONENT_IMPORTANT_OPTION_KEYS = {
   ScrollArea: ["scrollBarSize"],
   Label: ["size", "color"],
   Typography: ["variant", "color"],
-  Spinner: ["size", "color"],
   Skeleton: ["variant", "size", "color", "animation", "speed"],
-  StateView: ["variant", "size", "align", "layout"],
-  StatCard: ["color", "size"],
   FormField: ["size"],
   Modal: ["size", "intent"],
   AlertConfirm: ["size", "intent"],
@@ -519,10 +666,23 @@ const COMPONENT_OPTION_DEFAULTS = {
   Badge: { variant: "default", size: "sm", shape: "pill" },
   Card: { variant: "default" },
   Table: { density: "default", stickyHeader: false, striped: false, hoverable: true },
-  DataTable: { tableDensity: "default", stickyHeader: false, striped: false, isLoading: false, isError: false },
+  DataTable: {
+    tableDensity: "default",
+    stickyHeader: false,
+    striped: false,
+    isLoading: false,
+    isError: false
+  },
   Popover: { size: "md", variant: "default", withArrow: false },
-  Progress: { size: "md", color: "primary", striped: false, showValue: false, indeterminate: false, label: "" },
-  Tabs: { size: "md", variant: "pill", fullWidth: false },
+  Progress: {
+    size: "md",
+    color: "primary",
+    striped: false,
+    showValue: false,
+    indeterminate: false,
+    label: ""
+  },
+  Tabs: { size: "md", variant: "underline", fullWidth: false },
   Tooltip: {
     size: "md",
     color: "inverse",
@@ -561,6 +721,32 @@ const COMPONENT_OPTION_DEFAULTS = {
     disabled: false,
     fullWidth: false
   },
+  Steps: {
+    items: [{ title: "기본 정보" }, { title: "검토" }, { title: "완료" }],
+    current: 1,
+    direction: "horizontal"
+  },
+  Menu: {
+    items: [
+      { key: "overview", label: "개요" },
+      { key: "activity", label: "활동" },
+      { key: "settings", label: "설정" }
+    ],
+    defaultSelectedKeys: ["overview"]
+  },
+  Breadcrumb: {
+    items: [{ title: "홈", href: "#home" }, { title: "프로젝트", href: "#projects" }, { title: "상세" }]
+  },
+  Anchor: {
+    items: [
+      { href: "#overview", title: "개요" },
+      { href: "#details", title: "상세 정보" }
+    ]
+  },
+  BackTop: {
+    visibilityHeight: 0,
+    duration: 0
+  },
   Spacing: {
     size: "md",
     axis: "vertical",
@@ -568,27 +754,6 @@ const COMPONENT_OPTION_DEFAULTS = {
   },
   Label: { size: "md", color: "default", required: false },
   Typography: { variant: "body", color: "default" },
-  Spinner: { size: "md", color: "default", fullscreen: false, delayMs: 0, label: "" },
-  Skeleton: {
-    variant: "text",
-    size: "md",
-    color: "default",
-    animation: "pulse",
-    speed: "normal",
-    lines: 3,
-    lastLineWidth: "60%",
-    fullWidth: true
-  },
-  StateView: { variant: "info", size: "md", align: "center", layout: "inline" },
-  StatCard: { color: "default", size: "md" },
-  FormField: { size: "md", requiredMark: false },
-  Modal: {
-    size: "md",
-    intent: "default",
-    hideCloseButton: false,
-    preventEscapeClose: false,
-    preventOutsideClose: false
-  },
   AlertConfirm: {
     size: "md",
     intent: "default",
@@ -639,9 +804,19 @@ const COMPONENT_IMPORTANT_BOOLEAN_CONTROLS = {
   Sheet: ["showCloseButton"],
   ErrorBoundary: ["showRetryButton", "showRefreshButton", "showHomeButton"],
   Toast: ["closeButton", "richColors", "expand"],
-  Spinner: ["fullscreen"],
   Skeleton: ["fullWidth"],
-  Pagination: ["disabled", "showFirstLast", "showPrevNext", "showTotal", "showPageInfo", "showPageSizeSelector", "showQuickJumper", "hideOnSinglePage", "simple", "fullWidth"],
+  Pagination: [
+    "disabled",
+    "showFirstLast",
+    "showPrevNext",
+    "showTotal",
+    "showPageInfo",
+    "showPageSizeSelector",
+    "showQuickJumper",
+    "hideOnSinglePage",
+    "simple",
+    "fullWidth"
+  ],
   Separator: ["decorative"],
   Spacing: ["responsive"]
 };
@@ -652,7 +827,6 @@ const COMPONENT_IMPORTANT_NUMBER_CONTROLS = {
   Calendar: ["numberOfMonths"],
   Toast: ["visibleToasts"],
   Pagination: ["totalPages", "defaultPage", "defaultPageSize", "siblingCount", "boundaryCount"],
-  Spinner: ["delayMs"],
   Skeleton: ["lines"]
 };
 
@@ -691,7 +865,16 @@ const GLOBAL_TABLE_HIDE_PROPS = [
   "title"
 ];
 const COMPONENT_TABLE_HIDE_PROPS = {
-  DataTable: ["columns", "data", "getRowId", "onPageChange", "tableClassName", "totalCount", "page", "totalPages"],
+  DataTable: [
+    "columns",
+    "data",
+    "getRowId",
+    "onPageChange",
+    "tableClassName",
+    "totalCount",
+    "page",
+    "totalPages"
+  ],
   Table: ["children"],
   Modal: ["open", "onOpenChange", "defaultOpen"],
   AlertConfirm: ["open", "onOpenChange", "defaultOpen"],
@@ -736,9 +919,6 @@ const COMPONENT_TEXT_CONTROL_PROPS = {
   FormField: ["label", "description"],
   DataTable: ["loadingMessage", "emptyTitle", "errorTitle"],
   Progress: ["label"],
-  Spinner: ["label"],
-  StateView: ["title", "description"],
-  StatCard: ["label", "helper"],
   Pagination: [],
   Spacing: []
 };
@@ -804,13 +984,7 @@ const STATE_PROP_LABELS = {
   scrollBehavior: "스크롤 방식"
 };
 
-const NON_ESSENTIAL_BOOLEAN_STATE_PROPS = new Set([
-  "dot",
-  "pulse",
-  "interactive",
-  "truncate",
-  "removable"
-]);
+const NON_ESSENTIAL_BOOLEAN_STATE_PROPS = new Set(["dot", "pulse", "interactive", "truncate", "removable"]);
 
 const DEFAULT_MAX_STATE_SCENARIOS = 2;
 const MAX_STATE_SCENARIOS_BY_COMPONENT = {
@@ -852,23 +1026,32 @@ const COMPONENT_STATE_OVERRIDE_ARGS = {
 };
 
 const pickOptionMatrixKeys = (optionsByProp) => {
-  const candidates = sortOptionEntries(optionsByProp).filter(([, values]) => Array.isArray(values) && values.length >= 2 && values.length <= 6);
+  const candidates = sortOptionEntries(optionsByProp).filter(
+    ([, values]) => Array.isArray(values) && values.length >= 2 && values.length <= 6
+  );
   return candidates.slice(0, 2).map(([prop]) => prop);
 };
 
-const getOptionsByProp = (componentName) => DERIVED_COMPONENT_OPTION_CATALOG[componentName] ?? COMPONENT_OPTION_CATALOG[componentName];
+const getOptionsByProp = (componentName) =>
+  DERIVED_COMPONENT_OPTION_CATALOG[componentName] ?? COMPONENT_OPTION_CATALOG[componentName];
 const getOptionDefaultsByProp = (componentName) =>
   DERIVED_COMPONENT_OPTION_DEFAULTS[componentName] ?? COMPONENT_OPTION_DEFAULTS[componentName] ?? {};
 const getTextControlProps = (componentName) =>
   DERIVED_COMPONENT_TEXT_CONTROL_PROPS[componentName] ?? COMPONENT_TEXT_CONTROL_PROPS[componentName] ?? [];
 const getImportantOptionKeys = (componentName) =>
-  DERIVED_COMPONENT_IMPORTANT_OPTION_KEYS[componentName] ?? COMPONENT_IMPORTANT_OPTION_KEYS[componentName] ?? [];
+  DERIVED_COMPONENT_IMPORTANT_OPTION_KEYS[componentName] ??
+  COMPONENT_IMPORTANT_OPTION_KEYS[componentName] ??
+  [];
 const getOptionMatrixKeys = (componentName) =>
   DERIVED_COMPONENT_OPTION_MATRIX_KEYS[componentName] ?? COMPONENT_OPTION_MATRIX_KEYS[componentName];
 const getImportantBooleanControls = (componentName) =>
-  DERIVED_COMPONENT_IMPORTANT_BOOLEAN_CONTROLS[componentName] ?? COMPONENT_IMPORTANT_BOOLEAN_CONTROLS[componentName] ?? [];
+  DERIVED_COMPONENT_IMPORTANT_BOOLEAN_CONTROLS[componentName] ??
+  COMPONENT_IMPORTANT_BOOLEAN_CONTROLS[componentName] ??
+  [];
 const getImportantNumberControls = (componentName) =>
-  DERIVED_COMPONENT_IMPORTANT_NUMBER_CONTROLS[componentName] ?? COMPONENT_IMPORTANT_NUMBER_CONTROLS[componentName] ?? [];
+  DERIVED_COMPONENT_IMPORTANT_NUMBER_CONTROLS[componentName] ??
+  COMPONENT_IMPORTANT_NUMBER_CONTROLS[componentName] ??
+  [];
 
 const initializeDerivedComponentMaps = async () => {
   const metadataByComponent = await loadUiStorybookMetadata(ROOT);
@@ -940,7 +1123,9 @@ const toArgTypesBlock = (componentName) => {
   const importantOptionKeys = getImportantOptionKeys(componentName);
   const orderedEntries = optionsByProp
     ? sortOptionEntries(
-        Object.fromEntries(Object.entries(optionsByProp).filter(([prop]) => importantOptionKeys.includes(prop)))
+        Object.fromEntries(
+          Object.entries(optionsByProp).filter(([prop]) => importantOptionKeys.includes(prop))
+        )
       )
     : [];
   const defaultsByProp = getOptionDefaultsByProp(componentName);
@@ -967,7 +1152,8 @@ const toArgTypesBlock = (componentName) => {
 
   for (const [prop, options] of orderedEntries) {
     const defaultValue = defaultsByProp[prop];
-    const defaultValueConfig = defaultValue === undefined ? {} : { table: { defaultValue: { summary: defaultValue } } };
+    const defaultValueConfig =
+      defaultValue === undefined ? {} : { table: { defaultValue: { summary: defaultValue } } };
     const isBooleanPair =
       Array.isArray(options) && options.length === 2 && options.includes(false) && options.includes(true);
     if (isBooleanPair) {
@@ -980,7 +1166,10 @@ const toArgTypesBlock = (componentName) => {
   const optionProps = new Set(orderedEntries.map(([prop]) => prop));
   const allowedBooleanControls = new Set(getImportantBooleanControls(componentName));
   const allowedNumberControls = new Set(getImportantNumberControls(componentName));
-  const hiddenTableProps = new Set([...GLOBAL_TABLE_HIDE_PROPS, ...(COMPONENT_TABLE_HIDE_PROPS[componentName] ?? [])]);
+  const hiddenTableProps = new Set([
+    ...GLOBAL_TABLE_HIDE_PROPS,
+    ...(COMPONENT_TABLE_HIDE_PROPS[componentName] ?? [])
+  ]);
   for (const prop of getTextControlProps(componentName).filter(
     (name) =>
       !optionProps.has(name) &&
@@ -996,7 +1185,8 @@ const toArgTypesBlock = (componentName) => {
   }
 
   for (const prop of booleanPropsFromArgs.filter(
-    (name) => !optionProps.has(name) && !GLOBAL_CONTROL_OFF_PROPS.includes(name) && allowedBooleanControls.has(name)
+    (name) =>
+      !optionProps.has(name) && !GLOBAL_CONTROL_OFF_PROPS.includes(name) && allowedBooleanControls.has(name)
   )) {
     const defaultValue = argsByProp[prop];
     mergeArgTypeConfig(prop, {
@@ -1006,7 +1196,8 @@ const toArgTypesBlock = (componentName) => {
   }
 
   for (const prop of numberPropsFromArgs.filter(
-    (name) => !optionProps.has(name) && !GLOBAL_CONTROL_OFF_PROPS.includes(name) && allowedNumberControls.has(name)
+    (name) =>
+      !optionProps.has(name) && !GLOBAL_CONTROL_OFF_PROPS.includes(name) && allowedNumberControls.has(name)
   )) {
     const defaultValue = argsByProp[prop];
     mergeArgTypeConfig(prop, {
@@ -1027,7 +1218,7 @@ const toArgTypesBlock = (componentName) => {
   }
 
   const merged = Array.from(argTypeMap.entries())
-    .map(([prop, config]) => `    ${prop}: ${JSON.stringify(config).replace(/\"([^\"]+)\":/g, "$1:")}`)
+    .map(([prop, config]) => `    ${prop}: ${JSON.stringify(config).replace(/"([^"]+)":/g, "$1:")}`)
     .join(",\n");
   if (!merged) return "";
 
@@ -1138,7 +1329,9 @@ const toOptionMatrixStory = (componentName, options = {}) => {
 
   let filteredOptionsByProp = matrixSource;
   if (Object.keys(filteredOptionsByProp).length === 0 && optionsByProp) {
-    const firstEntry = sortOptionEntries(optionsByProp).find(([, values]) => Array.isArray(values) && values.length > 1);
+    const firstEntry = sortOptionEntries(optionsByProp).find(
+      ([, values]) => Array.isArray(values) && values.length > 1
+    );
     if (firstEntry) {
       filteredOptionsByProp = { [firstEntry[0]]: firstEntry[1].slice(0, 4) };
     }
@@ -1269,11 +1462,11 @@ const toStatesStory = (componentName, options = {}) => {
     .slice(0, maxStateScenarios);
 
   const children = COMPONENT_DEFAULT_ARGS[componentName]?.children;
-  const jsxElementClose = children
-    ? `>\n              ${children}\n            </${componentName}>`
-    : " />";
+  const jsxElementClose = children ? `>\n              ${children}\n            </${componentName}>` : " />";
 
-  const fallbackOptionEntry = sortOptionEntries(optionsByProp).find(([, values]) => Array.isArray(values) && values.length > 1);
+  const fallbackOptionEntry = sortOptionEntries(optionsByProp).find(
+    ([, values]) => Array.isArray(values) && values.length > 1
+  );
   const fallbackStateScenario = fallbackOptionEntry
     ? `          <div className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
             <div className="text-caption text-muted mb-2">${toStateLabel(fallbackOptionEntry[0])} ${String(
@@ -1296,7 +1489,9 @@ const toStatesStory = (componentName, options = {}) => {
     ...selectedBooleanProps.map((prop) => {
       const title = toStateLabel(prop);
       const overrideArgs = COMPONENT_STATE_OVERRIDE_ARGS[componentName]?.[prop] ?? null;
-      const overrideSpread = overrideArgs ? `\n              {...${JSON.stringify(overrideArgs)} as Record<string, unknown>}` : "";
+      const overrideSpread = overrideArgs
+        ? `\n              {...${JSON.stringify(overrideArgs)} as Record<string, unknown>}`
+        : "";
       return `          <div className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
             <div className="text-caption text-muted mb-2">${title}</div>
             <${componentName}
@@ -1393,7 +1588,8 @@ export const Examples: Story = {
 `;
 };
 
-const hasStoryExport = (source, exportName) => new RegExp(`export const\\s+${exportName}\\s*:\\s*Story\\s*=`).test(source);
+const hasStoryExport = (source, exportName) =>
+  new RegExp(`export const\\s+${exportName}\\s*:\\s*Story\\s*=`).test(source);
 
 const OVERRIDE_STORY_SECTION_ARGS = {
   AlertConfirm: {
@@ -1429,7 +1625,7 @@ const OVERRIDE_STORY_SECTION_ARGS = {
   Tabs: {
     states: { fullWidth: true },
     optionMatrix: { variant: "underline", size: "lg" },
-    examples: { variant: "pill", size: "md" }
+    examples: { variant: "underline", size: "md" }
   },
   Toast: {
     states: { expand: true },
@@ -1502,7 +1698,7 @@ export const ${exportName}: Story = {
 };
 `;
 
-const toPlaygroundStatesOverrideSource = (source, componentName) => {
+const toPlaygroundStatesOverrideSource = (source) => {
   let next = source.trimEnd();
 
   next = next.replace(/\nexport const\s+(?!Playground)[A-Za-z]+\s*:\s*Story\s*=\s*\{[\s\S]*?\n\};\n?/g, "\n");
@@ -1512,49 +1708,47 @@ const toPlaygroundStatesOverrideSource = (source, componentName) => {
 const ensureRequiredStorySections = (source, componentName, options = {}) => {
   const { placeholderOnly = false } = options;
   let next = source.trimEnd();
-
   const overrideArgs = OVERRIDE_STORY_SECTION_ARGS[componentName] ?? {};
-  const statesSection = placeholderOnly
-    ? toOverrideReplayStory(
-        "States",
-        "상태",
-        componentName,
-        overrideArgs.states,
-        "핵심 상태 옵션을 적용한 실제 동작 예시입니다."
-      )
-    : toStatesStory(componentName, { placeholderOnly });
-  const optionMatrixSection = placeholderOnly
-    ? toOverrideReplayStory(
-        "OptionMatrix",
-        "옵션 매트릭스",
-        componentName,
-        overrideArgs.optionMatrix,
-        "주요 옵션 조합을 적용한 대표 예시입니다."
-      )
-    : toOptionMatrixStory(componentName, { placeholderOnly });
-  const examplesSection = placeholderOnly
-    ? toOverrideReplayStory(
-        "Examples",
-        "사용 예시",
-        componentName,
-        overrideArgs.examples,
-        "실사용 시나리오 중심의 예시입니다."
-      )
-    : toExamplesStory(componentName, { placeholderOnly });
-
-  const requiredStories = [
-    ["Playground", null],
-    ["States", statesSection],
-    ["OptionMatrix", optionMatrixSection],
-    ["Examples", examplesSection]
+  const sections = [
+    [
+      "States",
+      placeholderOnly
+        ? toOverrideReplayStory(
+            "States",
+            "상태",
+            componentName,
+            overrideArgs.states,
+            "핵심 상태 옵션을 적용한 실제 동작 예시입니다."
+          )
+        : toStatesStory(componentName, { placeholderOnly })
+    ],
+    [
+      "OptionMatrix",
+      placeholderOnly
+        ? toOverrideReplayStory(
+            "OptionMatrix",
+            "옵션 매트릭스",
+            componentName,
+            overrideArgs.optionMatrix,
+            "주요 옵션 조합을 적용한 대표 예시입니다."
+          )
+        : toOptionMatrixStory(componentName, { placeholderOnly })
+    ],
+    [
+      "Examples",
+      placeholderOnly
+        ? toOverrideReplayStory(
+            "Examples",
+            "사용 예시",
+            componentName,
+            overrideArgs.examples,
+            "실사용 시나리오 중심의 예시입니다."
+          )
+        : toExamplesStory(componentName, { placeholderOnly })
+    ]
   ];
-
-  for (const [storyName, storySource] of requiredStories) {
-    if (hasStoryExport(next, storyName)) continue;
-    if (!storySource) continue;
-    next += `\n\n${storySource.trim()}\n`;
-  }
-
+  for (const [storyName, storySource] of sections)
+    if (!hasStoryExport(next, storyName) && storySource) next += `\n\n${storySource.trim()}\n`;
   return `${next}\n`;
 };
 
@@ -2232,7 +2426,7 @@ const meta: Meta<TabsStoryArgs> = {
   title: "Components/Tabs",
   tags: ["autodocs"],
   parameters: { layout: "padded", controls: { expanded: true } },
-  args: { size: "md", variant: "pill", fullWidth: false },
+  args: { size: "md", variant: "underline", fullWidth: false },
   argTypes: {
     size: { control: "inline-radio", options: ["sm", "md", "lg"] },
     variant: { control: "inline-radio", options: ["pill", "underline"] },
@@ -2706,6 +2900,16 @@ const rows: IssueRow[] = [
   }
 ];
 
+const virtualizationRows: IssueRow[] = Array.from({ length: 60 }, (_, index) => ({
+  id: "ISSUE-" + (1100 + index),
+  title: "가상화 테스트 이슈 " + (index + 1),
+  severity: index % 4 === 0 ? "critical" : index % 3 === 0 ? "high" : "medium",
+  status: index % 5 === 0 ? "resolved" : index % 2 ? "open" : "investigating",
+  service: index % 2 ? "docs-api" : "ui-shell",
+  occurrences: 10 + index,
+  updatedAt: (index + 1) + "분 전"
+}));
+
 const severityToBadge: Record<IssueRow["severity"], "danger" | "warning" | "info" | "secondary"> = {
   critical: "danger",
   high: "danger",
@@ -2745,7 +2949,6 @@ const columns = [
   {
     id: "service",
     accessorKey: "service",
-    fixed: "left",
     width: 180,
     header: ({ column }: { column: { id: string } }) => <DataTableColumnHeader column={column} title="서비스" />
   },
@@ -2764,7 +2967,6 @@ const columns = [
   {
     id: "action",
     header: ({ column }: { column: { id: string } }) => <DataTableColumnHeader column={column} title="액션" />,
-    fixed: "right",
     align: "center",
     width: 120,
     render: ({ row }: { row: { isLast: boolean } }) =>
@@ -2794,9 +2996,9 @@ const meta: Meta<DataTableStoryArgs> = {
     columnDivider: false,
     headerTextAlign: "center",
     cellTextAlign: "center",
-    selectable: false,
+    selectable: true,
     rowSelectionMode: "multiple",
-    sortable: false,
+    sortable: true,
     columnResizeEnabled: true,
     virtualized: false,
     virtualizationMode: "paged",
@@ -2844,7 +3046,7 @@ export const Playground: Story = {
     return (
       <DataTable<IssueRow>
         columns={columns}
-        data={rows}
+        data={args.virtualized ? virtualizationRows : rows}
         isLoading={args.isLoading}
         isError={args.isError}
         enablePagination={args.enablePagination}
@@ -2899,6 +3101,51 @@ export const Playground: Story = {
 };
 `;
 
+const createFormStorySource = () => `import * as React from "react";
+import type { Meta, StoryObj } from "@storybook/react";
+import { Button, Form, FormItem, Input } from "../../../../index";
+
+type FormStoryArgs = { layout: "horizontal" | "vertical" | "inline" };
+
+const meta: Meta<FormStoryArgs> = {
+  title: "Components/Form",
+  tags: ["autodocs"],
+  parameters: { layout: "padded", controls: { expanded: true } },
+  args: { layout: "vertical" },
+  argTypes: { layout: { control: "inline-radio", options: ["vertical", "horizontal", "inline"] } }
+};
+
+export default meta;
+type Story = StoryObj<FormStoryArgs>;
+
+export const Playground: Story = {
+  render: (args) => {
+    const [submitted, setSubmitted] = React.useState("");
+    return (
+      <div className="max-w-xl space-y-4">
+        <Form
+          layout={args.layout}
+          initialValues={{ name: "" }}
+          onFinish={(values) => setSubmitted(String(values.name ?? "제출 완료"))}
+        >
+          <FormItem name="name" label="이름" required rules={[{ required: true, message: "이름을 입력해 주세요." }]}>
+            <Input placeholder="이름을 입력하세요" />
+          </FormItem>
+          <FormItem name="email" label="이메일" rules={[{ validator: (value) => value && !String(value).includes("@") ? "이메일 형식을 확인해 주세요." : null }]}>
+            <Input type="email" placeholder="name@example.com" />
+          </FormItem>
+          <div className="flex gap-2">
+            <Button type="submit">저장</Button>
+            <Button type="reset" variant="outline">초기화</Button>
+          </div>
+        </Form>
+        {submitted ? <p role="status" className="text-sm text-success">저장됨: {submitted}</p> : null}
+      </div>
+    );
+  }
+};
+`;
+
 const QUALITY_STORY_OVERRIDES = {
   Card: createCardStorySource,
   AlertConfirm: createAlertConfirmStorySource,
@@ -2914,13 +3161,16 @@ const QUALITY_STORY_OVERRIDES = {
   Popover: createPopoverStorySource,
   Accordion: createAccordionStorySource,
   ErrorBoundary: createErrorBoundaryStorySource,
-  Avatar: createAvatarStorySource
+  Avatar: createAvatarStorySource,
+  Form: createFormStorySource
 };
 
 const createStorySource = (componentName) => {
   const override = QUALITY_STORY_OVERRIDES[componentName];
   if (override) {
-    return toPlaygroundStatesOverrideSource(override(), componentName);
+    return ensureRequiredStorySections(toPlaygroundStatesOverrideSource(override()), componentName, {
+      placeholderOnly: false
+    });
   }
 
   const defaultChildren = COMPONENT_DEFAULT_ARGS[componentName]?.children;
@@ -2985,7 +3235,7 @@ const runGeneratedStoryValidation = async (modeLabel) => {
 
 const runCheck = async () => {
   const indexSource = await fs.readFile(COMPONENT_INDEX_PATH, "utf8");
-  const expected = parseExportedNames(indexSource);
+  const expected = COMPONENT_MANIFEST.map((entry) => entry.name);
   const existing = await collectExistingStoryNames();
   const missing = expected.filter((name) => !existing.has(name));
 
@@ -3003,8 +3253,7 @@ const runCheck = async () => {
 
 const runGenerate = async () => {
   await initializeDerivedComponentMaps();
-  const componentIndexSource = await fs.readFile(COMPONENT_INDEX_PATH, "utf8");
-  const exportedComponentNames = parseExportedNames(componentIndexSource);
+  const exportedComponentNames = COMPONENT_MANIFEST.map((entry) => entry.name);
 
   await fs.rm(LEGACY_AUTO_STORIES_DIR, { recursive: true, force: true });
   await fs.rm(path.join(STORIES_ROOT, "components/actions"), { recursive: true, force: true });
@@ -3068,9 +3317,7 @@ const runGenerate = async () => {
   console.log(`[storybook:gen] 정리: 제거 ${removed}`);
 
   if (byCategory.size > 0) {
-    const summary = [...byCategory.entries()]
-      .map(([category, count]) => `${category}=${count}`)
-      .join(", ");
+    const summary = [...byCategory.entries()].map(([category, count]) => `${category}=${count}`).join(", ");
     console.log(`[storybook:gen] 카테고리: ${summary}`);
   }
 

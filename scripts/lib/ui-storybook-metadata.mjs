@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import * as ts from "typescript";
-import { parseExportedNames } from "./ui-storybook-targets.mjs";
+import { loadUiComponentManifest } from "./ui-component-manifest.mjs";
 
 const toPascalCase = (value) =>
   value
@@ -13,7 +13,11 @@ const toPascalCase = (value) =>
 const unwrapExpression = (expression) => {
   let current = expression;
   while (current) {
-    if (ts.isParenthesizedExpression(current) || ts.isAsExpression(current) || ts.isSatisfiesExpression(current)) {
+    if (
+      ts.isParenthesizedExpression(current) ||
+      ts.isAsExpression(current) ||
+      ts.isSatisfiesExpression(current)
+    ) {
       current = current.expression;
       continue;
     }
@@ -88,7 +92,12 @@ const collectPropMetaFromMembers = (members, aliasOptionMap = new Map()) => {
     const propName = propNameFromNode(member.name);
     if (!propName) continue;
     let options = parseOptionsFromTypeNode(member.type);
-    if (!options && member.type && ts.isTypeReferenceNode(member.type) && ts.isIdentifier(member.type.typeName)) {
+    if (
+      !options &&
+      member.type &&
+      ts.isTypeReferenceNode(member.type) &&
+      ts.isIdentifier(member.type.typeName)
+    ) {
       options = aliasOptionMap.get(member.type.typeName.text) ?? null;
     }
     const primitive = parsePrimitiveKind(member.type);
@@ -102,7 +111,9 @@ const pickBestPropsNode = (componentName, sourceFile) => {
   const aliasOptionMap = collectTypeAliasOptionMap(sourceFile);
 
   for (const statement of sourceFile.statements) {
-    const exported = Boolean(statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword));
+    const exported = Boolean(
+      statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
+    );
     if (!exported) continue;
 
     if (ts.isInterfaceDeclaration(statement) && statement.name.text.endsWith("Props")) {
@@ -111,7 +122,11 @@ const pickBestPropsNode = (componentName, sourceFile) => {
       continue;
     }
 
-    if (ts.isTypeAliasDeclaration(statement) && statement.name.text.endsWith("Props") && ts.isTypeLiteralNode(statement.type)) {
+    if (
+      ts.isTypeAliasDeclaration(statement) &&
+      statement.name.text.endsWith("Props") &&
+      ts.isTypeLiteralNode(statement.type)
+    ) {
       const fields = collectPropMetaFromMembers(statement.type.members, aliasOptionMap);
       candidates.push({ name: statement.name.text, fields });
     }
@@ -135,7 +150,9 @@ const parseDefaultsFromConstants = (sourceFile, sourceText) => {
 
   for (const statement of sourceFile.statements) {
     if (!ts.isVariableStatement(statement)) continue;
-    const exported = Boolean(statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword));
+    const exported = Boolean(
+      statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
+    );
     if (!exported) continue;
 
     for (const declaration of statement.declarationList.declarations) {
@@ -167,14 +184,13 @@ const collectFilesBySuffix = async (dirPath, suffix) => {
 };
 
 export const loadUiStorybookMetadata = async (rootDir) => {
-  const componentsIndexPath = path.join(rootDir, "packages/ui/components/index.ts");
   const componentsDir = path.join(rootDir, "packages/ui/components");
-  const indexSource = await fs.readFile(componentsIndexPath, "utf8");
-  const componentNames = parseExportedNames(indexSource);
+  const manifest = loadUiComponentManifest(rootDir);
 
   const metadata = {};
 
-  for (const componentName of componentNames) {
+  for (const entry of manifest) {
+    const componentName = entry.name;
     const dirName = componentName
       .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
       .replace(/\s+/g, "-")
@@ -194,7 +210,13 @@ export const loadUiStorybookMetadata = async (rootDir) => {
     const propMeta = new Map();
     for (const filePath of typeFiles) {
       const sourceText = await fs.readFile(filePath, "utf8");
-      const sourceFile = ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+      const sourceFile = ts.createSourceFile(
+        filePath,
+        sourceText,
+        ts.ScriptTarget.Latest,
+        true,
+        ts.ScriptKind.TS
+      );
       const selected = pickBestPropsNode(componentName, sourceFile);
       if (!selected) continue;
       for (const [key, value] of selected.fields.entries()) {
@@ -205,7 +227,13 @@ export const loadUiStorybookMetadata = async (rootDir) => {
     const defaults = {};
     for (const filePath of constantsFiles) {
       const sourceText = await fs.readFile(filePath, "utf8");
-      const sourceFile = ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+      const sourceFile = ts.createSourceFile(
+        filePath,
+        sourceText,
+        ts.ScriptTarget.Latest,
+        true,
+        ts.ScriptKind.TS
+      );
       Object.assign(defaults, parseDefaultsFromConstants(sourceFile, sourceText));
     }
 
@@ -222,6 +250,7 @@ export const loadUiStorybookMetadata = async (rootDir) => {
     }
 
     metadata[componentName] = {
+      ...entry,
       dirName: toPascalCase(dirName),
       defaults,
       options,

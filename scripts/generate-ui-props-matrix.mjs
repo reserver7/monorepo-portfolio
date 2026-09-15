@@ -21,7 +21,8 @@ const readText = (filePath) => fs.readFileSync(filePath, "utf8");
 const toSourceFile = (filePath) =>
   ts.createSourceFile(filePath, readText(filePath), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
 
-const isNodeExported = (node) => Boolean(node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword));
+const isNodeExported = (node) =>
+  Boolean(node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword));
 
 const propNameFromNode = (nameNode) => {
   if (!nameNode) return null;
@@ -165,7 +166,13 @@ const unwrapExpression = (expression) => {
 
 const parseDefaults = (constantsFilePath) => {
   const sourceText = readText(constantsFilePath);
-  const sourceFile = ts.createSourceFile(constantsFilePath, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const sourceFile = ts.createSourceFile(
+    constantsFilePath,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS
+  );
   const entries = [];
 
   for (const statement of sourceFile.statements) {
@@ -253,6 +260,18 @@ for (const row of rows) {
     `| ${row.componentName} | \`${row.dirPath}\` | \`${row.typesFile}\` | \`${row.propsName}\` | ${keyProps} | ${defaults} |`
   );
 }
+
+lines.push(
+  "",
+  "## 역할 경계",
+  "",
+  "- `Card`: 범용 콘텐츠 컨테이너 · `Statistic`: 단일 수치 표현 · 제품별 지표 조합은 앱 로컬에서 구성",
+  "- `Empty`/`Alert`/`Result`: 빈 상태·인라인 피드백·작업 결과 · 제품별 상태 패널은 앱 로컬에서 구성",
+  "- `Spin`: 공용 로딩 표시 · `Drawer`: side overlay · `Modal`: blocking dialog · `Popconfirm`: anchored confirmation",
+  "- `DataTable`: 정렬/필터/pagination 데이터 그리드 · `List`: 반복 콘텐츠 · markup table은 component 내부 구현",
+  "- `Input`: 기본 field · `Password`/`Search`/`AutoComplete`: 단일 목적 확장 · `Select`/`Cascader`/`TreeSelect`: 데이터 구조별 선택",
+  "- `Tabs`: 콘텐츠 영역 탐색을 위한 유일한 공용 navigation selection component"
+);
 
 lines.push("");
 fs.writeFileSync(outputPath, `${lines.join("\n")}\n`, "utf8");

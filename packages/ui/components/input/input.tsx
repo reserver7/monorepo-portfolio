@@ -49,6 +49,7 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
       defaultValue,
       maxLength,
       onChange,
+      onKeyDown,
       onBlur,
       name,
       ...props
@@ -78,7 +79,13 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
     const supportMessage = errorMessage ?? helperText;
     const hasDecorator = Boolean(prefix || suffix || clearable);
     const shouldWrapField = Boolean(
-      label || required || supportMessage || hasDecorator || containerClassName || labelClassName || helperClassName
+      label ||
+      required ||
+      supportMessage ||
+      hasDecorator ||
+      containerClassName ||
+      labelClassName ||
+      helperClassName
     );
     const showClearButton = clearable && currentValue.length > 0 && !disabled && !readOnly;
     const currentLength = currentValue.length;
@@ -107,7 +114,7 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
 
     const handleKeyDown = React.useCallback(
       (event: React.KeyboardEvent<HTMLInputElement>) => {
-        props.onKeyDown?.(event);
+        onKeyDown?.(event);
         if (event.defaultPrevented) {
           return;
         }
@@ -121,7 +128,7 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
           onEscape?.(event.currentTarget.value, event);
         }
       },
-      [onEnter, onEscape, props]
+      [onEnter, onEscape, onKeyDown]
     );
 
     const handleClear = React.useCallback(() => {
@@ -158,8 +165,8 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
         className={cn(
           "text-foreground placeholder:text-muted w-full outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50",
           hasDecorator
-            ? "h-auto min-w-0 flex-1 border-0 bg-transparent p-0 focus:ring-0"
-            : "rounded-[var(--radius-md)] border px-3 py-2 ring-0 focus:ring-1",
+            ? "h-auto min-w-0 flex-1 border-0 bg-transparent p-0 focus-visible:ring-0"
+            : "rounded-[var(--radius-md)] border px-3 py-2 ring-0 focus-visible:ring-1",
           !hasDecorator && INPUT_SIZE_CLASS[resolvedSize],
           !hasDecorator && INPUT_VARIANT_CLASS[resolvedVariant],
           !hasDecorator && INPUT_STATUS_CLASS[resolvedStatus],

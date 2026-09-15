@@ -2,7 +2,7 @@ import type { TabsSize, TabsVariant } from "./tabs.types";
 
 export const TABS_DEFAULTS = {
   size: "md",
-  variant: "pill",
+  variant: "underline",
   fullWidth: false
 } as const;
 
@@ -24,8 +24,7 @@ export const TABS_LIST_VARIANT_CLASS: Record<TabsVariant, string> = {
 };
 
 export const TABS_TRIGGER_VARIANT_CLASS: Record<TabsVariant, string> = {
-  pill:
-    "text-muted rounded-[var(--radius-sm)] hover:bg-surface hover:text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none",
+  pill: "text-muted rounded-[var(--radius-sm)] hover:bg-surface hover:text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none",
   underline:
     "text-muted rounded-none border-b-2 border-transparent hover:border-default hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold"
 };
