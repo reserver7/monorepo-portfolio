@@ -146,6 +146,22 @@ const columns = [
   }
 ];
 
+const isRenderableNode = (value: unknown): boolean => {
+  if (value == null) return true;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return true;
+  if (React.isValidElement(value)) return true;
+  if (Array.isArray(value)) return value.every(isRenderableNode);
+  return false;
+};
+
+const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknown> => {
+  const next = { ...args };
+  for (const key of ["children","leftIcon","rightIcon","prefix","suffix","label","helperText","errorMessage","title","description","helper"]) {
+    if (!isRenderableNode(next[key])) delete next[key];
+  }
+  return next;
+};
+
 const meta: Meta<DataTableStoryArgs> = {
   title: "Components/DataTable",
   component: DataTable,
@@ -287,7 +303,7 @@ export const States: Story = {
             <div className="text-caption text-muted mb-2">columnDivider</div>
             <DataTable
               {...sanitizeStoryArgs(args as Record<string, unknown>)}
-              
+
               columnDivider
              />
           </div>
@@ -295,7 +311,7 @@ export const States: Story = {
             <div className="text-caption text-muted mb-2">columnResizeEnabled</div>
             <DataTable
               {...sanitizeStoryArgs(args as Record<string, unknown>)}
-              
+
               columnResizeEnabled
              />
           </div>
@@ -303,7 +319,7 @@ export const States: Story = {
             <div className="text-caption text-muted mb-2">enablePagination</div>
             <DataTable
               {...sanitizeStoryArgs(args as Record<string, unknown>)}
-              
+
               enablePagination
              />
           </div>
@@ -408,4 +424,3 @@ export const Examples: Story = {
     </section>
   )
 };
-

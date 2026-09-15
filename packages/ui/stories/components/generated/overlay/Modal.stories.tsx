@@ -42,6 +42,22 @@ type ModalStoryArgs = {
   fullWidthActions: boolean;
 };
 
+const isRenderableNode = (value: unknown): boolean => {
+  if (value == null) return true;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return true;
+  if (React.isValidElement(value)) return true;
+  if (Array.isArray(value)) return value.every(isRenderableNode);
+  return false;
+};
+
+const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknown> => {
+  const next = { ...args };
+  for (const key of ["children","leftIcon","rightIcon","prefix","suffix","label","helperText","errorMessage","title","description","helper"]) {
+    if (!isRenderableNode(next[key])) delete next[key];
+  }
+  return next;
+};
+
 const meta: Meta<ModalStoryArgs> = {
   title: "Components/Modal",
   id: "components-generated-overlays-dialog",
@@ -228,7 +244,7 @@ export const States: Story = {
             <div className="text-caption text-muted mb-2">cancelDisabled</div>
             <Modal
               {...sanitizeStoryArgs(args as Record<string, unknown>)}
-              
+
               cancelDisabled
              />
           </div>
@@ -236,7 +252,7 @@ export const States: Story = {
             <div className="text-caption text-muted mb-2">closeOnConfirm</div>
             <Modal
               {...sanitizeStoryArgs(args as Record<string, unknown>)}
-              
+
               closeOnConfirm
              />
           </div>
@@ -244,7 +260,7 @@ export const States: Story = {
             <div className="text-caption text-muted mb-2">confirmDisabled</div>
             <Modal
               {...sanitizeStoryArgs(args as Record<string, unknown>)}
-              
+
               confirmDisabled
              />
           </div>
@@ -350,4 +366,3 @@ export const Examples: Story = {
     </section>
   )
 };
-

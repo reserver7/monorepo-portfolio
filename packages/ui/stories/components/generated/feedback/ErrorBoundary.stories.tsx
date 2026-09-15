@@ -23,6 +23,22 @@ function CrashPanel() {
   );
 }
 
+const isRenderableNode = (value: unknown): boolean => {
+  if (value == null) return true;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return true;
+  if (React.isValidElement(value)) return true;
+  if (Array.isArray(value)) return value.every(isRenderableNode);
+  return false;
+};
+
+const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknown> => {
+  const next = { ...args };
+  for (const key of ["children","leftIcon","rightIcon","prefix","suffix","label","helperText","errorMessage","title","description","helper"]) {
+    if (!isRenderableNode(next[key])) delete next[key];
+  }
+  return next;
+};
+
 const meta: Meta<ErrorBoundaryStoryArgs> = {
   title: "Components/ErrorBoundary",
   component: ErrorBoundary,

@@ -3251,6 +3251,32 @@ const runCheck = async () => {
   process.exit(1);
 };
 
+const ensureStoryArgSanitizer = (source) => {
+  if (!source.includes("sanitizeStoryArgs(") || source.includes("const sanitizeStoryArgs")) {
+    return source;
+  }
+
+  const sanitizer = `const isRenderableNode = (value: unknown): boolean => {
+  if (value == null) return true;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return true;
+  if (React.isValidElement(value)) return true;
+  if (Array.isArray(value)) return value.every(isRenderableNode);
+  return false;
+};
+
+const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknown> => {
+  const next = { ...args };
+  for (const key of ${JSON.stringify(RENDERABLE_NODE_PROP_KEYS)}) {
+    if (!isRenderableNode(next[key])) delete next[key];
+  }
+  return next;
+};
+
+`;
+
+  return source.replace("const meta:", `${sanitizer}const meta:`);
+};
+
 const runGenerate = async () => {
   await initializeDerivedComponentMaps();
   const exportedComponentNames = COMPONENT_MANIFEST.map((entry) => entry.name);
@@ -3274,7 +3300,7 @@ const runGenerate = async () => {
     const storyFileName = `${componentName}.stories.tsx`;
     const storyPath = path.join(categoryDir, storyFileName);
     const relativeStoryPath = path.join(category.key, storyFileName);
-    const nextStorySource = createStorySource(componentName);
+    const nextStorySource = ensureStoryArgSanitizer(createStorySource(componentName));
 
     await fs.mkdir(categoryDir, { recursive: true });
     nextStoryRelativePaths.add(relativeStoryPath);
