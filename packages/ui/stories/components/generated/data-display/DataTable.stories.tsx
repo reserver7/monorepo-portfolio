@@ -73,7 +73,7 @@ const virtualizationRows: IssueRow[] = Array.from({ length: 60 }, (_, index) => 
   status: index % 5 === 0 ? "resolved" : index % 2 ? "open" : "investigating",
   service: index % 2 ? "docs-api" : "ui-shell",
   occurrences: 10 + index,
-  updatedAt: (index + 1) + "분 전"
+  updatedAt: index + 1 + "분 전"
 }));
 
 const severityToBadge: Record<IssueRow["severity"], "danger" | "warning" | "info" | "secondary"> = {
@@ -147,7 +147,9 @@ const columns = [
   },
   {
     id: "action",
-    header: ({ column }: { column: { id: string } }) => <DataTableColumnHeader column={column} title="액션" />,
+    header: ({ column }: { column: { id: string } }) => (
+      <DataTableColumnHeader column={column} title="액션" />
+    ),
     align: "center",
     width: 120,
     render: ({ row }: { row: { isLast: boolean } }) =>
@@ -288,45 +290,44 @@ export const States: Story = {
   render: (args) => {
     const nextArgs = {
       ...(args as Record<string, unknown>),
-      ...({"isLoading":true} as Record<string, unknown>)
+      ...({ isLoading: true } as Record<string, unknown>)
     } as typeof args;
 
     return (
-      <section className="space-y-3 rounded-[var(--radius-xl)] border border-default bg-surface p-4">
+      <section className="border-default bg-surface space-y-3 rounded-[var(--radius-xl)] border p-4">
         <div className="flex items-center justify-between">
           <h3 className="text-body-md text-foreground font-semibold">상태</h3>
-          <span className="text-caption text-muted rounded-full border border-default bg-surface-elevated px-2 py-0.5">
+          <span className="text-caption text-muted border-default bg-surface-elevated rounded-full border px-2 py-0.5">
             DataTable
           </span>
         </div>
         <p className="text-body-sm text-muted">핵심 상태 옵션을 적용한 실제 동작 예시입니다.</p>
-        <div className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
+        <div className="border-default bg-surface rounded-[var(--radius-md)] border p-3">
           {Playground.render ? Playground.render(nextArgs) : null}
         </div>
       </section>
     );
   }
 };
-
 
 export const OptionMatrix: Story = {
   parameters: { controls: { disable: true } },
   render: (args) => {
     const nextArgs = {
       ...(args as Record<string, unknown>),
-      ...({"tableDensity":"compact","striped":true} as Record<string, unknown>)
+      ...({ tableDensity: "compact", striped: true } as Record<string, unknown>)
     } as typeof args;
 
     return (
-      <section className="space-y-3 rounded-[var(--radius-xl)] border border-default bg-surface p-4">
+      <section className="border-default bg-surface space-y-3 rounded-[var(--radius-xl)] border p-4">
         <div className="flex items-center justify-between">
           <h3 className="text-body-md text-foreground font-semibold">옵션 매트릭스</h3>
-          <span className="text-caption text-muted rounded-full border border-default bg-surface-elevated px-2 py-0.5">
+          <span className="text-caption text-muted border-default bg-surface-elevated rounded-full border px-2 py-0.5">
             DataTable
           </span>
         </div>
         <p className="text-body-sm text-muted">주요 옵션 조합을 적용한 대표 예시입니다.</p>
-        <div className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
+        <div className="border-default bg-surface rounded-[var(--radius-md)] border p-3">
           {Playground.render ? Playground.render(nextArgs) : null}
         </div>
       </section>
@@ -334,25 +335,24 @@ export const OptionMatrix: Story = {
   }
 };
 
-
 export const Examples: Story = {
   parameters: { controls: { disable: true } },
   render: (args) => {
     const nextArgs = {
       ...(args as Record<string, unknown>),
-      ...({"stickyHeader":true,"striped":true} as Record<string, unknown>)
+      ...({ stickyHeader: true, striped: true } as Record<string, unknown>)
     } as typeof args;
 
     return (
-      <section className="space-y-3 rounded-[var(--radius-xl)] border border-default bg-surface p-4">
+      <section className="border-default bg-surface space-y-3 rounded-[var(--radius-xl)] border p-4">
         <div className="flex items-center justify-between">
           <h3 className="text-body-md text-foreground font-semibold">사용 예시</h3>
-          <span className="text-caption text-muted rounded-full border border-default bg-surface-elevated px-2 py-0.5">
+          <span className="text-caption text-muted border-default bg-surface-elevated rounded-full border px-2 py-0.5">
             DataTable
           </span>
         </div>
         <p className="text-body-sm text-muted">실사용 시나리오 중심의 예시입니다.</p>
-        <div className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
+        <div className="border-default bg-surface rounded-[var(--radius-md)] border p-3">
           {Playground.render ? Playground.render(nextArgs) : null}
         </div>
       </section>

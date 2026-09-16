@@ -32,7 +32,9 @@ for (const directory of roots) {
 
 const packageNames = new Map();
 for (const directory of roots) {
-  for (const file of walk(path.join(root, directory)).filter((file) => path.basename(file) === "package.json")) {
+  for (const file of walk(path.join(root, directory)).filter(
+    (file) => path.basename(file) === "package.json"
+  )) {
     const packageDir = path.dirname(file);
     const manifest = readJson(file);
     if (manifest.name && packageNames.has(manifest.name)) {

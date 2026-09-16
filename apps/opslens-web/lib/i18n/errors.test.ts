@@ -10,11 +10,18 @@ const translate = Object.assign(
 
 test("resolves known API codes through the current locale translator", () => {
   assert.equal(
-    resolveLocalizedError(new ApiError({ code: "VALIDATION", params: { field: "email" } }), translate as never, "fallback"),
+    resolveLocalizedError(
+      new ApiError({ code: "VALIDATION", params: { field: "email" } }),
+      translate as never,
+      "fallback"
+    ),
     "api.VALIDATION:email"
   );
 });
 
 test("falls back for unknown API codes", () => {
-  assert.equal(resolveLocalizedError(new ApiError({ code: "NEW_CODE" }), translate as never, "fallback"), "fallback");
+  assert.equal(
+    resolveLocalizedError(new ApiError({ code: "NEW_CODE" }), translate as never, "fallback"),
+    "fallback"
+  );
 });
