@@ -110,42 +110,8 @@ function FilterSheetContent({
   return (
     <Box className="space-y-[var(--space-3)]">
       <Box className="mb-4 space-y-1.5">
-        <Typography as="h2" variant="title">{tFilter("title")}</Typography>
-        <Typography as="p" variant="bodySm" color="muted">{tFilter("description")}</Typography>
-      </Box>
-        <Flex className="items-center justify-between">
-          <Typography as="p" variant="caption" color="muted">
-            {tFilter("language")}
-          </Typography>
-        </Flex>
-        <Select
-          options={localeOptions}
-          control={control}
-          name="locale"
-          placeholder={tFilter("selectPlaceholder")}
-          size="md"
-          className="h-[var(--toolbar-height)]"
-        />
-
-        <Flex className="items-center justify-between">
-          <Typography as="p" variant="caption" color="muted">
-            {tFilter("service")}
-          </Typography>
-        </Flex>
-        <Select
-          options={serviceOptions}
-          control={control}
-          name="serviceName"
-          searchable
-          placeholder={tFilter("selectPlaceholder")}
-          searchPlaceholder={tFilter("selectSearchPlaceholder")}
-          emptyMessage={tFilter("selectEmptyMessage")}
-          size="md"
-          className="h-[var(--toolbar-height)]"
-        />
-
-        <Typography as="p" variant="caption" color="muted" className="pt-[var(--space-1)]">
-          {tFilter("period")}
+        <Typography as="h2" variant="title">
+          {tFilter("title")}
         </Typography>
         <Typography as="p" variant="bodySm" color="muted">
           {tFilter("description")}
@@ -165,25 +131,58 @@ function FilterSheetContent({
         className="h-[var(--toolbar-height)]"
       />
 
-        <Flex className="justify-between pt-[var(--space-2)]">
-          <Button
-            variant="ghost"
-            size="sm"
-            iconOnly
-            leftIcon={<RotateCcw />}
-            className="border-default text-foreground bg-surface-elevated hover:bg-surface h-[var(--size-control-md)] w-[var(--size-control-md)] rounded-md border p-0"
-            aria-label={tFilter("resetFilters")}
-            onClick={onReset}
-          />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="border-default text-foreground bg-surface-elevated hover:bg-surface rounded-md border"
-            onClick={onApply}
-          >
-            {tFilter("apply")}
-          </Button>
-        </Flex>
+      <Flex className="items-center justify-between">
+        <Typography as="p" variant="caption" color="muted">
+          {tFilter("service")}
+        </Typography>
+      </Flex>
+      <Select
+        options={serviceOptions}
+        control={control}
+        name="serviceName"
+        searchable
+        placeholder={tFilter("selectPlaceholder")}
+        searchPlaceholder={tFilter("selectSearchPlaceholder")}
+        emptyMessage={tFilter("selectEmptyMessage")}
+        size="md"
+        className="h-[var(--toolbar-height)]"
+      />
+
+      <Typography as="p" variant="caption" color="muted" className="pt-[var(--space-1)]">
+        {tFilter("period")}
+      </Typography>
+      <Box data-disable-auto-ellipsis-tooltip="true">
+        <DatePicker
+          id="filter-period"
+          mode="range"
+          range={{ from: fromDate, to: toDate }}
+          onRangeChange={onRangeChange}
+          locale={calendarLocale}
+          size="md"
+          placeholder={tFilter("selectPeriod")}
+          className="bg-surface h-[var(--toolbar-height)] shadow-none focus-visible:ring-0"
+        />
+      </Box>
+
+      <Flex className="justify-between pt-[var(--space-2)]">
+        <Button
+          variant="ghost"
+          size="sm"
+          iconOnly
+          leftIcon={<RotateCcw />}
+          className="border-default text-foreground bg-surface-elevated hover:bg-surface h-[var(--size-control-md)] w-[var(--size-control-md)] rounded-md border p-0"
+          aria-label={tFilter("resetFilters")}
+          onClick={onReset}
+        />
+        <Button
+          variant="ghost"
+          size="sm"
+          className="border-default text-foreground bg-surface-elevated hover:bg-surface rounded-md border"
+          onClick={onApply}
+        >
+          {tFilter("apply")}
+        </Button>
+      </Flex>
     </Box>
   );
 }
