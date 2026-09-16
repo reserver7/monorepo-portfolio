@@ -6,6 +6,7 @@
   "scripts": {
     "audit:workspace": "node ./scripts/audit-workspace.mjs",
     "build": "pnpm turbo run build",
+    "analyze:next": "pnpm --parallel --filter @repo/opslens-web --filter @repo/collab-web analyze",
     "check": "pnpm turbo run lint typecheck",
     "check:lint": "pnpm turbo run lint",
     "check:typecheck": "pnpm turbo run typecheck",
@@ -26,13 +27,13 @@
     "storybook:gen": "node ./scripts/generate-ui-stories.mjs",
     "storybook:watch": "node ./scripts/watch-ui-stories.mjs",
     "storybook:check": "node ./scripts/generate-ui-stories.mjs --check",
-    "storybook:validate": "node ./scripts/generate-ui-stories.mjs --check",
     "ui:manifest:check": "node ./scripts/check-ui-component-manifest.mjs",
     "ui:foundations:check": "node ./scripts/check-ui-foundations.mjs",
     "sync:fonts": "node ./scripts/sync-theme-fonts.mjs",
     "docs:ui:props": "node ./scripts/generate-ui-props-matrix.mjs",
     "format": "prettier --cache --write .",
     "format:check": "prettier --check .",
+    "format:check:config": "prettier --check .github/actions .github/workflows package.json turbo.json pnpm-workspace.yaml scripts/check-workspace-contracts.mjs",
     "i18n:check": "node ./scripts/i18n/check-messages.mjs",
     "i18n:extract": "node ./scripts/i18n/extract-keys.mjs",
     "i18n:extract:check": "node ./scripts/i18n/extract-keys.mjs --check",
@@ -54,8 +55,7 @@
     "test:e2e:smoke": "playwright test tests/e2e/create-room-flow.spec.ts tests/e2e/cross-app-navigation.spec.ts --workers=2 --reporter=line",
     "test:e2e:fast": "playwright test --workers=3 --max-failures=1 --reporter=line",
     "test:e2e:access": "playwright test tests/e2e/access-control-flow.spec.ts --workers=1 --reporter=line",
-    "test:collab-server": "pnpm --filter @repo/collab-server test",
-    "test:server": "pnpm run test:collab-server"
+    "test:collab-server": "pnpm --filter @repo/collab-server test"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",

@@ -5,7 +5,9 @@ coverage
 .turbo
 .pnpm-store
 playwright-report
+playwright-report-*
 test-results
+.playwright-cli
 *.tsbuildinfo
 .env
 .env.*

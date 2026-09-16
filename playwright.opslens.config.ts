@@ -29,7 +29,8 @@ export default defineConfig({
       env: {
         PORT: "4100",
         DATABASE_URL: "postgresql://portfolio:portfolio-local-password@127.0.0.1:5433/opslens?schema=public",
-        DIRECT_DATABASE_URL: "postgresql://portfolio:portfolio-local-password@127.0.0.1:5433/opslens?schema=public",
+        DIRECT_DATABASE_URL:
+          "postgresql://portfolio:portfolio-local-password@127.0.0.1:5433/opslens?schema=public",
         AUTH_JWT_SECRET: "opslens-e2e-jwt-secret",
         AUTH_BRIDGE_SECRET: "opslens-e2e-bridge-secret",
         CORS_ORIGINS: opslensUrl

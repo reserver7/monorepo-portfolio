@@ -1,4 +1,4 @@
-# __APP_TITLE__ App
+# **APP_TITLE** App
 
 `@repo/__APP_NAME__` 앱 템플릿입니다.
 

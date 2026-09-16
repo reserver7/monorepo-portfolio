@@ -1,7 +1,14 @@
 #!/usr/bin/env node
 
 import process from "node:process";
-import { flattenKeys, getByPath, listMessageGroups, readJson, setByPath, writeJson } from "./lib/message-groups.mjs";
+import {
+  flattenKeys,
+  getByPath,
+  listMessageGroups,
+  readJson,
+  setByPath,
+  writeJson
+} from "./lib/message-groups.mjs";
 
 const args = new Set(process.argv.slice(2));
 const CHECK_ONLY = args.has("--check");

@@ -16,7 +16,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <AppHead />
       </head>
-      <body className={`${appFont.className} font-body text-foreground dark:text-foreground min-h-screen antialiased transition-colors`}>
+      <body
+        className={`${appFont.className} font-body text-foreground dark:text-foreground min-h-screen antialiased transition-colors`}
+      >
         <Providers>{children}</Providers>
       </body>
     </html>

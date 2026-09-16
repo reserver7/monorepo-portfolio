@@ -1,0 +1,31 @@
+name: Setup workspace
+description: Checkout the repository, configure the pinned Node/pnpm toolchain, and install dependencies from the lockfile.
+inputs:
+  fetch-depth:
+    description: Git checkout depth.
+    required: false
+    default: "1"
+  install:
+    description: Install workspace dependencies.
+    required: false
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: ${{ inputs.fetch-depth }}
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10.12.3
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: pnpm
+    - name: Install dependencies
+      if: ${{ inputs.install == 'true' }}
+      shell: bash
+      run: pnpm install --frozen-lockfile

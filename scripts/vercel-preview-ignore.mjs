@@ -15,7 +15,7 @@ if (process.env.VERCEL_ENV === "production") {
 let changedFiles;
 try {
   changedFiles = execFileSync("git", ["diff", "--name-only", "HEAD^", "HEAD"], {
-    encoding: "utf8",
+    encoding: "utf8"
   })
     .split("\n")
     .filter(Boolean);
@@ -29,7 +29,7 @@ const sharedBuildInputs = new Set([
   "pnpm-lock.yaml",
   "pnpm-workspace.yaml",
   "turbo.json",
-  "tsconfig.json",
+  "tsconfig.json"
 ]);
 
 const hasBuildImpact = changedFiles.some(
@@ -37,7 +37,7 @@ const hasBuildImpact = changedFiles.some(
     file.startsWith(`${appDirectory}/`) ||
     file.startsWith("packages/") ||
     file.startsWith("scripts/") ||
-    sharedBuildInputs.has(file),
+    sharedBuildInputs.has(file)
 );
 
 if (hasBuildImpact) {
