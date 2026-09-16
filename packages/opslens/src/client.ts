@@ -1,9 +1,23 @@
 import { graphqlRequest } from "@repo/react-query";
-import {
-  getOpslensApiUrl,
-  getOpsLogTailUrl
-} from "./core";
-import type { DashboardSummary, Deployment, DeploymentImpactReport, Environment, ErrorCluster, Issue, IssueStatus, IssueSummary, LogAnalysisSession, OpsAlert, OpsAuditLog, OpsReport, OpsReportSnapshot, OpsSetting, QaScenario, Severity } from "./types";
+import { getOpslensApiUrl, getOpsLogTailUrl } from "./core";
+import type {
+  DashboardSummary,
+  Deployment,
+  DeploymentImpactReport,
+  Environment,
+  ErrorCluster,
+  Issue,
+  IssueStatus,
+  IssueSummary,
+  LogAnalysisSession,
+  OpsAlert,
+  OpsAuditLog,
+  OpsReport,
+  OpsReportSnapshot,
+  OpsSetting,
+  QaScenario,
+  Severity
+} from "./types";
 
 export * from "./auth";
 export { configureOpslensClient } from "./core";
@@ -87,8 +101,15 @@ export async function getServiceHealth(filter: {
   return data.serviceHealth;
 }
 
-export async function getServiceSlo(serviceName: string, environment: Environment): Promise<import("./types").ServiceSlo> {
-  const data = await graphqlRequest<{ serviceSlo: import("./types").ServiceSlo }>(getOpslensApiUrl(), `query ServiceSlo($serviceName: String!, $environment: String!) { serviceSlo(serviceName: $serviceName, environment: $environment) { serviceName environment target requestCount errorCount availability budgetConsumed latencyP95Ms observedAt } }`, { serviceName, environment });
+export async function getServiceSlo(
+  serviceName: string,
+  environment: Environment
+): Promise<import("./types").ServiceSlo> {
+  const data = await graphqlRequest<{ serviceSlo: import("./types").ServiceSlo }>(
+    getOpslensApiUrl(),
+    `query ServiceSlo($serviceName: String!, $environment: String!) { serviceSlo(serviceName: $serviceName, environment: $environment) { serviceName environment target requestCount errorCount availability budgetConsumed latencyP95Ms observedAt } }`,
+    { serviceName, environment }
+  );
   return data.serviceSlo;
 }
 
@@ -151,7 +172,9 @@ export async function analyzeLogs(input: {
   return data.analyzeLogs;
 }
 
-export async function getIncidentTimeline(issueId: string): Promise<import("./types").IncidentTimelineItem[]> {
+export async function getIncidentTimeline(
+  issueId: string
+): Promise<import("./types").IncidentTimelineItem[]> {
   const data = await graphqlRequest<{ incidentTimeline: import("./types").IncidentTimelineItem[] }>(
     getOpslensApiUrl(),
     `query IncidentTimeline($issueId: String!) { incidentTimeline(issueId: $issueId) { id kind title detail actor tone occurredAt } }`,
@@ -339,7 +362,11 @@ export async function updateIssueStatus(issueId: string, status: IssueStatus): P
   return data.updateIssueStatus;
 }
 
-export async function updateIncidentClosure(input: { issueId: string; rootCause?: string; postmortemUrl?: string }): Promise<Issue> {
+export async function updateIncidentClosure(input: {
+  issueId: string;
+  rootCause?: string;
+  postmortemUrl?: string;
+}): Promise<Issue> {
   const data = await graphqlRequest<{ updateIncidentClosure: Issue }>(
     getOpslensApiUrl(),
     `mutation UpdateIncidentClosure($input: UpdateIncidentClosureInput!) { updateIncidentClosure(input: $input) { id rootCause postmortemUrl acknowledgedAt resolvedAt } }`,
@@ -349,7 +376,13 @@ export async function updateIncidentClosure(input: { issueId: string; rootCause?
   return data.updateIncidentClosure;
 }
 
-export async function updateIncidentResponse(input: { issueId: string; commander?: string; escalationLevel?: number; statusUpdate?: string; nextUpdateAt?: string }): Promise<Issue> {
+export async function updateIncidentResponse(input: {
+  issueId: string;
+  commander?: string;
+  escalationLevel?: number;
+  statusUpdate?: string;
+  nextUpdateAt?: string;
+}): Promise<Issue> {
   const data = await graphqlRequest<{ updateIncidentResponse: Issue }>(
     getOpslensApiUrl(),
     `mutation UpdateIncidentResponse($input: UpdateIncidentResponseInput!) { updateIncidentResponse(input: $input) { id commander escalationLevel lastStatusUpdate nextUpdateAt } }`,
@@ -396,8 +429,17 @@ export async function assignIssue(issueId: string, assignee: string): Promise<Is
   return data.assignIssue;
 }
 
-export async function bulkUpdateIssues(input: { issueIds: string[]; status?: IssueStatus; assignee?: string }): Promise<number> {
-  const data = await graphqlRequest<{ bulkUpdateIssues: number }>(getOpslensApiUrl(), `mutation BulkUpdateIssues($input: BulkUpdateIssuesInput!) { bulkUpdateIssues(input: $input) }`, { input }, { notifyOnSuccess: false });
+export async function bulkUpdateIssues(input: {
+  issueIds: string[];
+  status?: IssueStatus;
+  assignee?: string;
+}): Promise<number> {
+  const data = await graphqlRequest<{ bulkUpdateIssues: number }>(
+    getOpslensApiUrl(),
+    `mutation BulkUpdateIssues($input: BulkUpdateIssuesInput!) { bulkUpdateIssues(input: $input) }`,
+    { input },
+    { notifyOnSuccess: false }
+  );
   return data.bulkUpdateIssues;
 }
 
@@ -492,7 +534,12 @@ export async function registerDeployment(input: {
   return data.registerDeployment;
 }
 
-export async function updateDeploymentDecision(input: { deploymentId: string; decision: "approved" | "rejected" | "rollback_requested" | "rolled_back"; approver?: string; reason?: string }): Promise<Deployment> {
+export async function updateDeploymentDecision(input: {
+  deploymentId: string;
+  decision: "approved" | "rejected" | "rollback_requested" | "rolled_back";
+  approver?: string;
+  reason?: string;
+}): Promise<Deployment> {
   const data = await graphqlRequest<{ updateDeploymentDecision: Deployment }>(
     getOpslensApiUrl(),
     `mutation UpdateDeploymentDecision($input: UpdateDeploymentDecisionInput!) { updateDeploymentDecision(input: $input) { id status approver approvalStatus approvedAt rollbackStatus rollbackReason rolledBackAt } }`,
@@ -503,12 +550,18 @@ export async function updateDeploymentDecision(input: { deploymentId: string; de
 }
 
 export async function getNotificationDeliveries(): Promise<import("./types").OpsNotificationDelivery[]> {
-  const data = await graphqlRequest<{ notificationDeliveries: import("./types").OpsNotificationDelivery[] }>(getOpslensApiUrl(), `query NotificationDeliveries { notificationDeliveries { id alertId channel status attempts lastError nextAttemptAt deliveredAt } }`);
+  const data = await graphqlRequest<{ notificationDeliveries: import("./types").OpsNotificationDelivery[] }>(
+    getOpslensApiUrl(),
+    `query NotificationDeliveries { notificationDeliveries { id alertId channel status attempts lastError nextAttemptAt deliveredAt } }`
+  );
   return data.notificationDeliveries;
 }
 
 export async function retryPendingAlertDeliveries(): Promise<number> {
-  const data = await graphqlRequest<{ retryPendingAlertDeliveries: number }>(getOpslensApiUrl(), `mutation RetryPendingAlertDeliveries { retryPendingAlertDeliveries }`);
+  const data = await graphqlRequest<{ retryPendingAlertDeliveries: number }>(
+    getOpslensApiUrl(),
+    `mutation RetryPendingAlertDeliveries { retryPendingAlertDeliveries }`
+  );
   return data.retryPendingAlertDeliveries;
 }
 
@@ -545,7 +598,9 @@ export async function getDeployments(environment?: Environment): Promise<Deploym
   return data.deployments;
 }
 
-export async function getDeploymentReadiness(environment: Environment): Promise<import("./types").DeploymentReadiness> {
+export async function getDeploymentReadiness(
+  environment: Environment
+): Promise<import("./types").DeploymentReadiness> {
   const data = await graphqlRequest<{ deploymentReadiness: import("./types").DeploymentReadiness }>(
     getOpslensApiUrl(),
     `query DeploymentReadiness($environment: String!) { deploymentReadiness(environment: $environment) { environment status criticalHighCount unassignedCount recommendations } }`,
@@ -862,22 +917,44 @@ export async function getLogAnalysisSessions(): Promise<LogAnalysisSession[]> {
 }
 
 export async function getLogSourceFreshness(): Promise<import("./types").LogSourceFreshness[]> {
-  const data = await graphqlRequest<{ logSourceFreshness: import("./types").LogSourceFreshness[] }>(getOpslensApiUrl(), `query LogSourceFreshness { logSourceFreshness { serviceName source lastReceivedAt receivedLastHour stale } }`);
+  const data = await graphqlRequest<{ logSourceFreshness: import("./types").LogSourceFreshness[] }>(
+    getOpslensApiUrl(),
+    `query LogSourceFreshness { logSourceFreshness { serviceName source lastReceivedAt receivedLastHour stale } }`
+  );
   return data.logSourceFreshness;
 }
 
 export async function getLogSavedViews(): Promise<import("./types").OpsLogSavedView[]> {
-  const data = await graphqlRequest<{ logSavedViews: import("./types").OpsLogSavedView[] }>(getOpslensApiUrl(), `query LogSavedViews { logSavedViews { id name owner visibility severity query sort isFavorite updatedAt } }`);
+  const data = await graphqlRequest<{ logSavedViews: import("./types").OpsLogSavedView[] }>(
+    getOpslensApiUrl(),
+    `query LogSavedViews { logSavedViews { id name owner visibility severity query sort isFavorite updatedAt } }`
+  );
   return data.logSavedViews;
 }
 
-export async function upsertLogSavedView(input: { id?: string; name: string; severity: string; query: string; sort: string; visibility?: string; isFavorite?: boolean }): Promise<import("./types").OpsLogSavedView> {
-  const data = await graphqlRequest<{ upsertLogSavedView: import("./types").OpsLogSavedView }>(getOpslensApiUrl(), `mutation UpsertLogSavedView($input: UpsertLogSavedViewInput!) { upsertLogSavedView(input: $input) { id name owner visibility severity query sort isFavorite updatedAt } }`, { input });
+export async function upsertLogSavedView(input: {
+  id?: string;
+  name: string;
+  severity: string;
+  query: string;
+  sort: string;
+  visibility?: string;
+  isFavorite?: boolean;
+}): Promise<import("./types").OpsLogSavedView> {
+  const data = await graphqlRequest<{ upsertLogSavedView: import("./types").OpsLogSavedView }>(
+    getOpslensApiUrl(),
+    `mutation UpsertLogSavedView($input: UpsertLogSavedViewInput!) { upsertLogSavedView(input: $input) { id name owner visibility severity query sort isFavorite updatedAt } }`,
+    { input }
+  );
   return data.upsertLogSavedView;
 }
 
 export async function deleteLogSavedView(id: string): Promise<boolean> {
-  const data = await graphqlRequest<{ deleteLogSavedView: boolean }>(getOpslensApiUrl(), `mutation DeleteLogSavedView($id: String!) { deleteLogSavedView(id: $id) }`, { id });
+  const data = await graphqlRequest<{ deleteLogSavedView: boolean }>(
+    getOpslensApiUrl(),
+    `mutation DeleteLogSavedView($id: String!) { deleteLogSavedView(id: $id) }`,
+    { id }
+  );
   return data.deleteLogSavedView;
 }
 
@@ -915,7 +992,14 @@ export async function getReportActions(snapshotId: string): Promise<import("./ty
   return data.reportActions;
 }
 
-export async function updateReportAction(input: { actionId: string; completed: boolean; actor?: string; dueAt?: string; owner?: string; reopenedReason?: string }): Promise<import("./types").OpsReportAction> {
+export async function updateReportAction(input: {
+  actionId: string;
+  completed: boolean;
+  actor?: string;
+  dueAt?: string;
+  owner?: string;
+  reopenedReason?: string;
+}): Promise<import("./types").OpsReportAction> {
   const data = await graphqlRequest<{ updateReportAction: import("./types").OpsReportAction }>(
     getOpslensApiUrl(),
     `mutation UpdateReportAction($input: UpdateReportActionInput!) { updateReportAction(input: $input) { id snapshotId title description owner priority dueAt completedAt completedBy reopenedReason } }`,

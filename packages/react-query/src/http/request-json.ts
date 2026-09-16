@@ -1,6 +1,7 @@
 import type { AxiosRequestConfig, Method } from "axios";
 import { createHttpClient } from "./http-client";
 import { resolveHttpErrorMessage } from "./http-error";
+import { getApiError } from "./api-error";
 import { notifyUiError, notifyUiSuccess } from "./notify";
 
 type RequestBody = string | Record<string, unknown> | Array<unknown> | null | undefined;
@@ -101,6 +102,6 @@ export const requestJson = async <T>(
     if (shouldNotifyError) {
       notifyUiError(message);
     }
-    throw new Error(message);
+    throw getApiError(error) ?? new Error(message);
   }
 };

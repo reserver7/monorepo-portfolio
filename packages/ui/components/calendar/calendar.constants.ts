@@ -29,31 +29,41 @@ export const CALENDAR_WRAPPER_PADDING_CLASS: Record<CalendarDensity, string> = {
 };
 
 export const CALENDAR_GAP_CLASS: Record<CalendarDensity, { months: string; month: string; row: string }> = {
-  comfortable: { months: "gap-[var(--space-4)]", month: "space-y-[var(--space-3)]", row: "mt-[var(--space-1)]" },
-  compact: { months: "gap-[var(--space-3)]", month: "space-y-[var(--space-2)]", row: "mt-[var(--size-border-hairline)]" }
+  comfortable: {
+    months: "gap-[var(--space-4)]",
+    month: "space-y-[var(--space-3)]",
+    row: "mt-[var(--space-1)]"
+  },
+  compact: {
+    months: "gap-[var(--space-3)]",
+    month: "space-y-[var(--space-2)]",
+    row: "mt-[var(--size-border-hairline)]"
+  }
 };
 
-export const CALENDAR_SIZE_CLASS: Record<CalendarSize, { headCell: string; cell: string; day: string; navButton: string }> =
-  {
-    sm: {
-      headCell: "w-[var(--size-control-sm)] text-[11px]",
-      cell: "h-[var(--size-control-sm)] w-[var(--size-control-sm)]",
-      day: "h-[var(--size-control-sm)] w-[var(--size-control-sm)] text-caption",
-      navButton: "h-[var(--size-chip-md)] w-[var(--size-chip-md)]"
-    },
-    md: {
-      headCell: "w-[var(--size-control-md)] text-caption",
-      cell: "h-[var(--size-control-md)] w-[var(--size-control-md)]",
-      day: "h-[var(--size-control-md)] w-[var(--size-control-md)] text-body-sm",
-      navButton: "h-[var(--size-control-sm)] w-[var(--size-control-sm)]"
-    },
-    lg: {
-      headCell: "w-[var(--size-control-lg)] text-body-sm",
-      cell: "h-[var(--size-control-lg)] w-[var(--size-control-lg)]",
-      day: "h-[var(--size-control-lg)] w-[var(--size-control-lg)] text-body-md",
-      navButton: "h-[var(--size-control-md)] w-[var(--size-control-md)]"
-    }
-  };
+export const CALENDAR_SIZE_CLASS: Record<
+  CalendarSize,
+  { headCell: string; cell: string; day: string; navButton: string }
+> = {
+  sm: {
+    headCell: "w-[var(--size-control-sm)] text-[11px]",
+    cell: "h-[var(--size-control-sm)] w-[var(--size-control-sm)]",
+    day: "h-[var(--size-control-sm)] w-[var(--size-control-sm)] text-caption",
+    navButton: "h-[var(--size-chip-md)] w-[var(--size-chip-md)]"
+  },
+  md: {
+    headCell: "w-[var(--size-control-md)] text-caption",
+    cell: "h-[var(--size-control-md)] w-[var(--size-control-md)]",
+    day: "h-[var(--size-control-md)] w-[var(--size-control-md)] text-body-sm",
+    navButton: "h-[var(--size-control-sm)] w-[var(--size-control-sm)]"
+  },
+  lg: {
+    headCell: "w-[var(--size-control-lg)] text-body-sm",
+    cell: "h-[var(--size-control-lg)] w-[var(--size-control-lg)]",
+    day: "h-[var(--size-control-lg)] w-[var(--size-control-lg)] text-body-md",
+    navButton: "h-[var(--size-control-md)] w-[var(--size-control-md)]"
+  }
+};
 
 export const createCalendarClassNames = (size: CalendarSize, density: CalendarDensity) => {
   const sizeClass = CALENDAR_SIZE_CLASS[size];

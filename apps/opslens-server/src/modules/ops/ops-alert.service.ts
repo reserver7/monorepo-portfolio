@@ -12,7 +12,10 @@ import type { OpsAlertType } from "./ops.types.js";
 export class OpsAlertService {
   private readonly logger = new Logger(OpsAlertService.name);
 
-  constructor(private readonly prisma: PrismaService, private readonly deliveryService: OpsAlertDeliveryService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly deliveryService: OpsAlertDeliveryService
+  ) {}
 
   async listOpsAlerts(): Promise<OpsAlertType[]> {
     const alerts = await this.prisma.opsAlert.findMany({
@@ -29,10 +32,13 @@ export class OpsAlertService {
     }
     const source = input.source.trim() || "system";
     const title = input.title.trim();
-    const recentDuplicate = source !== "web" ? await this.prisma.opsAlert.findFirst({
-      where: { source, title, readAt: null, createdAt: { gte: new Date(Date.now() - 10 * 60_000) } },
-      orderBy: { createdAt: "desc" }
-    }) : null;
+    const recentDuplicate =
+      source !== "web"
+        ? await this.prisma.opsAlert.findFirst({
+            where: { source, title, readAt: null, createdAt: { gte: new Date(Date.now() - 10 * 60_000) } },
+            orderBy: { createdAt: "desc" }
+          })
+        : null;
     if (recentDuplicate) {
       this.logger.debug(`중복 자동 알림 억제: ${source} / ${title}`);
       return toOpsAlertType(recentDuplicate);

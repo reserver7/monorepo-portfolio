@@ -23,7 +23,13 @@ export {
 } from "./alert-confirm-dialog.constants";
 export { useBuiltInActions } from "./alert-confirm-dialog.hooks";
 
-export { AlertConfirmProvider, alert, confirm, promptConfirm, useAlertConfirm } from "./alert-confirm-provider";
+export {
+  AlertConfirmProvider,
+  alert,
+  confirm,
+  promptConfirm,
+  useAlertConfirm
+} from "./alert-confirm-provider";
 export { ALERT_CONFIRM_DEFAULTS, UI_ALERT_CONFIRM_EVENT_NAME } from "./alert-confirm-provider.constants";
 export type {
   AlertConfirmBridgeDetail,

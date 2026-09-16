@@ -7,7 +7,8 @@ import type { AuthenticatedRequest } from "./auth.guard.js";
 export type OpsPermission = "read" | "operate" | "admin";
 const OPS_PERMISSION_KEY = "opslens:permission";
 
-export const RequireOpsPermission = (permission: OpsPermission) => SetMetadata(OPS_PERMISSION_KEY, permission);
+export const RequireOpsPermission = (permission: OpsPermission) =>
+  SetMetadata(OPS_PERMISSION_KEY, permission);
 
 const rolePermissions: Record<AuthUserPayload["role"], OpsPermission[]> = {
   admin: ["read", "operate", "admin"],
@@ -26,7 +27,10 @@ export class OpsPermissionGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const permission = this.reflector.getAllAndOverride<OpsPermission>(OPS_PERMISSION_KEY, [context.getHandler(), context.getClass()]);
+    const permission = this.reflector.getAllAndOverride<OpsPermission>(OPS_PERMISSION_KEY, [
+      context.getHandler(),
+      context.getClass()
+    ]);
     if (!permission) return true;
     const request = GqlExecutionContext.create(context).getContext<{ req?: AuthenticatedRequest }>().req;
     assertOpsPermission(request?.authUser, permission);

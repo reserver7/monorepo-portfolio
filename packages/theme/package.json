@@ -26,11 +26,11 @@
   "devDependencies": {
     "@repo/configs": "workspace:*",
     "@repo/eslint-config": "workspace:*",
-    "@types/node": "^20.12.7",
+    "@types/node": "^22.13.5",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.8.2"
   }
 }

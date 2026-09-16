@@ -38,55 +38,62 @@ export default [
         },
         {
           selector: "JSXOpeningElement[name.name='header']",
-          message: "opslens-web에서는 raw <header> 대신 @repo/ui의 <Box as=\"header\">를 사용하세요."
+          message: 'opslens-web에서는 raw <header> 대신 @repo/ui의 <Box as="header">를 사용하세요.'
         },
         {
           selector: "JSXOpeningElement[name.name='main']",
-          message: "opslens-web에서는 raw <main> 대신 @repo/ui의 <Box as=\"main\">를 사용하세요."
+          message: 'opslens-web에서는 raw <main> 대신 @repo/ui의 <Box as="main">를 사용하세요.'
         },
         {
           selector: "JSXOpeningElement[name.name='section']",
-          message: "opslens-web에서는 raw <section> 대신 @repo/ui의 <Box as=\"section\">를 사용하세요."
+          message: 'opslens-web에서는 raw <section> 대신 @repo/ui의 <Box as="section">를 사용하세요.'
         },
         {
           selector: "JSXOpeningElement[name.name='aside']",
-          message: "opslens-web에서는 raw <aside> 대신 @repo/ui의 <Box as=\"aside\">를 사용하세요."
+          message: 'opslens-web에서는 raw <aside> 대신 @repo/ui의 <Box as="aside">를 사용하세요.'
         },
         {
           selector: "JSXOpeningElement[name.name='nav']",
-          message: "opslens-web에서는 raw <nav> 대신 @repo/ui의 <Box as=\"nav\">를 사용하세요."
+          message: 'opslens-web에서는 raw <nav> 대신 @repo/ui의 <Box as="nav">를 사용하세요.'
         },
         {
           selector: "JSXOpeningElement[name.name='span']",
-          message: "opslens-web에서는 raw <span> 대신 @repo/ui의 <Box as=\"span\">를 사용하세요."
+          message: 'opslens-web에서는 raw <span> 대신 @repo/ui의 <Box as="span">를 사용하세요.'
         },
         {
           selector: "JSXOpeningElement[name.name='p']",
-          message: "opslens-web에서는 raw <p> 대신 @repo/ui의 <Typography as=\"p\"> 또는 <Box as=\"p\">를 사용하세요."
+          message:
+            'opslens-web에서는 raw <p> 대신 @repo/ui의 <Typography as="p"> 또는 <Box as="p">를 사용하세요.'
         },
         {
           selector: "JSXOpeningElement[name.name='h1']",
-          message: "opslens-web에서는 raw <h1> 대신 @repo/ui의 <Typography as=\"h1\"> 또는 <Box as=\"h1\">를 사용하세요."
+          message:
+            'opslens-web에서는 raw <h1> 대신 @repo/ui의 <Typography as="h1"> 또는 <Box as="h1">를 사용하세요.'
         },
         {
           selector: "JSXOpeningElement[name.name='h2']",
-          message: "opslens-web에서는 raw <h2> 대신 @repo/ui의 <Typography as=\"h2\"> 또는 <Box as=\"h2\">를 사용하세요."
+          message:
+            'opslens-web에서는 raw <h2> 대신 @repo/ui의 <Typography as="h2"> 또는 <Box as="h2">를 사용하세요.'
         },
         {
           selector: "JSXOpeningElement[name.name='h3']",
-          message: "opslens-web에서는 raw <h3> 대신 @repo/ui의 <Typography as=\"h3\"> 또는 <Box as=\"h3\">를 사용하세요."
+          message:
+            'opslens-web에서는 raw <h3> 대신 @repo/ui의 <Typography as="h3"> 또는 <Box as="h3">를 사용하세요.'
         },
         {
           selector: "JSXOpeningElement[name.name='h4']",
-          message: "opslens-web에서는 raw <h4> 대신 @repo/ui의 <Typography as=\"h4\"> 또는 <Box as=\"h4\">를 사용하세요."
+          message:
+            'opslens-web에서는 raw <h4> 대신 @repo/ui의 <Typography as="h4"> 또는 <Box as="h4">를 사용하세요.'
         },
         {
           selector: "JSXOpeningElement[name.name='h5']",
-          message: "opslens-web에서는 raw <h5> 대신 @repo/ui의 <Typography as=\"h5\"> 또는 <Box as=\"h5\">를 사용하세요."
+          message:
+            'opslens-web에서는 raw <h5> 대신 @repo/ui의 <Typography as="h5"> 또는 <Box as="h5">를 사용하세요.'
         },
         {
           selector: "JSXOpeningElement[name.name='h6']",
-          message: "opslens-web에서는 raw <h6> 대신 @repo/ui의 <Typography as=\"h6\"> 또는 <Box as=\"h6\">를 사용하세요."
+          message:
+            'opslens-web에서는 raw <h6> 대신 @repo/ui의 <Typography as="h6"> 또는 <Box as="h6">를 사용하세요.'
         }
       ]
     }

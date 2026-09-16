@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { API_ERROR_CODES, createApiErrorPayload } from "@repo/configs/errors";
 import { oauthAuthOptions } from "@/lib/auth/oauth";
 import {
   createSessionResponse,
-  parseServerErrorMessage,
   resolveAuthApiUrl,
   type BackendLoginResponse
 } from "@/lib/auth/server-session";
@@ -16,12 +16,12 @@ export async function POST() {
   const providerAccountId = session?.user?.oauthProviderAccountId?.trim();
 
   if (!email || !provider || !providerAccountId) {
-    return NextResponse.json({ message: "OAuth 세션 정보가 유효하지 않습니다." }, { status: 401 });
+    return NextResponse.json(createApiErrorPayload(API_ERROR_CODES.UNAUTHORIZED), { status: 401 });
   }
 
   const bridgeSecret = process.env.OPSLENS_AUTH_BRIDGE_SECRET?.trim();
   if (!bridgeSecret) {
-    return NextResponse.json({ message: "서버 OAuth 브리지 시크릿이 설정되지 않았습니다." }, { status: 500 });
+    return NextResponse.json(createApiErrorPayload(API_ERROR_CODES.INTERNAL), { status: 500 });
   }
 
   let response: Response;
@@ -41,15 +41,14 @@ export async function POST() {
       })
     });
   } catch {
-    return NextResponse.json(
-      { message: "인증 서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요." },
-      { status: 502 }
-    );
+    return NextResponse.json(createApiErrorPayload(API_ERROR_CODES.UPSTREAM_UNAVAILABLE), { status: 502 });
   }
 
   if (!response.ok) {
     return NextResponse.json(
-      { message: await parseServerErrorMessage(response) },
+      createApiErrorPayload(
+        response.status === 401 ? API_ERROR_CODES.UNAUTHORIZED : API_ERROR_CODES.INTERNAL
+      ),
       { status: response.status }
     );
   }

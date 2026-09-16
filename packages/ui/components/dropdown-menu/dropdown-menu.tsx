@@ -47,7 +47,7 @@ export const DropdownMenuSubTrigger = React.forwardRef<
       {...props}
     >
       {children}
-      <ChevronRight className="ml-auto h-[var(--size-icon-md)] w-[var(--size-icon-md)] shrink-0 text-muted" />
+      <ChevronRight className="text-muted ml-auto h-[var(--size-icon-md)] w-[var(--size-icon-md)] shrink-0" />
     </DropdownMenuPrimitive.SubTrigger>
   );
 });
@@ -57,13 +57,13 @@ export const DropdownMenuSubContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
 >(({ className, ...props }, ref) => (
-    <DropdownMenuPrimitive.SubContent
-      ref={ref}
-      className={cn(
-        "border-default bg-surface z-50 min-w-[var(--size-dropdown-min-w)] overflow-hidden rounded-[var(--radius-lg)] border p-[var(--space-1)] shadow-card",
-        className
-      )}
-      {...props}
+  <DropdownMenuPrimitive.SubContent
+    ref={ref}
+    className={cn(
+      "border-default bg-surface shadow-card z-50 min-w-[var(--size-dropdown-min-w)] overflow-hidden rounded-[var(--radius-lg)] border p-[var(--space-1)]",
+      className
+    )}
+    {...props}
   />
 ));
 DropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayName;
@@ -71,23 +71,37 @@ DropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayNam
 export const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Content>,
   DropdownMenuContentProps
->(({ className, sideOffset = DROPDOWN_MENU_DEFAULTS.sideOffset, size = DROPDOWN_MENU_DEFAULTS.contentSize, ...props }, ref) => {
-  const resolvedSize = resolveOption(size, DROPDOWN_MENU_CONTENT_SIZE_CLASS, DROPDOWN_MENU_DEFAULTS.contentSize);
-  return (
-    <DropdownMenuPrimitive.Portal>
-      <DropdownMenuPrimitive.Content
-        ref={ref}
-        sideOffset={sideOffset}
-        className={cn(
-          "border-default bg-surface z-50 overflow-hidden rounded-[var(--radius-lg)] border p-[var(--space-1)] shadow-card",
-          DROPDOWN_MENU_CONTENT_SIZE_CLASS[resolvedSize],
-          className
-        )}
-        {...props}
-      />
-    </DropdownMenuPrimitive.Portal>
-  );
-});
+>(
+  (
+    {
+      className,
+      sideOffset = DROPDOWN_MENU_DEFAULTS.sideOffset,
+      size = DROPDOWN_MENU_DEFAULTS.contentSize,
+      ...props
+    },
+    ref
+  ) => {
+    const resolvedSize = resolveOption(
+      size,
+      DROPDOWN_MENU_CONTENT_SIZE_CLASS,
+      DROPDOWN_MENU_DEFAULTS.contentSize
+    );
+    return (
+      <DropdownMenuPrimitive.Portal>
+        <DropdownMenuPrimitive.Content
+          ref={ref}
+          sideOffset={sideOffset}
+          className={cn(
+            "border-default bg-surface shadow-card z-50 overflow-hidden rounded-[var(--radius-lg)] border p-[var(--space-1)]",
+            DROPDOWN_MENU_CONTENT_SIZE_CLASS[resolvedSize],
+            className
+          )}
+          {...props}
+        />
+      </DropdownMenuPrimitive.Portal>
+    );
+  }
+);
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
 
 export const DropdownMenuItem = React.forwardRef<
@@ -135,9 +149,13 @@ export const DropdownMenuItem = React.forwardRef<
         style={tokenColorValue ? { color: tokenColorValue } : undefined}
         {...props}
       >
-        {leftSlot ? <span className="inline-flex h-[var(--size-icon-md)] w-[var(--size-icon-md)] items-center justify-center text-muted">{leftSlot}</span> : null}
+        {leftSlot ? (
+          <span className="text-muted inline-flex h-[var(--size-icon-md)] w-[var(--size-icon-md)] items-center justify-center">
+            {leftSlot}
+          </span>
+        ) : null}
         <span className="min-w-0 flex-1 truncate">{children}</span>
-        {rightSlot ? <span className="ml-auto inline-flex items-center text-muted">{rightSlot}</span> : null}
+        {rightSlot ? <span className="text-muted ml-auto inline-flex items-center">{rightSlot}</span> : null}
       </DropdownMenuPrimitive.Item>
     );
   }
@@ -188,7 +206,7 @@ export const DropdownMenuCheckboxItem = React.forwardRef<
         style={tokenColorValue ? { color: tokenColorValue } : undefined}
         {...props}
       >
-        <span className="absolute left-2 inline-flex h-[var(--size-icon-md)] w-[var(--size-icon-md)] items-center justify-center text-muted">
+        <span className="text-muted absolute left-2 inline-flex h-[var(--size-icon-md)] w-[var(--size-icon-md)] items-center justify-center">
           <DropdownMenuPrimitive.ItemIndicator>
             <Check className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />
           </DropdownMenuPrimitive.ItemIndicator>
@@ -242,7 +260,7 @@ export const DropdownMenuRadioItem = React.forwardRef<
         style={tokenColorValue ? { color: tokenColorValue } : undefined}
         {...props}
       >
-        <span className="absolute left-2 inline-flex h-[var(--size-icon-md)] w-[var(--size-icon-md)] items-center justify-center text-muted">
+        <span className="text-muted absolute left-2 inline-flex h-[var(--size-icon-md)] w-[var(--size-icon-md)] items-center justify-center">
           <DropdownMenuPrimitive.ItemIndicator>
             <Circle className="h-2.5 w-2.5 fill-current" />
           </DropdownMenuPrimitive.ItemIndicator>
@@ -273,11 +291,15 @@ export const DropdownMenuSeparator = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Separator>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
 >(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.Separator ref={ref} className={cn("bg-border -mx-1 my-1 h-px", className)} {...props} />
+  <DropdownMenuPrimitive.Separator
+    ref={ref}
+    className={cn("bg-border -mx-1 my-1 h-px", className)}
+    {...props}
+  />
 ));
 DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
 
 export const DropdownMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => (
-  <span className={cn("ml-auto text-caption tracking-wide text-muted", className)} {...props} />
+  <span className={cn("text-caption text-muted ml-auto tracking-wide", className)} {...props} />
 );
 DropdownMenuShortcut.displayName = "DropdownMenuShortcut";

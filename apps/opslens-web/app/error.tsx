@@ -3,7 +3,8 @@
 import { FeedbackState } from "@/features/common/components/feedback-state";
 
 import { useEffect } from "react";
-import { Box, Button, } from "@repo/ui";
+import { useTranslations } from "next-intl";
+import { Box, Button } from "@repo/ui";
 
 export default function RootError({
   error,
@@ -12,6 +13,7 @@ export default function RootError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("error");
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -23,9 +25,9 @@ export default function RootError({
           variant="error"
           size="lg"
           align="center"
-          title="화면을 불러오지 못했습니다."
-          description="잠시 후 다시 시도하거나 새로고침해 주세요."
-          action={<Button onClick={reset}>다시 시도</Button>}
+          title={t("loadFailedTitle")}
+          description={t("retryDescription")}
+          action={<Button onClick={reset}>{t("retry")}</Button>}
         />
       </Box>
     </Box>

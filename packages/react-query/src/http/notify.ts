@@ -36,27 +36,21 @@ type UiToastApi = ((input: UiToastInput) => void) & {
   warning: (input: UiToastInput, durationMs?: number) => void;
 };
 
-export const toast = Object.assign(
-  (input: UiToastInput) => notifyUiAlert(toUiAlertPayload(input)),
-  {
-    success: (input: UiToastInput, durationMs?: number) =>
-      notifyUiAlert(toUiAlertPayload(input, "success", durationMs)),
-    error: (input: UiToastInput, durationMs?: number) =>
-      notifyUiAlert(toUiAlertPayload(input, "error", durationMs)),
-    info: (input: UiToastInput, durationMs?: number) => notifyUiAlert(toUiAlertPayload(input, "info", durationMs)),
-    warning: (input: UiToastInput, durationMs?: number) =>
-      notifyUiAlert(toUiAlertPayload(input, "warning", durationMs))
-  }
-) as UiToastApi;
+export const toast = Object.assign((input: UiToastInput) => notifyUiAlert(toUiAlertPayload(input)), {
+  success: (input: UiToastInput, durationMs?: number) =>
+    notifyUiAlert(toUiAlertPayload(input, "success", durationMs)),
+  error: (input: UiToastInput, durationMs?: number) =>
+    notifyUiAlert(toUiAlertPayload(input, "error", durationMs)),
+  info: (input: UiToastInput, durationMs?: number) =>
+    notifyUiAlert(toUiAlertPayload(input, "info", durationMs)),
+  warning: (input: UiToastInput, durationMs?: number) =>
+    notifyUiAlert(toUiAlertPayload(input, "warning", durationMs))
+}) as UiToastApi;
 
-export const notifyUiSuccess = (message: string, durationMs?: number) =>
-  toast.success(message, durationMs);
+export const notifyUiSuccess = (message: string, durationMs?: number) => toast.success(message, durationMs);
 
-export const notifyUiError = (message: string, durationMs?: number) =>
-  toast.error(message, durationMs);
+export const notifyUiError = (message: string, durationMs?: number) => toast.error(message, durationMs);
 
-export const notifyUiInfo = (message: string, durationMs?: number) =>
-  toast.info(message, durationMs);
+export const notifyUiInfo = (message: string, durationMs?: number) => toast.info(message, durationMs);
 
-export const notifyUiWarning = (message: string, durationMs?: number) =>
-  toast.warning(message, durationMs);
+export const notifyUiWarning = (message: string, durationMs?: number) => toast.warning(message, durationMs);

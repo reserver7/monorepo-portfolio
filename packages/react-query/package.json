@@ -23,19 +23,19 @@
     "react-dom": ">=18.0.0"
   },
   "dependencies": {
+    "@repo/configs": "workspace:*",
     "@tanstack/react-query": "^5.29.2",
     "@tanstack/react-query-next-experimental": "^5.29.2",
     "axios": "^1.6.8",
     "react-error-boundary": "^4.0.13"
   },
   "devDependencies": {
-    "@repo/configs": "workspace:*",
     "@repo/eslint-config": "workspace:*",
     "@tanstack/eslint-plugin-query": "^5.27.7",
-    "@types/node": "^20.12.7",
+    "@types/node": "^22.13.5",
     "@types/react": "^19.0.10",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.8.2"
   }
 }

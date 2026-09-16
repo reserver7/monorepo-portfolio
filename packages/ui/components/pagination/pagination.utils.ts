@@ -8,7 +8,8 @@ const range = (from: number, to: number) => {
 
 export const toSafeTotalPages = (totalPages: number) => Math.max(1, Math.floor(totalPages || 1));
 
-export const toSafePage = (page: number, totalPages: number) => clamp(Math.floor(page || 1), 1, toSafeTotalPages(totalPages));
+export const toSafePage = (page: number, totalPages: number) =>
+  clamp(Math.floor(page || 1), 1, toSafeTotalPages(totalPages));
 
 export const toSafePageSize = (pageSize: number) => Math.max(1, Math.floor(pageSize || 1));
 

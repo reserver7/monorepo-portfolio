@@ -2,7 +2,15 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { ROOT, APPS_DIR, getByPath, listMessageGroups, readJson, setByPath, writeJson } from "./lib/message-groups.mjs";
+import {
+  ROOT,
+  APPS_DIR,
+  getByPath,
+  listMessageGroups,
+  readJson,
+  setByPath,
+  writeJson
+} from "./lib/message-groups.mjs";
 
 const CHECK_ONLY = process.argv.includes("--check");
 const SOURCE_GLOBS = ["app", "features", "lib", "components"];

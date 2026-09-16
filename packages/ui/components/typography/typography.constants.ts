@@ -1,5 +1,9 @@
 import type { TypographyVariant } from "./typography.types";
-import { PRIMITIVE_COLOR_HUES, PRIMITIVE_COLOR_SCALES, SEMANTIC_COLOR_TOKEN_KEYS } from "../../styles/color-token";
+import {
+  PRIMITIVE_COLOR_HUES,
+  PRIMITIVE_COLOR_SCALES,
+  SEMANTIC_COLOR_TOKEN_KEYS
+} from "../../styles/color-token";
 
 export const TYPOGRAPHY_DEFAULTS = {
   as: "p",
@@ -41,7 +45,9 @@ const TYPOGRAPHY_SEMANTIC_COLOR_CLASS_MAP: Record<string, string> = {
 };
 
 const typographyPrimitiveColorClassMap = Object.fromEntries(
-  PRIMITIVE_COLOR_HUES.flatMap((hue) => PRIMITIVE_COLOR_SCALES.map((scale) => [`${hue}${scale}`, `text-${hue}-${scale}`]))
+  PRIMITIVE_COLOR_HUES.flatMap((hue) =>
+    PRIMITIVE_COLOR_SCALES.map((scale) => [`${hue}${scale}`, `text-${hue}-${scale}`])
+  )
 ) as Record<string, string>;
 
 export const TYPOGRAPHY_COLORS = [

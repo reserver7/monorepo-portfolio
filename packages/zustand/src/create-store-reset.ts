@@ -1,8 +1,6 @@
 import type { StoreApi, UseBoundStore } from "zustand";
 
-export const createStoreReset = <TState extends object>(
-  store: UseBoundStore<StoreApi<TState>>
-) => {
+export const createStoreReset = <TState extends object>(store: UseBoundStore<StoreApi<TState>>) => {
   const fallbackInitialState = store.getState();
 
   return () => {

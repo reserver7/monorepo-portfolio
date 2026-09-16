@@ -1,5 +1,11 @@
 export { Textarea } from "./textarea";
-export type { TextareaProps, TextareaResize, TextareaSize, TextareaStatus, TextareaVariant } from "./textarea.types";
+export type {
+  TextareaProps,
+  TextareaResize,
+  TextareaSize,
+  TextareaStatus,
+  TextareaVariant
+} from "./textarea.types";
 export {
   TEXTAREA_DEFAULTS,
   TEXTAREA_RESIZE_CLASS,

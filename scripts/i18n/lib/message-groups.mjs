@@ -55,7 +55,12 @@ export function setByPath(obj, keyPath, value) {
 
   for (let i = 0; i < keys.length - 1; i += 1) {
     const key = keys[i];
-    if (!(key in cursor) || cursor[key] === null || typeof cursor[key] !== "object" || Array.isArray(cursor[key])) {
+    if (
+      !(key in cursor) ||
+      cursor[key] === null ||
+      typeof cursor[key] !== "object" ||
+      Array.isArray(cursor[key])
+    ) {
       cursor[key] = {};
     }
     cursor = cursor[key];
@@ -88,8 +93,7 @@ export function listMessageGroups() {
         return null;
       }
 
-      const baseFile =
-        files.find((file) => path.basename(file).toLowerCase() === "ko.json") ?? files[0];
+      const baseFile = files.find((file) => path.basename(file).toLowerCase() === "ko.json") ?? files[0];
 
       return {
         appName,

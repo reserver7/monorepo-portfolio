@@ -9,7 +9,8 @@ export const formatSeverityLabel = (value: string) => {
   return value;
 };
 
-export const truncateLabel = (value: string, max = 20) => (value.length > max ? `${value.slice(0, max)}...` : value);
+export const truncateLabel = (value: string, max = 20) =>
+  value.length > max ? `${value.slice(0, max)}...` : value;
 
 export const getCssVar = (name: string, fallback: string) => {
   if (typeof window === "undefined") return fallback;
@@ -58,7 +59,9 @@ export const getBlueGradient = (ctx: ScriptableContext<any>, fromAlpha: number, 
 };
 
 export const getSeverityColor = (severity: string) => {
-  const token = chartColorTokens.severity[severity as keyof typeof chartColorTokens.severity] ?? chartColorTokens.fallback;
+  const token =
+    chartColorTokens.severity[severity as keyof typeof chartColorTokens.severity] ??
+    chartColorTokens.fallback;
   return resolveCanvasColor(token, "#2563eb");
 };
 

@@ -34,7 +34,10 @@ export class OpsQaService {
   }
 
   private writeQaScenarioListCache(value: QaScenarioType[]): void {
-    this.qaScenarioListCache.set("recent", { value, expiresAt: Date.now() + env.OPS_CACHE_QA_SCENARIO_TTL_MS });
+    this.qaScenarioListCache.set("recent", {
+      value,
+      expiresAt: Date.now() + env.OPS_CACHE_QA_SCENARIO_TTL_MS
+    });
   }
 
   async generateQaScenario(input: QaAssistantInputModel): Promise<QaScenarioType> {

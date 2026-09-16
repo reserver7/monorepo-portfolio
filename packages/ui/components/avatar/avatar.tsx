@@ -14,14 +14,18 @@ import {
   AVATAR_STATUS_SIZE_CLASS
 } from "./avatar.constants";
 import { getInitials } from "./avatar.utils";
-import type { AvatarFallbackProps, AvatarImageProps, AvatarProps, AvatarStatusIndicatorProps } from "./avatar.types";
+import type {
+  AvatarFallbackProps,
+  AvatarImageProps,
+  AvatarProps,
+  AvatarStatusIndicatorProps
+} from "./avatar.types";
 
-export const AvatarImage = React.forwardRef<
-  React.ElementRef<typeof AvatarPrimitive.Image>,
-  AvatarImageProps
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Image ref={ref} className={cn("h-full w-full object-cover", className)} {...props} />
-));
+export const AvatarImage = React.forwardRef<React.ElementRef<typeof AvatarPrimitive.Image>, AvatarImageProps>(
+  ({ className, ...props }, ref) => (
+    <AvatarPrimitive.Image ref={ref} className={cn("h-full w-full object-cover", className)} {...props} />
+  )
+);
 AvatarImage.displayName = AvatarPrimitive.Image.displayName;
 
 export const AvatarFallback = React.forwardRef<
@@ -69,7 +73,7 @@ export const AvatarStatusIndicator = React.memo(function AvatarStatusIndicator({
   return (
     <span
       className={cn(
-        "absolute bottom-0 right-0 rounded-full ring-2 ring-surface",
+        "ring-surface absolute bottom-0 right-0 rounded-full ring-2",
         AVATAR_STATUS_SIZE_CLASS[resolvedSize],
         AVATAR_STATUS_COLOR_CLASS[resolvedStatus],
         className
@@ -113,7 +117,7 @@ const AvatarComponent = React.forwardRef<React.ElementRef<typeof AvatarPrimitive
           "relative inline-flex shrink-0 overflow-hidden",
           AVATAR_SIZE_CLASS[resolvedSize],
           AVATAR_SHAPE_CLASS[resolvedShape],
-          bordered ? "ring-1 ring-border" : null,
+          bordered ? "ring-border ring-1" : null,
           interactive ? "cursor-pointer transition hover:brightness-95 active:brightness-90" : null,
           className
         )}

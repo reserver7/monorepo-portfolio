@@ -1,4 +1,5 @@
 import { Box } from "@repo/ui";
+import { useLocale, useTranslations } from "next-intl";
 import { FeedbackState } from "@/features/common/components/feedback-state";
 import { formatDateTime } from "@repo/utils";
 import type { Issue } from "@repo/opslens";
@@ -8,8 +9,10 @@ type IssueLogListProps = {
 };
 
 export function IssueLogList({ logs }: IssueLogListProps) {
+  const t = useTranslations("issues.logs");
+  const locale = useLocale();
   if (logs.length === 0) {
-    return <FeedbackState variant="empty" size="sm" title="로그 데이터가 없습니다." className="mt-[var(--space-3)]" />;
+    return <FeedbackState variant="empty" size="sm" title={t("empty")} className="mt-[var(--space-3)]" />;
   }
 
   return (
@@ -17,9 +20,12 @@ export function IssueLogList({ logs }: IssueLogListProps) {
       {logs.map((log) => (
         <Box key={log.id} className="border-default rounded-lg border p-[var(--space-3)]">
           <Box as="p" className="text-muted-foreground text-caption">
-            {formatDateTime(log.occurredAt)} · {log.source} · {log.level}
+            {formatDateTime(log.occurredAt, locale)} · {log.source} · {log.level}
           </Box>
-          <Box as="p" className="text-foreground mt-[var(--space-1)] whitespace-pre-wrap break-all font-mono text-caption">
+          <Box
+            as="p"
+            className="text-foreground text-caption mt-[var(--space-1)] whitespace-pre-wrap break-all font-mono"
+          >
             {log.rawMessage}
           </Box>
         </Box>

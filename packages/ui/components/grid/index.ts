@@ -18,4 +18,3 @@ export {
   GRID_MIN_COLUMN_WIDTH_VALUE
 } from "./grid.constants";
 export { getGridClassName, getGridStyle } from "./grid.utils";
-

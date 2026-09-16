@@ -10,14 +10,7 @@ export function AppHead({ preloadFonts = THEME_PRELOAD_FONT_HREFS }: AppHeadProp
   return (
     <>
       {preloadFonts.map((href) => (
-        <link
-          key={href}
-          rel="preload"
-          href={href}
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
+        <link key={href} rel="preload" href={href} as="font" type="font/woff2" crossOrigin="anonymous" />
       ))}
       <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
     </>

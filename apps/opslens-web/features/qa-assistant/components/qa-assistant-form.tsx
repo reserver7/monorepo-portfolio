@@ -1,6 +1,7 @@
 "use client";
 
 import { RotateCcw, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Badge, Box, Button, Flex, FormField, Grid, Input, Select, Textarea, Typography } from "@repo/ui";
 import type { useAppForm } from "@repo/forms";
 import { QA_NEUTRAL_BADGE_CLASS, QA_SAMPLE_VALUES } from "../constants";
@@ -25,27 +26,33 @@ export function QaAssistantForm({
   readinessItems,
   readOnly = false
 }: QaAssistantFormProps) {
+  const t = useTranslations("qa.form");
   return (
     <form className="grid gap-[var(--space-3)]" onSubmit={form.handleSubmit(onSubmit)}>
       <Grid className="gap-[var(--space-3)] lg:grid-cols-[minmax(0,1fr)_220px]">
-        <FormField label="기능/릴리즈 항목" htmlFor="qa-feature-name" size="sm" error={form.formState.errors.featureName?.message}>
+        <FormField
+          label={t("feature")}
+          htmlFor="qa-feature-name"
+          size="sm"
+          error={form.formState.errors.featureName?.message}
+        >
           <Input
             id="qa-feature-name"
             {...form.register("featureName", {
-              required: "기능 설명을 입력하세요.",
-              minLength: { value: 8, message: "기능 설명을 8자 이상 입력하세요." }
+              required: t("featureRequired"),
+              minLength: { value: 8, message: t("featureMin") }
             })}
-            placeholder="예: 주문 상세 페이지 할인금액 표시 추가"
+            placeholder={t("featurePlaceholder")}
             size="sm"
           />
         </FormField>
 
-        <FormField label="산출물 관점" htmlFor="qa-audience" size="sm">
+        <FormField label={t("audience")} htmlFor="qa-audience" size="sm">
           <Select
             options={[
-              { label: "QA 중심", value: "qa" },
-              { label: "개발자 중심", value: "developer" },
-              { label: "PM/비개발자 중심", value: "pm" }
+              { label: t("audienceQa"), value: "qa" },
+              { label: t("audienceDeveloper"), value: "developer" },
+              { label: t("audiencePm"), value: "pm" }
             ]}
             control={form.control}
             name="audience"
@@ -55,10 +62,15 @@ export function QaAssistantForm({
       </Grid>
 
       <Grid className="gap-[var(--space-3)] lg:grid-cols-2">
-        <FormField label="변경 화면/사용자 플로우" htmlFor="qa-changed-screens" size="sm" error={form.formState.errors.changedScreens?.message}>
+        <FormField
+          label={t("changedScreens")}
+          htmlFor="qa-changed-screens"
+          size="sm"
+          error={form.formState.errors.changedScreens?.message}
+        >
           <Textarea
             id="qa-changed-screens"
-            {...form.register("changedScreens", { required: "변경 화면을 입력하세요." })}
+            {...form.register("changedScreens", { required: t("changedScreensRequired") })}
             rows={4}
             size="sm"
             resize="none"
@@ -66,37 +78,47 @@ export function QaAssistantForm({
           />
         </FormField>
 
-        <FormField label="관련 API/이벤트 계약" htmlFor="qa-related-apis" size="sm" error={form.formState.errors.relatedApis?.message}>
+        <FormField
+          label={t("relatedApis")}
+          htmlFor="qa-related-apis"
+          size="sm"
+          error={form.formState.errors.relatedApis?.message}
+        >
           <Textarea
             id="qa-related-apis"
-            {...form.register("relatedApis", { required: "관련 API를 입력하세요." })}
+            {...form.register("relatedApis", { required: t("relatedApisRequired") })}
             rows={4}
             size="sm"
             resize="none"
-            className="font-mono text-caption"
+            className="text-caption font-mono"
             placeholder={"GET /orders/{id}\nGET /discounts/{id}"}
           />
         </FormField>
       </Grid>
 
-      <FormField label="배포 노트/변경 맥락" htmlFor="qa-release-note" size="sm" error={form.formState.errors.releaseNote?.message}>
+      <FormField
+        label={t("releaseNote")}
+        htmlFor="qa-release-note"
+        size="sm"
+        error={form.formState.errors.releaseNote?.message}
+      >
         <Textarea
           id="qa-release-note"
           {...form.register("releaseNote", {
-            required: "배포 노트를 입력하세요.",
-            minLength: { value: 20, message: "변경 맥락을 20자 이상 입력하세요." }
+            required: t("releaseNoteRequired"),
+            minLength: { value: 20, message: t("releaseNoteMin") }
           })}
           rows={4}
           size="sm"
           resize="none"
-          placeholder="필드 변경, 정책 변경, 예외 케이스, 롤백 조건을 함께 적어주세요."
+          placeholder={t("releaseNotePlaceholder")}
         />
       </FormField>
 
-      <Box className="border-t border-default pt-[var(--space-3)]">
+      <Box className="border-default border-t pt-[var(--space-3)]">
         <Flex className="flex-wrap items-center gap-[var(--space-2)]">
           <Typography as="p" variant="caption" color="subtle" className="font-semibold">
-            품질 게이트
+            {t("qualityGate")}
           </Typography>
           {readinessItems.map((item) => (
             <Badge
@@ -118,11 +140,11 @@ export function QaAssistantForm({
           variant="primary"
           size="sm"
           loading={isGenerating ? true : undefined}
-          loadingLabel="시나리오 생성 중..."
+          loadingLabel={t("generating")}
           leftIcon={<Sparkles size={16} />}
           disabled={readOnly || isGenerating}
         >
-          QA 시나리오 생성
+          {t("generate")}
         </Button>
         <Button
           type="button"
@@ -131,7 +153,7 @@ export function QaAssistantForm({
           onClick={() => form.reset(QA_SAMPLE_VALUES)}
           disabled={readOnly || isGenerating}
         >
-          샘플 채우기
+          {t("sample")}
         </Button>
         <Button
           type="button"
@@ -141,7 +163,7 @@ export function QaAssistantForm({
           onClick={onReset}
           disabled={readOnly || isGenerating}
         >
-          초기화
+          {t("reset")}
         </Button>
       </Flex>
     </form>

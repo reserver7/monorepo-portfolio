@@ -11,7 +11,18 @@ const PRIMITIVE_COLOR_HUE_VALUES = [
   "purple"
 ] as const;
 
-const PRIMITIVE_COLOR_SCALE_VALUES = ["1000", "900", "800", "700", "600", "500", "400", "300", "200", "100"] as const;
+const PRIMITIVE_COLOR_SCALE_VALUES = [
+  "1000",
+  "900",
+  "800",
+  "700",
+  "600",
+  "500",
+  "400",
+  "300",
+  "200",
+  "100"
+] as const;
 
 const SEMANTIC_COLOR_TOKEN_VALUES = [
   "background",
@@ -71,7 +82,9 @@ export type PrimitiveColorToken = `${PrimitiveColorHue}${PrimitiveColorScale}`;
 export type SemanticColorToken = (typeof SEMANTIC_COLOR_TOKEN_VALUES)[number];
 export type UiColorToken = SemanticColorToken | PrimitiveColorToken;
 
-const primitiveTokenRegex = new RegExp(`^(${PRIMITIVE_COLOR_HUE_VALUES.join("|")})(${PRIMITIVE_COLOR_SCALE_VALUES.join("|")})$`);
+const primitiveTokenRegex = new RegExp(
+  `^(${PRIMITIVE_COLOR_HUE_VALUES.join("|")})(${PRIMITIVE_COLOR_SCALE_VALUES.join("|")})$`
+);
 
 export const resolveUiColorValue = (token?: string): string | undefined => {
   if (!token) return undefined;

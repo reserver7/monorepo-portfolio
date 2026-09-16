@@ -41,16 +41,20 @@ const collectArgTypesDuplicateKeys = (source) => {
       continue;
     }
 
-    for (const ch of line) {
-      if (ch === "{") depth += 1;
-      if (ch === "}") depth -= 1;
-    }
-
     const keyMatch = line.match(/^([A-Za-z_$][\w$]*)\s*:/);
-    if (keyMatch && depth === 2) {
+    // `depth` is 1 while reading direct children of the argTypes object.
+    // Inspect the key before applying this line's braces so multiline
+    // configs such as `size: { control: ... }` do not make nested keys look
+    // like duplicate top-level argTypes entries.
+    if (keyMatch && depth === 1) {
       const key = keyMatch[1];
       if (seen.has(key)) duplicates.push(key);
       else seen.add(key);
+    }
+
+    for (const ch of line) {
+      if (ch === "{") depth += 1;
+      if (ch === "}") depth -= 1;
     }
 
     if (depth <= 0) {
@@ -82,4 +86,3 @@ export const validateGeneratedStories = async (generatedDirPath) => {
 
   return { fileCount: files.length, errors };
 };
-

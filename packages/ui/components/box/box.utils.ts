@@ -1,6 +1,12 @@
 import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
-import { BOX_DEFAULTS, BOX_PADDING_CLASS, BOX_RADIUS_CLASS, BOX_SHADOW_CLASS, BOX_VARIANT_CLASS } from "./box.constants";
+import {
+  BOX_DEFAULTS,
+  BOX_PADDING_CLASS,
+  BOX_RADIUS_CLASS,
+  BOX_SHADOW_CLASS,
+  BOX_VARIANT_CLASS
+} from "./box.constants";
 import type { BoxPadding, BoxRadius, BoxShadow, BoxVariant } from "./box.types";
 
 export const getBoxClassName = (params: {

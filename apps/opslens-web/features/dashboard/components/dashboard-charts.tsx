@@ -46,7 +46,11 @@ ChartJS.register(
 
 type Summary = Pick<DashboardSummary, "severityDistribution" | "errorTrend24h" | "topRepeatedErrors">;
 
-export const SeverityDistributionChart = memo(function SeverityDistributionChart({ summary }: { summary: Summary }) {
+export const SeverityDistributionChart = memo(function SeverityDistributionChart({
+  summary
+}: {
+  summary: Summary;
+}) {
   const tDashboard = useTranslations("dashboard");
   const eventUnit = tDashboard("units.events");
   const total = summary.severityDistribution.reduce((acc, item) => acc + item.count, 0);
@@ -131,7 +135,7 @@ export const SeverityDistributionChart = memo(function SeverityDistributionChart
   };
 
   return (
-    <Box role="img" aria-label="심각도별 이슈 분포 도넛 차트" className="h-[232px] w-full">
+    <Box role="img" aria-label={tDashboard("charts.severityDistributionAria")} className="h-[232px] w-full">
       <Doughnut data={data} options={options} />
     </Box>
   );
@@ -168,7 +172,7 @@ export const ErrorTrendChart = memo(function ErrorTrendChart({ summary }: { summ
       labels: summary.errorTrend24h.map((item) => item.hour),
       datasets: [
         {
-          label: "Error events",
+          label: tDashboard("charts.errorEvents"),
           data: counts,
           borderColor: resolveCanvasColor(chartColorTokens.trend, "#2563eb"),
           borderWidth: 2.75,
@@ -222,7 +226,8 @@ export const ErrorTrendChart = memo(function ErrorTrendChart({ summary }: { summ
           label: (context) => `${context.dataset.label}: ${context.parsed.y}${eventUnit}`,
           afterBody: (items) => {
             const current = items[0]?.parsed?.y ?? 0;
-            const previous = items[0]?.dataIndex && items[0].dataIndex > 0 ? counts[items[0].dataIndex - 1] ?? 0 : 0;
+            const previous =
+              items[0]?.dataIndex && items[0].dataIndex > 0 ? (counts[items[0].dataIndex - 1] ?? 0) : 0;
             const diff = current - previous;
             if (items[0]?.dataIndex === 0) return [];
             return [`${deltaLabel}: ${diff > 0 ? "+" : ""}${diff}${eventUnit}`];
@@ -246,13 +251,17 @@ export const ErrorTrendChart = memo(function ErrorTrendChart({ summary }: { summ
   };
 
   return (
-    <Box role="img" aria-label="최근 24시간 에러 추이 선 그래프" className="h-[232px] w-full">
+    <Box role="img" aria-label={tDashboard("charts.errorTrendAria")} className="h-[232px] w-full">
       <Line data={data} options={options} />
     </Box>
   );
 });
 
-export const TopRepeatedErrorsChart = memo(function TopRepeatedErrorsChart({ summary }: { summary: Summary }) {
+export const TopRepeatedErrorsChart = memo(function TopRepeatedErrorsChart({
+  summary
+}: {
+  summary: Summary;
+}) {
   const tDashboard = useTranslations("dashboard");
   const eventUnit = tDashboard("units.events");
   const total = summary.topRepeatedErrors.reduce((acc, item) => acc + item.count, 0);
@@ -275,7 +284,7 @@ export const TopRepeatedErrorsChart = memo(function TopRepeatedErrorsChart({ sum
       labels,
       datasets: [
         {
-          label: "Count",
+          label: tDashboard("charts.count"),
           data: summary.topRepeatedErrors.map((item) => item.count),
           borderRadius: 8,
           borderSkipped: false,
@@ -328,7 +337,7 @@ export const TopRepeatedErrorsChart = memo(function TopRepeatedErrorsChart({ sum
   };
 
   return (
-    <Box role="img" aria-label="반복 에러 상위 5개 막대 그래프" className="h-[248px] w-full">
+    <Box role="img" aria-label={tDashboard("charts.topRepeatedErrorsAria")} className="h-[248px] w-full">
       <Bar data={data} options={options} plugins={[createBarValueLabelPlugin(eventUnit)]} />
     </Box>
   );

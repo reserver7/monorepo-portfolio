@@ -41,7 +41,8 @@ export const oauthAuthOptions: NextAuthOptions = {
     },
     session({ session, token }) {
       if (session.user) {
-        session.user.oauthProvider = typeof token.oauthProvider === "string" ? token.oauthProvider : undefined;
+        session.user.oauthProvider =
+          typeof token.oauthProvider === "string" ? token.oauthProvider : undefined;
         session.user.oauthProviderAccountId =
           typeof token.oauthProviderAccountId === "string" ? token.oauthProviderAccountId : undefined;
       }

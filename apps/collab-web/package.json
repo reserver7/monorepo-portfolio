@@ -5,10 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "analyze": "ANALYZE=true next build",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@repo/configs": "workspace:*",
     "@repo/forms": "workspace:*",
     "@repo/react-query": "workspace:*",
     "@repo/theme": "workspace:*",
@@ -19,11 +21,10 @@
     "next-intl": "^4.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "socket.io-client": "^4.8.1",
+    "socket.io-client": "^4.8.3",
     "yjs": "^13.6.27"
   },
   "devDependencies": {
-    "@repo/configs": "workspace:*",
     "@repo/eslint-config": "workspace:*",
     "@types/node": "^22.13.5",
     "@types/react": "^19.0.10",

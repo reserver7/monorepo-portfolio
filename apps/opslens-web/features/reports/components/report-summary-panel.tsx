@@ -3,6 +3,7 @@
 import { MetricCard } from "@/features/common/components/feedback-state";
 
 import { Badge, Box, Flex, Grid, Typography } from "@repo/ui";
+import { useTranslations } from "next-intl";
 import type { OpsReport } from "@repo/opslens";
 import { getReportGeneratedLabel, getReportRiskBadge, getReportTone } from "../utils/report-utils";
 
@@ -11,6 +12,7 @@ type ReportSummaryPanelProps = {
 };
 
 export function ReportSummaryPanel({ report }: ReportSummaryPanelProps) {
+  const t = useTranslations("reports");
   const risk = getReportRiskBadge(report.riskLevel);
 
   return (
@@ -21,7 +23,7 @@ export function ReportSummaryPanel({ report }: ReportSummaryPanelProps) {
             {report.title}
           </Typography>
           <Typography as="p" variant="caption" color="subtle" className="mt-[var(--space-1)]">
-            생성: {getReportGeneratedLabel(report)}
+            {t("generated")}: {getReportGeneratedLabel(report)}
           </Typography>
         </Box>
         <Badge variant={risk.variant} size="sm" shape="rounded" className="shrink-0 font-semibold">
@@ -45,7 +47,7 @@ export function ReportSummaryPanel({ report }: ReportSummaryPanelProps) {
 
       <Box className="border-default bg-surface-elevated rounded-[var(--radius-md)] border p-[var(--space-3)]">
         <Typography as="p" variant="bodySm" className="font-semibold">
-          경영/운영 요약
+          {t("executiveSummary")}
         </Typography>
         <Typography as="p" variant="bodySm" color="muted" className="mt-[var(--space-2)] leading-[1.7]">
           {report.executiveSummary}

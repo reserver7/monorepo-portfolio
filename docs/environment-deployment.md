@@ -4,12 +4,12 @@
 
 `pnpm infra:up`으로 Docker Compose의 PostgreSQL(`5433`)과 Redis(`6379`)를 시작합니다.
 
-| 앱 | 필수 변수 |
-| --- | --- |
-| Collab Server | `STATE_BACKEND=postgres`, `COLLAB_DATABASE_URL`, `REDIS_URL`, `COLLAB_SESSION_SECRET`, `CORS_ORIGINS` |
+| 앱             | 필수 변수                                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Collab Server  | `STATE_BACKEND=postgres`, `COLLAB_DATABASE_URL`, `REDIS_URL`, `COLLAB_SESSION_SECRET`, `CORS_ORIGINS`               |
 | OpsLens Server | `DATABASE_URL`, `DIRECT_DATABASE_URL`, `AUTH_JWT_SECRET`, `AUTH_BRIDGE_SECRET`, `OPS_INGESTION_KEY`, `CORS_ORIGINS` |
-| Collab Web | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL` |
-| OpsLens Web | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, `OPSLENS_AUTH_BRIDGE_SECRET` |
+| Collab Web     | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`                                                                        |
+| OpsLens Web    | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, `OPSLENS_AUTH_BRIDGE_SECRET`                                          |
 
 앱별 `.env.example`은 로컬 Docker 기본 연결값을 포함합니다. OpsLens Server는 `.env.local`을 `.env`보다 먼저 읽어 Docker DB 연결값만 분리할 수 있습니다. 실제 `.env` 및 `.env.local` 파일은 Git에 포함하지 않습니다.
 
@@ -17,13 +17,13 @@
 
 웹 앱은 Vercel, Node 서버는 Render, 데이터 저장소는 관리형 PostgreSQL과 Redis를 사용합니다.
 
-| 대상 | 권장 서비스 | 연결 변수 |
-| --- | --- | --- |
-| Collab Server 상태 | Neon 또는 Render Postgres | `STATE_BACKEND=postgres`, `COLLAB_DATABASE_URL` |
-| Collab 실시간 pub/sub | Upstash Redis, Redis Cloud 또는 Render Key Value | `REDIS_URL` |
-| OpsLens DB | Neon 또는 Render Postgres | `DATABASE_URL`, `DIRECT_DATABASE_URL` |
-| Collab Web | Vercel | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL` |
-| OpsLens Web | Vercel | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, `OPSLENS_AUTH_BRIDGE_SECRET` |
+| 대상                  | 권장 서비스                                      | 연결 변수                                                                  |
+| --------------------- | ------------------------------------------------ | -------------------------------------------------------------------------- |
+| Collab Server 상태    | Neon 또는 Render Postgres                        | `STATE_BACKEND=postgres`, `COLLAB_DATABASE_URL`                            |
+| Collab 실시간 pub/sub | Upstash Redis, Redis Cloud 또는 Render Key Value | `REDIS_URL`                                                                |
+| OpsLens DB            | Neon 또는 Render Postgres                        | `DATABASE_URL`, `DIRECT_DATABASE_URL`                                      |
+| Collab Web            | Vercel                                           | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`                               |
+| OpsLens Web           | Vercel                                           | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, `OPSLENS_AUTH_BRIDGE_SECRET` |
 
 운영에서는 로컬 Docker URL을 사용하지 않습니다. `COLLAB_SESSION_SECRET`, `AUTH_JWT_SECRET`, `AUTH_BRIDGE_SECRET`, `OPSLENS_AUTH_BRIDGE_SECRET`, `OPS_INGESTION_KEY`는 서로 다른 32자 이상 난수로 설정합니다. OpsLens Server는 운영 모드에서 `CORS_ORIGINS`가 비어 있으면 시작하지 않으며, OpsLens Web의 실제 도메인만 쉼표로 구분해 지정합니다.
 

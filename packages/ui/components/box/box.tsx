@@ -23,7 +23,16 @@ const BoxBase = React.forwardRef<HTMLElement, BoxProps>(
   ) =>
     React.createElement(Comp, {
       ref,
-      className: getBoxClassName({ variant, padding, radius, shadow, border, fullWidth, fullHeight, className }),
+      className: getBoxClassName({
+        variant,
+        padding,
+        radius,
+        shadow,
+        border,
+        fullWidth,
+        fullHeight,
+        className
+      }),
       ...props
     })
 );

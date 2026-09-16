@@ -7,6 +7,7 @@ import { CalendarDays, X } from "lucide-react";
 import { useComposedRefs, useControlledValue } from "../../hooks";
 import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
+import { useUiLocale } from "../ui-locale";
 import { Button } from "../button";
 import { Calendar } from "../calendar";
 import { FieldSupportText, RequiredMark } from "../field/field-utils";
@@ -81,6 +82,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
     },
     ref
   ) => {
+    const labels = useUiLocale();
     const hiddenInputRef = React.useRef<HTMLInputElement | null>(null);
     const mergedRef = useComposedRefs<HTMLInputElement>(ref, hiddenInputRef);
 
@@ -381,7 +383,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
                       event.stopPropagation();
                       handleClear();
                     }}
-                    aria-label="선택한 날짜 지우기"
+                    aria-label={labels.clearDate}
                     className="text-muted hover:bg-surface-elevated hover:text-foreground focus-visible:ring-primary inline-flex h-[var(--size-icon-lg)] w-[var(--size-icon-lg)] items-center justify-center rounded-[var(--radius-round)] transition-colors focus-visible:outline-none focus-visible:ring-2"
                   >
                     <X className="h-[var(--size-icon-sm)] w-[var(--size-icon-sm)]" aria-hidden />
@@ -410,7 +412,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
                 {withTime ? (
                   <div className="border-default grid gap-[var(--space-2)] border-t pt-[var(--space-2)] md:grid-cols-2">
                     <div className="grid gap-[var(--space-1)]">
-                      <Label size="sm">시작 시간</Label>
+                      <Label size="sm">{labels.startTime}</Label>
                       <TimePicker
                         value={rangeFromTimeValue}
                         showSeconds={showSeconds}
@@ -440,7 +442,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
                       />
                     </div>
                     <div className="grid gap-[var(--space-1)]">
-                      <Label size="sm">종료 시간</Label>
+                      <Label size="sm">{labels.endTime}</Label>
                       <TimePicker
                         value={rangeToTimeValue}
                         showSeconds={showSeconds}
@@ -486,7 +488,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
                 />
                 {withTime ? (
                   <div className="border-default grid gap-[var(--space-1)] border-t pt-[var(--space-2)]">
-                    <Label size="sm">시간</Label>
+                    <Label size="sm">{labels.time}</Label>
                     <TimePicker
                       value={singleTimeValue}
                       showSeconds={showSeconds}

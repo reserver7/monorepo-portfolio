@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, createElement, useContext, useRef, type PropsWithChildren } from "react";
+import { normalizeLocale } from "@repo/configs/i18n";
 import { createAppStore } from "@repo/zustand";
 import type { CollabLocale } from "@/lib/i18n/messages";
 import { COLLAB_DEFAULT_LOCALE } from "@/lib/i18n/messages";
@@ -9,9 +10,6 @@ type CollabLocaleState = {
   locale: CollabLocale;
   setLocale: (locale: CollabLocale) => void;
 };
-
-const isCollabLocale = (value: string | null | undefined): value is CollabLocale =>
-  value === "ko" || value === "en" || value === "ja";
 
 const readLocaleFromCookie = (): CollabLocale | null => {
   if (typeof document === "undefined") {
@@ -25,7 +23,7 @@ const readLocaleFromCookie = (): CollabLocale | null => {
     ?.split("=")[1]
     ?.trim();
 
-  return isCollabLocale(localeCookie) ? localeCookie : null;
+  return normalizeLocale(localeCookie);
 };
 
 const resolveInitialLocale = (): CollabLocale => {
@@ -66,7 +64,9 @@ export function CollabLocaleStoreProvider({
   return createElement(CollabLocaleStoreContext.Provider, { value: storeRef.current }, children);
 }
 
-export const useCollabLocaleStore = <Selected,>(selector: (state: CollabLocaleState) => Selected): Selected => {
+export const useCollabLocaleStore = <Selected>(
+  selector: (state: CollabLocaleState) => Selected
+): Selected => {
   const store = useContext(CollabLocaleStoreContext);
   if (!store) {
     throw new Error("CollabLocaleStoreContext: Provider가 필요합니다.");

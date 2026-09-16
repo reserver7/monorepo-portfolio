@@ -29,4 +29,3 @@ SpacingBase.displayName = "SpacingBase";
 
 export const Spacing = React.memo(SpacingBase);
 Spacing.displayName = "Spacing";
-

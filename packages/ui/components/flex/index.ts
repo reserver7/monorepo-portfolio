@@ -9,4 +9,3 @@ export {
   FLEX_GAP_CLASS
 } from "./flex.constants";
 export { getFlexClassName } from "./flex.utils";
-

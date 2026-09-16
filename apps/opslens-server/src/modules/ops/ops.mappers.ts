@@ -1,5 +1,19 @@
-import { IssueSeverity, Prisma, type Deployment, type Issue, type IssueComment, type LogEvent, type QaScenario } from "@prisma/client";
-import type { DeploymentImpactReportType, DeploymentType, IssueType, OpsAlertType, QaScenarioType } from "./ops.types.js";
+import {
+  IssueSeverity,
+  Prisma,
+  type Deployment,
+  type Issue,
+  type IssueComment,
+  type LogEvent,
+  type QaScenario
+} from "@prisma/client";
+import type {
+  DeploymentImpactReportType,
+  DeploymentType,
+  IssueType,
+  OpsAlertType,
+  QaScenarioType
+} from "./ops.types.js";
 
 export const parseJsonArray = (value: Prisma.JsonValue): string[] => {
   if (Array.isArray(value)) return value.map((item) => String(item));
@@ -112,7 +126,9 @@ export const getDeploymentRiskLevel = (report: {
   increasedIssues: DeploymentImpactReportType["increasedIssues"];
   totalAfterErrorCount: number;
 }): "normal" | "caution" | "rollback_review" => {
-  const hasCriticalIncrease = report.increasedIssues.some((issue) => issue.severity === IssueSeverity.critical);
+  const hasCriticalIncrease = report.increasedIssues.some(
+    (issue) => issue.severity === IssueSeverity.critical
+  );
   const hasHighVolume = report.totalAfterErrorCount >= 100;
   if (hasCriticalIncrease || report.increasedIssues.length >= 5 || hasHighVolume) return "rollback_review";
   if (report.increasedIssues.length > 0 || report.totalAfterErrorCount >= 30) return "caution";
@@ -120,8 +136,10 @@ export const getDeploymentRiskLevel = (report: {
 };
 
 export const getDeploymentRecommendedAction = (riskLevel: string): string => {
-  if (riskLevel === "rollback_review") return "Critical 증가 또는 높은 에러량이 감지되었습니다. 담당자 확인 후 롤백 여부를 검토하세요.";
-  if (riskLevel === "caution") return "배포 후 증가 신호가 있습니다. 모니터링 윈도우 동안 관련 이슈를 우선 확인하세요.";
+  if (riskLevel === "rollback_review")
+    return "Critical 증가 또는 높은 에러량이 감지되었습니다. 담당자 확인 후 롤백 여부를 검토하세요.";
+  if (riskLevel === "caution")
+    return "배포 후 증가 신호가 있습니다. 모니터링 윈도우 동안 관련 이슈를 우선 확인하세요.";
   return "배포 후 증가 신호가 낮습니다. 설정한 모니터링 윈도우까지 추적을 유지하세요.";
 };
 

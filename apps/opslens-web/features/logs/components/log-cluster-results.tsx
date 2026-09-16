@@ -1,10 +1,17 @@
 import type { RefObject } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Box, Badge, Button, ConsoleSectionCard, Flex, Grid, Input, Select, Typography } from "@repo/ui";
 import { FeedbackState } from "@/features/common/components/feedback-state";
 import { formatDateTime, formatNumber } from "@repo/utils";
 
 import { LOGS_SEVERITY_VARIANT_MAP } from "../constants";
-import type { LogsCluster, LogsFormValues, LogsSavedViewsState, LogsSeverityFilter, LogsSortKey } from "../types";
+import type {
+  LogsCluster,
+  LogsFormValues,
+  LogsSavedViewsState,
+  LogsSeverityFilter,
+  LogsSortKey
+} from "../types";
 
 type LogClusterResultsProps = {
   clusters: LogsCluster[];
@@ -55,22 +62,24 @@ export function LogClusterResults({
   onSortKeyChange,
   resolveErrorMessage
 }: LogClusterResultsProps) {
+  const locale = useLocale();
+  const t = useTranslations("logs");
   return (
-    <ConsoleSectionCard title="분석 결과 클러스터" description="중복 패턴과 심각도를 기준으로 정리된 결과입니다.">
+    <ConsoleSectionCard title={t("results.title")} description={t("results.description")}>
       <Box className="mb-[var(--space-3)]">
         <Grid className="gap-[var(--space-2)] md:grid-cols-[minmax(0,1fr)_180px_180px_auto]">
           <Input
             ref={queryInputRef}
             value={searchQuery}
             onChange={(event) => onSearchQueryChange(event.target.value)}
-            placeholder="클러스터 검색 (/)"
+            placeholder={t("results.searchPlaceholder")}
             size="md"
           />
           <Select
             value={severityFilter}
             onChange={(value) => onSeverityFilterChange(String(value) as LogsSeverityFilter)}
             options={[
-              { label: "심각도: 전체", value: "all" },
+              { label: t("severity.all"), value: "all" },
               { label: "Critical", value: "critical" },
               { label: "High", value: "high" },
               { label: "Medium", value: "medium" },
@@ -81,13 +90,15 @@ export function LogClusterResults({
             value={sortKey}
             onChange={(value) => onSortKeyChange(String(value) as LogsSortKey)}
             options={[
-              { label: "정렬: 발생량", value: "countDesc" },
-              { label: "정렬: 최근순", value: "latestDesc" },
-              { label: "정렬: 심각도", value: "severityDesc" }
+              { label: t("sort.count"), value: "countDesc" },
+              { label: t("sort.latest"), value: "latestDesc" },
+              { label: t("sort.severity"), value: "severityDesc" }
             ]}
           />
           <Flex className="items-center justify-end gap-[var(--space-1-5)]">
-            <Button type="button" size="sm" variant="outline" onClick={onSaveCurrentView}>뷰 저장</Button>
+            <Button type="button" size="sm" variant="outline" onClick={onSaveCurrentView}>
+              {t("results.saveView")}
+            </Button>
           </Flex>
         </Grid>
         {savedViewsState.items.length > 0 ? (
@@ -101,24 +112,36 @@ export function LogClusterResults({
                 removable
                 onClick={() => onApplySavedView(view.id)}
                 onRemove={() => onRemoveSavedView(view.id)}
-                removeLabel={`${view.name} 삭제`}
+                removeLabel={t("results.removeView", { name: view.name })}
                 className={`cursor-pointer transition-[background-color,border-color,box-shadow,color] duration-150 ease-out ${
-                  savedViewsState.activeId === view.id ? "ring-1 ring-primary/35 shadow-none" : "ring-0 shadow-none"
+                  savedViewsState.activeId === view.id
+                    ? "ring-primary/35 shadow-none ring-1"
+                    : "shadow-none ring-0"
                 }`}
               >
                 {view.name}
               </Badge>
             ))}
-            <Badge size="sm" variant="outline" interactive onClick={onClearSavedViews} className="cursor-pointer">
-              내 뷰 삭제
+            <Badge
+              size="sm"
+              variant="outline"
+              interactive
+              onClick={onClearSavedViews}
+              className="cursor-pointer"
+            >
+              {t("results.clearViews")}
             </Badge>
           </Flex>
         ) : null}
       </Box>
       {clusterMeta ? (
         <Flex className="mb-[var(--space-2)] items-center gap-[var(--space-1-5)]">
-          <Badge variant="secondary" size="sm">표시 {formatNumber(clusters.length)}건</Badge>
-          <Badge variant="outline" size="sm">전체 {formatNumber(clusterMeta.totalCount)}건</Badge>
+          <Badge variant="secondary" size="sm">
+            {t("results.displayed", { count: formatNumber(clusters.length, locale) })}
+          </Badge>
+          <Badge variant="outline" size="sm">
+            {t("results.total", { count: formatNumber(clusterMeta.totalCount, locale) })}
+          </Badge>
         </Flex>
       ) : null}
       {isError ? (
@@ -135,9 +158,9 @@ export function LogClusterResults({
                   variant="outline"
                   onClick={() => onRetry(lastSubmitted)}
                   loading={isPending ? true : undefined}
-                  loadingLabel="재시도 중..."
+                  loadingLabel={t("retrying")}
                 >
-                  다시 시도
+                  {t("retry")}
                 </Button>
               ) : undefined
             }
@@ -145,35 +168,52 @@ export function LogClusterResults({
         </Box>
       ) : null}
       {clusters.length === 0 ? (
-        <FeedbackState variant="empty" size="sm" title="분석 결과가 없습니다." />
+        <FeedbackState variant="empty" size="sm" title={t("results.empty")} />
       ) : (
         <Box className="space-y-[var(--space-2)]">
           {clusters.map((cluster) => (
             <Box
               key={cluster.normalizedMessage}
               className={`border-default bg-surface rounded-[var(--radius-lg)] border p-[var(--space-3)] ${
-                selectedCluster?.normalizedMessage === cluster.normalizedMessage ? "ring-1 ring-primary/35" : ""
+                selectedCluster?.normalizedMessage === cluster.normalizedMessage
+                  ? "ring-primary/35 ring-1"
+                  : ""
               }`}
               onClick={() => onSelectCluster(cluster.normalizedMessage)}
             >
               <Flex className="flex-wrap items-center justify-between gap-[var(--space-2)]">
-                <Typography as="p" variant="bodySm" className="font-semibold">{cluster.title}</Typography>
+                <Typography as="p" variant="bodySm" className="font-semibold">
+                  {cluster.title}
+                </Typography>
                 <Flex className="items-center gap-[var(--space-2)]">
-                  <Badge variant={LOGS_SEVERITY_VARIANT_MAP[cluster.severity]} size="sm" className="rounded-md font-semibold">
+                  <Badge
+                    variant={LOGS_SEVERITY_VARIANT_MAP[cluster.severity]}
+                    size="sm"
+                    className="rounded-md font-semibold"
+                  >
                     {cluster.severity}
                   </Badge>
-                  <Badge size="sm" variant="secondary">{formatNumber(cluster.count)}건</Badge>
+                  <Badge size="sm" variant="secondary">
+                    {t("count", { count: formatNumber(cluster.count, locale) })}
+                  </Badge>
                 </Flex>
               </Flex>
-              <Typography as="p" variant="caption" color="muted" className="mt-[var(--space-1)]">{cluster.normalizedMessage}</Typography>
+              <Typography as="p" variant="caption" color="muted" className="mt-[var(--space-1)]">
+                {cluster.normalizedMessage}
+              </Typography>
               <Typography as="p" variant="caption" color="subtle" className="mt-[var(--space-2)]">
-                최초 {formatDateTime(cluster.firstSeen)} · 최근 {formatDateTime(cluster.lastSeen)}
+                {t("firstSeen")} {formatDateTime(cluster.firstSeen, locale)} · {t("lastSeen")}{" "}
+                {formatDateTime(cluster.lastSeen, locale)}
               </Typography>
               <Box className="mt-[var(--space-2)] space-y-[var(--space-1)]">
                 {cluster.suggestedActions.map((action) => (
                   <Flex key={action} className="items-start gap-[var(--space-1)]">
-                    <Box as="span" className="text-muted text-caption">•</Box>
-                    <Typography as="p" variant="caption" color="muted">{action}</Typography>
+                    <Box as="span" className="text-muted text-caption">
+                      •
+                    </Box>
+                    <Typography as="p" variant="caption" color="muted">
+                      {action}
+                    </Typography>
                   </Flex>
                 ))}
               </Box>

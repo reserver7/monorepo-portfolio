@@ -17,7 +17,13 @@ export type MarketingGlassNavProps = {
   className?: string;
 };
 
-export function MarketingGlassNav({ product, subtitle, actions = [], rightSlot, className }: MarketingGlassNavProps) {
+export function MarketingGlassNav({
+  product,
+  subtitle,
+  actions = [],
+  rightSlot,
+  className
+}: MarketingGlassNavProps) {
   const navigateByHref = (href: string) => {
     if (typeof window === "undefined") {
       return;
@@ -29,7 +35,7 @@ export function MarketingGlassNav({ product, subtitle, actions = [], rightSlot, 
     <header className={cn("marketing-nav-glass sticky top-0 z-40 mb-6", className)}>
       <div className="mx-auto flex h-14 w-full max-w-[1360px] items-center justify-between px-4 md:px-8">
         <div className="min-w-0">
-          <p className="text-foreground truncate text-body-sm font-semibold">{product}</p>
+          <p className="text-foreground text-body-sm truncate font-semibold">{product}</p>
           {subtitle ? <p className="text-micro text-muted-foreground truncate">{subtitle}</p> : null}
         </div>
         {actions.length > 0 || rightSlot ? (

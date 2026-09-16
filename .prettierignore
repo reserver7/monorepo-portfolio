@@ -4,5 +4,8 @@ node_modules
 .pnpm-store
 dist
 coverage
+.playwright-cli
+playwright-report-*
+.agents/skills
 apps/server/data/state.json
 pnpm-lock.yaml

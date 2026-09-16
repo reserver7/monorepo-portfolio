@@ -42,16 +42,38 @@ export function IntegrationCatalogPanel({
       {integrations.map((integration) => {
         const enabled = enabledFor(settings, integration.id);
         return (
-          <Box key={integration.id} className="border-default bg-surface rounded-[var(--radius-lg)] border p-[var(--space-3)]">
+          <Box
+            key={integration.id}
+            className="border-default bg-surface rounded-[var(--radius-lg)] border p-[var(--space-3)]"
+          >
             <Flex className="items-start justify-between gap-[var(--space-2)]">
               <Box>
-                <Typography as="p" variant="bodySm" className="font-semibold">{integration.label}</Typography>
-                <Typography as="p" variant="caption" color="muted" className="mt-[var(--space-1)]">{integration.purpose}</Typography>
+                <Typography as="p" variant="bodySm" className="font-semibold">
+                  {integration.label}
+                </Typography>
+                <Typography as="p" variant="caption" color="muted" className="mt-[var(--space-1)]">
+                  {integration.purpose}
+                </Typography>
               </Box>
-              <Badge size="sm" variant={enabled ? "success" : "outline"}>{enabled ? "준비됨" : "대기"}</Badge>
+              <Badge size="sm" variant={enabled ? "success" : "outline"}>
+                {enabled ? "준비됨" : "대기"}
+              </Badge>
             </Flex>
-            <Typography as="p" variant="caption" color="subtle" className="mt-[var(--space-3)] break-all">필요 secret: {integration.secret}</Typography>
-            {isAdmin ? <Button type="button" variant={enabled ? "secondary" : "primary"} size="sm" className="mt-[var(--space-3)] w-full" loading={pendingId === integration.id} onClick={() => onSetEnabled(integration.id, !enabled)}>{enabled ? "준비 해제" : "연동 준비"}</Button> : null}
+            <Typography as="p" variant="caption" color="subtle" className="mt-[var(--space-3)] break-all">
+              필요 secret: {integration.secret}
+            </Typography>
+            {isAdmin ? (
+              <Button
+                type="button"
+                variant={enabled ? "secondary" : "primary"}
+                size="sm"
+                className="mt-[var(--space-3)] w-full"
+                loading={pendingId === integration.id}
+                onClick={() => onSetEnabled(integration.id, !enabled)}
+              >
+                {enabled ? "준비 해제" : "연동 준비"}
+              </Button>
+            ) : null}
           </Box>
         );
       })}

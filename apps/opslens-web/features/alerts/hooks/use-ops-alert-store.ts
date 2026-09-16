@@ -39,7 +39,9 @@ const createOpsAlertStore = () =>
       markRead: (id) => {
         const stamp = getOpsAlertTimestamp();
         set((state) => ({
-          alerts: state.alerts.map((alert) => (alert.id === id ? { ...alert, readAt: alert.readAt ?? stamp } : alert))
+          alerts: state.alerts.map((alert) =>
+            alert.id === id ? { ...alert, readAt: alert.readAt ?? stamp } : alert
+          )
         }));
       },
       markUnread: (id) => {

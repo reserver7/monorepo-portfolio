@@ -429,7 +429,19 @@
     "search": "Search"
   },
   "error": {
+    "api": {
+      "UNAUTHORIZED": "Please sign in to continue.",
+      "VALIDATION": "Check the entered values.",
+      "NOT_FOUND": "The requested item could not be found.",
+      "UPSTREAM_UNAVAILABLE": "An external service is unavailable. Please try again.",
+      "INTERNAL": "Something went wrong while processing the request."
+    },
     "fallbackDescription": "Please try again in a moment or refresh the page.",
-    "fallbackTitle": "An error occurred on the document screen."
+    "fallbackTitle": "An error occurred on the document screen.",
+    "loadFailedTitle": "This screen could not be loaded.",
+    "retryDescription": "Please try again shortly.",
+    "retry": "Try again",
+    "loadingTitle": "Loading screen",
+    "loadingDescription": "Please wait a moment."
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import type { OpsAuditLog } from "@repo/opslens";
+import { useTranslations } from "next-intl";
 import { Badge, Box, Button, Flex, Grid, Input, Select, Typography } from "@repo/ui";
 import { OpsSectionSkeleton } from "@/features";
 import {
@@ -29,9 +30,15 @@ type AuditValueBlockProps = {
   label: string;
   value: string;
   maxHeightClassName?: string;
+  emptyLabel: string;
 };
 
-function AuditValueBlock({ label, value, maxHeightClassName = "max-h-[132px]" }: AuditValueBlockProps) {
+function AuditValueBlock({
+  label,
+  value,
+  maxHeightClassName = "max-h-[132px]",
+  emptyLabel
+}: AuditValueBlockProps) {
   return (
     <Box className="min-w-0">
       <Typography as="p" color="muted" className="text-caption mb-[var(--space-1-5)] font-semibold">
@@ -49,7 +56,7 @@ function AuditValueBlock({ label, value, maxHeightClassName = "max-h-[132px]" }:
           </Typography>
         ) : (
           <Typography as="p" color="subtle" className="text-caption">
-            기록 없음
+            {emptyLabel}
           </Typography>
         )}
       </Box>
@@ -71,6 +78,7 @@ export function AuditLogPanel({
   onResetFilters,
   onExport
 }: AuditLogPanelProps) {
+  const t = useTranslations("settings.audit");
   const beforeValue = selectedAuditLog ? parseJsonLabel(selectedAuditLog.beforeValue) : "";
   const afterValue = selectedAuditLog ? parseJsonLabel(selectedAuditLog.afterValue) : "";
   const metadataValue = selectedAuditLog ? parseJsonLabel(selectedAuditLog.metadata) : "";
@@ -80,7 +88,7 @@ export function AuditLogPanel({
       <Grid className="gap-[var(--space-2)] md:grid-cols-[minmax(0,1fr)_180px_180px_auto_auto]">
         <Input
           value={query}
-          placeholder="요약, 액션, 대상 검색"
+          placeholder={t("searchPlaceholder")}
           onChange={(event) => onQueryChange(event.target.value)}
         />
         <Select
@@ -89,7 +97,7 @@ export function AuditLogPanel({
             if (typeof value === "string") onSeverityChange(value);
           }}
           options={[
-            { label: "전체 위험도", value: "all" },
+            { label: t("allSeverity"), value: "all" },
             { label: "info", value: "info" },
             { label: "warning", value: "warning" },
             { label: "critical", value: "critical" }
@@ -101,20 +109,20 @@ export function AuditLogPanel({
             if (typeof value === "string") onTargetTypeChange(value);
           }}
           options={[
-            { label: "전체 대상", value: "all" },
-            { label: "설정", value: "OpsSetting" },
-            { label: "알림", value: "OpsAlert" },
-            { label: "이슈", value: "Issue" },
-            { label: "배포", value: "Deployment" },
-            { label: "리포트", value: "OpsReportSnapshot" },
-            { label: "QA", value: "QaScenario" }
+            { label: t("allTargets"), value: "all" },
+            { label: t("settings"), value: "OpsSetting" },
+            { label: t("alerts"), value: "OpsAlert" },
+            { label: t("issues"), value: "Issue" },
+            { label: t("deployments"), value: "Deployment" },
+            { label: t("reports"), value: "OpsReportSnapshot" },
+            { label: t("qa"), value: "QaScenario" }
           ]}
         />
         <Button variant="secondary" onClick={onResetFilters}>
-          초기화
+          {t("reset")}
         </Button>
         <Button variant="secondary" onClick={onExport} disabled={auditLogs.length === 0}>
-          CSV 내보내기
+          {t("exportCsv")}
         </Button>
       </Grid>
 
@@ -159,7 +167,7 @@ export function AuditLogPanel({
           ) : (
             <Box className="px-[var(--space-3)] py-[var(--space-5)] text-center">
               <Typography as="p" variant="caption" color="muted">
-                조건에 맞는 운영 변경 이력이 없습니다.
+                {t("empty")}
               </Typography>
             </Box>
           )}
@@ -183,7 +191,7 @@ export function AuditLogPanel({
               <Grid className="gap-[var(--space-2)] md:grid-cols-2">
                 <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
                   <Typography as="p" color="muted" className="text-caption">
-                    대상
+                    {t("target")}
                   </Typography>
                   <Typography as="p" className="text-body-sm mt-[var(--space-1)] font-semibold">
                     {selectedAuditLog.targetType}
@@ -191,7 +199,7 @@ export function AuditLogPanel({
                 </Box>
                 <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
                   <Typography as="p" color="muted" className="text-caption">
-                    대상 ID
+                    {t("targetId")}
                   </Typography>
                   <Typography as="p" className="text-body-sm mt-[var(--space-1)] truncate font-semibold">
                     {selectedAuditLog.targetId ?? "-"}
@@ -201,7 +209,7 @@ export function AuditLogPanel({
               <Grid className="gap-[var(--space-2)] md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
                   <Typography as="p" color="muted" className="text-caption">
-                    발생 시각
+                    {t("createdAt")}
                   </Typography>
                   <Typography as="p" className="text-body-sm mt-[var(--space-1)] font-semibold">
                     {formatAuditDetailDateTime(selectedAuditLog.createdAt)}
@@ -209,7 +217,7 @@ export function AuditLogPanel({
                 </Box>
                 <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
                   <Typography as="p" color="muted" className="text-caption">
-                    작업자
+                    {t("actor")}
                   </Typography>
                   <Typography as="p" className="text-body-sm mt-[var(--space-1)] truncate font-semibold">
                     {selectedAuditLog.actor}
@@ -219,18 +227,18 @@ export function AuditLogPanel({
               <Box className="border-default rounded-[var(--radius-md)] border">
                 <Box className="border-default border-b px-[var(--space-3)] py-[var(--space-2)]">
                   <Typography as="p" className="text-caption font-semibold">
-                    변경 내용
+                    {t("changes")}
                   </Typography>
                 </Box>
                 <Grid className="gap-[var(--space-3)] p-[var(--space-3)] md:grid-cols-2">
-                  <AuditValueBlock label="변경 전" value={beforeValue} />
-                  <AuditValueBlock label="변경 후" value={afterValue} />
+                  <AuditValueBlock label={t("before")} value={beforeValue} emptyLabel={t("noValue")} />
+                  <AuditValueBlock label={t("after")} value={afterValue} emptyLabel={t("noValue")} />
                 </Grid>
               </Box>
               <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
                 <Flex className="items-center justify-between gap-[var(--space-2)]">
                   <Typography as="p" className="text-caption font-semibold">
-                    메타데이터
+                    {t("metadata")}
                   </Typography>
                   <Badge variant="outline" size="sm">
                     {selectedAuditLog.action}
@@ -238,8 +246,9 @@ export function AuditLogPanel({
                 </Flex>
                 <Box className="mt-[var(--space-2)]">
                   <AuditValueBlock
-                    label="요청 정보"
+                    label={t("request")}
                     value={metadataValue}
+                    emptyLabel={t("noValue")}
                     maxHeightClassName="max-h-[96px]"
                   />
                 </Box>
@@ -247,7 +256,7 @@ export function AuditLogPanel({
             </Grid>
           ) : (
             <Typography as="p" color="muted" className="text-body-sm">
-              선택된 감사 로그가 없습니다.
+              {t("noSelection")}
             </Typography>
           )}
         </Box>

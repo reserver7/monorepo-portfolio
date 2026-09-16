@@ -92,7 +92,10 @@ export function OpsCardListSkeleton({ count = 4 }: { count?: number }) {
   return (
     <Box className="space-y-[var(--space-2)]">
       {Array.from({ length: count }).map((_, index) => (
-        <Card key={`ops-list-skeleton-${index}`} className="border-default bg-surface rounded-lg p-[var(--space-3)]">
+        <Card
+          key={`ops-list-skeleton-${index}`}
+          className="border-default bg-surface rounded-lg p-[var(--space-3)]"
+        >
           <CardContent className="space-y-[var(--space-2)] p-0">
             <Skeleton className="h-4 w-3/5" />
             <Skeleton className="h-3 w-2/5" />
@@ -110,7 +113,9 @@ export function OpsSectionSkeleton({ rows = 3, className = "" }: { rows?: number
       {Array.from({ length: rows }).map((_, index) => (
         <Skeleton
           key={`ops-section-skeleton-${index}`}
-          className={index === 0 ? "h-5 w-2/5 rounded-[var(--radius-sm)]" : "h-12 w-full rounded-[var(--radius-md)]"}
+          className={
+            index === 0 ? "h-5 w-2/5 rounded-[var(--radius-sm)]" : "h-12 w-full rounded-[var(--radius-md)]"
+          }
         />
       ))}
     </Box>

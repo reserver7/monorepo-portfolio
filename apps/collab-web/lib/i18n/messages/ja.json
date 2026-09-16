@@ -429,7 +429,19 @@
     "search": "検索"
   },
   "error": {
+    "api": {
+      "UNAUTHORIZED": "続行するにはログインしてください。",
+      "VALIDATION": "入力内容を確認してください。",
+      "NOT_FOUND": "指定された項目が見つかりません。",
+      "UPSTREAM_UNAVAILABLE": "外部サービスに接続できません。もう一度お試しください。",
+      "INTERNAL": "リクエストの処理中にエラーが発生しました。"
+    },
     "fallbackDescription": "しばらくしてから再試行するか、ページを更新してください。",
-    "fallbackTitle": "ドキュメント画面でエラーが発生しました。"
+    "fallbackTitle": "ドキュメント画面でエラーが発生しました。",
+    "loadFailedTitle": "画面を読み込めませんでした。",
+    "retryDescription": "しばらくしてから再試行してください。",
+    "retry": "再試行",
+    "loadingTitle": "画面を読み込んでいます",
+    "loadingDescription": "しばらくお待ちください。"
   }
 }

@@ -35,6 +35,7 @@ jobs:
       collab: ${{ steps.filter.outputs.collab }}
       ui: ${{ steps.filter.outputs.ui }}
       checks: ${{ steps.filter.outputs.checks }}
+      format: ${{ steps.filter.outputs.format }}
     steps:
       - uses: actions/checkout@v4
       - id: filter
@@ -86,6 +87,24 @@ jobs:
               - 'compose.infrastructure.yml'
               - 'scripts/audit-workspace.mjs'
               - 'pnpm-workspace.yaml'
+            format:
+              - '**/*.{cjs,css,json,js,mjs,ts,tsx,yml,yaml}'
+              - '.prettierignore'
+              - '.prettierrc.cjs'
+              - 'package.json'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+
+  format:
+    name: Validate formatting
+    needs: changes
+    if: ${{ needs.changes.outputs.format == 'true' || github.event_name == 'schedule' || inputs.full_validation }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-workspace
+      - run: pnpm format:check
 
   opslens:
     name: Validate OpsLens
@@ -95,11 +114,7 @@ jobs:
     timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with: { version: 10.12.3 }
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-workspace
       - run: pnpm turbo run lint typecheck --filter=@repo/opslens-server --filter=@repo/opslens-web
       - run: pnpm test:opslens-server
 
@@ -111,15 +126,13 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with: { version: 10.12.3 }
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
+      - uses: ./.github/actions/setup-workspace
+        with:
+          fetch-depth: "1"
       - uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-      - run: pnpm install --frozen-lockfile
       - name: Start isolated OpsLens test database
         run: docker compose -f compose.infrastructure.yml up -d postgres --wait
       - name: Prepare OpsLens test data
@@ -154,11 +167,7 @@ jobs:
     timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with: { version: 10.12.3 }
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-workspace
       - run: pnpm turbo run lint typecheck --filter=@repo/collab-server --filter=@repo/collab-web
       - run: pnpm test:collab-server
 
@@ -170,12 +179,8 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with: { version: 10.12.3 }
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm i18n:check && pnpm i18n:extract:check && pnpm i18n:sync:check
+      - uses: ./.github/actions/setup-workspace
+      - run: pnpm i18n:check && pnpm i18n:extract:check && pnpm i18n:sync:check && pnpm i18n:draft:check
       - run: pnpm audit:workspace && pnpm infra:check
       - if: ${{ needs.changes.outputs.ui == 'true' || github.event_name == 'schedule' || inputs.full_validation }}
         run: pnpm storybook:check
@@ -188,12 +193,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - uses: pnpm/action-setup@v4
-        with: { version: 10.12.3 }
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-workspace
+        with:
+          fetch-depth: "0"
       - uses: chromaui/action@v13
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}

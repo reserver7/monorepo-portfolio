@@ -32,8 +32,16 @@ export const AlertConfirmContent = React.forwardRef<
     },
     ref
   ) => {
-    const resolvedSize = resolveOption(size, ALERT_CONFIRM_CONTENT_SIZE_CLASS, ALERT_CONFIRM_CONTENT_DEFAULTS.size);
-    const resolvedIntent = resolveOption(intent, ALERT_CONFIRM_CONTENT_INTENT_CLASS, ALERT_CONFIRM_CONTENT_DEFAULTS.intent);
+    const resolvedSize = resolveOption(
+      size,
+      ALERT_CONFIRM_CONTENT_SIZE_CLASS,
+      ALERT_CONFIRM_CONTENT_DEFAULTS.size
+    );
+    const resolvedIntent = resolveOption(
+      intent,
+      ALERT_CONFIRM_CONTENT_INTENT_CLASS,
+      ALERT_CONFIRM_CONTENT_DEFAULTS.intent
+    );
     return (
       <AlertDialogPrimitive.Portal>
         <AlertDialogPrimitive.Overlay className="bg-foreground/35 fixed inset-0 z-50 backdrop-blur-[1px] transition-opacity duration-200 data-[state=closed]:opacity-0 data-[state=open]:opacity-100" />
@@ -46,7 +54,7 @@ export const AlertConfirmContent = React.forwardRef<
             onEscapeKeyDown?.(event);
           }}
           className={cn(
-            "border-default bg-surface fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-xl)] border p-6 shadow-card",
+            "border-default bg-surface shadow-card fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-xl)] border p-6",
             ALERT_CONFIRM_CONTENT_SIZE_CLASS[resolvedSize],
             ALERT_CONFIRM_CONTENT_INTENT_CLASS[resolvedIntent],
             className
@@ -134,7 +142,11 @@ export const AlertConfirmTitle = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Title>
 >(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Title ref={ref} className={cn("text-foreground text-lg font-semibold", className)} {...props} />
+  <AlertDialogPrimitive.Title
+    ref={ref}
+    className={cn("text-foreground text-lg font-semibold", className)}
+    {...props}
+  />
 ));
 AlertConfirmTitle.displayName = AlertDialogPrimitive.Title.displayName;
 
@@ -150,12 +162,16 @@ export function AlertConfirmAction({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action>) {
-  return <AlertDialogPrimitive.Action className={buttonVariants({ variant: "danger", className })} {...props} />;
+  return (
+    <AlertDialogPrimitive.Action className={buttonVariants({ variant: "danger", className })} {...props} />
+  );
 }
 
 export function AlertConfirmCancel({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Cancel>) {
-  return <AlertDialogPrimitive.Cancel className={buttonVariants({ variant: "secondary", className })} {...props} />;
+  return (
+    <AlertDialogPrimitive.Cancel className={buttonVariants({ variant: "secondary", className })} {...props} />
+  );
 }

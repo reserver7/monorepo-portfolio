@@ -3,6 +3,7 @@
 import { FeedbackState } from "@/features/common/components/feedback-state";
 
 import { Box, Flex, Typography } from "@repo/ui";
+import { useLocale, useTranslations } from "next-intl";
 import { formatNumber } from "@repo/utils";
 import type { OpsReport } from "@repo/opslens";
 import { SeverityBadge, StatusBadge } from "@/features";
@@ -12,14 +13,21 @@ type ReportPriorityIssuesProps = {
 };
 
 export function ReportPriorityIssues({ issues }: ReportPriorityIssuesProps) {
+  const t = useTranslations("reports");
+  const locale = useLocale();
   if (issues.length === 0) {
-    return <FeedbackState variant="empty" size="sm" title="우선 대응 이슈가 없습니다." className="mt-[var(--space-3)]" />;
+    return (
+      <FeedbackState variant="empty" size="sm" title={t("priority.empty")} className="mt-[var(--space-3)]" />
+    );
   }
 
   return (
     <Box className="space-y-[var(--space-2)]">
       {issues.map((issue) => (
-        <Box key={issue.issueId} className="border-default bg-surface-elevated rounded-[var(--radius-md)] border p-[var(--space-3)]">
+        <Box
+          key={issue.issueId}
+          className="border-default bg-surface-elevated rounded-[var(--radius-md)] border p-[var(--space-3)]"
+        >
           <Typography as="p" variant="bodySm" className="line-clamp-2 font-semibold">
             {issue.title}
           </Typography>
@@ -30,7 +38,7 @@ export function ReportPriorityIssues({ issues }: ReportPriorityIssuesProps) {
               {issue.serviceName}
             </Typography>
             <Typography as="span" variant="caption" color="muted">
-              {formatNumber(issue.occurrenceCount)}회
+              {t("occurrences", { count: formatNumber(issue.occurrenceCount, locale) })}
             </Typography>
           </Flex>
         </Box>

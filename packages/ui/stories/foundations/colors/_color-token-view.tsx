@@ -67,7 +67,11 @@ const semanticGroups: TokenGroup[] = [
       {
         name: "primaryText",
         cssVar: "var(--color-fg-on-accent)",
-        preview: { mode: "text", backgroundCssVar: "var(--color-accent-primary)", sampleLabel: "Primary Text" }
+        preview: {
+          mode: "text",
+          backgroundCssVar: "var(--color-accent-primary)",
+          sampleLabel: "Primary Text"
+        }
       }
     ]
   },
@@ -79,19 +83,31 @@ const semanticGroups: TokenGroup[] = [
       {
         name: "successText",
         cssVar: "var(--color-fg-on-success)",
-        preview: { mode: "text", backgroundCssVar: "var(--color-feedback-success)", sampleLabel: "Success Text" }
+        preview: {
+          mode: "text",
+          backgroundCssVar: "var(--color-feedback-success)",
+          sampleLabel: "Success Text"
+        }
       },
       { name: "warning", cssVar: "var(--color-feedback-warning)" },
       {
         name: "warningText",
         cssVar: "var(--color-fg-on-warning)",
-        preview: { mode: "text", backgroundCssVar: "var(--color-feedback-warning)", sampleLabel: "Warning Text" }
+        preview: {
+          mode: "text",
+          backgroundCssVar: "var(--color-feedback-warning)",
+          sampleLabel: "Warning Text"
+        }
       },
       { name: "danger", cssVar: "var(--color-feedback-danger)" },
       {
         name: "dangerText",
         cssVar: "var(--color-fg-on-danger)",
-        preview: { mode: "text", backgroundCssVar: "var(--color-feedback-danger)", sampleLabel: "Danger Text" }
+        preview: {
+          mode: "text",
+          backgroundCssVar: "var(--color-feedback-danger)",
+          sampleLabel: "Danger Text"
+        }
       },
       { name: "info", cssVar: "var(--color-feedback-info)" },
       {
@@ -109,9 +125,24 @@ const feedbackStateCards: Array<{
   bgVar: string;
   textVar: string;
 }> = [
-  { key: "success", label: "Success", bgVar: "var(--color-feedback-success)", textVar: "var(--color-fg-on-success)" },
-  { key: "warning", label: "Warning", bgVar: "var(--color-feedback-warning)", textVar: "var(--color-fg-on-warning)" },
-  { key: "danger", label: "Danger", bgVar: "var(--color-feedback-danger)", textVar: "var(--color-fg-on-danger)" },
+  {
+    key: "success",
+    label: "Success",
+    bgVar: "var(--color-feedback-success)",
+    textVar: "var(--color-fg-on-success)"
+  },
+  {
+    key: "warning",
+    label: "Warning",
+    bgVar: "var(--color-feedback-warning)",
+    textVar: "var(--color-fg-on-warning)"
+  },
+  {
+    key: "danger",
+    label: "Danger",
+    bgVar: "var(--color-feedback-danger)",
+    textVar: "var(--color-fg-on-danger)"
+  },
   { key: "info", label: "Info", bgVar: "var(--color-feedback-info)", textVar: "var(--color-fg-on-info)" }
 ];
 
@@ -129,15 +160,14 @@ const primitiveFamilyOrder = [
 
 const primitiveSpecialKeys = ["BRAND", "WHITE", "BLACK", "TEXT"] as const;
 
-const primitiveFamilyMap = Object.entries(PRIMITIVE_COLOR_PALETTE).reduce<Record<string, Array<[string, string]>>>(
-  (acc, [name, hex]) => {
-    const family = name.includes("_") ? name.split("_")[0] : "SPECIAL";
-    if (!acc[family]) acc[family] = [];
-    acc[family].push([name, hex]);
-    return acc;
-  },
-  {}
-);
+const primitiveFamilyMap = Object.entries(PRIMITIVE_COLOR_PALETTE).reduce<
+  Record<string, Array<[string, string]>>
+>((acc, [name, hex]) => {
+  const family = name.includes("_") ? name.split("_")[0] : "SPECIAL";
+  if (!acc[family]) acc[family] = [];
+  acc[family].push([name, hex]);
+  return acc;
+}, {});
 
 const getTokenScale = (tokenName: string): number | null => {
   const [, scale] = tokenName.split("_");
@@ -157,7 +187,15 @@ const comparePrimitiveToken = (a: [string, string], b: [string, string]) => {
   return a[0].localeCompare(b[0]);
 };
 
-function Section({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
+function Section({
+  title,
+  description,
+  children
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="space-y-3">
       <header className="space-y-1">
@@ -186,20 +224,27 @@ function Swatch({
 }) {
   const isTextPreview = preview?.mode === "text";
   const sampleBackgroundToken = preview?.backgroundCssVar;
-  const sampleBackground =
-    sampleBackgroundToken ? `rgb(${sampleBackgroundToken})` : "rgb(var(--color-bg-surface))";
+  const sampleBackground = sampleBackgroundToken
+    ? `rgb(${sampleBackgroundToken})`
+    : "rgb(var(--color-bg-surface))";
   const sampleLabel = preview?.sampleLabel ?? "Sample Text";
 
   return (
     <div className="border-default bg-surface rounded-[var(--radius-md)] border p-3">
       {isTextPreview ? (
-        <div className="border-default flex h-10 items-center rounded-[var(--radius-sm)] border px-2" style={{ background: sampleBackground }}>
+        <div
+          className="border-default flex h-10 items-center rounded-[var(--radius-sm)] border px-2"
+          style={{ background: sampleBackground }}
+        >
           <span className="text-caption font-semibold" style={{ color: styleValue }}>
             {sampleLabel}
           </span>
         </div>
       ) : (
-        <div className="border-default h-10 rounded-[var(--radius-sm)] border" style={{ background: styleValue }} />
+        <div
+          className="border-default h-10 rounded-[var(--radius-sm)] border"
+          style={{ background: styleValue }}
+        />
       )}
       <p className="text-body-sm text-foreground mt-2 font-semibold">{name}</p>
       <p className="text-caption text-muted break-all">{value}</p>
@@ -243,7 +288,7 @@ export function SemanticColorTokenView() {
             >
               <p className="text-body-sm font-semibold">{state.label}</p>
               <p className="text-caption mt-1 opacity-90">Button / Badge / Alert 텍스트 대비 확인</p>
-              <div className="mt-3 rounded-[var(--radius-sm)] border border-white/30 bg-white/10 px-2 py-1 text-caption">
+              <div className="text-caption mt-3 rounded-[var(--radius-sm)] border border-white/30 bg-white/10 px-2 py-1">
                 {state.key} / {state.key}Text
               </div>
             </article>

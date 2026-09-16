@@ -165,7 +165,7 @@ jobs:
                 exit 0
                 ;;
               build_failed|update_failed|canceled|deactivated)
-                echo "Render deployment failed with status: ${status}"
+                echo "Render deployment failed: service=${RENDER_SERVICE_ID} deploy=${RENDER_DEPLOY_ID} status=${status}"
                 exit 1
                 ;;
               *)
@@ -174,7 +174,7 @@ jobs:
                 ;;
             esac
           done
-          echo "Timed out waiting for Render deployment status."
+          echo "Timed out waiting for Render deployment status: service=${RENDER_SERVICE_ID} deploy=${RENDER_DEPLOY_ID}"
           exit 1
 
       - name: Verify public endpoint reachability (optional)

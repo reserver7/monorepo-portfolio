@@ -429,7 +429,19 @@
     "search": "검색"
   },
   "error": {
+    "api": {
+      "UNAUTHORIZED": "로그인이 필요합니다.",
+      "VALIDATION": "입력값을 확인해 주세요.",
+      "NOT_FOUND": "요청한 항목을 찾을 수 없습니다.",
+      "UPSTREAM_UNAVAILABLE": "외부 서비스에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+      "INTERNAL": "요청 처리 중 오류가 발생했습니다."
+    },
     "fallbackDescription": "잠시 후 다시 시도하거나 새로고침해 주세요.",
-    "fallbackTitle": "문서 화면에서 오류가 발생했습니다."
+    "fallbackTitle": "문서 화면에서 오류가 발생했습니다.",
+    "loadFailedTitle": "화면을 불러오지 못했습니다.",
+    "retryDescription": "잠시 후 다시 시도해 주세요.",
+    "retry": "다시 시도",
+    "loadingTitle": "화면을 불러오는 중입니다.",
+    "loadingDescription": "잠시만 기다려 주세요."
   }
 }

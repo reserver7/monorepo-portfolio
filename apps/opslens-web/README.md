@@ -86,10 +86,10 @@ pnpm --filter @repo/opslens-server build
 
 ## 로그인(로컬 시드 기준)
 
-| 역할 | 이메일 | 비밀번호 | 확인 용도 |
-| --- | --- | --- | --- |
-| Admin | `admin@opslens.local` | `opslens1234!` | 전체 mock 데이터와 운영 설정 확인 |
-| Operator | `operator@opslens.local` | `opslens1234!` | 운영자 권한 UI 확인 |
+| 역할     | 이메일                   | 비밀번호       | 확인 용도                         |
+| -------- | ------------------------ | -------------- | --------------------------------- |
+| Admin    | `admin@opslens.local`    | `opslens1234!` | 전체 mock 데이터와 운영 설정 확인 |
+| Operator | `operator@opslens.local` | `opslens1234!` | 운영자 권한 UI 확인               |
 
 로그인이 되려면 `opslens-server`가 `http://localhost:4100`에서 먼저 실행 중이어야 합니다.
 
@@ -106,7 +106,7 @@ pnpm --filter @repo/opslens-server build
 ## i18n 키 규칙
 
 - `pnpm i18n:extract:check`를 통과하려면 UI 코드의 번역 키는 정적으로 분석 가능해야 합니다.
-- `t(\`dashboard.issueKeys.${titleKey}\`)` 형태 대신, `titleKey`를 정적 키로 매핑(`switch`/객체)해서 호출해야 합니다.
+- `t(\`dashboard.issueKeys.${titleKey}\`)`형태 대신,`titleKey`를 정적 키로 매핑(`switch`/객체)해서 호출해야 합니다.
 
 ## 관련 문서
 

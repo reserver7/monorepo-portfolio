@@ -2,7 +2,7 @@
 
 import type { PropsWithChildren } from "react";
 import { QueryClientProvider, createAppQueryClient, type QueryClientConfig } from "@repo/react-query";
-import { AutoEllipsisTooltip, ErrorBoundary, useStableValue } from "@repo/ui";
+import { AutoEllipsisTooltip, ErrorBoundary, UiLocaleProvider, useStableValue } from "@repo/ui";
 import { AlertConfirmProvider, Toast } from "@repo/ui/internal";
 import type { ToastProps } from "@repo/ui/internal";
 import { AppThemeProvider } from "./theme-provider";
@@ -16,6 +16,7 @@ export interface AppProvidersProps extends PropsWithChildren {
   showThemeToggle?: boolean;
   showToaster?: boolean;
   toasterOptions?: ToastProps;
+  locale?: string;
 }
 
 export function AppProviders({
@@ -26,22 +27,25 @@ export function AppProviders({
   onResetError,
   showThemeToggle = true,
   showToaster = true,
-  toasterOptions
+  toasterOptions,
+  locale
 }: AppProvidersProps) {
   const queryClient = useStableValue(() => createAppQueryClient(queryClientConfig));
 
   return (
     <AppThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <ErrorBoundary
-          fallbackTitle={fallbackTitle}
-          fallbackDescription={fallbackDescription}
-          onReset={onResetError}
-        >
-          {children}
-          <AlertConfirmProvider />
-          <AutoEllipsisTooltip />
-        </ErrorBoundary>
+        <UiLocaleProvider locale={locale}>
+          <ErrorBoundary
+            fallbackTitle={fallbackTitle}
+            fallbackDescription={fallbackDescription}
+            onReset={onResetError}
+          >
+            {children}
+            <AlertConfirmProvider />
+            <AutoEllipsisTooltip />
+          </ErrorBoundary>
+        </UiLocaleProvider>
         {showThemeToggle ? <ThemeToggle /> : null}
         {showToaster ? <Toast {...toasterOptions} /> : null}
       </QueryClientProvider>

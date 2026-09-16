@@ -7,7 +7,12 @@ import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useAppForm } from "@repo/forms";
 import { invalidateQueryKeys, notifyUiError, useMutation, useQuery, useQueryClient } from "@repo/react-query";
-import { createDocument, deleteDocumentById, docsQueryKeys, listDocuments } from "@/features/docs/documents/api";
+import {
+  createDocument,
+  deleteDocumentById,
+  docsQueryKeys,
+  listDocuments
+} from "@/features/docs/documents/api";
 import { getWhiteboardPath } from "@/lib/navigation";
 import { docsClientEnv } from "@/lib/config";
 import {
@@ -215,9 +220,12 @@ export default function HomePage() {
         ]}
       />
       <main className="mx-auto min-h-screen w-full max-w-[1360px] px-4 pb-10 pt-3 md:px-8 md:pb-12 md:pt-4">
-        <MarketingSection tone="light" className="mb-6 bg-surface-elevated/45">
+        <MarketingSection tone="light" className="bg-surface-elevated/45 mb-6">
           <section className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-            <Card className="border-default/80 bg-surface border p-6 shadow-[var(--shadow-card)] md:p-8" radius="lg">
+            <Card
+              className="border-default/80 bg-surface border p-6 shadow-[var(--shadow-card)] md:p-8"
+              radius="lg"
+            >
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <Badge variant="info" size="lg" className="font-semibold uppercase tracking-wide">
                   Real-time Collaboration MVP
@@ -291,7 +299,10 @@ export default function HomePage() {
               </div>
             </Card>
 
-            <Card className="border-default/80 bg-surface border p-6 shadow-[var(--shadow-card)] md:p-8" radius="lg">
+            <Card
+              className="border-default/80 bg-surface border p-6 shadow-[var(--shadow-card)] md:p-8"
+              radius="lg"
+            >
               <Typography as="h2" variant="title">
                 {t("overview.title")}
               </Typography>
@@ -417,7 +428,7 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    <div className="border-default/70 mt-2 min-h-[3.2rem] space-y-1 rounded-xl border bg-surface-elevated/60 p-3">
+                    <div className="border-default/70 bg-surface-elevated/60 mt-2 min-h-[3.2rem] space-y-1 rounded-xl border p-3">
                       <Typography as="p" variant="bodySm" color="subtle">
                         {t("list.card.updatedRelative")}: {formatRelativeTime(document.updatedAt, locale)}
                       </Typography>

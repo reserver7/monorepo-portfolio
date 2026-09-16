@@ -29,7 +29,12 @@ import {
   getStoredSessionToken,
   setStoredSessionIdentity
 } from "@/features/whiteboard/collaboration/model";
-import { AccessRole, Participant, WhiteboardRecord, WhiteboardShape } from "@/features/whiteboard/collaboration/model";
+import {
+  AccessRole,
+  Participant,
+  WhiteboardRecord,
+  WhiteboardShape
+} from "@/features/whiteboard/collaboration/model";
 import { useWhiteboardStore } from "@/features/whiteboard/canvas/stores/use-whiteboard-store";
 import { createLocaleGuestName, normalizeGuestDisplayName } from "@/lib/i18n/display-name";
 
@@ -136,7 +141,10 @@ export const useWhiteboardRealtime = ({
         boardId,
         sessionId: sessionIdRef.current,
         sessionToken: sessionTokenRef.current || undefined,
-        displayName: normalizeGuestDisplayName(displayNameRef.current.trim() || createLocaleGuestName(locale), locale),
+        displayName: normalizeGuestDisplayName(
+          displayNameRef.current.trim() || createLocaleGuestName(locale),
+          locale
+        ),
         role: requestedRoleRef.current,
         editorAccessKey: editorAccessKeyRef.current ?? getStoredEditorAccessKey() ?? undefined
       };
@@ -221,7 +229,10 @@ export const useWhiteboardRealtime = ({
       versionRef.current = board.version;
       titleRef.current = board.title;
       if (editor && editor.sessionId !== sessionIdRef.current) {
-        pushEvent(t("board.syncedByEditor", { name: normalizeGuestDisplayName(editor.displayName, locale) }), locale);
+        pushEvent(
+          t("board.syncedByEditor", { name: normalizeGuestDisplayName(editor.displayName, locale) }),
+          locale
+        );
       }
     });
 

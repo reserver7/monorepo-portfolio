@@ -49,7 +49,11 @@ export const useInfiniteResourceQuery = <TItem, TCursor = string | number | null
   refetchOnReconnect,
   retry,
   retryDelay
-}: InfiniteResourceQueryOptions<TItem, TCursor, TError>): InfiniteResourceQueryResult<TItem, TCursor, TError> => {
+}: InfiniteResourceQueryOptions<TItem, TCursor, TError>): InfiniteResourceQueryResult<
+  TItem,
+  TCursor,
+  TError
+> => {
   const query = useInfiniteQuery<
     InfiniteResourcePage<TItem, TCursor>,
     TError,
@@ -70,7 +74,10 @@ export const useInfiniteResourceQuery = <TItem, TCursor = string | number | null
     retryDelay
   });
 
-  const items = React.useMemo(() => query.data?.pages.flatMap((page) => page.items) ?? [], [query.data?.pages]);
+  const items = React.useMemo(
+    () => query.data?.pages.flatMap((page) => page.items) ?? [],
+    [query.data?.pages]
+  );
 
   const totalCount = query.data?.pages[0]?.totalCount ?? items.length;
 

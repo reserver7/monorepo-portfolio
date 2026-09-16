@@ -10,11 +10,23 @@ type Story = StoryObj;
 
 function TypographyPreview() {
   const rows = [
-    { name: "headingXl", className: "font-display text-heading-xl text-foreground", text: "Brand-Style Display Hero" },
-    { name: "headingLg", className: "font-display text-heading-lg text-foreground", text: "Section Headline with Tight Rhythm" },
+    {
+      name: "headingXl",
+      className: "font-display text-heading-xl text-foreground",
+      text: "Brand-Style Display Hero"
+    },
+    {
+      name: "headingLg",
+      className: "font-display text-heading-lg text-foreground",
+      text: "Section Headline with Tight Rhythm"
+    },
     { name: "headingMd", className: "font-display text-heading-md text-foreground", text: "Tile Heading" },
     { name: "title", className: "font-display text-title text-foreground", text: "Card Title / Sub-heading" },
-    { name: "bodyMd", className: "font-body text-body-md text-foreground", text: "본문은 가독성과 정보 밀도의 균형이 가장 중요합니다." },
+    {
+      name: "bodyMd",
+      className: "font-body text-body-md text-foreground",
+      text: "본문은 가독성과 정보 밀도의 균형이 가장 중요합니다."
+    },
     { name: "bodySm", className: "font-body text-body-sm text-foreground", text: "보조 본문 텍스트 크기" },
     { name: "caption", className: "font-body text-caption text-muted", text: "캡션/메타 정보 텍스트" },
     { name: "micro", className: "font-body text-micro text-muted", text: "fine print / legal" }

@@ -5,8 +5,10 @@ import type { RegisterOptions } from "react-hook-form";
 export type CheckboxSize = "sm" | "md";
 export type CheckboxOrientation = "horizontal" | "vertical";
 
-export interface CheckboxProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>, "checked" | "defaultChecked" | "onCheckedChange"> {
+export interface CheckboxProps extends Omit<
+  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>,
+  "checked" | "defaultChecked" | "onCheckedChange"
+> {
   checked?: boolean;
   defaultChecked?: boolean;
   onCheckedChange?: (checked: boolean) => void;

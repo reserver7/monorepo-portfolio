@@ -1,6 +1,7 @@
 "use client";
 
 import type { OpsSetting } from "@repo/opslens";
+import { useTranslations } from "next-intl";
 import { Badge, Box, Button, Flex, Grid, Input, Textarea, Typography } from "@repo/ui";
 import { SETTING_RISK_TONE } from "../utils/settings-utils";
 
@@ -33,11 +34,12 @@ export function OpsSettingsPanel({
   onResetDraft,
   onSave
 }: OpsSettingsPanelProps) {
+  const t = useTranslations("settings.ops");
   if (isError) {
     return (
       <Box className="border-default bg-surface-elevated rounded-[var(--radius-md)] border p-[var(--space-3)]">
         <Typography as="p" color="muted" className="text-body-sm">
-          운영 설정을 불러오지 못했습니다.
+          {t("loadFailed")}
         </Typography>
       </Box>
     );
@@ -57,7 +59,7 @@ export function OpsSettingsPanel({
             >
               <Box className="grid w-full gap-[var(--space-2)]">
                 <Flex className="items-start justify-between gap-[var(--space-2)]">
-                  <Typography as="span" className="truncate text-body-sm font-semibold">
+                  <Typography as="span" className="text-body-sm truncate font-semibold">
                     {setting.key}
                   </Typography>
                   <Badge variant={SETTING_RISK_TONE[setting.riskLevel] ?? "secondary"} size="sm">
@@ -65,13 +67,15 @@ export function OpsSettingsPanel({
                   </Badge>
                 </Flex>
                 <Flex className="flex-wrap gap-[var(--space-1)]">
-                  <Badge variant="outline" size="sm">{setting.category}</Badge>
+                  <Badge variant="outline" size="sm">
+                    {setting.category}
+                  </Badge>
                   <Badge variant={setting.editable ? "success" : "secondary"} size="sm">
-                    {setting.editable ? "편집 가능" : "읽기 전용"}
+                    {setting.editable ? t("editable") : t("readOnly")}
                   </Badge>
                 </Flex>
                 {setting.description ? (
-                  <Typography as="span" color="muted" className="line-clamp-2 text-caption leading-[1.5]">
+                  <Typography as="span" color="muted" className="text-caption line-clamp-2 leading-[1.5]">
                     {setting.description}
                   </Typography>
                 ) : null}
@@ -86,15 +90,17 @@ export function OpsSettingsPanel({
           <Grid className="gap-[var(--space-4)]">
             <Flex className="items-start justify-between gap-[var(--space-3)]">
               <Box className="min-w-0">
-                <Typography as="h3" className="truncate text-body-lg font-semibold">
+                <Typography as="h3" className="text-body-lg truncate font-semibold">
                   {selectedSetting.key}
                 </Typography>
-                <Typography as="p" color="muted" className="mt-[var(--space-1)] text-body-sm">
-                  {selectedSetting.description ?? "설명 없음"}
+                <Typography as="p" color="muted" className="text-body-sm mt-[var(--space-1)]">
+                  {selectedSetting.description ?? t("noDescription")}
                 </Typography>
               </Box>
               <Flex className="shrink-0 flex-wrap justify-end gap-[var(--space-1)]">
-                <Badge variant="outline" size="sm">{selectedSetting.category}</Badge>
+                <Badge variant="outline" size="sm">
+                  {selectedSetting.category}
+                </Badge>
                 <Badge variant={SETTING_RISK_TONE[selectedSetting.riskLevel] ?? "secondary"} size="sm">
                   {selectedSetting.riskLevel}
                 </Badge>
@@ -103,21 +109,25 @@ export function OpsSettingsPanel({
 
             <Grid className="gap-[var(--space-3)] md:grid-cols-2">
               <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
-                <Typography as="p" color="muted" className="text-caption">마지막 수정자</Typography>
-                <Typography as="p" className="mt-[var(--space-1)] text-body-sm font-semibold">
+                <Typography as="p" color="muted" className="text-caption">
+                  {t("updatedBy")}
+                </Typography>
+                <Typography as="p" className="text-body-sm mt-[var(--space-1)] font-semibold">
                   {selectedSetting.updatedBy}
                 </Typography>
               </Box>
               <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
-                <Typography as="p" color="muted" className="text-caption">마지막 변경 사유</Typography>
-                <Typography as="p" className="mt-[var(--space-1)] text-body-sm font-semibold">
-                  {selectedSetting.changeReason ?? "기록 없음"}
+                <Typography as="p" color="muted" className="text-caption">
+                  {t("changeReason")}
+                </Typography>
+                <Typography as="p" className="text-body-sm mt-[var(--space-1)] font-semibold">
+                  {selectedSetting.changeReason ?? t("noRecord")}
                 </Typography>
               </Box>
             </Grid>
 
             <Textarea
-              label="설정 값(JSON)"
+              label={t("valueJson")}
               value={valueDraft}
               rows={10}
               resize="vertical"
@@ -126,15 +136,15 @@ export function OpsSettingsPanel({
               onChange={(event) => onValueDraftChange(event.target.value)}
             />
             <Input
-              label="변경 사유"
+              label={t("reason")}
               value={reasonDraft}
               disabled={!selectedSetting.editable}
-              placeholder="예: critical 알림의 슬랙 전파 기준 강화"
+              placeholder={t("reasonPlaceholder")}
               onChange={(event) => onReasonDraftChange(event.target.value)}
             />
             <Flex className="justify-end gap-[var(--space-2)]">
               <Button variant="secondary" disabled={!selectedChanged} onClick={onResetDraft}>
-                되돌리기
+                {t("revert")}
               </Button>
               <Button
                 variant="primary"
@@ -142,13 +152,13 @@ export function OpsSettingsPanel({
                 loading={savePending}
                 onClick={onSave}
               >
-                설정 저장
+                {t("save")}
               </Button>
             </Flex>
           </Grid>
         ) : (
           <Typography as="p" color="muted" className="text-body-sm">
-            등록된 운영 설정이 없습니다.
+            {t("empty")}
           </Typography>
         )}
       </Box>

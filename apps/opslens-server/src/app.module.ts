@@ -7,6 +7,7 @@ import { PrismaModule } from "./integration/db/prisma.module.js";
 import { AuthModule } from "./modules/auth/auth.module.js";
 import { HealthController } from "./modules/health/health.controller.js";
 import { OpsModule } from "./modules/ops/ops.module.js";
+import { resolveApiErrorContract } from "./graphql/error-contract.js";
 
 const appDir = dirname(fileURLToPath(import.meta.url));
 const schemaPath = join(appDir, "..", "schema.gql");
@@ -23,7 +24,18 @@ const schemaPath = join(appDir, "..", "schema.gql");
       // Apollo v4/Nest 조합에서 playground 옵션이 런타임 초기화 오류를 유발할 수 있어 비활성화
       // (필요 시 Apollo Sandbox를 사용)
       playground: false,
-      introspection: true
+      introspection: true,
+      formatError: (error) => {
+        const contract = resolveApiErrorContract(error);
+        return {
+          ...error,
+          extensions: {
+            ...error.extensions,
+            code: contract.code,
+            ...(contract.params ? { params: contract.params } : {})
+          }
+        };
+      }
     }),
     OpsModule
   ],

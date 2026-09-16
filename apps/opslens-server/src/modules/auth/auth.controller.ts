@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Headers, Param, Patch, Post, Req, UnauthorizedException, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UnauthorizedException,
+  UseGuards
+} from "@nestjs/common";
 import {
   AuthChangePasswordDto,
   AuthAdminUpdateUserDto,
@@ -96,7 +107,10 @@ export class AuthController {
 
   @UseGuards(OpsAuthGuard)
   @Patch("notification-policy")
-  updateNotificationPolicy(@Req() request: AuthenticatedRequest, @Body() input: AuthUpdateNotificationPolicyDto) {
+  updateNotificationPolicy(
+    @Req() request: AuthenticatedRequest,
+    @Body() input: AuthUpdateNotificationPolicyDto
+  ) {
     return this.authService.updateNotificationPolicy(request.authUser!, input);
   }
 }

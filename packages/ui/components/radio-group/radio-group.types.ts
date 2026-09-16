@@ -11,11 +11,10 @@ export interface RadioOption {
   disabled?: boolean;
 }
 
-export interface RadioGroupProps
-  extends Omit<
-    React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>,
-    "value" | "defaultValue" | "onValueChange"
-  > {
+export interface RadioGroupProps extends Omit<
+  React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>,
+  "value" | "defaultValue" | "onValueChange"
+> {
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;

@@ -26,7 +26,18 @@ const GridBase = React.forwardRef<HTMLDivElement, GridProps>(
   ) => (
     <div
       ref={ref}
-      className={getGridClassName({ columns, gap, rowGap, columnGap, align, justify, autoFit, dense, fullWidth, className })}
+      className={getGridClassName({
+        columns,
+        gap,
+        rowGap,
+        columnGap,
+        align,
+        justify,
+        autoFit,
+        dense,
+        fullWidth,
+        className
+      })}
       style={getGridStyle({ autoFit, minColumnWidth, style })}
       {...props}
     />
@@ -37,4 +48,3 @@ GridBase.displayName = "GridBase";
 
 export const Grid = React.memo(GridBase);
 Grid.displayName = "Grid";
-

@@ -5,14 +5,11 @@ import { AlertCircle } from "lucide-react";
 import { Button } from "../button";
 import { Card } from "../card";
 import { cn } from "../cn";
+import { useUiLocale } from "../ui-locale";
 import { Typography } from "../typography";
 import { ERROR_BOUNDARY_DEFAULTS } from "./error-boundary.constants";
 import { navigateToHomeSafely, shouldShowErrorDetail } from "./error-boundary.utils";
-import type {
-  ErrorBoundaryProps,
-  ErrorBoundaryState,
-  ErrorFallbackViewProps
-} from "./error-boundary.types";
+import type { ErrorBoundaryProps, ErrorBoundaryState, ErrorFallbackViewProps } from "./error-boundary.types";
 
 function ErrorFallbackView({
   title,
@@ -25,15 +22,18 @@ function ErrorFallbackView({
   showHomeButton,
   showDetailInDev
 }: ErrorFallbackViewProps) {
+  const labels = useUiLocale();
   return (
     <div className="bg-background px-4 py-8 md:px-8">
       <div
         className={cn(
           "mx-auto flex w-full max-w-2xl items-center justify-center",
-          fullScreen ? "min-h-[var(--size-error-boundary-full-min-h)]" : "min-h-[var(--size-error-boundary-min-h)]"
+          fullScreen
+            ? "min-h-[var(--size-error-boundary-full-min-h)]"
+            : "min-h-[var(--size-error-boundary-min-h)]"
         )}
       >
-        <Card className="border-default bg-surface w-full rounded-[var(--radius-xl)] border p-6 shadow-card md:p-8">
+        <Card className="border-default bg-surface shadow-card w-full rounded-[var(--radius-xl)] border p-6 md:p-8">
           <div className="mx-auto flex max-w-xl flex-col items-center text-center">
             <div className="bg-danger/10 text-danger mb-4 flex h-12 w-12 items-center justify-center rounded-full">
               <AlertCircle className="h-6 w-6" />
@@ -49,7 +49,7 @@ function ErrorFallbackView({
             <div className="mt-6 flex w-full flex-wrap items-center justify-center gap-2">
               {showRetryButton ? (
                 <Button variant="primary" size="md" onClick={onRetry}>
-                  다시 시도
+                  {labels.retry}
                 </Button>
               ) : null}
               {showRefreshButton ? (
@@ -62,7 +62,7 @@ function ErrorFallbackView({
                     }
                   }}
                 >
-                  새로고침
+                  {labels.reload}
                 </Button>
               ) : null}
               {showHomeButton ? (
@@ -73,7 +73,7 @@ function ErrorFallbackView({
                     navigateToHomeSafely();
                   }}
                 >
-                  홈으로
+                  {labels.home}
                 </Button>
               ) : null}
             </div>
@@ -81,7 +81,7 @@ function ErrorFallbackView({
             {shouldShowErrorDetail(showDetailInDev) && detail ? (
               <details className="border-default bg-surface-elevated mt-6 w-full rounded-[var(--radius-xl)] border p-3 text-left">
                 <summary className="text-body-sm text-foreground cursor-pointer font-semibold">
-                  개발용 오류 상세
+                  {labels.errorDetails}
                 </summary>
                 <Typography
                   as="pre"

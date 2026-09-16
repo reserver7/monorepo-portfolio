@@ -13,7 +13,12 @@ import {
 } from "./accordion.constants";
 import { useAccordionStyle } from "./accordion.hooks";
 import { AccordionStyleProvider } from "./accordion.utils";
-import type { AccordionContentProps, AccordionItemProps, AccordionProps, AccordionTriggerProps } from "./accordion.types";
+import type {
+  AccordionContentProps,
+  AccordionItemProps,
+  AccordionProps,
+  AccordionTriggerProps
+} from "./accordion.types";
 
 const AccordionComponent = ({
   size = ACCORDION_DEFAULTS.size,
@@ -30,7 +35,14 @@ const AccordionComponent = ({
     ACCORDION_DEFAULTS.chevronPosition
   );
   return (
-    <AccordionStyleProvider value={{ size: resolvedSize, variant: resolvedVariant, chevronPosition: resolvedChevronPosition, rotateChevron }}>
+    <AccordionStyleProvider
+      value={{
+        size: resolvedSize,
+        variant: resolvedVariant,
+        chevronPosition: resolvedChevronPosition,
+        rotateChevron
+      }}
+    >
       <AccordionPrimitive.Root {...props} />
     </AccordionStyleProvider>
   );
@@ -43,7 +55,11 @@ const AccordionItemComponent = React.forwardRef<
   AccordionItemProps
 >(({ className, variant, ...props }, ref) => {
   const context = useAccordionStyle();
-  const resolvedVariant = resolveOption(variant ?? context.variant, ACCORDION_ITEM_VARIANT_CLASS, ACCORDION_DEFAULTS.variant);
+  const resolvedVariant = resolveOption(
+    variant ?? context.variant,
+    ACCORDION_ITEM_VARIANT_CLASS,
+    ACCORDION_DEFAULTS.variant
+  );
 
   return (
     <AccordionPrimitive.Item
@@ -87,7 +103,7 @@ const AccordionTriggerComponent = React.forwardRef<
     const chevronNode = hideChevron ? null : (
       <ChevronDown
         className={cn(
-          "h-[var(--size-icon-md)] w-[var(--size-icon-md)] shrink-0 text-muted transition-transform duration-200",
+          "text-muted h-[var(--size-icon-md)] w-[var(--size-icon-md)] shrink-0 transition-transform duration-200",
           shouldRotateChevron ? "group-data-[state=open]:rotate-180" : null
         )}
       />
@@ -98,17 +114,25 @@ const AccordionTriggerComponent = React.forwardRef<
         <AccordionPrimitive.Trigger
           ref={ref}
           className={cn(
-            "group hover:text-primary flex flex-1 items-center gap-2 text-left font-medium outline-none transition-colors",
-            ACCORDION_TRIGGER_SIZE_CLASS[resolveOption(context.size, ACCORDION_TRIGGER_SIZE_CLASS, ACCORDION_DEFAULTS.size)],
+            "hover:text-primary group flex flex-1 items-center gap-2 text-left font-medium outline-none transition-colors",
+            ACCORDION_TRIGGER_SIZE_CLASS[
+              resolveOption(context.size, ACCORDION_TRIGGER_SIZE_CLASS, ACCORDION_DEFAULTS.size)
+            ],
             inset ? "pl-8" : null,
             className
           )}
           {...props}
         >
           {resolvedChevronPosition === "left" ? chevronNode : null}
-          {leftSlot ? <span className="inline-flex h-[var(--size-icon-md)] w-[var(--size-icon-md)] items-center justify-center text-muted">{leftSlot}</span> : null}
+          {leftSlot ? (
+            <span className="text-muted inline-flex h-[var(--size-icon-md)] w-[var(--size-icon-md)] items-center justify-center">
+              {leftSlot}
+            </span>
+          ) : null}
           <span className="min-w-0 flex-1 truncate">{children}</span>
-          {rightSlot ? <span className="ml-auto inline-flex items-center text-muted">{rightSlot}</span> : null}
+          {rightSlot ? (
+            <span className="text-muted ml-auto inline-flex items-center">{rightSlot}</span>
+          ) : null}
           {resolvedChevronPosition === "right" ? chevronNode : null}
         </AccordionPrimitive.Trigger>
       </AccordionPrimitive.Header>
@@ -125,11 +149,17 @@ const AccordionContentComponent = React.forwardRef<
   AccordionContentProps
 >(({ className, children, noPadding = false, ...props }, ref) => {
   const context = useAccordionStyle();
-  const resolvedSize = resolveOption(context.size, ACCORDION_CONTENT_INNER_SIZE_CLASS, ACCORDION_DEFAULTS.size);
+  const resolvedSize = resolveOption(
+    context.size,
+    ACCORDION_CONTENT_INNER_SIZE_CLASS,
+    ACCORDION_DEFAULTS.size
+  );
 
   return (
     <AccordionPrimitive.Content ref={ref} className={cn("overflow-hidden", className)} {...props}>
-      <div className={cn("text-muted", noPadding ? null : ACCORDION_CONTENT_INNER_SIZE_CLASS[resolvedSize])}>{children}</div>
+      <div className={cn("text-muted", noPadding ? null : ACCORDION_CONTENT_INNER_SIZE_CLASS[resolvedSize])}>
+        {children}
+      </div>
     </AccordionPrimitive.Content>
   );
 });

@@ -1,9 +1,9 @@
-export type OpsLocale = "ko" | "en" | "ja";
+import { SUPPORTED_LOCALES, DEFAULT_LOCALE, toIntlLocale, type Locale } from "@repo/configs/i18n";
 
-export const OPS_DEFAULT_LOCALE: OpsLocale = "ko";
+export type OpsLocale = Locale;
+export const OPS_LOCALE_VALUES = SUPPORTED_LOCALES;
+export const OPS_DEFAULT_LOCALE: OpsLocale = DEFAULT_LOCALE;
 
 export function toCalendarLocale(locale: OpsLocale): string {
-  if (locale === "en") return "en-US";
-  if (locale === "ja") return "ja-JP";
-  return "ko-KR";
+  return toIntlLocale(locale);
 }

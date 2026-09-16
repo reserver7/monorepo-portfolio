@@ -5,6 +5,7 @@ import * as SwitchPrimitives from "@radix-ui/react-switch";
 import { Controller } from "react-hook-form";
 import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
+import { useUiLocale } from "../ui-locale";
 import { FieldSupportText } from "../field/field-utils";
 import { Label } from "../label";
 import { resolveUiColorValue } from "../../styles/color-token";
@@ -28,11 +29,7 @@ const SwitchBase = React.forwardRef<React.ElementRef<typeof SwitchPrimitives.Roo
     const resolvedSize = resolveOption(size, SWITCH_SIZE_CLASS, SWITCH_DEFAULTS.size);
     const hasPresetColor = Object.prototype.hasOwnProperty.call(SWITCH_COLOR_CLASS, color);
     const resolvedColor = hasPresetColor
-      ? resolveOption(
-          color as keyof typeof SWITCH_COLOR_CLASS,
-          SWITCH_COLOR_CLASS,
-          SWITCH_DEFAULTS.color
-        )
+      ? resolveOption(color as keyof typeof SWITCH_COLOR_CLASS, SWITCH_COLOR_CLASS, SWITCH_DEFAULTS.color)
       : SWITCH_DEFAULTS.color;
     const tokenColorValue = hasPresetColor ? undefined : resolveUiColorValue(color);
     const rootStyle = tokenColorValue
@@ -61,7 +58,7 @@ const SwitchBase = React.forwardRef<React.ElementRef<typeof SwitchPrimitives.Roo
       >
         <SwitchPrimitives.Thumb
           className={cn(
-            "pointer-events-none block rounded-full bg-surface shadow-card transition-transform data-[state=unchecked]:translate-x-0",
+            "bg-surface shadow-card pointer-events-none block rounded-full transition-transform data-[state=unchecked]:translate-x-0",
             SWITCH_SIZE_CLASS[resolvedSize].thumb,
             SWITCH_SIZE_CLASS[resolvedSize].checked
           )}
@@ -92,9 +89,11 @@ function SwitchFieldBase(
   }: SwitchFieldProps,
   ref: React.ForwardedRef<React.ElementRef<typeof SwitchPrimitives.Root>>
 ) {
+  const labels = useUiLocale();
   const generatedId = React.useId();
   const resolvedId = id ?? `switch-${generatedId}`;
-  const supportText = errorMessage ?? helperText ?? (required && !label ? "필수 설정 항목입니다." : undefined);
+  const supportText =
+    errorMessage ?? helperText ?? (required && !label ? `${labels.requiredSetting}.` : undefined);
 
   return (
     <div className={cn("grid gap-[var(--space-1-5)]", containerClassName)}>
@@ -110,7 +109,7 @@ function SwitchFieldBase(
               <span aria-hidden className="text-danger leading-none">
                 *
               </span>
-              <span className="sr-only">필수 설정 항목</span>
+              <span className="sr-only">{labels.requiredSetting}</span>
             </div>
           ) : null}
           {description ? (
@@ -119,11 +118,7 @@ function SwitchFieldBase(
         </div>
         <SwitchBase ref={ref} id={resolvedId} name={name} required={required} {...props} />
       </div>
-      <FieldSupportText
-        message={supportText}
-        error={Boolean(errorMessage)}
-        className={helperClassName}
-      />
+      <FieldSupportText message={supportText} error={Boolean(errorMessage)} className={helperClassName} />
     </div>
   );
 }
@@ -131,48 +126,49 @@ function SwitchFieldBase(
 const SwitchFieldBaseWithRef = React.forwardRef(SwitchFieldBase);
 SwitchFieldBaseWithRef.displayName = "SwitchFieldBase";
 
-const SwitchFieldComponent = React.forwardRef<React.ElementRef<typeof SwitchPrimitives.Root>, SwitchFieldProps>(
-  (props, ref) => {
-    const { control, rules, name, required, onCheckedChange, checked, defaultChecked, ...rest } = props;
-    const mergedRules = React.useMemo(() => mergeSwitchRules(required, rules), [required, rules]);
+const SwitchFieldComponent = React.forwardRef<
+  React.ElementRef<typeof SwitchPrimitives.Root>,
+  SwitchFieldProps
+>((props, ref) => {
+  const { control, rules, name, required, onCheckedChange, checked, defaultChecked, ...rest } = props;
+  const mergedRules = React.useMemo(() => mergeSwitchRules(required, rules), [required, rules]);
 
-    if (control && typeof name === "string" && name.length > 0) {
-      return (
-        <Controller
-          control={control as any}
-          name={name as any}
-          rules={mergedRules}
-          render={({ field }) => (
-            <SwitchFieldBaseWithRef
-              {...rest}
-              ref={ref}
-              name={field.name}
-              required={required}
-              checked={Boolean(field.value)}
-              onCheckedChange={(next) => {
-                field.onChange(next);
-                onCheckedChange?.(next);
-              }}
-              onBlur={field.onBlur}
-            />
-          )}
-        />
-      );
-    }
-
+  if (control && typeof name === "string" && name.length > 0) {
     return (
-      <SwitchFieldBaseWithRef
-        {...rest}
-        ref={ref}
-        name={name}
-        required={required}
-        checked={checked}
-        defaultChecked={defaultChecked}
-        onCheckedChange={onCheckedChange}
+      <Controller
+        control={control as any}
+        name={name as any}
+        rules={mergedRules}
+        render={({ field }) => (
+          <SwitchFieldBaseWithRef
+            {...rest}
+            ref={ref}
+            name={field.name}
+            required={required}
+            checked={Boolean(field.value)}
+            onCheckedChange={(next) => {
+              field.onChange(next);
+              onCheckedChange?.(next);
+            }}
+            onBlur={field.onBlur}
+          />
+        )}
       />
     );
   }
-);
+
+  return (
+    <SwitchFieldBaseWithRef
+      {...rest}
+      ref={ref}
+      name={name}
+      required={required}
+      checked={checked}
+      defaultChecked={defaultChecked}
+      onCheckedChange={onCheckedChange}
+    />
+  );
+});
 SwitchFieldComponent.displayName = "SwitchField";
 
 export const SwitchField = React.memo(SwitchFieldComponent);

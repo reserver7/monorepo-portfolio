@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import prettier from "prettier";
 import { parseExportedNames } from "./lib/ui-storybook-targets.mjs";
 import { loadUiComponentManifest } from "./lib/ui-component-manifest.mjs";
 import { loadUiStorybookMetadata } from "./lib/ui-storybook-metadata.mjs";

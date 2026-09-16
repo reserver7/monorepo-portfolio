@@ -1,4 +1,5 @@
 import type { useAppForm } from "@repo/forms";
+import { useLocale, useTranslations } from "next-intl";
 import { Box, Button, Input, Textarea } from "@repo/ui";
 import { FeedbackState } from "@/features/common/components/feedback-state";
 import { formatDateTime } from "@repo/utils";
@@ -19,13 +20,27 @@ type IssueCommentsPanelProps = {
 };
 
 export function IssueCommentsPanel({ comments, form, isSubmitting, onSubmit }: IssueCommentsPanelProps) {
+  const t = useTranslations("issues.comments");
+  const locale = useLocale();
   const commentBody = form.watch("body");
 
   return (
     <>
       <form className="mt-[var(--space-3)] grid gap-[var(--space-2)]" onSubmit={form.handleSubmit(onSubmit)}>
-        <Input id="comment-author" placeholder="작성자" size="md" control={form.control} name="author" />
-        <Textarea id="comment-body" rows={4} placeholder="운영 메모/분석 결과를 입력하세요" control={form.control} name="body" />
+        <Input
+          id="comment-author"
+          placeholder={t("authorPlaceholder")}
+          size="md"
+          control={form.control}
+          name="author"
+        />
+        <Textarea
+          id="comment-body"
+          rows={4}
+          placeholder={t("bodyPlaceholder")}
+          control={form.control}
+          name="body"
+        />
         <Button
           type="submit"
           disabled={isSubmitting || commentBody.trim().length === 0}
@@ -33,19 +48,25 @@ export function IssueCommentsPanel({ comments, form, isSubmitting, onSubmit }: I
           className="w-fit"
           loading={isSubmitting ? true : undefined}
         >
-          댓글 등록
+          {t("submit")}
         </Button>
       </form>
 
       <Box className="mt-[var(--space-4)] space-y-[var(--space-2)]">
         {comments.length === 0 ? (
-          <FeedbackState variant="empty" size="sm" title="등록된 댓글이 없습니다." />
+          <FeedbackState variant="empty" size="sm" title={t("empty")} />
         ) : (
           comments.map((comment) => (
             <Box key={comment.id} className="border-default rounded-lg border p-[var(--space-3)] text-sm">
-              <Box as="p" className="text-foreground font-semibold">{comment.author}</Box>
-              <Box as="p" className="text-muted mt-[var(--space-1)] whitespace-pre-wrap">{comment.body}</Box>
-              <Box as="p" className="text-muted-foreground mt-[var(--space-1)] text-caption">{formatDateTime(comment.createdAt)}</Box>
+              <Box as="p" className="text-foreground font-semibold">
+                {comment.author}
+              </Box>
+              <Box as="p" className="text-muted mt-[var(--space-1)] whitespace-pre-wrap">
+                {comment.body}
+              </Box>
+              <Box as="p" className="text-muted-foreground text-caption mt-[var(--space-1)]">
+                {formatDateTime(comment.createdAt, locale)}
+              </Box>
             </Box>
           ))
         )}

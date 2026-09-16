@@ -9,7 +9,7 @@
     "build": "pnpm --filter @repo/opslens-server exec prisma generate && tsc -p tsconfig.json",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "pnpm --filter @repo/opslens-server exec prisma generate && tsc -p tsconfig.json --noEmit",
-    "test": "DATABASE_URL=postgresql://test:test@localhost:5432/opslens DIRECT_DATABASE_URL=postgresql://test:test@localhost:5432/opslens tsx --test src/modules/auth/*.test.ts src/modules/ops/*.test.ts"
+    "test": "DATABASE_URL=postgresql://test:test@localhost:5432/opslens DIRECT_DATABASE_URL=postgresql://test:test@localhost:5432/opslens tsx --test src/graphql/*.test.ts src/modules/auth/*.test.ts src/modules/ops/*.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -28,7 +28,7 @@
     "graphql": "^16.12.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
-    "zod": "^3.24.2"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@repo/configs": "workspace:*",

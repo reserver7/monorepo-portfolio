@@ -9,12 +9,17 @@ import type { OpsNotificationDeliveryType } from "./ops.types.js";
 export class OpsAlertDeliveryService implements OnModuleInit {
   private readonly logger = new Logger(OpsAlertDeliveryService.name);
 
-  constructor(private readonly prisma: PrismaService, private readonly slackNotifier: OpsSlackNotifier) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly slackNotifier: OpsSlackNotifier
+  ) {}
 
   onModuleInit(): void {
     const timer = setInterval(() => {
       void this.retryPending().catch((error) => {
-        this.logger.warn(`알림 delivery 재시도 작업 오류: ${error instanceof Error ? error.message : String(error)}`);
+        this.logger.warn(
+          `알림 delivery 재시도 작업 오류: ${error instanceof Error ? error.message : String(error)}`
+        );
       });
     }, 60_000);
     timer.unref();
@@ -32,7 +37,11 @@ export class OpsAlertDeliveryService implements OnModuleInit {
 
   async retryPending(): Promise<number> {
     const deliveries = await this.prisma.opsNotificationDelivery.findMany({
-      where: { channel: "slack", status: { in: ["pending", "failed"] }, OR: [{ nextAttemptAt: null }, { nextAttemptAt: { lte: new Date() } }] },
+      where: {
+        channel: "slack",
+        status: { in: ["pending", "failed"] },
+        OR: [{ nextAttemptAt: null }, { nextAttemptAt: { lte: new Date() } }]
+      },
       take: 50
     });
     for (const delivery of deliveries) {
@@ -58,13 +67,35 @@ export class OpsAlertDeliveryService implements OnModuleInit {
   private async deliver(deliveryId: string, alert: OpsAlert): Promise<void> {
     try {
       await this.slackNotifier.notify(alert);
-      await this.prisma.opsNotificationDelivery.update({ where: { id: deliveryId }, data: { status: "sent", attempts: { increment: 1 }, deliveredAt: new Date(), nextAttemptAt: null, lastError: null } });
+      await this.prisma.opsNotificationDelivery.update({
+        where: { id: deliveryId },
+        data: {
+          status: "sent",
+          attempts: { increment: 1 },
+          deliveredAt: new Date(),
+          nextAttemptAt: null,
+          lastError: null
+        }
+      });
     } catch (error) {
-      const existing = await this.prisma.opsNotificationDelivery.findUnique({ where: { id: deliveryId }, select: { attempts: true } });
+      const existing = await this.prisma.opsNotificationDelivery.findUnique({
+        where: { id: deliveryId },
+        select: { attempts: true }
+      });
       const attempts = (existing?.attempts ?? 0) + 1;
       const retryDelayMs = Math.min(60_000 * 2 ** Math.min(attempts, 6), 60 * 60 * 1000);
-      await this.prisma.opsNotificationDelivery.update({ where: { id: deliveryId }, data: { status: "failed", attempts, lastError: error instanceof Error ? error.message : String(error), nextAttemptAt: new Date(Date.now() + retryDelayMs) } });
-      this.logger.warn(`알림 delivery 실패 (${deliveryId}): ${error instanceof Error ? error.message : String(error)}`);
+      await this.prisma.opsNotificationDelivery.update({
+        where: { id: deliveryId },
+        data: {
+          status: "failed",
+          attempts,
+          lastError: error instanceof Error ? error.message : String(error),
+          nextAttemptAt: new Date(Date.now() + retryDelayMs)
+        }
+      });
+      this.logger.warn(
+        `알림 delivery 실패 (${deliveryId}): ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 }

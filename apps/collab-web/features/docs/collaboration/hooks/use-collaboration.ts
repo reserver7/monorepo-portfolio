@@ -210,7 +210,10 @@ export const useCollaboration = ({
         documentId,
         sessionId: sessionIdRef.current,
         sessionToken: sessionTokenRef.current || undefined,
-        displayName: normalizeGuestDisplayName(displayNameRef.current.trim() || createLocaleGuestName(locale), locale),
+        displayName: normalizeGuestDisplayName(
+          displayNameRef.current.trim() || createLocaleGuestName(locale),
+          locale
+        ),
         role: requestedRoleRef.current,
         editorAccessKey: editorAccessKeyRef.current ?? getStoredEditorAccessKey() ?? undefined,
         clientYjsState
@@ -399,7 +402,12 @@ export const useCollaboration = ({
       markSavedCheckpoint(payload.updatedAt, payload.version);
 
       if (payload.editor && payload.editor.sessionId !== sessionIdRef.current) {
-        pushEvent(t("document.syncedByEditor", { name: normalizeGuestDisplayName(payload.editor.displayName, locale) }), locale);
+        pushEvent(
+          t("document.syncedByEditor", {
+            name: normalizeGuestDisplayName(payload.editor.displayName, locale)
+          }),
+          locale
+        );
       }
 
       dirtyRef.current = false;
@@ -451,19 +459,28 @@ export const useCollaboration = ({
       );
 
       if (mentionHit && comment.authorSessionId !== sessionIdRef.current) {
-        pushEvent(t("comment.mentionedYou", { name: normalizeGuestDisplayName(comment.authorName, locale) }), locale);
+        pushEvent(
+          t("comment.mentionedYou", { name: normalizeGuestDisplayName(comment.authorName, locale) }),
+          locale
+        );
         return;
       }
 
       if (comment.authorSessionId !== sessionIdRef.current) {
-        pushEvent(t("comment.addedBy", { name: normalizeGuestDisplayName(comment.authorName, locale) }), locale);
+        pushEvent(
+          t("comment.addedBy", { name: normalizeGuestDisplayName(comment.authorName, locale) }),
+          locale
+        );
       }
     });
 
     socket.on(socketEventName.documentCommentUpdate, ({ comment }: DocumentCommentEventPayload) => {
       updateCommentInStore(comment);
       if (comment.authorSessionId !== sessionIdRef.current) {
-        pushEvent(t("comment.updatedBy", { name: normalizeGuestDisplayName(comment.authorName, locale) }), locale);
+        pushEvent(
+          t("comment.updatedBy", { name: normalizeGuestDisplayName(comment.authorName, locale) }),
+          locale
+        );
       }
     });
 

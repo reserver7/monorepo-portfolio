@@ -33,7 +33,9 @@ export const parseDateValue = (value: DateValue | undefined): Date | undefined =
   return parsedDate;
 };
 
-export const parseTimeValue = (value: string | undefined): { hour: number; minute: number; second: number } | undefined => {
+export const parseTimeValue = (
+  value: string | undefined
+): { hour: number; minute: number; second: number } | undefined => {
   if (!value) return undefined;
   const [hourRaw, minuteRaw, secondRaw] = value.split(":");
   const hour = Number(hourRaw);

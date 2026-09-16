@@ -1,4 +1,7 @@
 import path from "node:path";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
 
 const DEFAULT_TRANSPILE_PACKAGES = [
   "@repo/ui",
@@ -19,11 +22,15 @@ const mergeArrayUnique = (base = [], override = []) => Array.from(new Set([...ba
  * @returns {import("next").NextConfig}
  */
 export function createNextConfig(appDir, override = {}) {
+  const isAnalyze = process.env.ANALYZE === "true";
   const baseConfig = {
     reactStrictMode: true,
     outputFileTracingRoot: path.join(appDir, "../.."),
     transpilePackages: DEFAULT_TRANSPILE_PACKAGES,
     allowedDevOrigins: DEFAULT_ALLOWED_DEV_ORIGINS,
+    experimental: {
+      optimizePackageImports: ["@repo/ui", "lucide-react"]
+    },
     images: {
       formats: ["image/avif", "image/webp"],
       minimumCacheTTL: 60,
@@ -44,7 +51,7 @@ export function createNextConfig(appDir, override = {}) {
     return overrideWebpack ? overrideWebpack(baseWebpackResult, context) : baseWebpackResult;
   };
 
-  return {
+  const config = {
     ...baseConfig,
     ...override,
     transpilePackages: mergeArrayUnique(baseConfig.transpilePackages, override.transpilePackages),
@@ -55,4 +62,14 @@ export function createNextConfig(appDir, override = {}) {
     },
     webpack: mergedWebpack
   };
+
+  if (!isAnalyze) {
+    return config;
+  }
+
+  try {
+    return require("@next/bundle-analyzer")({ enabled: true })(config);
+  } catch {
+    return config;
+  }
 }
