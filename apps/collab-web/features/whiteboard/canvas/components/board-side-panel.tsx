@@ -44,7 +44,7 @@ export const BoardSidePanel = ({
 
   return (
     <div className="space-y-4">
-      <Card className="border border-default/80 bg-surface p-5">
+      <Card className="border-default/80 bg-surface border p-5">
         <div className="mb-4 flex items-center justify-between gap-2">
           <Typography as="h3" variant="title" className="text-body-md font-semibold">
             {t("participants.title")}
@@ -80,7 +80,7 @@ export const BoardSidePanel = ({
                     <Badge
                       variant={participant.role === "editor" ? "success" : "outline"}
                       size="sm"
-                      className="shrink-0 text-caption"
+                      className="text-caption shrink-0"
                     >
                       {participant.role}
                     </Badge>
@@ -98,8 +98,8 @@ export const BoardSidePanel = ({
         </div>
       </Card>
 
-      <Card className="border border-default/80 bg-surface p-5">
-        <Typography as="h3" variant="title" className="mb-3 text-body-md font-semibold">
+      <Card className="border-default/80 bg-surface border p-5">
+        <Typography as="h3" variant="title" className="text-body-md mb-3 font-semibold">
           {t("selection.title")}
         </Typography>
         <div className="space-y-3">
@@ -130,7 +130,7 @@ export const BoardSidePanel = ({
         </div>
       </Card>
 
-      <Card className="border border-default/80 bg-surface p-5">
+      <Card className="border-default/80 bg-surface border p-5">
         <div className="mb-4 flex items-center justify-between gap-2">
           <Typography as="h3" variant="title" className="text-body-md font-semibold">
             {t("history.title")}
@@ -164,7 +164,7 @@ export const BoardSidePanel = ({
         </div>
       </Card>
 
-      <Card className="border border-default/80 bg-surface p-5">
+      <Card className="border-default/80 bg-surface border p-5">
         <div className="mb-4 flex items-center justify-between gap-2">
           <Typography as="h3" variant="title" className="text-body-md font-semibold">
             {t("events.title")}

@@ -28,7 +28,6 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@next/bundle-analyzer": "^15.5.13",
     "@repo/configs": "workspace:*",
     "@repo/eslint-config": "workspace:*",
     "@types/node": "^22.13.5",

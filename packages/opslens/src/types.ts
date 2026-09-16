@@ -30,8 +30,20 @@ export type DashboardSummary = {
   todayIssueCount: number;
   severityDistribution: Array<{ severity: Severity; count: number }>;
   errorTrend24h: Array<{ hour: string; count: number }>;
-  topRepeatedErrors: Array<{ issueId: string; title: string; titleKey?: string; severity: Severity; count: number }>;
-  newAfterLatestDeployment: Array<{ issueId: string; title: string; titleKey?: string; severity: Severity; count: number }>;
+  topRepeatedErrors: Array<{
+    issueId: string;
+    title: string;
+    titleKey?: string;
+    severity: Severity;
+    count: number;
+  }>;
+  newAfterLatestDeployment: Array<{
+    issueId: string;
+    title: string;
+    titleKey?: string;
+    severity: Severity;
+    count: number;
+  }>;
   aiBriefing: string;
 };
 
@@ -273,11 +285,37 @@ export type LogAnalysisSession = {
   createdAt: string;
 };
 
-export type OpsLogSavedView = { id: string; name: string; owner: string; visibility: string; severity: string; query: string; sort: string; isFavorite: boolean; updatedAt: string };
+export type OpsLogSavedView = {
+  id: string;
+  name: string;
+  owner: string;
+  visibility: string;
+  severity: string;
+  query: string;
+  sort: string;
+  isFavorite: boolean;
+  updatedAt: string;
+};
 
-export type LogSourceFreshness = { serviceName: string; source: string; lastReceivedAt?: string | null; receivedLastHour: number; stale: boolean };
+export type LogSourceFreshness = {
+  serviceName: string;
+  source: string;
+  lastReceivedAt?: string | null;
+  receivedLastHour: number;
+  stale: boolean;
+};
 
-export type ServiceSlo = { serviceName: string; environment: Environment; target: number; requestCount: number; errorCount: number; availability?: number | null; budgetConsumed?: number | null; latencyP95Ms?: number | null; observedAt?: string | null };
+export type ServiceSlo = {
+  serviceName: string;
+  environment: Environment;
+  target: number;
+  requestCount: number;
+  errorCount: number;
+  availability?: number | null;
+  budgetConsumed?: number | null;
+  latencyP95Ms?: number | null;
+  observedAt?: string | null;
+};
 
 export type OpsSetting = {
   id: string;

@@ -45,13 +45,7 @@ export const opslensQueryKeys = {
       filter.to
     ),
   reportsIssues: (filter: OpsFilterParams) =>
-    opslensKeysBase.custom(
-      "reports",
-      "issues",
-      filter.environment,
-      filter.serviceName,
-      filter.search
-    ),
+    opslensKeysBase.custom("reports", "issues", filter.environment, filter.serviceName, filter.search),
   issues: (filter: IssueListFilterParams) =>
     opslensKeysBase.custom(
       "issues",
@@ -72,13 +66,16 @@ export const opslensQueryKeys = {
       filter.severity
     ),
   issueDetail: (issueId: string) => opslensKeysBase.custom("issue-detail", issueId),
-  serviceHealth: (filter: OpsFilterParams) => opslensKeysBase.custom("service-health", filter.environment, filter.serviceName, filter.search),
-  serviceSlo: (serviceName: string, environment: Environment) => opslensKeysBase.custom("service-slo", serviceName, environment),
+  serviceHealth: (filter: OpsFilterParams) =>
+    opslensKeysBase.custom("service-health", filter.environment, filter.serviceName, filter.search),
+  serviceSlo: (serviceName: string, environment: Environment) =>
+    opslensKeysBase.custom("service-slo", serviceName, environment),
   incidentTimeline: (issueId: string) => opslensKeysBase.custom("incident-timeline", issueId),
   deployments: (environment: Environment) => opslensKeysBase.custom("deployments", environment),
   deploymentImpact: (environment: Environment, version?: string) =>
     opslensKeysBase.custom("deployment-impact", environment, version),
-  deploymentReadiness: (environment: Environment) => opslensKeysBase.custom("deployment-readiness", environment),
+  deploymentReadiness: (environment: Environment) =>
+    opslensKeysBase.custom("deployment-readiness", environment),
   qaScenarios: () => opslensKeysBase.custom("qa-scenarios"),
   alerts: () => opslensKeysBase.custom("alerts"),
   logAnalysisSessions: () => opslensKeysBase.custom("log-analysis-sessions"),

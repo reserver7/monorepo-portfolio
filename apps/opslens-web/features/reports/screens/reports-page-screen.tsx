@@ -5,7 +5,17 @@ import { FeedbackState } from "@/features/common/components/feedback-state";
 import { useEffect, useMemo, useState } from "react";
 import { Clipboard, Printer } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
-import { Badge, Box, Button, Flex, SplitWorkspaceLayout, Textarea, Typography, confirm, toast } from "@repo/ui";
+import {
+  Badge,
+  Box,
+  Button,
+  Flex,
+  SplitWorkspaceLayout,
+  Textarea,
+  Typography,
+  confirm,
+  toast
+} from "@repo/ui";
 import {
   deleteReportSnapshot,
   getReportActions,
@@ -69,7 +79,9 @@ export default function ReportsPage() {
   const updateActionMutation = useMutation({
     mutationFn: updateReportAction,
     onSuccess: async (_action, variables) => {
-      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.reportActions(report?.snapshotId ?? "") });
+      await queryClient.invalidateQueries({
+        queryKey: opslensQueryKeys.reportActions(report?.snapshotId ?? "")
+      });
       toast.success(variables.completed ? "액션 아이템을 완료했습니다." : "액션 아이템을 다시 열었습니다.");
     }
   });
@@ -77,8 +89,23 @@ export default function ReportsPage() {
     mutationFn: ({ snapshotId }: { snapshotId: string }) => deleteReportSnapshot(snapshotId, "web"),
     onSuccess: invalidateSnapshots
   });
-  const visibleActions = useMemo(() => (actionsQuery.data ?? []).filter((action) => !openActionsOnly || !action.completedAt), [actionsQuery.data, openActionsOnly]);
-  const exportActions = () => downloadCsv(`opslens-report-actions-${new Date().toISOString().slice(0, 10)}.csv`, ["우선순위", "액션", "담당자", "상태", "완료자", "완료 시각"], visibleActions.map((action) => [action.priority, action.title, action.owner, action.completedAt ? "완료" : "진행 필요", action.completedBy, action.completedAt]));
+  const visibleActions = useMemo(
+    () => (actionsQuery.data ?? []).filter((action) => !openActionsOnly || !action.completedAt),
+    [actionsQuery.data, openActionsOnly]
+  );
+  const exportActions = () =>
+    downloadCsv(
+      `opslens-report-actions-${new Date().toISOString().slice(0, 10)}.csv`,
+      ["우선순위", "액션", "담당자", "상태", "완료자", "완료 시각"],
+      visibleActions.map((action) => [
+        action.priority,
+        action.title,
+        action.owner,
+        action.completedAt ? "완료" : "진행 필요",
+        action.completedBy,
+        action.completedAt
+      ])
+    );
 
   useEffect(() => {
     if (!report?.generatedAt) return;
@@ -126,22 +153,43 @@ export default function ReportsPage() {
             운영 리포트
           </Typography>
           <Flex className="shrink-0 flex-wrap justify-end gap-[var(--space-2)]">
-            <Badge variant="secondary" size="sm" shape="rounded" className="border border-default bg-surface-elevated font-semibold">
+            <Badge
+              variant="secondary"
+              size="sm"
+              shape="rounded"
+              className="border-default bg-surface-elevated border font-semibold"
+            >
               환경: {environment}
             </Badge>
-            <Button type="button" variant="secondary" size="sm" leftIcon={<Printer className="h-4 w-4" />} onClick={() => window.print()}>인쇄 / PDF</Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              leftIcon={<Printer className="h-4 w-4" />}
+              onClick={() => window.print()}
+            >
+              인쇄 / PDF
+            </Button>
           </Flex>
         </Flex>
       </Box>
 
       {reportQuery.isError ? (
-        <FeedbackState variant="error" size="sm" title="운영 리포트 생성에 실패했습니다." className="border-default bg-surface rounded-[var(--radius-xl)] border p-[var(--space-4)]" />
+        <FeedbackState
+          variant="error"
+          size="sm"
+          title="운영 리포트 생성에 실패했습니다."
+          className="border-default bg-surface rounded-[var(--radius-xl)] border p-[var(--space-4)]"
+        />
       ) : report ? (
         <SplitWorkspaceLayout
           sidebarWidthClassName="xl:grid-cols-[minmax(0,1fr)_360px]"
           main={
             <Box className="min-w-0 space-y-[var(--stack-gap)]">
-              <OpsSectionCard title="리포트 요약" description="현재 필터 기준의 운영 위험도와 핵심 KPI입니다.">
+              <OpsSectionCard
+                title="리포트 요약"
+                description="현재 필터 기준의 운영 위험도와 핵심 KPI입니다."
+              >
                 <Flex className="mb-[var(--space-3)] justify-end">
                   <Button
                     type="button"
@@ -156,14 +204,58 @@ export default function ReportsPage() {
                 <ReportSummaryPanel report={report} />
               </OpsSectionCard>
 
-              <OpsSectionCard title="액션 아이템" description="공유 후 바로 담당자와 우선순위를 정리할 항목입니다.">
-                <Flex className="mb-[var(--space-3)] flex-wrap justify-end gap-[var(--space-2)]"><Button type="button" variant={openActionsOnly ? "primary" : "secondary"} size="sm" onClick={() => setOpenActionsOnly((value) => !value)}>{openActionsOnly ? "전체 보기" : "미완료만 보기"}</Button><Button type="button" variant="secondary" size="sm" onClick={exportActions} disabled={visibleActions.length === 0}>CSV 내보내기</Button></Flex>
-                <ReportActionList actions={visibleActions} disabled={updateActionMutation.isPending} onToggle={(action, completed) => updateActionMutation.mutate({ actionId: action.id, completed, actor: "web" })} onUpdate={(action, values) => updateActionMutation.mutate({ actionId: action.id, completed: Boolean(action.completedAt), owner: values.owner, dueAt: values.dueAt, actor: "web" })} />
+              <OpsSectionCard
+                title="액션 아이템"
+                description="공유 후 바로 담당자와 우선순위를 정리할 항목입니다."
+              >
+                <Flex className="mb-[var(--space-3)] flex-wrap justify-end gap-[var(--space-2)]">
+                  <Button
+                    type="button"
+                    variant={openActionsOnly ? "primary" : "secondary"}
+                    size="sm"
+                    onClick={() => setOpenActionsOnly((value) => !value)}
+                  >
+                    {openActionsOnly ? "전체 보기" : "미완료만 보기"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={exportActions}
+                    disabled={visibleActions.length === 0}
+                  >
+                    CSV 내보내기
+                  </Button>
+                </Flex>
+                <ReportActionList
+                  actions={visibleActions}
+                  disabled={updateActionMutation.isPending}
+                  onToggle={(action, completed) =>
+                    updateActionMutation.mutate({ actionId: action.id, completed, actor: "web" })
+                  }
+                  onUpdate={(action, values) =>
+                    updateActionMutation.mutate({
+                      actionId: action.id,
+                      completed: Boolean(action.completedAt),
+                      owner: values.owner,
+                      dueAt: values.dueAt,
+                      actor: "web"
+                    })
+                  }
+                />
               </OpsSectionCard>
 
-              <OpsSectionCard title="기술 상세" description="개발/운영 담당자가 원인 확인에 사용할 상세 요약입니다.">
+              <OpsSectionCard
+                title="기술 상세"
+                description="개발/운영 담당자가 원인 확인에 사용할 상세 요약입니다."
+              >
                 <Box className="border-default bg-surface-elevated rounded-[var(--radius-md)] border p-[var(--space-3)]">
-                  <Typography as="p" variant="bodySm" color="muted" className="whitespace-pre-wrap font-mono leading-[1.7]">
+                  <Typography
+                    as="p"
+                    variant="bodySm"
+                    color="muted"
+                    className="whitespace-pre-wrap font-mono leading-[1.7]"
+                  >
                     {report.technicalSummary}
                   </Typography>
                 </Box>
@@ -172,13 +264,25 @@ export default function ReportsPage() {
           }
           sidebar={
             <Box className="min-w-0 space-y-[var(--stack-gap)]">
-              <OpsSectionCard title="우선 대응 이슈" description="발생 횟수와 심각도를 기준으로 정렬된 대응 후보입니다.">
+              <OpsSectionCard
+                title="우선 대응 이슈"
+                description="발생 횟수와 심각도를 기준으로 정렬된 대응 후보입니다."
+              >
                 <ReportPriorityIssues issues={report.priorityIssues} />
               </OpsSectionCard>
 
-              <OpsSectionCard title="공유용 리포트" description="Slack/Jira에 그대로 붙여넣을 수 있는 요약입니다.">
+              <OpsSectionCard
+                title="공유용 리포트"
+                description="Slack/Jira에 그대로 붙여넣을 수 있는 요약입니다."
+              >
                 <Flex className="mb-[var(--space-3)] justify-end">
-                  <Button type="button" variant="secondary" size="sm" leftIcon={<Clipboard />} onClick={copyShareText}>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    leftIcon={<Clipboard />}
+                    onClick={copyShareText}
+                  >
                     복사
                   </Button>
                 </Flex>
@@ -187,25 +291,32 @@ export default function ReportsPage() {
                   value={report.shareText}
                   rows={13}
                   resize="none"
-                  className="bg-surface-elevated font-mono text-caption leading-[1.6]"
+                  className="bg-surface-elevated text-caption font-mono leading-[1.6]"
                 />
               </OpsSectionCard>
 
               <OpsSectionCard title="저장된 리포트" description="백엔드에 저장된 최근 리포트 스냅샷입니다.">
-                <Box className="divide-y divide-default border-y border-default">
+                <Box className="divide-default border-default divide-y border-y">
                   {(snapshotsQuery.data ?? []).slice(0, 5).map((snapshot) => (
                     <Box key={snapshot.id} className="py-[var(--space-2-5)]">
                       <Flex className="items-start justify-between gap-[var(--space-2)]">
                         <Box className="min-w-0">
                           <Flex className="min-w-0 items-center gap-[var(--space-1)]">
                             {snapshot.pinned ? (
-                              <Badge variant="secondary" size="sm" shape="rounded" className="shrink-0">고정</Badge>
+                              <Badge variant="secondary" size="sm" shape="rounded" className="shrink-0">
+                                고정
+                              </Badge>
                             ) : null}
                             <Typography as="p" variant="caption" className="truncate font-semibold">
                               {snapshot.title}
                             </Typography>
                           </Flex>
-                          <Typography as="p" variant="caption" color="muted" className="mt-[var(--space-1)] line-clamp-2">
+                          <Typography
+                            as="p"
+                            variant="caption"
+                            color="muted"
+                            className="mt-[var(--space-1)] line-clamp-2"
+                          >
                             {snapshot.executiveSummary}
                           </Typography>
                           <Flex className="mt-[var(--space-2)] flex-wrap gap-[var(--space-1)]">
@@ -213,7 +324,7 @@ export default function ReportsPage() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-7 px-[var(--space-2)] text-caption"
+                              className="text-caption h-7 px-[var(--space-2)]"
                               onClick={() => toggleSnapshotPin(snapshot)}
                             >
                               {snapshot.pinned ? "고정 해제" : "고정"}
@@ -222,7 +333,7 @@ export default function ReportsPage() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-7 px-[var(--space-2)] text-caption text-danger hover:text-danger"
+                              className="text-caption text-danger hover:text-danger h-7 px-[var(--space-2)]"
                               onClick={() => void requestDeleteSnapshot(snapshot)}
                             >
                               삭제
@@ -230,7 +341,13 @@ export default function ReportsPage() {
                           </Flex>
                         </Box>
                         <Badge
-                          variant={snapshot.riskLevel === "critical" ? "danger" : snapshot.riskLevel === "warning" ? "warning" : "secondary"}
+                          variant={
+                            snapshot.riskLevel === "critical"
+                              ? "danger"
+                              : snapshot.riskLevel === "warning"
+                                ? "warning"
+                                : "secondary"
+                          }
                           size="sm"
                           shape="rounded"
                           className="shrink-0 font-semibold"

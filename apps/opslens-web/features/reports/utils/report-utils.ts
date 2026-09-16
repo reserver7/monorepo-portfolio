@@ -7,7 +7,9 @@ export const getReportTone = (tone: string): ReportTone => {
   return "default";
 };
 
-export const getReportRiskBadge = (riskLevel: string): { label: string; variant: "success" | "warning" | "danger" | "outline" } => {
+export const getReportRiskBadge = (
+  riskLevel: string
+): { label: string; variant: "success" | "warning" | "danger" | "outline" } => {
   if (riskLevel === "critical") return { label: "위험", variant: "danger" };
   if (riskLevel === "warning") return { label: "주의", variant: "warning" };
   if (riskLevel === "normal") return { label: "정상", variant: "success" };

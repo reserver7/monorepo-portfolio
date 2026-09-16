@@ -24,14 +24,12 @@ import { useOpsFilterStore } from "@/features/common/stores";
 import { readNotificationPolicy } from "@/lib/auth";
 import { toCalendarLocale } from "@/lib/i18n/messages";
 
-const LazyAlertsModal = dynamic(
-  () => import("@/features/modals").then((mod) => mod.AlertsModal),
-  { ssr: false }
-);
-const LazyOpsFilterSheet = dynamic(
-  () => import("@/features/modals").then((mod) => mod.OpsFilterSheet),
-  { ssr: false }
-);
+const LazyAlertsModal = dynamic(() => import("@/features/modals").then((mod) => mod.AlertsModal), {
+  ssr: false
+});
+const LazyOpsFilterSheet = dynamic(() => import("@/features/modals").then((mod) => mod.OpsFilterSheet), {
+  ssr: false
+});
 
 const toUiAlert = (alert: ApiOpsAlert): OpsAlert => ({
   id: alert.id,
@@ -166,10 +164,10 @@ export default function AppShellHeaderControls({
       createOpsAlert({
         title: input.title,
         message: input.message ?? input.title,
-        level: input.level === "info" ? "low" : input.level ?? "low",
+        level: input.level === "info" ? "low" : (input.level ?? "low"),
         source: input.source ?? "web",
         link: input.link
-    }),
+      }),
     onSuccess: async () => {
       await refreshAlerts();
     },
@@ -337,7 +335,10 @@ export default function AppShellHeaderControls({
     const nextFromDate = params.get("from");
     const nextToDate = params.get("to");
 
-    const resolvedEnvironment = nextEnvironment === "dev" || nextEnvironment === "stage" || nextEnvironment === "prod" ? nextEnvironment : "prod";
+    const resolvedEnvironment =
+      nextEnvironment === "dev" || nextEnvironment === "stage" || nextEnvironment === "prod"
+        ? nextEnvironment
+        : "prod";
     if (resolvedEnvironment !== environment) setEnvironment(resolvedEnvironment);
 
     if ((nextLocale === "ko" || nextLocale === "en" || nextLocale === "ja") && nextLocale !== locale) {
@@ -403,7 +404,9 @@ export default function AppShellHeaderControls({
     else params.delete("to");
 
     const nextSorted = Array.from(params.entries()).sort(([a], [b]) => a.localeCompare(b));
-    const currentSorted = Array.from(new URLSearchParams(querySnapshot).entries()).sort(([a], [b]) => a.localeCompare(b));
+    const currentSorted = Array.from(new URLSearchParams(querySnapshot).entries()).sort(([a], [b]) =>
+      a.localeCompare(b)
+    );
     if (JSON.stringify(nextSorted) === JSON.stringify(currentSorted)) return;
 
     const nextQuery = new URLSearchParams(nextSorted).toString();
@@ -459,9 +462,10 @@ export default function AppShellHeaderControls({
         const nowMinutes = now.getHours() * 60 + now.getMinutes();
         const fromMinutes = fromHour * 60 + fromMin;
         const toMinutes = toHour * 60 + toMin;
-        const inQuietWindow = fromMinutes <= toMinutes
-          ? nowMinutes >= fromMinutes && nowMinutes < toMinutes
-          : nowMinutes >= fromMinutes || nowMinutes < toMinutes;
+        const inQuietWindow =
+          fromMinutes <= toMinutes
+            ? nowMinutes >= fromMinutes && nowMinutes < toMinutes
+            : nowMinutes >= fromMinutes || nowMinutes < toMinutes;
         if (inQuietWindow) return;
       }
 
@@ -478,7 +482,10 @@ export default function AppShellHeaderControls({
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target;
-      const editing = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || (target instanceof HTMLElement && target.isContentEditable);
+      const editing =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        (target instanceof HTMLElement && target.isContentEditable);
       if (editing) return;
       if (event.key === "/") {
         event.preventDefault();
@@ -504,7 +511,9 @@ export default function AppShellHeaderControls({
       }
       if (event.key.toLowerCase() === "g") {
         pendingGoShortcutRef.current = true;
-        window.setTimeout(() => { pendingGoShortcutRef.current = false; }, 900);
+        window.setTimeout(() => {
+          pendingGoShortcutRef.current = false;
+        }, 900);
       }
       if (event.key.toLowerCase() === "r") router.refresh();
     };
@@ -574,7 +583,7 @@ export default function AppShellHeaderControls({
                         removable
                         removeLabel={`${term} 삭제`}
                         onRemove={() => deleteRecentSearch(term)}
-                        className="text-foreground text-caption hover:bg-surface-elevated [&_button_svg]:h-[var(--size-icon-sm)] [&_button_svg]:w-[var(--size-icon-sm)] cursor-pointer"
+                        className="text-foreground text-caption hover:bg-surface-elevated cursor-pointer [&_button_svg]:h-[var(--size-icon-sm)] [&_button_svg]:w-[var(--size-icon-sm)]"
                         onClick={() => applySearchTerm(term)}
                       >
                         {term}
@@ -588,9 +597,29 @@ export default function AppShellHeaderControls({
                 )}
                 {watchSearch.trim() ? (
                   <Box className="border-default mt-[var(--space-2)] border-t pt-[var(--space-2)]">
-                    <Typography as="p" variant="caption" color="muted">검색 결과로 이동</Typography>
+                    <Typography as="p" variant="caption" color="muted">
+                      검색 결과로 이동
+                    </Typography>
                     <Flex className="mt-[var(--space-1)] flex-wrap gap-[var(--space-1)]">
-                      {[{ label: "이슈", href: "/issues" }, { label: "로그", href: "/logs" }, { label: "배포", href: "/deployments" }, { label: "리포트", href: "/reports" }].map((target) => <Button key={target.href} type="button" variant="ghost" size="sm" onClick={() => { commitSearch(); router.push(target.href); }}>{target.label}에서 보기</Button>)}
+                      {[
+                        { label: "이슈", href: "/issues" },
+                        { label: "로그", href: "/logs" },
+                        { label: "배포", href: "/deployments" },
+                        { label: "리포트", href: "/reports" }
+                      ].map((target) => (
+                        <Button
+                          key={target.href}
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            commitSearch();
+                            router.push(target.href);
+                          }}
+                        >
+                          {target.label}에서 보기
+                        </Button>
+                      ))}
                     </Flex>
                   </Box>
                 ) : null}
@@ -600,8 +629,24 @@ export default function AppShellHeaderControls({
         </Flex>
 
         <Flex className="items-center gap-[var(--space-1)] md:gap-[var(--space-2)]">
-          <Button variant="ghost" size="sm" iconOnly leftIcon={<Link2 />} aria-label="현재 보기 링크 복사" onClick={() => void copyCurrentViewLink()} className="hidden md:inline-flex" />
-          <Button variant="ghost" size="sm" iconOnly leftIcon={<Keyboard />} aria-label="키보드 단축키 도움말" onClick={() => setShortcutHelpOpen((open) => !open)} className="hidden md:inline-flex" />
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            leftIcon={<Link2 />}
+            aria-label="현재 보기 링크 복사"
+            onClick={() => void copyCurrentViewLink()}
+            className="hidden md:inline-flex"
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            leftIcon={<Keyboard />}
+            aria-label="키보드 단축키 도움말"
+            onClick={() => setShortcutHelpOpen((open) => !open)}
+            className="hidden md:inline-flex"
+          />
           <Button
             variant="ghost"
             size="sm"
@@ -668,10 +713,41 @@ export default function AppShellHeaderControls({
         </Flex>
       </Flex>
 
-      {shortcutHelpOpen ? <Box className="border-default bg-surface fixed bottom-[var(--space-4)] right-[var(--space-4)] z-40 w-[min(320px,calc(100vw-var(--space-8)))] rounded-[var(--radius-lg)] border p-[var(--space-3)] shadow-lg" role="dialog" aria-label="키보드 단축키">
-        <Flex className="items-center justify-between"><Typography as="p" variant="bodySm" className="font-semibold">키보드 단축키</Typography><Button type="button" variant="ghost" size="sm" onClick={() => setShortcutHelpOpen(false)}>닫기</Button></Flex>
-        <Box className="mt-[var(--space-2)] space-y-[var(--space-1)]">{[["/", "검색 포커스"], ["g i", "이슈로 이동"], ["g d", "배포로 이동"], ["g c", "커맨드 센터로 이동"], ["r", "현재 화면 새로고침"], ["Esc", "열린 패널 닫기"]].map(([key, label]) => <Flex key={key} className="items-center justify-between"><Typography as="span" variant="caption" color="muted">{label}</Typography><Badge variant="outline" size="sm">{key}</Badge></Flex>)}</Box>
-      </Box> : null}
+      {shortcutHelpOpen ? (
+        <Box
+          className="border-default bg-surface fixed bottom-[var(--space-4)] right-[var(--space-4)] z-40 w-[min(320px,calc(100vw-var(--space-8)))] rounded-[var(--radius-lg)] border p-[var(--space-3)] shadow-lg"
+          role="dialog"
+          aria-label="키보드 단축키"
+        >
+          <Flex className="items-center justify-between">
+            <Typography as="p" variant="bodySm" className="font-semibold">
+              키보드 단축키
+            </Typography>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setShortcutHelpOpen(false)}>
+              닫기
+            </Button>
+          </Flex>
+          <Box className="mt-[var(--space-2)] space-y-[var(--space-1)]">
+            {[
+              ["/", "검색 포커스"],
+              ["g i", "이슈로 이동"],
+              ["g d", "배포로 이동"],
+              ["g c", "커맨드 센터로 이동"],
+              ["r", "현재 화면 새로고침"],
+              ["Esc", "열린 패널 닫기"]
+            ].map(([key, label]) => (
+              <Flex key={key} className="items-center justify-between">
+                <Typography as="span" variant="caption" color="muted">
+                  {label}
+                </Typography>
+                <Badge variant="outline" size="sm">
+                  {key}
+                </Badge>
+              </Flex>
+            ))}
+          </Box>
+        </Box>
+      ) : null}
 
       {alertModalOpen ? (
         <LazyAlertsModal

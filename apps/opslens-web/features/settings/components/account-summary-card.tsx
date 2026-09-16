@@ -35,24 +35,42 @@ export function AccountSummaryCard({
         <Box className="flex items-center gap-[var(--space-3)]">
           <Avatar size="lg" name={profileName} color={avatarColor} status="online" />
           <Grid className="min-w-0 gap-[var(--space-1)]">
-            <Typography as="p" className="text-foreground truncate text-body-lg font-semibold">{profileName}</Typography>
-            <Typography as="p" color="muted" className="truncate text-body-sm">{profileEmail}</Typography>
+            <Typography as="p" className="text-foreground text-body-lg truncate font-semibold">
+              {profileName}
+            </Typography>
+            <Typography as="p" color="muted" className="text-body-sm truncate">
+              {profileEmail}
+            </Typography>
             <Box className="flex flex-wrap items-center gap-[var(--space-2)]">
-              <Badge variant="secondary" size="sm">{roleLabel}</Badge>
-              <Badge variant="outline" size="sm">{providerLabel}</Badge>
-              <Badge variant={securityTone} size="sm">{securityLabel}</Badge>
+              <Badge variant="secondary" size="sm">
+                {roleLabel}
+              </Badge>
+              <Badge variant="outline" size="sm">
+                {providerLabel}
+              </Badge>
+              <Badge variant={securityTone} size="sm">
+                {securityLabel}
+              </Badge>
             </Box>
           </Grid>
         </Box>
         <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
           <Grid className="gap-[var(--space-2)]">
             <Box className="flex items-center justify-between gap-[var(--space-2)]">
-              <Typography as="p" color="muted" className="text-body-sm">세션 타입</Typography>
-              <Badge variant="secondary" size="sm">{sessionTypeLabel}</Badge>
+              <Typography as="p" color="muted" className="text-body-sm">
+                세션 타입
+              </Typography>
+              <Badge variant="secondary" size="sm">
+                {sessionTypeLabel}
+              </Badge>
             </Box>
             <Box className="flex items-center justify-between gap-[var(--space-2)]">
-              <Typography as="p" color="muted" className="text-body-sm">만료 시각</Typography>
-              <Typography as="p" className="text-body-sm font-medium">{sessionExpiresLabel}</Typography>
+              <Typography as="p" color="muted" className="text-body-sm">
+                만료 시각
+              </Typography>
+              <Typography as="p" className="text-body-sm font-medium">
+                {sessionExpiresLabel}
+              </Typography>
             </Box>
             <Box className="mt-[var(--space-2)] flex justify-end">
               <Button variant="secondary" loading={logoutPending} onClick={onLogoutCurrentSession}>

@@ -4,7 +4,13 @@ import { useEffect } from "react";
 import { Button } from "@repo/ui";
 import { FeedbackState } from "@/features/common/components/feedback-state";
 
-export default function RootError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function RootError({
+  error,
+  reset
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
   useEffect(() => {
     console.error(error);
   }, [error]);

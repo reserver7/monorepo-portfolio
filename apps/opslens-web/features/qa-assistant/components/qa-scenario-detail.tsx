@@ -15,13 +15,22 @@ type QaScenarioDetailProps = {
 export function QaScenarioDetail({ scenario }: QaScenarioDetailProps) {
   if (!scenario) {
     return (
-      <OpsSectionCard title="생성 결과 상세" description="시나리오를 생성하거나 최근 산출물을 선택하면 상세가 표시됩니다.">
-        <FeedbackState variant="info" size="sm" title="검토할 QA 산출물이 없습니다." className="mt-[var(--space-3)]" />
+      <OpsSectionCard
+        title="생성 결과 상세"
+        description="시나리오를 생성하거나 최근 산출물을 선택하면 상세가 표시됩니다."
+      >
+        <FeedbackState
+          variant="info"
+          size="sm"
+          title="검토할 QA 산출물이 없습니다."
+          className="mt-[var(--space-3)]"
+        />
       </OpsSectionCard>
     );
   }
 
-  const riskVariant = scenario.riskPoints.length >= 3 ? "danger" : scenario.riskPoints.length > 0 ? "warning" : "success";
+  const riskVariant =
+    scenario.riskPoints.length >= 3 ? "danger" : scenario.riskPoints.length > 0 ? "warning" : "success";
 
   return (
     <OpsSectionCard
@@ -30,7 +39,7 @@ export function QaScenarioDetail({ scenario }: QaScenarioDetailProps) {
       contentClassName="pt-[var(--space-2)]"
     >
       <Box className="space-y-[var(--space-4)]">
-        <Box className="border-b border-default pb-[var(--space-3)]">
+        <Box className="border-default border-b pb-[var(--space-3)]">
           <Flex className="items-start justify-between gap-[var(--space-3)]">
             <Box className="min-w-0">
               <Typography as="p" variant="bodyMd" className="font-semibold">
@@ -89,7 +98,7 @@ function ResultList({
   priority?: boolean;
 }) {
   return (
-    <Box className={priority ? "min-w-0 border-b border-default pb-[var(--space-4)]" : "min-w-0"}>
+    <Box className={priority ? "border-default min-w-0 border-b pb-[var(--space-4)]" : "min-w-0"}>
       <Flex className="items-center justify-between gap-[var(--space-2)]">
         <Box className="min-w-0">
           <Typography as="p" variant="bodySm" className="font-semibold">
@@ -99,7 +108,12 @@ function ResultList({
             {description}
           </Typography>
         </Box>
-        <Badge variant={badgeVariant} size="sm" shape="rounded" className={badgeVariant === "secondary" ? QA_NEUTRAL_BADGE_CLASS : QA_STATUS_BADGE_CLASS}>
+        <Badge
+          variant={badgeVariant}
+          size="sm"
+          shape="rounded"
+          className={badgeVariant === "secondary" ? QA_NEUTRAL_BADGE_CLASS : QA_STATUS_BADGE_CLASS}
+        >
           {formatNumber(items.length)}
         </Badge>
       </Flex>
@@ -107,7 +121,12 @@ function ResultList({
         {items.map((item, index) => (
           <Box key={`${title}-${item}`}>
             <Flex className="items-start gap-[var(--space-2)]">
-              <Typography as="span" variant="caption" color="subtle" className="w-[var(--space-5)] shrink-0 text-right font-semibold tabular-nums">
+              <Typography
+                as="span"
+                variant="caption"
+                color="subtle"
+                className="w-[var(--space-5)] shrink-0 text-right font-semibold tabular-nums"
+              >
                 {index + 1}
               </Typography>
               <Typography as="p" variant="caption" className="text-foreground/85">

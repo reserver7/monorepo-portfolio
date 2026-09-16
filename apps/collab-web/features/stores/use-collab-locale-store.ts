@@ -66,7 +66,9 @@ export function CollabLocaleStoreProvider({
   return createElement(CollabLocaleStoreContext.Provider, { value: storeRef.current }, children);
 }
 
-export const useCollabLocaleStore = <Selected,>(selector: (state: CollabLocaleState) => Selected): Selected => {
+export const useCollabLocaleStore = <Selected>(
+  selector: (state: CollabLocaleState) => Selected
+): Selected => {
   const store = useContext(CollabLocaleStoreContext);
   if (!store) {
     throw new Error("CollabLocaleStoreContext: Provider가 필요합니다.");

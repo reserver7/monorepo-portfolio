@@ -53,7 +53,12 @@ function OpsI18nProvider({
   }, [resolvedLocale]);
 
   return (
-    <NextIntlClientProvider key={resolvedLocale} locale={resolvedLocale} messages={messages} timeZone="Asia/Seoul">
+    <NextIntlClientProvider
+      key={resolvedLocale}
+      locale={resolvedLocale}
+      messages={messages}
+      timeZone="Asia/Seoul"
+    >
       {children}
     </NextIntlClientProvider>
   );
@@ -74,7 +79,11 @@ export function Providers({
   children,
   initialLocale,
   initialMessages
-}: Readonly<{ children: React.ReactNode; initialLocale: OpsLocale; initialMessages: Record<string, unknown> }>) {
+}: Readonly<{
+  children: React.ReactNode;
+  initialLocale: OpsLocale;
+  initialMessages: Record<string, unknown>;
+}>) {
   return (
     <OpsFilterStoreProvider initialLocale={initialLocale}>
       <OpsI18nProvider initialMessages={initialMessages}>
@@ -88,9 +97,7 @@ export function Providers({
           fallbackDescription="잠시 후 다시 시도하거나 새로고침해 주세요."
         >
           <OpsHttpAuthBridge />
-          <OpsAlertStoreProvider>
-            {children}
-          </OpsAlertStoreProvider>
+          <OpsAlertStoreProvider>{children}</OpsAlertStoreProvider>
         </AppProviders>
       </OpsI18nProvider>
     </OpsFilterStoreProvider>

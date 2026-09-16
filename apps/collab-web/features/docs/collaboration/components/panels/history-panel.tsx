@@ -20,7 +20,7 @@ export const HistoryPanel = ({ entries }: HistoryPanelProps) => {
   const panelItemClass = "rounded-lg border border-default/70 bg-surface-elevated/65 px-3.5 py-3";
 
   return (
-    <Card className="border border-default/80 bg-surface p-5">
+    <Card className="border-default/80 bg-surface border p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <Typography as="h3" variant="title" className="text-body-md font-semibold">
           {t("title")}

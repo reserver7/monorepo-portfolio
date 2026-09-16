@@ -1,10 +1,25 @@
-import { ConflictException, ForbiddenException, HttpException, HttpStatus, Injectable, Logger, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import {
+  ConflictException,
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnauthorizedException
+} from "@nestjs/common";
 import { createHash, randomBytes } from "node:crypto";
 import type { User } from "@prisma/client";
 import { env } from "../../config/env.js";
 import { PrismaService } from "../../integration/db/prisma.service.js";
 import { writeOpsAuditLog } from "../ops/ops-audit-writer.js";
-import { AuthUserPayload, hashPassword, signAccessToken, verifyAccessToken, verifyPassword } from "./auth.token.js";
+import {
+  AuthUserPayload,
+  hashPassword,
+  signAccessToken,
+  verifyAccessToken,
+  verifyPassword
+} from "./auth.token.js";
 
 type AuthUserResponse = {
   id: string;
@@ -47,7 +62,10 @@ const DEFAULT_NOTIFICATION_POLICY: AuthNotificationPolicy = {
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-  private readonly loginAttempts = new Map<string, { count: number; firstAttemptAt: number; blockedUntil: number }>();
+  private readonly loginAttempts = new Map<
+    string,
+    { count: number; firstAttemptAt: number; blockedUntil: number }
+  >();
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -105,7 +123,10 @@ export class AuthService {
     }
     const updated = await this.prisma.user.update({
       where: { id: userId },
-      data: { ...(input.role ? { role: input.role } : {}), ...(typeof input.isActive === "boolean" ? { isActive: input.isActive } : {}) }
+      data: {
+        ...(input.role ? { role: input.role } : {}),
+        ...(typeof input.isActive === "boolean" ? { isActive: input.isActive } : {})
+      }
     });
     await writeOpsAuditLog(this.prisma, this.logger, {
       actor: actor.email,
@@ -125,7 +146,15 @@ export class AuthService {
   }
 
   private toAuthUserResponse(user: User): AuthUserResponse {
-    return { id: user.id, email: user.email, name: user.name, role: user.role, authProvider: user.authProvider, avatarColor: user.avatarColor, isActive: user.isActive };
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      authProvider: user.authProvider,
+      avatarColor: user.avatarColor,
+      isActive: user.isActive
+    };
   }
 
   async login(email: string, password: string, ip?: string): Promise<AuthLoginResponse> {
@@ -319,7 +348,10 @@ export class AuthService {
       }
     });
 
-    return this.buildLoginResponse(refreshedUser, normalizedName.length > 0 ? normalizedName : refreshedUser.name);
+    return this.buildLoginResponse(
+      refreshedUser,
+      normalizedName.length > 0 ? normalizedName : refreshedUser.name
+    );
   }
 
   async logout(authUser: AuthUserPayload, refreshToken?: string): Promise<{ success: true }> {
@@ -430,7 +462,10 @@ export class AuthService {
     const state = this.loginAttempts.get(key);
     if (!state) return;
     if (state.blockedUntil > now) {
-      throw new HttpException("로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.", HttpStatus.TOO_MANY_REQUESTS);
+      throw new HttpException(
+        "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+        HttpStatus.TOO_MANY_REQUESTS
+      );
     }
     if (now - state.firstAttemptAt > env.AUTH_LOGIN_WINDOW_SEC * 1000) {
       this.loginAttempts.delete(key);

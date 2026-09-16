@@ -24,7 +24,14 @@ export function DeploymentImpactPanel({
   selectedVersion
 }: DeploymentImpactPanelProps) {
   if (!selectedVersion) {
-    return <FeedbackState variant="info" size="sm" title="분석할 배포 버전을 선택해 주세요." className="mt-[var(--space-3)]" />;
+    return (
+      <FeedbackState
+        variant="info"
+        size="sm"
+        title="분석할 배포 버전을 선택해 주세요."
+        className="mt-[var(--space-3)]"
+      />
+    );
   }
 
   if (isLoading) {
@@ -37,7 +44,14 @@ export function DeploymentImpactPanel({
   }
 
   if (isError || !impact) {
-    return <FeedbackState variant="error" size="sm" title="영향 분석에 실패했습니다." className="mt-[var(--space-3)]" />;
+    return (
+      <FeedbackState
+        variant="error"
+        size="sm"
+        title="영향 분석에 실패했습니다."
+        className="mt-[var(--space-3)]"
+      />
+    );
   }
 
   const hasIncreasedIssues = impact.increasedIssues.length > 0;
@@ -54,7 +68,12 @@ export function DeploymentImpactPanel({
               {impact.recommendedAction}
             </Typography>
           </Box>
-          <Badge variant={getDeploymentRiskVariant(impact.riskLevel)} size="sm" shape="rounded" className="shrink-0 font-semibold">
+          <Badge
+            variant={getDeploymentRiskVariant(impact.riskLevel)}
+            size="sm"
+            shape="rounded"
+            className="shrink-0 font-semibold"
+          >
             {getDeploymentRiskLabel(impact.riskLevel)}
           </Badge>
         </Flex>
@@ -70,7 +89,7 @@ export function DeploymentImpactPanel({
 
       <Box className="border-default bg-surface-elevated rounded-[var(--radius-md)] border p-[var(--space-3)]">
         <Flex className="items-start gap-[var(--space-2)]">
-          <BarChart3 className="mt-[2px] h-4 w-4 shrink-0 text-muted" />
+          <BarChart3 className="text-muted mt-[2px] h-4 w-4 shrink-0" />
           <Typography as="p" variant="bodySm" color="muted" className="leading-[1.6]">
             {impact.summary}
           </Typography>
@@ -89,7 +108,11 @@ export function DeploymentImpactPanel({
           </Flex>
 
           {impact.increasedIssues.map((item) => (
-            <Link key={item.issueId} href={`/issues/${item.issueId}`} className="border-default hover:border-primary/50 block rounded-[var(--radius-md)] border p-[var(--space-3)] transition-colors">
+            <Link
+              key={item.issueId}
+              href={`/issues/${item.issueId}`}
+              className="border-default hover:border-primary/50 block rounded-[var(--radius-md)] border p-[var(--space-3)] transition-colors"
+            >
               <Flex className="items-start justify-between gap-[var(--space-3)]">
                 <Box className="min-w-0">
                   <Typography as="p" variant="bodySm" className="line-clamp-2 font-semibold">
@@ -111,10 +134,34 @@ export function DeploymentImpactPanel({
                   </Typography>
                 </Box>
               </Flex>
-              <Box className="mt-[var(--space-3)] space-y-[var(--space-1)]" aria-label={`${item.title} 배포 전후 오류 비교`}>
-                <Box className="bg-muted/30 h-1.5 overflow-hidden rounded-full"><Box className="h-full bg-muted" style={{ width: `${Math.max(8, (item.beforeCount / Math.max(item.beforeCount, item.afterCount, 1)) * 100)}%` }} /></Box>
-                <Box className="bg-muted/30 h-1.5 overflow-hidden rounded-full"><Box className="h-full bg-warning" style={{ width: `${Math.max(8, (item.afterCount / Math.max(item.beforeCount, item.afterCount, 1)) * 100)}%` }} /></Box>
-                <Flex className="justify-between"><Typography as="span" variant="caption" color="subtle">배포 전 {formatNumber(item.beforeCount)}</Typography><Typography as="span" variant="caption" color="subtle">배포 후 {formatNumber(item.afterCount)}</Typography></Flex>
+              <Box
+                className="mt-[var(--space-3)] space-y-[var(--space-1)]"
+                aria-label={`${item.title} 배포 전후 오류 비교`}
+              >
+                <Box className="bg-muted/30 h-1.5 overflow-hidden rounded-full">
+                  <Box
+                    className="bg-muted h-full"
+                    style={{
+                      width: `${Math.max(8, (item.beforeCount / Math.max(item.beforeCount, item.afterCount, 1)) * 100)}%`
+                    }}
+                  />
+                </Box>
+                <Box className="bg-muted/30 h-1.5 overflow-hidden rounded-full">
+                  <Box
+                    className="bg-warning h-full"
+                    style={{
+                      width: `${Math.max(8, (item.afterCount / Math.max(item.beforeCount, item.afterCount, 1)) * 100)}%`
+                    }}
+                  />
+                </Box>
+                <Flex className="justify-between">
+                  <Typography as="span" variant="caption" color="subtle">
+                    배포 전 {formatNumber(item.beforeCount)}
+                  </Typography>
+                  <Typography as="span" variant="caption" color="subtle">
+                    배포 후 {formatNumber(item.afterCount)}
+                  </Typography>
+                </Flex>
               </Box>
             </Link>
           ))}
@@ -122,7 +169,7 @@ export function DeploymentImpactPanel({
       ) : (
         <Box className="border-default rounded-[var(--radius-md)] border border-dashed p-[var(--space-4)]">
           <Flex className="items-center gap-[var(--space-2)]">
-            <AlertTriangle className="h-4 w-4 text-muted" />
+            <AlertTriangle className="text-muted h-4 w-4" />
             <Typography as="p" variant="bodySm" color="muted">
               배포 이후 증가한 이슈가 없습니다.
             </Typography>

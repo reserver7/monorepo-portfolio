@@ -38,7 +38,11 @@ export function formatDateByLocale(value: string | undefined, locale: OpsLocale)
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
-  return new Intl.DateTimeFormat(toCalendarLocale(locale), { year: "numeric", month: "short", day: "numeric" }).format(date);
+  return new Intl.DateTimeFormat(toCalendarLocale(locale), {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  }).format(date);
 }
 
 export function formatDateTimeByLocale(value: string | undefined, locale: OpsLocale): string {
@@ -54,7 +58,11 @@ export function formatDateTimeByLocale(value: string | undefined, locale: OpsLoc
   }).format(date);
 }
 
-export function formatDateRangeLabel(from: string | undefined, to: string | undefined, locale: OpsLocale): string | undefined {
+export function formatDateRangeLabel(
+  from: string | undefined,
+  to: string | undefined,
+  locale: OpsLocale
+): string | undefined {
   if (!from && !to) return undefined;
   return `${formatDateByLocale(from, locale)} ~ ${formatDateByLocale(to, locale)}`;
 }

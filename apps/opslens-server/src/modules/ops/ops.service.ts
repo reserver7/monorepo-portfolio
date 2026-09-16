@@ -139,10 +139,18 @@ export class OpsService {
     return this.logAnalysisService.listLogAnalysisSessions();
   }
 
-  async listLogSavedViews(actor?: string) { return this.logAnalysisService.listSavedViews(actor); }
-  async getLogSourceFreshness() { return this.logAnalysisService.getLogSourceFreshness(); }
-  async upsertLogSavedView(input: UpsertLogSavedViewInput, actor?: string) { return this.logAnalysisService.upsertSavedView(input, actor); }
-  async deleteLogSavedView(id: string, actor?: string): Promise<boolean> { return this.logAnalysisService.deleteSavedView(id, actor); }
+  async listLogSavedViews(actor?: string) {
+    return this.logAnalysisService.listSavedViews(actor);
+  }
+  async getLogSourceFreshness() {
+    return this.logAnalysisService.getLogSourceFreshness();
+  }
+  async upsertLogSavedView(input: UpsertLogSavedViewInput, actor?: string) {
+    return this.logAnalysisService.upsertSavedView(input, actor);
+  }
+  async deleteLogSavedView(id: string, actor?: string): Promise<boolean> {
+    return this.logAnalysisService.deleteSavedView(id, actor);
+  }
 
   async listOpsSettings(): Promise<OpsSettingType[]> {
     return this.settingsService.listOpsSettings();
@@ -162,9 +170,20 @@ export class OpsService {
     return result;
   }
 
-  async ingestServiceMetric(input: IngestServiceMetricInput): Promise<boolean> { return this.metricsService.ingest(input); }
-  async getServiceSlo(serviceName: string, environment: string) { return this.metricsService.getSlo(serviceName, environment); }
-  async syncDeploymentCiStatus(input: { version: string; environment: string; status: string; ciUrl?: string }): Promise<boolean> { return this.deploymentService.syncCiStatus(input); }
+  async ingestServiceMetric(input: IngestServiceMetricInput): Promise<boolean> {
+    return this.metricsService.ingest(input);
+  }
+  async getServiceSlo(serviceName: string, environment: string) {
+    return this.metricsService.getSlo(serviceName, environment);
+  }
+  async syncDeploymentCiStatus(input: {
+    version: string;
+    environment: string;
+    status: string;
+    ciUrl?: string;
+  }): Promise<boolean> {
+    return this.deploymentService.syncCiStatus(input);
+  }
 
   async listRecentLogEvents(input?: {
     environment?: string;
@@ -233,7 +252,10 @@ export class OpsService {
     return this.deploymentService.registerDeployment(input, actor);
   }
 
-  async updateDeploymentDecision(input: UpdateDeploymentDecisionInput, actor?: string): Promise<DeploymentType> {
+  async updateDeploymentDecision(
+    input: UpdateDeploymentDecisionInput,
+    actor?: string
+  ): Promise<DeploymentType> {
     this.clearDerivedCaches();
     return this.deploymentService.updateDeploymentDecision(input, actor);
   }

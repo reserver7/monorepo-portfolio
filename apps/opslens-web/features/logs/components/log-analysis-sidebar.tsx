@@ -35,16 +35,29 @@ export function LogAnalysisSidebar({ selectedCluster, summary, onCreateIssue }: 
         className="rounded-[var(--radius-lg)]"
       />
       {selectedCluster ? (
-        <ConsoleSectionCard title="선택 클러스터 상세" description="우선 처리 대상을 빠르게 확인합니다." contentClassName="pt-[var(--space-2)]">
+        <ConsoleSectionCard
+          title="선택 클러스터 상세"
+          description="우선 처리 대상을 빠르게 확인합니다."
+          contentClassName="pt-[var(--space-2)]"
+        >
           <Box className="space-y-[var(--space-2)]">
             <Flex className="items-center justify-between gap-[var(--space-2)]">
-              <Badge variant={LOGS_SEVERITY_VARIANT_MAP[selectedCluster.severity]} size="sm">{selectedCluster.severity}</Badge>
-              <Badge variant="secondary" size="sm">{formatNumber(selectedCluster.count)}건</Badge>
+              <Badge variant={LOGS_SEVERITY_VARIANT_MAP[selectedCluster.severity]} size="sm">
+                {selectedCluster.severity}
+              </Badge>
+              <Badge variant="secondary" size="sm">
+                {formatNumber(selectedCluster.count)}건
+              </Badge>
             </Flex>
-            <Typography as="p" variant="bodySm" className="font-semibold">{selectedCluster.title}</Typography>
-            <Typography as="p" variant="caption" color="muted">{selectedCluster.normalizedMessage}</Typography>
+            <Typography as="p" variant="bodySm" className="font-semibold">
+              {selectedCluster.title}
+            </Typography>
+            <Typography as="p" variant="caption" color="muted">
+              {selectedCluster.normalizedMessage}
+            </Typography>
             <Typography as="p" variant="caption" color="subtle">
-              최초 {formatDateTime(selectedCluster.firstSeen)} · 최근 {formatDateTime(selectedCluster.lastSeen)}
+              최초 {formatDateTime(selectedCluster.firstSeen)} · 최근{" "}
+              {formatDateTime(selectedCluster.lastSeen)}
             </Typography>
             <Button type="button" size="sm" variant="outline" onClick={onCreateIssue}>
               이슈 생성

@@ -17,7 +17,8 @@ export const toSeverity = (value?: string): IssueSeverity | undefined => {
 
 export const toStatus = (value?: string): IssueStatus | undefined => {
   if (!value) return undefined;
-  if (value === "new" || value === "analyzing" || value === "in_progress" || value === "resolved") return value;
+  if (value === "new" || value === "analyzing" || value === "in_progress" || value === "resolved")
+    return value;
   throw new BadRequestException("status 값이 올바르지 않습니다.");
 };
 

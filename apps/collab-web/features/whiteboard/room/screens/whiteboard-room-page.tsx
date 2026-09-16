@@ -480,678 +480,681 @@ export default function WhiteboardRoomPage() {
 
   return (
     <>
-    <MarketingGlassNav
-      product="Whiteboard Room"
-      subtitle={`ID: ${boardId.slice(0, 8)}...`}
-      rightSlot={<CollabLocaleFilter />}
-      actions={[{ label: t("actions.backToList"), href: "/whiteboard" }]}
-    />
-    <main className="mx-auto min-h-screen w-full max-w-[1360px] px-4 pb-10 pt-3 md:px-8 md:pb-12 md:pt-4">
-      <MarketingSection tone="light" className="mb-5 bg-surface">
-      <header className="border-default bg-surface mb-0 rounded-2xl border p-5 shadow-[var(--shadow-card)]">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <Button variant="outline" size="sm" className="rounded-xl" onClick={goHome}>
-              {t("actions.backToList")}
-            </Button>
-            <Badge variant="outline" size="md">
-              {t("status.boardId")}: {boardId.slice(0, 8)}...
-            </Badge>
-          </div>
+      <MarketingGlassNav
+        product="Whiteboard Room"
+        subtitle={`ID: ${boardId.slice(0, 8)}...`}
+        rightSlot={<CollabLocaleFilter />}
+        actions={[{ label: t("actions.backToList"), href: "/whiteboard" }]}
+      />
+      <main className="mx-auto min-h-screen w-full max-w-[1360px] px-4 pb-10 pt-3 md:px-8 md:pb-12 md:pt-4">
+        <MarketingSection tone="light" className="bg-surface mb-5">
+          <header className="border-default bg-surface mb-0 rounded-2xl border p-5 shadow-[var(--shadow-card)]">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <Button variant="outline" size="sm" className="rounded-xl" onClick={goHome}>
+                  {t("actions.backToList")}
+                </Button>
+                <Badge variant="outline" size="md">
+                  {t("status.boardId")}: {boardId.slice(0, 8)}...
+                </Badge>
+              </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" size="md">
-              {t("status.connection.label")}: {connectionLabel[connection]}
-            </Badge>
-            <Badge variant="outline" size="md">
-              {t("status.tool")}: {toolLabel[activeTool]}
-            </Badge>
-            <Badge
-              variant={currentRole === "editor" ? "success" : "outline"}
-              size="md"
-              data-testid="board-current-role"
-            >
-              {t("status.role")}: {currentRole}
-            </Badge>
-          </div>
-        </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" size="md">
+                  {t("status.connection.label")}: {connectionLabel[connection]}
+                </Badge>
+                <Badge variant="outline" size="md">
+                  {t("status.tool")}: {toolLabel[activeTool]}
+                </Badge>
+                <Badge
+                  variant={currentRole === "editor" ? "success" : "outline"}
+                  size="md"
+                  data-testid="board-current-role"
+                >
+                  {t("status.role")}: {currentRole}
+                </Badge>
+              </div>
+            </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px]">
-          <Input
-            label={tFields("displayName.label")}
-            control={sessionForm.control}
-            name="displayName"
-            onChange={(event) => {
-              setStoredDisplayName(event.target.value.trim() || resolveGuestName());
-            }}
-            placeholder={tFields("displayName.placeholder")}
-            size="md"
-          />
-          <div className="grid gap-1" data-testid="board-requested-role-select">
-            <Label size="sm">{tFields("requestRole.label")}</Label>
-            <Select
-              options={[
-                { label: tFields("requestRole.optionEditor"), value: "editor" },
-                { label: tFields("requestRole.optionViewer"), value: "viewer" }
-              ]}
-              control={sessionForm.control}
-              name="requestedRole"
-              onChange={(value) => {
-                const nextRole = String(value) === "viewer" ? "viewer" : "editor";
-                setStoredRole(nextRole);
-              }}
-              placeholder={tFields("requestRole.placeholder")}
-              size="md"
-              className="w-full"
+            <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px]">
+              <Input
+                label={tFields("displayName.label")}
+                control={sessionForm.control}
+                name="displayName"
+                onChange={(event) => {
+                  setStoredDisplayName(event.target.value.trim() || resolveGuestName());
+                }}
+                placeholder={tFields("displayName.placeholder")}
+                size="md"
+              />
+              <div className="grid gap-1" data-testid="board-requested-role-select">
+                <Label size="sm">{tFields("requestRole.label")}</Label>
+                <Select
+                  options={[
+                    { label: tFields("requestRole.optionEditor"), value: "editor" },
+                    { label: tFields("requestRole.optionViewer"), value: "viewer" }
+                  ]}
+                  control={sessionForm.control}
+                  name="requestedRole"
+                  onChange={(value) => {
+                    const nextRole = String(value) === "viewer" ? "viewer" : "editor";
+                    setStoredRole(nextRole);
+                  }}
+                  placeholder={tFields("requestRole.placeholder")}
+                  size="md"
+                  className="w-full"
+                />
+              </div>
+              <Input
+                label={tFields("editorAccessKey.label")}
+                type="password"
+                control={sessionForm.control}
+                name="editorAccessKey"
+                data-testid="board-editor-access-key-input"
+                onChange={(event) => {
+                  setStoredEditorAccessKey(event.target.value);
+                }}
+                placeholder={tFields("editorAccessKey.placeholder")}
+                size="md"
+              />
+            </div>
+          </header>
+        </MarketingSection>
+
+        <MarketingSection tone="light" className="bg-surface">
+          <section className="border-default bg-surface mb-4 rounded-2xl border p-5 shadow-[var(--shadow-card)]">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+              <Input
+                label={t("content.titleLabel")}
+                value={title}
+                onChange={(event) => updateTitle(event.target.value)}
+                readOnly={isReadOnly}
+                size="md"
+                className="text-base font-semibold"
+                placeholder={t("content.titlePlaceholder")}
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="md"
+                  disabled={isReadOnly || activeTool === "connector"}
+                  onClick={() => createShapeByActiveTool()}
+                >
+                  {activeTool === "text" ? t("actions.addText") : t("actions.addShape")}
+                </Button>
+                <Button
+                  variant="danger"
+                  size="md"
+                  disabled={isReadOnly || !selectedShapeId}
+                  onClick={() => {
+                    if (!selectedShapeId) {
+                      return;
+                    }
+
+                    void requestRemoveShapeWithConfirm(selectedShapeId);
+                  }}
+                >
+                  {t("actions.deleteSelected")}
+                </Button>
+                <Button variant="outline" size="md" onClick={undo} disabled={isReadOnly}>
+                  {t("actions.undo")}
+                </Button>
+                <Button variant="outline" size="md" onClick={redo} disabled={isReadOnly}>
+                  {t("actions.redo")}
+                </Button>
+              </div>
+            </div>
+
+            <div className="mt-3 grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
+              <Select
+                options={[
+                  { label: t("tool.select"), value: "select" },
+                  { label: t("tool.rect"), value: "rect" },
+                  { label: t("tool.ellipse"), value: "ellipse" },
+                  { label: t("tool.diamond"), value: "diamond" },
+                  { label: t("tool.text"), value: "text" },
+                  { label: t("tool.connector"), value: "connector" }
+                ]}
+                value={activeTool}
+                onChange={(value) => {
+                  const nextTool = String(value) as WhiteboardTool;
+                  setActiveTool(nextTool);
+                }}
+                placeholder={t("tool.placeholder")}
+                size="md"
+              />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Card className="text-body-sm text-muted px-3 py-2">
+                  {t("content.version")} {version}
+                </Card>
+                <Card className="text-body-sm text-muted px-3 py-2">
+                  {updatedAt
+                    ? `${t("content.lastUpdated")}: ${formatRelativeTime(updatedAt, locale)} (${formatExactTime(updatedAt, locale)})`
+                    : `${t("content.lastUpdated")} -`}
+                </Card>
+              </div>
+            </div>
+          </section>
+
+          {activeTool === "connector" && !isReadOnly ? (
+            <FeedbackState
+              variant="info"
+              size="sm"
+              align="left"
+              className="mb-4"
+              title={connectorFromShapeId ? t("content.connectorHintSelected") : t("content.connectorHint")}
             />
-          </div>
-          <Input
-            label={tFields("editorAccessKey.label")}
-            type="password"
-            control={sessionForm.control}
-            name="editorAccessKey"
-            data-testid="board-editor-access-key-input"
-            onChange={(event) => {
-              setStoredEditorAccessKey(event.target.value);
-            }}
-            placeholder={tFields("editorAccessKey.placeholder")}
-            size="md"
-          />
-        </div>
-      </header>
-      </MarketingSection>
+          ) : null}
 
-      <MarketingSection tone="light" className="bg-surface">
-      <section className="border-default bg-surface mb-4 rounded-2xl border p-5 shadow-[var(--shadow-card)]">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-          <Input
-            label={t("content.titleLabel")}
-            value={title}
-            onChange={(event) => updateTitle(event.target.value)}
-            readOnly={isReadOnly}
-            size="md"
-            className="text-base font-semibold"
-            placeholder={t("content.titlePlaceholder")}
-          />
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              size="md"
-              disabled={isReadOnly || activeTool === "connector"}
-              onClick={() => createShapeByActiveTool()}
-            >
-              {activeTool === "text" ? t("actions.addText") : t("actions.addShape")}
-            </Button>
-            <Button
-              variant="danger"
-              size="md"
-              disabled={isReadOnly || !selectedShapeId}
-              onClick={() => {
-                if (!selectedShapeId) {
-                  return;
-                }
-
-                void requestRemoveShapeWithConfirm(selectedShapeId);
-              }}
-            >
-              {t("actions.deleteSelected")}
-            </Button>
-            <Button variant="outline" size="md" onClick={undo} disabled={isReadOnly}>
-              {t("actions.undo")}
-            </Button>
-            <Button variant="outline" size="md" onClick={redo} disabled={isReadOnly}>
-              {t("actions.redo")}
-            </Button>
-          </div>
-        </div>
-
-        <div className="mt-3 grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
-          <Select
-            options={[
-              { label: t("tool.select"), value: "select" },
-              { label: t("tool.rect"), value: "rect" },
-              { label: t("tool.ellipse"), value: "ellipse" },
-              { label: t("tool.diamond"), value: "diamond" },
-              { label: t("tool.text"), value: "text" },
-              { label: t("tool.connector"), value: "connector" }
-            ]}
-            value={activeTool}
-            onChange={(value) => {
-              const nextTool = String(value) as WhiteboardTool;
-              setActiveTool(nextTool);
-            }}
-            placeholder={t("tool.placeholder")}
-            size="md"
-          />
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Card className="text-body-sm text-muted px-3 py-2">
-              {t("content.version")} {version}
-            </Card>
-            <Card className="text-body-sm text-muted px-3 py-2">
-              {updatedAt
-                ? `${t("content.lastUpdated")}: ${formatRelativeTime(updatedAt, locale)} (${formatExactTime(updatedAt, locale)})`
-                : `${t("content.lastUpdated")} -`}
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {activeTool === "connector" && !isReadOnly ? (
-        <FeedbackState
-          variant="info"
-          size="sm"
-          align="left"
-          className="mb-4"
-          title={
-            connectorFromShapeId
-              ? t("content.connectorHintSelected")
-              : t("content.connectorHint")
-          }
-        />
-      ) : null}
-
-      <Modal
-        open={isCreateTextDialogOpen}
-        onOpenChange={(open) => {
-          setIsCreateTextDialogOpen(open);
-          if (!open) {
-            createTextForm.setValue("newTextDraft", t("textModal.defaultText"));
-            setPendingTextPosition(null);
-          }
-        }}
-      >
-        <ModalContent>
-          <ModalHeader>
-            <ModalTitle>{t("textModal.createTitle")}</ModalTitle>
-            <ModalDescription>{t("textModal.createDescription")}</ModalDescription>
-          </ModalHeader>
-          <Input
-            autoFocus
-            control={createTextForm.control}
-            name="newTextDraft"
-            placeholder={t("textModal.inputPlaceholder")}
-          />
-          <ModalFooter
-            confirmText={t("textModal.createConfirm")}
-            confirmVariant="primary"
-            onCancel={() => {
-              closeCreateTextDialog();
-              createTextForm.setValue("newTextDraft", t("textModal.defaultText"));
-              setPendingTextPosition(null);
-            }}
-            onConfirm={() => {
-              const normalizedText = newTextDraft.trim();
-              if (!normalizedText) {
-                return;
-              }
-
-              const x = pendingTextPosition?.x ?? 120 + (nodeShapes.length % 7) * 20;
-              const y = pendingTextPosition?.y ?? 120 + (nodeShapes.length % 5) * 20;
-              const created = makeShape("text", sessionId, x, y, normalizedText);
-              addShape(created);
-              setSelectedShapeId(created.id);
-              closeCreateTextDialog();
-              createTextForm.setValue("newTextDraft", t("textModal.defaultText"));
-              setPendingTextPosition(null);
-            }}
-            confirmDisabled={!newTextDraft.trim()}
-          />
-        </ModalContent>
-      </Modal>
-
-      <Modal
-        open={Boolean(editingTextShapeId)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setEditingTextShapeId(null);
-            editTextForm.setValue("editingTextDraft", "");
-          }
-        }}
-      >
-        <ModalContent>
-          <ModalHeader>
-            <ModalTitle>{t("textModal.editTitle")}</ModalTitle>
-            <ModalDescription>{t("textModal.editDescription")}</ModalDescription>
-          </ModalHeader>
-          <Input
-            autoFocus
-            control={editTextForm.control}
-            name="editingTextDraft"
-            placeholder={t("textModal.inputPlaceholder")}
-          />
-          <ModalFooter
-            confirmText={t("textModal.saveConfirm")}
-            confirmVariant="primary"
-            onCancel={() => {
-              setEditingTextShapeId(null);
-              editTextForm.setValue("editingTextDraft", "");
-            }}
-            onConfirm={() => {
-              const normalizedText = editingTextDraft.trim();
-              if (!normalizedText || !editingTextShapeId) {
-                return;
-              }
-
-              patchShape(editingTextShapeId, { text: normalizedText });
-              setEditingTextShapeId(null);
-              editTextForm.setValue("editingTextDraft", "");
-            }}
-            confirmDisabled={!editingTextDraft.trim() || !editingTextShapeId}
-          />
-        </ModalContent>
-      </Modal>
-
-      {conflictMessage ? (
-        <FeedbackState variant="warning" size="sm" align="left" className="mb-4" title={conflictMessage} />
-      ) : null}
-      {isReadOnly ? (
-        <FeedbackState
-          variant="info"
-          size="sm"
-          align="left"
-          className="mb-4"
-          title={t("content.readOnly.title")}
-          description={t("content.readOnly.description")}
-        />
-      ) : null}
-
-      <SplitWorkspaceLayout
-        sidebarWidthClassName="lg:grid-cols-[1fr_384px]"
-        main={
-          <div
-            ref={boardRef}
-            className="board-grid border-default bg-surface/90 relative h-[72vh] min-h-[520px] rounded-2xl border"
-            onMouseDown={(event) => {
-              if (event.target === boardRef.current) {
-                if (!isReadOnly && activeTool !== "select" && activeTool !== "connector") {
-                  const point = toBoardPoint(event.clientX, event.clientY);
-                  createShapeByActiveTool(point);
-                  return;
-                }
-
-                setSelectedShapeId(null);
-                setConnectorFromShapeId(null);
+          <Modal
+            open={isCreateTextDialogOpen}
+            onOpenChange={(open) => {
+              setIsCreateTextDialogOpen(open);
+              if (!open) {
+                createTextForm.setValue("newTextDraft", t("textModal.defaultText"));
+                setPendingTextPosition(null);
               }
             }}
-            onMouseMove={(event) => {
-              const point = toBoardPoint(event.clientX, event.clientY);
-              sendCursor(point.x, point.y);
-
-              const connectorResizing = connectorResizeRef.current;
-              if (connectorResizing) {
-                const connector = shapeById.get(connectorResizing.shapeId);
-                if (!connector || connector.type !== "connector") {
-                  connectorResizeRef.current = null;
-                  return;
-                }
-
-                const currentEndpoints = resolveConnectorEndpoints(connector, nodeShapeById);
-                if (!currentEndpoints) {
-                  return;
-                }
-
-                const snappedNode = findNearestNodeCenter(point, nodeShapes);
-                const snappedPoint = snappedNode ? { x: snappedNode.x, y: snappedNode.y } : point;
-
-                const startPoint =
-                  connectorResizing.handle === "start"
-                    ? snappedPoint
-                    : { x: currentEndpoints.startX, y: currentEndpoints.startY };
-                const endPoint =
-                  connectorResizing.handle === "end"
-                    ? snappedPoint
-                    : { x: currentEndpoints.endX, y: currentEndpoints.endY };
-
-                scheduleShapePatch(connector.id, {
-                  fromShapeId:
-                    connectorResizing.handle === "start" ? snappedNode?.shapeId : connector.fromShapeId,
-                  toShapeId: connectorResizing.handle === "end" ? snappedNode?.shapeId : connector.toShapeId,
-                  startX: Math.round(startPoint.x),
-                  startY: Math.round(startPoint.y),
-                  endX: Math.round(endPoint.x),
-                  endY: Math.round(endPoint.y),
-                  x: Math.min(startPoint.x, endPoint.x),
-                  y: Math.min(startPoint.y, endPoint.y),
-                  w: Math.abs(endPoint.x - startPoint.x),
-                  h: Math.abs(endPoint.y - startPoint.y)
-                });
-                return;
-              }
-
-              const resizing = resizeRef.current;
-              if (resizing) {
-                const deltaX = point.x - resizing.pointerX;
-                const deltaY = point.y - resizing.pointerY;
-
-                let nextX = resizing.x;
-                let nextY = resizing.y;
-                let nextW = resizing.w;
-                let nextH = resizing.h;
-
-                if (resizing.handle.includes("e")) {
-                  nextW = resizing.w + deltaX;
-                }
-                if (resizing.handle.includes("s")) {
-                  nextH = resizing.h + deltaY;
-                }
-                if (resizing.handle.includes("w")) {
-                  nextW = resizing.w - deltaX;
-                  nextX = resizing.x + deltaX;
-                }
-                if (resizing.handle.includes("n")) {
-                  nextH = resizing.h - deltaY;
-                  nextY = resizing.y + deltaY;
-                }
-
-                const minWidth = resizing.shapeType === "text" ? 120 : 36;
-                const minHeight = resizing.shapeType === "text" ? 44 : 36;
-
-                if (nextW < minWidth) {
-                  if (resizing.handle.includes("w")) {
-                    nextX -= minWidth - nextW;
-                  }
-                  nextW = minWidth;
-                }
-
-                if (nextH < minHeight) {
-                  if (resizing.handle.includes("n")) {
-                    nextY -= minHeight - nextH;
-                  }
-                  nextH = minHeight;
-                }
-
-                scheduleShapePatch(resizing.shapeId, {
-                  x: Math.round(nextX),
-                  y: Math.round(nextY),
-                  w: Math.round(nextW),
-                  h: Math.round(nextH)
-                });
-                return;
-              }
-
-              const dragging = dragRef.current;
-              if (!dragging) {
-                return;
-              }
-
-              scheduleShapePatch(dragging.shapeId, {
-                x: Math.round(point.x - dragging.offsetX),
-                y: Math.round(point.y - dragging.offsetY)
-              });
-            }}
-            onMouseUp={clearPointerActions}
-            onMouseLeave={clearPointerActions}
           >
-            <svg className="pointer-events-none absolute inset-0 z-[12] h-full w-full">
-              {connectorShapes.map((connector) => {
-                const endpoints = resolveConnectorEndpoints(connector, nodeShapeById);
-                if (!endpoints) {
-                  return null;
-                }
+            <ModalContent>
+              <ModalHeader>
+                <ModalTitle>{t("textModal.createTitle")}</ModalTitle>
+                <ModalDescription>{t("textModal.createDescription")}</ModalDescription>
+              </ModalHeader>
+              <Input
+                autoFocus
+                control={createTextForm.control}
+                name="newTextDraft"
+                placeholder={t("textModal.inputPlaceholder")}
+              />
+              <ModalFooter
+                confirmText={t("textModal.createConfirm")}
+                confirmVariant="primary"
+                onCancel={() => {
+                  closeCreateTextDialog();
+                  createTextForm.setValue("newTextDraft", t("textModal.defaultText"));
+                  setPendingTextPosition(null);
+                }}
+                onConfirm={() => {
+                  const normalizedText = newTextDraft.trim();
+                  if (!normalizedText) {
+                    return;
+                  }
 
-                const isSelected = selectedShapeId === connector.id;
-                const strokeColor = connector.stroke || PRIMITIVE_COLOR_PALETTE.NATURAL_700;
-                const dx = endpoints.endX - endpoints.startX;
-                const dy = endpoints.endY - endpoints.startY;
-                const length = Math.hypot(dx, dy) || 1;
-                const offset = 10;
-                const startHandleX = endpoints.startX + (dx / length) * offset;
-                const startHandleY = endpoints.startY + (dy / length) * offset;
-                const endHandleX = endpoints.endX - (dx / length) * offset;
-                const endHandleY = endpoints.endY - (dy / length) * offset;
+                  const x = pendingTextPosition?.x ?? 120 + (nodeShapes.length % 7) * 20;
+                  const y = pendingTextPosition?.y ?? 120 + (nodeShapes.length % 5) * 20;
+                  const created = makeShape("text", sessionId, x, y, normalizedText);
+                  addShape(created);
+                  setSelectedShapeId(created.id);
+                  closeCreateTextDialog();
+                  createTextForm.setValue("newTextDraft", t("textModal.defaultText"));
+                  setPendingTextPosition(null);
+                }}
+                confirmDisabled={!newTextDraft.trim()}
+              />
+            </ModalContent>
+          </Modal>
 
-                return (
-                  <g key={connector.id}>
-                    <line
-                      x1={endpoints.startX}
-                      y1={endpoints.startY}
-                      x2={endpoints.endX}
-                      y2={endpoints.endY}
-                      stroke={strokeColor}
-                      strokeWidth={isSelected ? 3 : 2}
-                      className="pointer-events-none"
-                    />
-                    <circle
-                      cx={endpoints.endX}
-                      cy={endpoints.endY}
-                      r={isSelected ? 4 : 3}
-                      fill={strokeColor}
-                      className="pointer-events-none"
-                    />
-                    <line
-                      x1={endpoints.startX}
-                      y1={endpoints.startY}
-                      x2={endpoints.endX}
-                      y2={endpoints.endY}
-                      stroke="transparent"
-                      strokeWidth={16}
-                      onMouseDown={(event) => {
-                        event.stopPropagation();
-                        setSelectedShapeId(connector.id);
-                      }}
-                      className="pointer-events-auto cursor-pointer"
-                    />
+          <Modal
+            open={Boolean(editingTextShapeId)}
+            onOpenChange={(open) => {
+              if (!open) {
+                setEditingTextShapeId(null);
+                editTextForm.setValue("editingTextDraft", "");
+              }
+            }}
+          >
+            <ModalContent>
+              <ModalHeader>
+                <ModalTitle>{t("textModal.editTitle")}</ModalTitle>
+                <ModalDescription>{t("textModal.editDescription")}</ModalDescription>
+              </ModalHeader>
+              <Input
+                autoFocus
+                control={editTextForm.control}
+                name="editingTextDraft"
+                placeholder={t("textModal.inputPlaceholder")}
+              />
+              <ModalFooter
+                confirmText={t("textModal.saveConfirm")}
+                confirmVariant="primary"
+                onCancel={() => {
+                  setEditingTextShapeId(null);
+                  editTextForm.setValue("editingTextDraft", "");
+                }}
+                onConfirm={() => {
+                  const normalizedText = editingTextDraft.trim();
+                  if (!normalizedText || !editingTextShapeId) {
+                    return;
+                  }
 
-                    {!isReadOnly && isSelected ? (
-                      <>
+                  patchShape(editingTextShapeId, { text: normalizedText });
+                  setEditingTextShapeId(null);
+                  editTextForm.setValue("editingTextDraft", "");
+                }}
+                confirmDisabled={!editingTextDraft.trim() || !editingTextShapeId}
+              />
+            </ModalContent>
+          </Modal>
+
+          {conflictMessage ? (
+            <FeedbackState
+              variant="warning"
+              size="sm"
+              align="left"
+              className="mb-4"
+              title={conflictMessage}
+            />
+          ) : null}
+          {isReadOnly ? (
+            <FeedbackState
+              variant="info"
+              size="sm"
+              align="left"
+              className="mb-4"
+              title={t("content.readOnly.title")}
+              description={t("content.readOnly.description")}
+            />
+          ) : null}
+
+          <SplitWorkspaceLayout
+            sidebarWidthClassName="lg:grid-cols-[1fr_384px]"
+            main={
+              <div
+                ref={boardRef}
+                className="board-grid border-default bg-surface/90 relative h-[72vh] min-h-[520px] rounded-2xl border"
+                onMouseDown={(event) => {
+                  if (event.target === boardRef.current) {
+                    if (!isReadOnly && activeTool !== "select" && activeTool !== "connector") {
+                      const point = toBoardPoint(event.clientX, event.clientY);
+                      createShapeByActiveTool(point);
+                      return;
+                    }
+
+                    setSelectedShapeId(null);
+                    setConnectorFromShapeId(null);
+                  }
+                }}
+                onMouseMove={(event) => {
+                  const point = toBoardPoint(event.clientX, event.clientY);
+                  sendCursor(point.x, point.y);
+
+                  const connectorResizing = connectorResizeRef.current;
+                  if (connectorResizing) {
+                    const connector = shapeById.get(connectorResizing.shapeId);
+                    if (!connector || connector.type !== "connector") {
+                      connectorResizeRef.current = null;
+                      return;
+                    }
+
+                    const currentEndpoints = resolveConnectorEndpoints(connector, nodeShapeById);
+                    if (!currentEndpoints) {
+                      return;
+                    }
+
+                    const snappedNode = findNearestNodeCenter(point, nodeShapes);
+                    const snappedPoint = snappedNode ? { x: snappedNode.x, y: snappedNode.y } : point;
+
+                    const startPoint =
+                      connectorResizing.handle === "start"
+                        ? snappedPoint
+                        : { x: currentEndpoints.startX, y: currentEndpoints.startY };
+                    const endPoint =
+                      connectorResizing.handle === "end"
+                        ? snappedPoint
+                        : { x: currentEndpoints.endX, y: currentEndpoints.endY };
+
+                    scheduleShapePatch(connector.id, {
+                      fromShapeId:
+                        connectorResizing.handle === "start" ? snappedNode?.shapeId : connector.fromShapeId,
+                      toShapeId:
+                        connectorResizing.handle === "end" ? snappedNode?.shapeId : connector.toShapeId,
+                      startX: Math.round(startPoint.x),
+                      startY: Math.round(startPoint.y),
+                      endX: Math.round(endPoint.x),
+                      endY: Math.round(endPoint.y),
+                      x: Math.min(startPoint.x, endPoint.x),
+                      y: Math.min(startPoint.y, endPoint.y),
+                      w: Math.abs(endPoint.x - startPoint.x),
+                      h: Math.abs(endPoint.y - startPoint.y)
+                    });
+                    return;
+                  }
+
+                  const resizing = resizeRef.current;
+                  if (resizing) {
+                    const deltaX = point.x - resizing.pointerX;
+                    const deltaY = point.y - resizing.pointerY;
+
+                    let nextX = resizing.x;
+                    let nextY = resizing.y;
+                    let nextW = resizing.w;
+                    let nextH = resizing.h;
+
+                    if (resizing.handle.includes("e")) {
+                      nextW = resizing.w + deltaX;
+                    }
+                    if (resizing.handle.includes("s")) {
+                      nextH = resizing.h + deltaY;
+                    }
+                    if (resizing.handle.includes("w")) {
+                      nextW = resizing.w - deltaX;
+                      nextX = resizing.x + deltaX;
+                    }
+                    if (resizing.handle.includes("n")) {
+                      nextH = resizing.h - deltaY;
+                      nextY = resizing.y + deltaY;
+                    }
+
+                    const minWidth = resizing.shapeType === "text" ? 120 : 36;
+                    const minHeight = resizing.shapeType === "text" ? 44 : 36;
+
+                    if (nextW < minWidth) {
+                      if (resizing.handle.includes("w")) {
+                        nextX -= minWidth - nextW;
+                      }
+                      nextW = minWidth;
+                    }
+
+                    if (nextH < minHeight) {
+                      if (resizing.handle.includes("n")) {
+                        nextY -= minHeight - nextH;
+                      }
+                      nextH = minHeight;
+                    }
+
+                    scheduleShapePatch(resizing.shapeId, {
+                      x: Math.round(nextX),
+                      y: Math.round(nextY),
+                      w: Math.round(nextW),
+                      h: Math.round(nextH)
+                    });
+                    return;
+                  }
+
+                  const dragging = dragRef.current;
+                  if (!dragging) {
+                    return;
+                  }
+
+                  scheduleShapePatch(dragging.shapeId, {
+                    x: Math.round(point.x - dragging.offsetX),
+                    y: Math.round(point.y - dragging.offsetY)
+                  });
+                }}
+                onMouseUp={clearPointerActions}
+                onMouseLeave={clearPointerActions}
+              >
+                <svg className="pointer-events-none absolute inset-0 z-[12] h-full w-full">
+                  {connectorShapes.map((connector) => {
+                    const endpoints = resolveConnectorEndpoints(connector, nodeShapeById);
+                    if (!endpoints) {
+                      return null;
+                    }
+
+                    const isSelected = selectedShapeId === connector.id;
+                    const strokeColor = connector.stroke || PRIMITIVE_COLOR_PALETTE.NATURAL_700;
+                    const dx = endpoints.endX - endpoints.startX;
+                    const dy = endpoints.endY - endpoints.startY;
+                    const length = Math.hypot(dx, dy) || 1;
+                    const offset = 10;
+                    const startHandleX = endpoints.startX + (dx / length) * offset;
+                    const startHandleY = endpoints.startY + (dy / length) * offset;
+                    const endHandleX = endpoints.endX - (dx / length) * offset;
+                    const endHandleY = endpoints.endY - (dy / length) * offset;
+
+                    return (
+                      <g key={connector.id}>
                         <line
                           x1={endpoints.startX}
                           y1={endpoints.startY}
-                          x2={startHandleX}
-                          y2={startHandleY}
+                          x2={endpoints.endX}
+                          y2={endpoints.endY}
                           stroke={strokeColor}
-                          strokeOpacity={0.55}
-                          strokeWidth={1.5}
-                          strokeDasharray="4 3"
+                          strokeWidth={isSelected ? 3 : 2}
+                          className="pointer-events-none"
+                        />
+                        <circle
+                          cx={endpoints.endX}
+                          cy={endpoints.endY}
+                          r={isSelected ? 4 : 3}
+                          fill={strokeColor}
                           className="pointer-events-none"
                         />
                         <line
-                          x1={endpoints.endX}
-                          y1={endpoints.endY}
-                          x2={endHandleX}
-                          y2={endHandleY}
-                          stroke={strokeColor}
-                          strokeOpacity={0.55}
-                          strokeWidth={1.5}
-                          strokeDasharray="4 3"
-                          className="pointer-events-none"
-                        />
-                        <circle
-                          cx={startHandleX}
-                          cy={startHandleY}
-                          r={6}
-                          fill="rgb(var(--color-bg-surface))"
-                          stroke={strokeColor}
-                          strokeWidth={2}
-                          className="pointer-events-auto cursor-grab"
+                          x1={endpoints.startX}
+                          y1={endpoints.startY}
+                          x2={endpoints.endX}
+                          y2={endpoints.endY}
+                          stroke="transparent"
+                          strokeWidth={16}
                           onMouseDown={(event) => {
                             event.stopPropagation();
                             setSelectedShapeId(connector.id);
-                            connectorResizeRef.current = { shapeId: connector.id, handle: "start" };
                           }}
+                          className="pointer-events-auto cursor-pointer"
                         />
-                        <circle
-                          cx={endHandleX}
-                          cy={endHandleY}
-                          r={6}
-                          fill="rgb(var(--color-bg-surface))"
-                          stroke={strokeColor}
-                          strokeWidth={2}
-                          className="pointer-events-auto cursor-grab"
-                          onMouseDown={(event) => {
-                            event.stopPropagation();
-                            setSelectedShapeId(connector.id);
-                            connectorResizeRef.current = { shapeId: connector.id, handle: "end" };
-                          }}
-                        />
-                      </>
-                    ) : null}
-                  </g>
-                );
-              })}
-            </svg>
 
-            {nodeShapes.map((shape) => {
-              const isSelected = selectedShapeId === shape.id;
-              const isConnectorAnchor = connectorFromShapeId === shape.id;
-              const canDragWithPointer = !isReadOnly && activeTool !== "connector";
-              const ringClass = isSelected
-                ? "ring-2 ring-primary"
-                : isConnectorAnchor
-                  ? "ring-2 ring-success"
-                  : "";
+                        {!isReadOnly && isSelected ? (
+                          <>
+                            <line
+                              x1={endpoints.startX}
+                              y1={endpoints.startY}
+                              x2={startHandleX}
+                              y2={startHandleY}
+                              stroke={strokeColor}
+                              strokeOpacity={0.55}
+                              strokeWidth={1.5}
+                              strokeDasharray="4 3"
+                              className="pointer-events-none"
+                            />
+                            <line
+                              x1={endpoints.endX}
+                              y1={endpoints.endY}
+                              x2={endHandleX}
+                              y2={endHandleY}
+                              stroke={strokeColor}
+                              strokeOpacity={0.55}
+                              strokeWidth={1.5}
+                              strokeDasharray="4 3"
+                              className="pointer-events-none"
+                            />
+                            <circle
+                              cx={startHandleX}
+                              cy={startHandleY}
+                              r={6}
+                              fill="rgb(var(--color-bg-surface))"
+                              stroke={strokeColor}
+                              strokeWidth={2}
+                              className="pointer-events-auto cursor-grab"
+                              onMouseDown={(event) => {
+                                event.stopPropagation();
+                                setSelectedShapeId(connector.id);
+                                connectorResizeRef.current = { shapeId: connector.id, handle: "start" };
+                              }}
+                            />
+                            <circle
+                              cx={endHandleX}
+                              cy={endHandleY}
+                              r={6}
+                              fill="rgb(var(--color-bg-surface))"
+                              stroke={strokeColor}
+                              strokeWidth={2}
+                              className="pointer-events-auto cursor-grab"
+                              onMouseDown={(event) => {
+                                event.stopPropagation();
+                                setSelectedShapeId(connector.id);
+                                connectorResizeRef.current = { shapeId: connector.id, handle: "end" };
+                              }}
+                            />
+                          </>
+                        ) : null}
+                      </g>
+                    );
+                  })}
+                </svg>
 
-              return (
-                <div
-                  key={shape.id}
-                  className={`absolute z-10 select-none border text-caption ${shape.type === "ellipse" ? "rounded-full" : "rounded-md"} ${canDragWithPointer ? "cursor-move" : "cursor-pointer"} ${ringClass}`}
-                  style={{
-                    left: `${shape.x}px`,
-                    top: `${shape.y}px`,
-                    width: `${shape.w}px`,
-                    height: `${shape.h}px`,
-                    background: shape.fill,
-                    borderColor: shape.stroke,
-                    color:
-                      shape.type === "text"
-                        ? PRIMITIVE_COLOR_PALETTE.NATURAL_900
-                        : PRIMITIVE_COLOR_PALETTE.NATURAL_700,
-                    clipPath:
-                      shape.type === "diamond" ? "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" : undefined
-                  }}
-                  onMouseDown={(event) => {
-                    event.stopPropagation();
-                    setSelectedShapeId(shape.id);
+                {nodeShapes.map((shape) => {
+                  const isSelected = selectedShapeId === shape.id;
+                  const isConnectorAnchor = connectorFromShapeId === shape.id;
+                  const canDragWithPointer = !isReadOnly && activeTool !== "connector";
+                  const ringClass = isSelected
+                    ? "ring-2 ring-primary"
+                    : isConnectorAnchor
+                      ? "ring-2 ring-success"
+                      : "";
 
-                    if (isReadOnly) {
-                      return;
-                    }
-
-                    if (activeTool === "connector") {
-                      if (!connectorFromShapeId) {
-                        setConnectorFromShapeId(shape.id);
-                        return;
-                      }
-
-                      if (connectorFromShapeId === shape.id) {
-                        setConnectorFromShapeId(null);
-                        return;
-                      }
-
-                      const fromShape = nodeShapeById.get(connectorFromShapeId);
-                      if (!fromShape) {
-                        setConnectorFromShapeId(null);
-                        return;
-                      }
-
-                      const connector = makeConnector(fromShape, shape, sessionId);
-                      addShape(connector);
-                      setSelectedShapeId(connector.id);
-                      setConnectorFromShapeId(null);
-                      return;
-                    }
-
-                    const point = toBoardPoint(event.clientX, event.clientY);
-                    dragRef.current = {
-                      shapeId: shape.id,
-                      offsetX: point.x - shape.x,
-                      offsetY: point.y - shape.y
-                    };
-                  }}
-                  onDoubleClick={() => {
-                    if (isReadOnly || shape.type !== "text") {
-                      return;
-                    }
-
-                    setEditingTextShapeId(shape.id);
-                    editTextForm.setValue("editingTextDraft", shape.text ?? "");
-                  }}
-                >
-                  {!isReadOnly ? (
-                    <button
-                      type="button"
-                      onMouseDown={(event) => event.stopPropagation()}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        void requestRemoveShapeWithConfirm(shape.id);
+                  return (
+                    <div
+                      key={shape.id}
+                      className={`text-caption absolute z-10 select-none border ${shape.type === "ellipse" ? "rounded-full" : "rounded-md"} ${canDragWithPointer ? "cursor-move" : "cursor-pointer"} ${ringClass}`}
+                      style={{
+                        left: `${shape.x}px`,
+                        top: `${shape.y}px`,
+                        width: `${shape.w}px`,
+                        height: `${shape.h}px`,
+                        background: shape.fill,
+                        borderColor: shape.stroke,
+                        color:
+                          shape.type === "text"
+                            ? PRIMITIVE_COLOR_PALETTE.NATURAL_900
+                            : PRIMITIVE_COLOR_PALETTE.NATURAL_700,
+                        clipPath:
+                          shape.type === "diamond" ? "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" : undefined
                       }}
-                      className="border-default bg-surface text-muted hover:bg-surface-elevated absolute -right-2 -top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border text-caption"
+                      onMouseDown={(event) => {
+                        event.stopPropagation();
+                        setSelectedShapeId(shape.id);
+
+                        if (isReadOnly) {
+                          return;
+                        }
+
+                        if (activeTool === "connector") {
+                          if (!connectorFromShapeId) {
+                            setConnectorFromShapeId(shape.id);
+                            return;
+                          }
+
+                          if (connectorFromShapeId === shape.id) {
+                            setConnectorFromShapeId(null);
+                            return;
+                          }
+
+                          const fromShape = nodeShapeById.get(connectorFromShapeId);
+                          if (!fromShape) {
+                            setConnectorFromShapeId(null);
+                            return;
+                          }
+
+                          const connector = makeConnector(fromShape, shape, sessionId);
+                          addShape(connector);
+                          setSelectedShapeId(connector.id);
+                          setConnectorFromShapeId(null);
+                          return;
+                        }
+
+                        const point = toBoardPoint(event.clientX, event.clientY);
+                        dragRef.current = {
+                          shapeId: shape.id,
+                          offsetX: point.x - shape.x,
+                          offsetY: point.y - shape.y
+                        };
+                      }}
+                      onDoubleClick={() => {
+                        if (isReadOnly || shape.type !== "text") {
+                          return;
+                        }
+
+                        setEditingTextShapeId(shape.id);
+                        editTextForm.setValue("editingTextDraft", shape.text ?? "");
+                      }}
                     >
-                      ×
-                    </button>
-                  ) : null}
-
-                  {!isReadOnly && isSelected ? (
-                    <>
-                      {(Object.keys(resizeHandleStyle) as ResizeHandle[]).map((handle) => (
+                      {!isReadOnly ? (
                         <button
-                          key={handle}
                           type="button"
-                          onMouseDown={(event) => {
+                          onMouseDown={(event) => event.stopPropagation()}
+                          onClick={(event) => {
                             event.stopPropagation();
-                            const point = toBoardPoint(event.clientX, event.clientY);
-                            resizeRef.current = {
-                              shapeId: shape.id,
-                              shapeType: shape.type,
-                              handle,
-                              pointerX: point.x,
-                              pointerY: point.y,
-                              x: shape.x,
-                              y: shape.y,
-                              w: shape.w,
-                              h: shape.h
-                            };
+                            void requestRemoveShapeWithConfirm(shape.id);
                           }}
-                          className="border-primary bg-surface absolute z-20 h-3 w-3 rounded-full border shadow"
-                          style={resizeHandleStyle[handle]}
-                          aria-label={`resize-${handle}`}
-                        />
-                      ))}
-                    </>
-                  ) : null}
+                          className="border-default bg-surface text-muted hover:bg-surface-elevated text-caption absolute -right-2 -top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border"
+                        >
+                          ×
+                        </button>
+                      ) : null}
 
-                  {shape.type === "text" ? (
-                    <div className="text-foreground flex h-full items-center justify-center px-2 text-center text-caption font-medium">
-                      {shape.text || t("tool.text")}
-                    </div>
-                  ) : (
-                    <div className="text-muted-foreground pointer-events-none flex h-full items-center justify-center text-caption font-semibold uppercase tracking-wide">
-                      {shape.type}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                      {!isReadOnly && isSelected ? (
+                        <>
+                          {(Object.keys(resizeHandleStyle) as ResizeHandle[]).map((handle) => (
+                            <button
+                              key={handle}
+                              type="button"
+                              onMouseDown={(event) => {
+                                event.stopPropagation();
+                                const point = toBoardPoint(event.clientX, event.clientY);
+                                resizeRef.current = {
+                                  shapeId: shape.id,
+                                  shapeType: shape.type,
+                                  handle,
+                                  pointerX: point.x,
+                                  pointerY: point.y,
+                                  x: shape.x,
+                                  y: shape.y,
+                                  w: shape.w,
+                                  h: shape.h
+                                };
+                              }}
+                              className="border-primary bg-surface absolute z-20 h-3 w-3 rounded-full border shadow"
+                              style={resizeHandleStyle[handle]}
+                              aria-label={`resize-${handle}`}
+                            />
+                          ))}
+                        </>
+                      ) : null}
 
-            {otherParticipants.map((participant) => (
-              <div
-                key={`${participant.socketId}-${participant.sessionId}`}
-                className="pointer-events-none absolute z-30"
-                style={{ left: participant.cursorX, top: participant.cursorY }}
-              >
-                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: participant.color }} />
-                <div className="bg-foreground mt-1 rounded px-1.5 py-0.5 text-caption text-white">
-                  {normalizeGuestDisplayName(participant.displayName, locale)}
-                </div>
+                      {shape.type === "text" ? (
+                        <div className="text-foreground text-caption flex h-full items-center justify-center px-2 text-center font-medium">
+                          {shape.text || t("tool.text")}
+                        </div>
+                      ) : (
+                        <div className="text-muted-foreground text-caption pointer-events-none flex h-full items-center justify-center font-semibold uppercase tracking-wide">
+                          {shape.type}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {otherParticipants.map((participant) => (
+                  <div
+                    key={`${participant.socketId}-${participant.sessionId}`}
+                    className="pointer-events-none absolute z-30"
+                    style={{ left: participant.cursorX, top: participant.cursorY }}
+                  >
+                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: participant.color }} />
+                    <div className="bg-foreground text-caption mt-1 rounded px-1.5 py-0.5 text-white">
+                      {normalizeGuestDisplayName(participant.displayName, locale)}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        }
-        sidebar={
-          <BoardSidePanel
-            participants={participants}
-            sessionId={sessionId}
-            activeTool={activeTool}
-            selectedShape={selectedShape}
-            connectorFromShapeId={connectorFromShapeId}
-            historyEntries={boardHistoryEntries}
-            eventLog={eventLog}
+            }
+            sidebar={
+              <BoardSidePanel
+                participants={participants}
+                sessionId={sessionId}
+                activeTool={activeTool}
+                selectedShape={selectedShape}
+                connectorFromShapeId={connectorFromShapeId}
+                historyEntries={boardHistoryEntries}
+                eventLog={eventLog}
+              />
+            }
           />
-        }
-      />
-      </MarketingSection>
-    </main>
+        </MarketingSection>
+      </main>
     </>
   );
 }

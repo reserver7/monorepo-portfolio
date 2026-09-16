@@ -3,7 +3,11 @@ import { Prisma } from "@prisma/client";
 
 import { env } from "../../config/env.js";
 import { PrismaService } from "../../integration/db/prisma.service.js";
-import type { DeploymentImpactInput, RegisterDeploymentInput, UpdateDeploymentDecisionInput } from "./ops.inputs.js";
+import type {
+  DeploymentImpactInput,
+  RegisterDeploymentInput,
+  UpdateDeploymentDecisionInput
+} from "./ops.inputs.js";
 import { writeOpsAuditLog } from "./ops-audit-writer.js";
 import { toEnvironment } from "./ops.filters.js";
 import {
@@ -16,7 +20,10 @@ import type { DeploymentImpactReportType, DeploymentReadinessType, DeploymentTyp
 
 @Injectable()
 export class OpsDeploymentService {
-  private readonly deploymentImpactCache = new Map<string, { value: DeploymentImpactReportType; expiresAt: number }>();
+  private readonly deploymentImpactCache = new Map<
+    string,
+    { value: DeploymentImpactReportType; expiresAt: number }
+  >();
   private readonly logger = new Logger(OpsDeploymentService.name);
 
   constructor(private readonly prisma: PrismaService) {}
@@ -36,7 +43,10 @@ export class OpsDeploymentService {
   }
 
   private writeDeploymentImpactCache(key: string, value: DeploymentImpactReportType): void {
-    this.deploymentImpactCache.set(key, { value, expiresAt: Date.now() + env.OPS_CACHE_DEPLOYMENT_IMPACT_TTL_MS });
+    this.deploymentImpactCache.set(key, {
+      value,
+      expiresAt: Date.now() + env.OPS_CACHE_DEPLOYMENT_IMPACT_TTL_MS
+    });
     if (this.deploymentImpactCache.size > env.OPS_CACHE_DEPLOYMENT_IMPACT_MAX) {
       const oldest = this.deploymentImpactCache.keys().next().value as string | undefined;
       if (oldest) this.deploymentImpactCache.delete(oldest);
@@ -57,7 +67,9 @@ export class OpsDeploymentService {
       where: { environment, status: { not: "resolved" }, severity: { in: ["critical", "high"] } }
     });
     if (criticalHighCount > 0 && (!input.approver?.trim() || !input.overrideReason?.trim())) {
-      throw new BadRequestException(`미해결 Critical/High 이슈 ${criticalHighCount}건이 있어 승인자와 override 사유가 필요합니다.`);
+      throw new BadRequestException(
+        `미해결 Critical/High 이슈 ${criticalHighCount}건이 있어 승인자와 override 사유가 필요합니다.`
+      );
     }
 
     const deployedAt = input.deployedAt ? new Date(input.deployedAt) : new Date();
@@ -66,9 +78,10 @@ export class OpsDeploymentService {
       where: { key: "deployment.guardrail" },
       select: { value: true }
     });
-    const guardrailValue = guardrail?.value && typeof guardrail.value === "object" && !Array.isArray(guardrail.value)
-      ? guardrail.value as { requiredChecklist?: unknown }
-      : {};
+    const guardrailValue =
+      guardrail?.value && typeof guardrail.value === "object" && !Array.isArray(guardrail.value)
+        ? (guardrail.value as { requiredChecklist?: unknown })
+        : {};
     const requiredChecklist = normalizeStringList(guardrailValue.requiredChecklist);
     const suppliedChecklist = normalizeStringList(input.checklist);
     const missingRequirements = requiredChecklist.filter((requirement) => {
@@ -78,14 +91,20 @@ export class OpsDeploymentService {
       return !suppliedChecklist.includes(requirement);
     });
     if (missingRequirements.length > 0) {
-      throw new BadRequestException(`배포 가드레일 필수 항목이 누락되었습니다: ${missingRequirements.join(", ")}`);
+      throw new BadRequestException(
+        `배포 가드레일 필수 항목이 누락되었습니다: ${missingRequirements.join(", ")}`
+      );
     }
     const deploymentData = {
       changelog: input.changelog,
       status: input.status?.trim() || "completed",
       owner: input.owner?.trim() || "운영담당자",
       approver: input.approver?.trim() || null,
-      approvalStatus: input.approver?.trim() ? "approved" : criticalHighCount > 0 ? "pending" : "not_required",
+      approvalStatus: input.approver?.trim()
+        ? "approved"
+        : criticalHighCount > 0
+          ? "pending"
+          : "not_required",
       approvedAt: input.approver?.trim() ? new Date() : null,
       overrideReason: input.overrideReason?.trim() || null,
       ciUrl: input.ciUrl?.trim() || null,
@@ -118,37 +137,79 @@ export class OpsDeploymentService {
       targetType: "Deployment",
       targetId: deployment.id,
       summary: `${deployment.version} 배포 등록/갱신`,
-      metadata: { environment: deployment.environment, status: deployment.status, criticalHighCount, approver: deployment.approver, overrideReason: deployment.overrideReason, guardrailRequirements: requiredChecklist }
+      metadata: {
+        environment: deployment.environment,
+        status: deployment.status,
+        criticalHighCount,
+        approver: deployment.approver,
+        overrideReason: deployment.overrideReason,
+        guardrailRequirements: requiredChecklist
+      }
     });
 
     return toDeploymentType(deployment);
   }
 
-  async updateDeploymentDecision(input: UpdateDeploymentDecisionInput, actor?: string): Promise<DeploymentType> {
+  async updateDeploymentDecision(
+    input: UpdateDeploymentDecisionInput,
+    actor?: string
+  ): Promise<DeploymentType> {
     const decision = input.decision.trim();
-    if (!["approved", "rejected", "rollback_requested", "rolled_back"].includes(decision)) throw new BadRequestException("지원하지 않는 배포 결정입니다.");
-    if ((decision === "approved" || decision === "rejected") && !input.approver?.trim()) throw new BadRequestException("승인 또는 반려자는 필수입니다.");
-    if ((decision === "rollback_requested" || decision === "rolled_back") && !input.reason?.trim()) throw new BadRequestException("롤백 사유는 필수입니다.");
+    if (!["approved", "rejected", "rollback_requested", "rolled_back"].includes(decision))
+      throw new BadRequestException("지원하지 않는 배포 결정입니다.");
+    if ((decision === "approved" || decision === "rejected") && !input.approver?.trim())
+      throw new BadRequestException("승인 또는 반려자는 필수입니다.");
+    if ((decision === "rollback_requested" || decision === "rolled_back") && !input.reason?.trim())
+      throw new BadRequestException("롤백 사유는 필수입니다.");
     const now = new Date();
     const deployment = await this.prisma.deployment.update({
       where: { id: input.deploymentId },
-      data: decision === "approved" || decision === "rejected"
-        ? { approvalStatus: decision, approver: input.approver?.trim(), approvedAt: now }
-        : { rollbackStatus: decision, rollbackReason: input.reason?.trim(), rolledBackAt: decision === "rolled_back" ? now : undefined, status: decision === "rolled_back" ? "rolled_back" : undefined }
+      data:
+        decision === "approved" || decision === "rejected"
+          ? { approvalStatus: decision, approver: input.approver?.trim(), approvedAt: now }
+          : {
+              rollbackStatus: decision,
+              rollbackReason: input.reason?.trim(),
+              rolledBackAt: decision === "rolled_back" ? now : undefined,
+              status: decision === "rolled_back" ? "rolled_back" : undefined
+            }
     });
     this.clearCache();
-    await writeOpsAuditLog(this.prisma, this.logger, { actor, action: `deployment.${decision}`, targetType: "Deployment", targetId: deployment.id, summary: `${deployment.version} ${decision}`, metadata: { approver: deployment.approver, rollbackReason: deployment.rollbackReason } });
+    await writeOpsAuditLog(this.prisma, this.logger, {
+      actor,
+      action: `deployment.${decision}`,
+      targetType: "Deployment",
+      targetId: deployment.id,
+      summary: `${deployment.version} ${decision}`,
+      metadata: { approver: deployment.approver, rollbackReason: deployment.rollbackReason }
+    });
     return toDeploymentType(deployment);
   }
 
-  async syncCiStatus(input: { version: string; environment: string; status: string; ciUrl?: string }, actor = "ci-webhook"): Promise<boolean> {
+  async syncCiStatus(
+    input: { version: string; environment: string; status: string; ciUrl?: string },
+    actor = "ci-webhook"
+  ): Promise<boolean> {
     const environment = toEnvironment(input.environment);
-    if (!environment || !input.version.trim() || !input.status.trim()) throw new BadRequestException("CI 배포 상태 값이 올바르지 않습니다.");
-    const deployment = await this.prisma.deployment.findUnique({ where: { version_environment: { version: input.version.trim(), environment } } });
+    if (!environment || !input.version.trim() || !input.status.trim())
+      throw new BadRequestException("CI 배포 상태 값이 올바르지 않습니다.");
+    const deployment = await this.prisma.deployment.findUnique({
+      where: { version_environment: { version: input.version.trim(), environment } }
+    });
     if (!deployment) return false;
-    const updated = await this.prisma.deployment.update({ where: { id: deployment.id }, data: { status: input.status.trim().slice(0, 64), ciUrl: input.ciUrl?.trim() || deployment.ciUrl } });
+    const updated = await this.prisma.deployment.update({
+      where: { id: deployment.id },
+      data: { status: input.status.trim().slice(0, 64), ciUrl: input.ciUrl?.trim() || deployment.ciUrl }
+    });
     this.clearCache();
-    await writeOpsAuditLog(this.prisma, this.logger, { actor, action: "deployment.ci_status_synced", targetType: "Deployment", targetId: updated.id, summary: `${updated.version} CI 상태 동기화: ${updated.status}`, metadata: { ciUrl: updated.ciUrl } });
+    await writeOpsAuditLog(this.prisma, this.logger, {
+      actor,
+      action: "deployment.ci_status_synced",
+      targetType: "Deployment",
+      targetId: updated.id,
+      summary: `${updated.version} CI 상태 동기화: ${updated.status}`,
+      metadata: { ciUrl: updated.ciUrl }
+    });
     return true;
   }
 
@@ -172,9 +233,13 @@ export class OpsDeploymentService {
     ]);
     const status = criticalHighCount > 0 ? "blocked" : unassignedCount > 0 ? "approval_required" : "ready";
     const recommendations = [
-      ...(criticalHighCount > 0 ? [`미해결 Critical/High 이슈 ${criticalHighCount}건을 확인하고 롤백 담당자를 지정하세요.`] : []),
+      ...(criticalHighCount > 0
+        ? [`미해결 Critical/High 이슈 ${criticalHighCount}건을 확인하고 롤백 담당자를 지정하세요.`]
+        : []),
       ...(unassignedCount > 0 ? [`담당자 미지정 이슈 ${unassignedCount}건의 소유권을 확인하세요.`] : []),
-      ...(criticalHighCount === 0 && unassignedCount === 0 ? ["현재 차단 신호가 없습니다. 체크리스트와 모니터링 윈도우를 확인한 뒤 배포하세요."] : [])
+      ...(criticalHighCount === 0 && unassignedCount === 0
+        ? ["현재 차단 신호가 없습니다. 체크리스트와 모니터링 윈도우를 확인한 뒤 배포하세요."]
+        : [])
     ];
     return { environment, status, criticalHighCount, unassignedCount, recommendations };
   }

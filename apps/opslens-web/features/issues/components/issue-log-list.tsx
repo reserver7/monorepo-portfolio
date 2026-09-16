@@ -9,7 +9,14 @@ type IssueLogListProps = {
 
 export function IssueLogList({ logs }: IssueLogListProps) {
   if (logs.length === 0) {
-    return <FeedbackState variant="empty" size="sm" title="로그 데이터가 없습니다." className="mt-[var(--space-3)]" />;
+    return (
+      <FeedbackState
+        variant="empty"
+        size="sm"
+        title="로그 데이터가 없습니다."
+        className="mt-[var(--space-3)]"
+      />
+    );
   }
 
   return (
@@ -19,7 +26,10 @@ export function IssueLogList({ logs }: IssueLogListProps) {
           <Box as="p" className="text-muted-foreground text-caption">
             {formatDateTime(log.occurredAt)} · {log.source} · {log.level}
           </Box>
-          <Box as="p" className="text-foreground mt-[var(--space-1)] whitespace-pre-wrap break-all font-mono text-caption">
+          <Box
+            as="p"
+            className="text-foreground text-caption mt-[var(--space-1)] whitespace-pre-wrap break-all font-mono"
+          >
             {log.rawMessage}
           </Box>
         </Box>

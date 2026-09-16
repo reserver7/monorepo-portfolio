@@ -25,8 +25,14 @@ export default function QaAssistantPage() {
     defaultValues: QA_FORM_DEFAULT_VALUES
   });
   const watchedValues = form.watch();
-  const changedScreenItems = useMemo(() => splitQaInputLines(watchedValues.changedScreens), [watchedValues.changedScreens]);
-  const relatedApiItems = useMemo(() => splitQaInputLines(watchedValues.relatedApis), [watchedValues.relatedApis]);
+  const changedScreenItems = useMemo(
+    () => splitQaInputLines(watchedValues.changedScreens),
+    [watchedValues.changedScreens]
+  );
+  const relatedApiItems = useMemo(
+    () => splitQaInputLines(watchedValues.relatedApis),
+    [watchedValues.relatedApis]
+  );
   const readinessItems = useMemo(
     () => getQaReadinessItems(watchedValues, changedScreenItems, relatedApiItems),
     [changedScreenItems, relatedApiItems, watchedValues]
@@ -91,7 +97,11 @@ export default function QaAssistantPage() {
           <Box className="space-y-[var(--stack-gap)]">
             <OpsSectionCard
               title="릴리즈 변경 정보"
-              description={canOperate ? "QA가 바로 실행할 수 있도록 화면, API, 변경 맥락을 함께 입력합니다." : "조회 전용 역할에서는 QA 산출물을 생성할 수 없습니다."}
+              description={
+                canOperate
+                  ? "QA가 바로 실행할 수 있도록 화면, API, 변경 맥락을 함께 입력합니다."
+                  : "조회 전용 역할에서는 QA 산출물을 생성할 수 없습니다."
+              }
               contentClassName="pt-[var(--space-2)]"
             >
               <QaAssistantForm
@@ -108,7 +118,10 @@ export default function QaAssistantPage() {
           </Box>
         }
         sidebar={
-          <OpsSectionCard title="최근 QA 산출물" description="최신 생성 결과를 선택해 테스트 실행 단위로 검토합니다.">
+          <OpsSectionCard
+            title="최근 QA 산출물"
+            description="최신 생성 결과를 선택해 테스트 실행 단위로 검토합니다."
+          >
             <QaScenarioList
               isError={scenariosQuery.isError}
               isLoading={scenariosQuery.isLoading}

@@ -68,10 +68,7 @@ test.describe("권한 및 보호 키 플로우", () => {
     await expect(editorKeyInput).toHaveValue("");
 
     await editorKeyInput.fill(editorAccessKey);
-    await page
-      .getByTestId("document-requested-role-select")
-      .getByRole("combobox")
-      .click();
+    await page.getByTestId("document-requested-role-select").getByRole("combobox").click();
     await page.getByRole("option", { name: "editor" }).click();
 
     await expect(roleBadge).toHaveText("권한: editor", { timeout: 15_000 });
@@ -104,10 +101,7 @@ test.describe("권한 및 보호 키 플로우", () => {
     await expect(editorKeyInput).toHaveValue("");
 
     await editorKeyInput.fill(editorAccessKey);
-    await page
-      .getByTestId("board-requested-role-select")
-      .getByRole("combobox")
-      .click();
+    await page.getByTestId("board-requested-role-select").getByRole("combobox").click();
     await page.getByRole("option", { name: "editor" }).click();
 
     await expect(roleBadge).toHaveText("권한: editor", { timeout: 15_000 });

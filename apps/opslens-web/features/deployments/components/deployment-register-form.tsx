@@ -19,11 +19,7 @@ type DeploymentRegisterFormProps = {
   onSubmit: (values: DeploymentFormValues) => void;
 };
 
-export function DeploymentRegisterForm({
-  form,
-  isSubmitting,
-  onSubmit
-}: DeploymentRegisterFormProps) {
+export function DeploymentRegisterForm({ form, isSubmitting, onSubmit }: DeploymentRegisterFormProps) {
   const selectedScopeTags = form.watch("scopeTags") ?? [];
   const checklist = form.watch("checklist") ?? [];
 
@@ -48,7 +44,12 @@ export function DeploymentRegisterForm({
   return (
     <form className="grid gap-[var(--space-3)]" onSubmit={form.handleSubmit(onSubmit)}>
       <Grid className="gap-[var(--space-3)]">
-        <FormField label="배포 버전" htmlFor="deployment-version" size="sm" error={form.formState.errors.version?.message}>
+        <FormField
+          label="배포 버전"
+          htmlFor="deployment-version"
+          size="sm"
+          error={form.formState.errors.version?.message}
+        >
           <Input
             id="deployment-version"
             {...form.register("version", {
@@ -64,7 +65,12 @@ export function DeploymentRegisterForm({
           <Select options={[...DEPLOYMENT_STATUS_OPTIONS]} control={form.control} name="status" size="md" />
         </FormField>
 
-        <FormField label="담당자" htmlFor="deployment-owner" size="sm" error={form.formState.errors.owner?.message}>
+        <FormField
+          label="담당자"
+          htmlFor="deployment-owner"
+          size="sm"
+          error={form.formState.errors.owner?.message}
+        >
           <Input
             id="deployment-owner"
             {...form.register("owner", { required: "담당자를 입력하세요." })}
@@ -83,7 +89,13 @@ export function DeploymentRegisterForm({
         </FormField>
 
         <FormField label="CI / 배포 링크" htmlFor="deployment-ci-url" size="sm">
-          <Input id="deployment-ci-url" type="url" {...form.register("ciUrl")} placeholder="https://github.com/.../actions/runs/..." size="md" />
+          <Input
+            id="deployment-ci-url"
+            type="url"
+            {...form.register("ciUrl")}
+            placeholder="https://github.com/.../actions/runs/..."
+            size="md"
+          />
         </FormField>
 
         <FormField label="Override 사유" htmlFor="deployment-override-reason" size="sm">
@@ -143,7 +155,12 @@ export function DeploymentRegisterForm({
           />
         </FormField>
 
-        <FormField label="변경 요약" htmlFor="deployment-changelog" size="sm" error={form.formState.errors.changelog?.message}>
+        <FormField
+          label="변경 요약"
+          htmlFor="deployment-changelog"
+          size="sm"
+          error={form.formState.errors.changelog?.message}
+        >
           <Textarea
             id="deployment-changelog"
             {...form.register("changelog", {

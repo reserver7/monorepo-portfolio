@@ -12,7 +12,10 @@ import type { DashboardSummaryType, ServiceHealthType } from "./ops.types.js";
 @Injectable()
 export class OpsDashboardService {
   private readonly dashboardBriefingCache = new Map<string, { value: string; expiresAt: number }>();
-  private readonly dashboardSummaryCache = new Map<string, { value: DashboardSummaryType; expiresAt: number }>();
+  private readonly dashboardSummaryCache = new Map<
+    string,
+    { value: DashboardSummaryType; expiresAt: number }
+  >();
   private readonly logger = new Logger(OpsDashboardService.name);
   private readonly cacheStats = {
     dashboardSummaryHit: 0,
@@ -90,7 +93,10 @@ export class OpsDashboardService {
   }
 
   private writeDashboardBriefingCache(key: string, value: string): void {
-    this.dashboardBriefingCache.set(key, { value, expiresAt: Date.now() + env.OPS_CACHE_DASHBOARD_BRIEFING_TTL_MS });
+    this.dashboardBriefingCache.set(key, {
+      value,
+      expiresAt: Date.now() + env.OPS_CACHE_DASHBOARD_BRIEFING_TTL_MS
+    });
     if (this.dashboardBriefingCache.size > env.OPS_CACHE_DASHBOARD_BRIEFING_MAX) {
       const oldest = this.dashboardBriefingCache.keys().next().value as string | undefined;
       if (oldest) this.dashboardBriefingCache.delete(oldest);
@@ -120,10 +126,7 @@ export class OpsDashboardService {
     } 배포 이후 신규 증가 이슈는 ${input.newAfterDeployCount}건입니다.`;
 
     const aiTask = this.generateBriefingText(input).catch(() => fallback);
-    const fastResult = await Promise.race([
-      aiTask,
-      this.wait(450).then(() => fallback)
-    ]);
+    const fastResult = await Promise.race([aiTask, this.wait(450).then(() => fallback)]);
 
     this.writeDashboardBriefingCache(key, fastResult);
     return fastResult;
@@ -150,7 +153,10 @@ export class OpsDashboardService {
   }
 
   private writeDashboardSummaryCache(key: string, value: DashboardSummaryType): void {
-    this.dashboardSummaryCache.set(key, { value, expiresAt: Date.now() + env.OPS_CACHE_DASHBOARD_SUMMARY_TTL_MS });
+    this.dashboardSummaryCache.set(key, {
+      value,
+      expiresAt: Date.now() + env.OPS_CACHE_DASHBOARD_SUMMARY_TTL_MS
+    });
     if (this.dashboardSummaryCache.size > env.OPS_CACHE_DASHBOARD_SUMMARY_MAX) {
       const oldest = this.dashboardSummaryCache.keys().next().value as string | undefined;
       if (oldest) this.dashboardSummaryCache.delete(oldest);
@@ -179,7 +185,10 @@ export class OpsDashboardService {
     const environment = toEnvironment(filter?.environment);
     if (environment) deploymentWhere.environment = environment;
 
-    const trendConditions: Prisma.Sql[] = [Prisma.sql`le."occurredAt" >= ${from}`, Prisma.sql`le."occurredAt" <= ${to}`];
+    const trendConditions: Prisma.Sql[] = [
+      Prisma.sql`le."occurredAt" >= ${from}`,
+      Prisma.sql`le."occurredAt" <= ${to}`
+    ];
     if (environment) {
       trendConditions.push(Prisma.sql`i."environment" = ${environment}::"OpsEnvironment"`);
     }
@@ -197,21 +206,23 @@ export class OpsDashboardService {
       );
     }
 
-    const trendWhereSql = trendConditions.length > 0 ? Prisma.join(trendConditions, " AND ") : Prisma.sql`TRUE`;
+    const trendWhereSql =
+      trendConditions.length > 0 ? Prisma.join(trendConditions, " AND ") : Prisma.sql`TRUE`;
 
-    const [todayIssueCount, severityRows, trendRows, topRepeatedIssues, latestDeployment] = await Promise.all([
-      this.prisma.issue.count({
-        where: {
-          ...issueWhere,
-          updatedAt: { gte: startOfDay }
-        }
-      }),
-      this.prisma.issue.groupBy({
-        by: ["severity"],
-        where: issueWhere,
-        _count: { severity: true }
-      }),
-      this.prisma.$queryRaw<Array<{ hour_bucket: Date; count: bigint }>>(Prisma.sql`
+    const [todayIssueCount, severityRows, trendRows, topRepeatedIssues, latestDeployment] = await Promise.all(
+      [
+        this.prisma.issue.count({
+          where: {
+            ...issueWhere,
+            updatedAt: { gte: startOfDay }
+          }
+        }),
+        this.prisma.issue.groupBy({
+          by: ["severity"],
+          where: issueWhere,
+          _count: { severity: true }
+        }),
+        this.prisma.$queryRaw<Array<{ hour_bucket: Date; count: bigint }>>(Prisma.sql`
         SELECT
           date_trunc('hour', le."occurredAt") AS hour_bucket,
           COUNT(*)::bigint AS count
@@ -220,16 +231,17 @@ export class OpsDashboardService {
         WHERE ${trendWhereSql}
         GROUP BY 1
       `),
-      this.prisma.issue.findMany({
-        where: issueWhere,
-        orderBy: [{ occurrenceCount: "desc" }, { lastOccurredAt: "desc" }],
-        take: 5
-      }),
-      this.prisma.deployment.findFirst({
-        where: deploymentWhere,
-        orderBy: { deployedAt: "desc" }
-      })
-    ]);
+        this.prisma.issue.findMany({
+          where: issueWhere,
+          orderBy: [{ occurrenceCount: "desc" }, { lastOccurredAt: "desc" }],
+          take: 5
+        }),
+        this.prisma.deployment.findFirst({
+          where: deploymentWhere,
+          orderBy: { deployedAt: "desc" }
+        })
+      ]
+    );
 
     const severityDistribution = ["critical", "high", "medium", "low"].map((severity) => ({
       severity,
@@ -311,12 +323,20 @@ export class OpsDashboardService {
         lastOccurredAt: null
       };
       if (issue.status !== "resolved") current.openIssueCount += 1;
-      if (issue.status !== "resolved" && (issue.severity === "critical" || issue.severity === "high")) current.criticalHighCount += 1;
-      if (!current.lastOccurredAt || current.lastOccurredAt < issue.lastOccurredAt) current.lastOccurredAt = issue.lastOccurredAt;
-      current.status = current.criticalHighCount > 0 ? "incident" : current.openIssueCount > 0 ? "degraded" : "healthy";
+      if (issue.status !== "resolved" && (issue.severity === "critical" || issue.severity === "high"))
+        current.criticalHighCount += 1;
+      if (!current.lastOccurredAt || current.lastOccurredAt < issue.lastOccurredAt)
+        current.lastOccurredAt = issue.lastOccurredAt;
+      current.status =
+        current.criticalHighCount > 0 ? "incident" : current.openIssueCount > 0 ? "degraded" : "healthy";
       services.set(issue.serviceName, current);
     }
-    return [...services.values()].sort((a, b) => b.criticalHighCount - a.criticalHighCount || b.openIssueCount - a.openIssueCount || a.serviceName.localeCompare(b.serviceName));
+    return [...services.values()].sort(
+      (a, b) =>
+        b.criticalHighCount - a.criticalHighCount ||
+        b.openIssueCount - a.openIssueCount ||
+        a.serviceName.localeCompare(b.serviceName)
+    );
   }
 
   async aiBriefing(filter?: DashboardFilterInput): Promise<string> {

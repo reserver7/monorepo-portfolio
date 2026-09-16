@@ -25,7 +25,13 @@ export function IssueCommentsPanel({ comments, form, isSubmitting, onSubmit }: I
     <>
       <form className="mt-[var(--space-3)] grid gap-[var(--space-2)]" onSubmit={form.handleSubmit(onSubmit)}>
         <Input id="comment-author" placeholder="작성자" size="md" control={form.control} name="author" />
-        <Textarea id="comment-body" rows={4} placeholder="운영 메모/분석 결과를 입력하세요" control={form.control} name="body" />
+        <Textarea
+          id="comment-body"
+          rows={4}
+          placeholder="운영 메모/분석 결과를 입력하세요"
+          control={form.control}
+          name="body"
+        />
         <Button
           type="submit"
           disabled={isSubmitting || commentBody.trim().length === 0}
@@ -43,9 +49,15 @@ export function IssueCommentsPanel({ comments, form, isSubmitting, onSubmit }: I
         ) : (
           comments.map((comment) => (
             <Box key={comment.id} className="border-default rounded-lg border p-[var(--space-3)] text-sm">
-              <Box as="p" className="text-foreground font-semibold">{comment.author}</Box>
-              <Box as="p" className="text-muted mt-[var(--space-1)] whitespace-pre-wrap">{comment.body}</Box>
-              <Box as="p" className="text-muted-foreground mt-[var(--space-1)] text-caption">{formatDateTime(comment.createdAt)}</Box>
+              <Box as="p" className="text-foreground font-semibold">
+                {comment.author}
+              </Box>
+              <Box as="p" className="text-muted mt-[var(--space-1)] whitespace-pre-wrap">
+                {comment.body}
+              </Box>
+              <Box as="p" className="text-muted-foreground text-caption mt-[var(--space-1)]">
+                {formatDateTime(comment.createdAt)}
+              </Box>
             </Box>
           ))
         )}

@@ -19,19 +19,23 @@ export const writeOpsAuditLog = async (
   logger: Logger,
   input: WriteOpsAuditLogInput
 ): Promise<void> => {
-  await prisma.opsAuditLog.create({
-    data: {
-      actor: input.actor?.trim() || "system",
-      action: input.action,
-      targetType: input.targetType,
-      targetId: input.targetId ?? null,
-      severity: input.severity ?? "info",
-      summary: input.summary,
-      beforeValue: input.beforeValue ?? undefined,
-      afterValue: input.afterValue ?? undefined,
-      metadata: input.metadata ?? {}
-    }
-  }).catch((error) => {
-    logger.warn(`[audit] failed action=${input.action} target=${input.targetType}:${input.targetId ?? "-"} ${String(error)}`);
-  });
+  await prisma.opsAuditLog
+    .create({
+      data: {
+        actor: input.actor?.trim() || "system",
+        action: input.action,
+        targetType: input.targetType,
+        targetId: input.targetId ?? null,
+        severity: input.severity ?? "info",
+        summary: input.summary,
+        beforeValue: input.beforeValue ?? undefined,
+        afterValue: input.afterValue ?? undefined,
+        metadata: input.metadata ?? {}
+      }
+    })
+    .catch((error) => {
+      logger.warn(
+        `[audit] failed action=${input.action} target=${input.targetType}:${input.targetId ?? "-"} ${String(error)}`
+      );
+    });
 };

@@ -4,7 +4,13 @@ import { FeedbackState } from "@/features/common/components/feedback-state";
 import { formatDateTime, formatNumber } from "@repo/utils";
 
 import { LOGS_SEVERITY_VARIANT_MAP } from "../constants";
-import type { LogsCluster, LogsFormValues, LogsSavedViewsState, LogsSeverityFilter, LogsSortKey } from "../types";
+import type {
+  LogsCluster,
+  LogsFormValues,
+  LogsSavedViewsState,
+  LogsSeverityFilter,
+  LogsSortKey
+} from "../types";
 
 type LogClusterResultsProps = {
   clusters: LogsCluster[];
@@ -56,7 +62,10 @@ export function LogClusterResults({
   resolveErrorMessage
 }: LogClusterResultsProps) {
   return (
-    <ConsoleSectionCard title="분석 결과 클러스터" description="중복 패턴과 심각도를 기준으로 정리된 결과입니다.">
+    <ConsoleSectionCard
+      title="분석 결과 클러스터"
+      description="중복 패턴과 심각도를 기준으로 정리된 결과입니다."
+    >
       <Box className="mb-[var(--space-3)]">
         <Grid className="gap-[var(--space-2)] md:grid-cols-[minmax(0,1fr)_180px_180px_auto]">
           <Input
@@ -87,7 +96,9 @@ export function LogClusterResults({
             ]}
           />
           <Flex className="items-center justify-end gap-[var(--space-1-5)]">
-            <Button type="button" size="sm" variant="outline" onClick={onSaveCurrentView}>뷰 저장</Button>
+            <Button type="button" size="sm" variant="outline" onClick={onSaveCurrentView}>
+              뷰 저장
+            </Button>
           </Flex>
         </Grid>
         {savedViewsState.items.length > 0 ? (
@@ -103,13 +114,21 @@ export function LogClusterResults({
                 onRemove={() => onRemoveSavedView(view.id)}
                 removeLabel={`${view.name} 삭제`}
                 className={`cursor-pointer transition-[background-color,border-color,box-shadow,color] duration-150 ease-out ${
-                  savedViewsState.activeId === view.id ? "ring-1 ring-primary/35 shadow-none" : "ring-0 shadow-none"
+                  savedViewsState.activeId === view.id
+                    ? "ring-primary/35 shadow-none ring-1"
+                    : "shadow-none ring-0"
                 }`}
               >
                 {view.name}
               </Badge>
             ))}
-            <Badge size="sm" variant="outline" interactive onClick={onClearSavedViews} className="cursor-pointer">
+            <Badge
+              size="sm"
+              variant="outline"
+              interactive
+              onClick={onClearSavedViews}
+              className="cursor-pointer"
+            >
               내 뷰 삭제
             </Badge>
           </Flex>
@@ -117,8 +136,12 @@ export function LogClusterResults({
       </Box>
       {clusterMeta ? (
         <Flex className="mb-[var(--space-2)] items-center gap-[var(--space-1-5)]">
-          <Badge variant="secondary" size="sm">표시 {formatNumber(clusters.length)}건</Badge>
-          <Badge variant="outline" size="sm">전체 {formatNumber(clusterMeta.totalCount)}건</Badge>
+          <Badge variant="secondary" size="sm">
+            표시 {formatNumber(clusters.length)}건
+          </Badge>
+          <Badge variant="outline" size="sm">
+            전체 {formatNumber(clusterMeta.totalCount)}건
+          </Badge>
         </Flex>
       ) : null}
       {isError ? (
@@ -152,28 +175,44 @@ export function LogClusterResults({
             <Box
               key={cluster.normalizedMessage}
               className={`border-default bg-surface rounded-[var(--radius-lg)] border p-[var(--space-3)] ${
-                selectedCluster?.normalizedMessage === cluster.normalizedMessage ? "ring-1 ring-primary/35" : ""
+                selectedCluster?.normalizedMessage === cluster.normalizedMessage
+                  ? "ring-primary/35 ring-1"
+                  : ""
               }`}
               onClick={() => onSelectCluster(cluster.normalizedMessage)}
             >
               <Flex className="flex-wrap items-center justify-between gap-[var(--space-2)]">
-                <Typography as="p" variant="bodySm" className="font-semibold">{cluster.title}</Typography>
+                <Typography as="p" variant="bodySm" className="font-semibold">
+                  {cluster.title}
+                </Typography>
                 <Flex className="items-center gap-[var(--space-2)]">
-                  <Badge variant={LOGS_SEVERITY_VARIANT_MAP[cluster.severity]} size="sm" className="rounded-md font-semibold">
+                  <Badge
+                    variant={LOGS_SEVERITY_VARIANT_MAP[cluster.severity]}
+                    size="sm"
+                    className="rounded-md font-semibold"
+                  >
                     {cluster.severity}
                   </Badge>
-                  <Badge size="sm" variant="secondary">{formatNumber(cluster.count)}건</Badge>
+                  <Badge size="sm" variant="secondary">
+                    {formatNumber(cluster.count)}건
+                  </Badge>
                 </Flex>
               </Flex>
-              <Typography as="p" variant="caption" color="muted" className="mt-[var(--space-1)]">{cluster.normalizedMessage}</Typography>
+              <Typography as="p" variant="caption" color="muted" className="mt-[var(--space-1)]">
+                {cluster.normalizedMessage}
+              </Typography>
               <Typography as="p" variant="caption" color="subtle" className="mt-[var(--space-2)]">
                 최초 {formatDateTime(cluster.firstSeen)} · 최근 {formatDateTime(cluster.lastSeen)}
               </Typography>
               <Box className="mt-[var(--space-2)] space-y-[var(--space-1)]">
                 {cluster.suggestedActions.map((action) => (
                   <Flex key={action} className="items-start gap-[var(--space-1)]">
-                    <Box as="span" className="text-muted text-caption">•</Box>
-                    <Typography as="p" variant="caption" color="muted">{action}</Typography>
+                    <Box as="span" className="text-muted text-caption">
+                      •
+                    </Box>
+                    <Typography as="p" variant="caption" color="muted">
+                      {action}
+                    </Typography>
                   </Flex>
                 ))}
               </Box>

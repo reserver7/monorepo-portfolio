@@ -67,10 +67,7 @@ const readCurrentTheme = (browserWindow: BrowserWindowLike): "light" | "dark" | 
   return value === "light" || value === "dark" || value === "system" ? value : null;
 };
 
-const withThemeQuery = (
-  browserWindow: BrowserWindowLike,
-  destinationUrl: string
-): string => {
+const withThemeQuery = (browserWindow: BrowserWindowLike, destinationUrl: string): string => {
   const currentTheme = readCurrentTheme(browserWindow);
   if (!currentTheme) {
     return destinationUrl;

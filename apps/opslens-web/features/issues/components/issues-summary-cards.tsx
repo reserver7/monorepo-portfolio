@@ -19,7 +19,13 @@ const STAT_CARD_CLASS =
 export function IssuesSummaryCards({ summary }: IssuesSummaryCardsProps) {
   return (
     <Grid className="mb-[var(--space-3)] grid-cols-2 gap-[var(--space-2)] md:grid-cols-4">
-      <MetricCard label="Open Issues" value={formatNumber(summary.open)} helper="현재 미해결 이슈" size="md" className={STAT_CARD_CLASS} />
+      <MetricCard
+        label="Open Issues"
+        value={formatNumber(summary.open)}
+        helper="현재 미해결 이슈"
+        size="md"
+        className={STAT_CARD_CLASS}
+      />
       <MetricCard
         label="Critical / High"
         value={formatNumber(summary.criticalHigh)}

@@ -12,7 +12,9 @@ export type QueryKeyFactory<TScope extends string = string> = {
   list: (params?: ListParams) => readonly [TScope, "list"] | readonly [TScope, "list", ListParams];
   details: () => readonly [TScope, "detail"];
   detail: <TId extends DetailId>(id: TId) => readonly [TScope, "detail", TId];
-  custom: <TSegments extends readonly QueryKeySegment[]>(...segments: TSegments) => readonly [TScope, ...TSegments];
+  custom: <TSegments extends readonly QueryKeySegment[]>(
+    ...segments: TSegments
+  ) => readonly [TScope, ...TSegments];
 };
 
 export const createQueryKeys = <TScope extends string>(scope: TScope): QueryKeyFactory<TScope> => {
@@ -22,10 +24,12 @@ export const createQueryKeys = <TScope extends string>(scope: TScope): QueryKeyF
     scope,
     all,
     lists: () => [...all, "list"] as const,
-    list: (params?: ListParams) => (params ? [...all, "list", params] as const : [...all, "list"] as const),
+    list: (params?: ListParams) =>
+      params ? ([...all, "list", params] as const) : ([...all, "list"] as const),
     details: () => [...all, "detail"] as const,
     detail: <TId extends DetailId>(id: TId) => [...all, "detail", id] as const,
-    custom: <TSegments extends readonly QueryKeySegment[]>(...segments: TSegments) => [...all, ...segments] as const
+    custom: <TSegments extends readonly QueryKeySegment[]>(...segments: TSegments) =>
+      [...all, ...segments] as const
   };
 };
 

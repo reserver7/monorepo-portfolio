@@ -47,7 +47,9 @@ export const CommentsPanel = ({
   const editingDraft = editForm.watch("editingDraft");
 
   const mentionCandidates = useMemo(() => {
-    return participants.map((participant) => normalizeGuestDisplayName(participant.displayName, locale)).slice(0, 8);
+    return participants
+      .map((participant) => normalizeGuestDisplayName(participant.displayName, locale))
+      .slice(0, 8);
   }, [locale, participants]);
 
   const visibleComments = comments.slice(0, 40);
@@ -55,7 +57,7 @@ export const CommentsPanel = ({
   const composerItemClass = "rounded-lg border border-default/80 bg-surface-elevated px-3.5 py-3";
 
   return (
-    <Card className="border border-default/80 bg-surface p-5">
+    <Card className="border-default/80 bg-surface border p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <Typography as="h3" variant="title" className="text-body-md font-semibold">
           {t("title")}

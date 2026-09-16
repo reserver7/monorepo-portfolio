@@ -37,11 +37,7 @@ import { formatDateTimeByLocale, resolveServiceLabel } from "@/features/common/u
 import { downloadCsv } from "@/features/common/utils/download-csv";
 import { formatDateTime, formatNumber } from "@repo/utils";
 import { readAuthSession } from "@/lib/auth";
-import {
-  ISSUE_FILTER_DEFAULT_VALUES,
-  ISSUE_SEVERITY_SCORE,
-  ISSUE_TONE
-} from "../constants";
+import { ISSUE_FILTER_DEFAULT_VALUES, ISSUE_SEVERITY_SCORE, ISSUE_TONE } from "../constants";
 import { IssuesFilterBar, IssuesSummaryCards } from "../components";
 import type { IssueFilterFormValues } from "../types";
 import { isIssueSlaRisk } from "../utils/issues-utils";
@@ -53,11 +49,7 @@ export default function IssuesPage() {
   const authSession = readAuthSession();
   const currentAssigneeKeys = useMemo(
     () =>
-      [
-        authSession?.user.name,
-        authSession?.user.email,
-        authSession?.user.email.split("@")[0]
-      ]
+      [authSession?.user.name, authSession?.user.email, authSession?.user.email.split("@")[0]]
         .filter((value): value is string => Boolean(value))
         .map((value) => value.toLowerCase()),
     [authSession?.user.email, authSession?.user.name]
@@ -77,7 +69,19 @@ export default function IssuesPage() {
   const [bulkStatus, setBulkStatus] = useState("analyzing");
   const [bulkAssignee, setBulkAssignee] = useState("");
   const queryClient = useQueryClient();
-  const bulkMutation = useMutation({ mutationFn: () => bulkUpdateIssues({ issueIds: selectedIssueIds, status: bulkStatus as "new" | "analyzing" | "in_progress" | "resolved", assignee: bulkAssignee.trim() || undefined }), onSuccess: async () => { setSelectedIssueIds([]); setBulkAssignee(""); await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.all }); } });
+  const bulkMutation = useMutation({
+    mutationFn: () =>
+      bulkUpdateIssues({
+        issueIds: selectedIssueIds,
+        status: bulkStatus as "new" | "analyzing" | "in_progress" | "resolved",
+        assignee: bulkAssignee.trim() || undefined
+      }),
+    onSuccess: async () => {
+      setSelectedIssueIds([]);
+      setBulkAssignee("");
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.all });
+    }
+  });
 
   useEffect(() => {
     if (searchParams.get("assignee") !== "me") return;
@@ -87,7 +91,10 @@ export default function IssuesPage() {
 
   const issuesQuery = useQuery(
     useOpsQueryOptions("list", {
-      queryKey: [...opslensQueryKeys.issues({ environment, serviceName, search, status, severity, page }), pageSize],
+      queryKey: [
+        ...opslensQueryKeys.issues({ environment, serviceName, search, status, severity, page }),
+        pageSize
+      ],
       placeholderData: keepPreviousData,
       queryFn: () =>
         listIssues({
@@ -149,8 +156,7 @@ export default function IssuesPage() {
     status !== "all" || severity !== "all" || assignee !== "all" || sortBy !== "recent" || slaRiskOnly;
   const hasClientScopedFilter = assignee !== "all" || sortBy !== "recent" || slaRiskOnly;
   const resolvedServerTotalPages = page === 1 && rawItems.length < pageSize ? 1 : totalPages;
-  const resolvedServerTotalCount =
-    page === 1 && rawItems.length < pageSize ? rawItems.length : issueCount;
+  const resolvedServerTotalCount = page === 1 && rawItems.length < pageSize ? rawItems.length : issueCount;
   const resetIssueScopedFilters = () => {
     filterForm.setValue("status", "all");
     filterForm.setValue("severity", "all");
@@ -164,7 +170,17 @@ export default function IssuesPage() {
     downloadCsv(
       `opslens-issues-${new Date().toISOString().slice(0, 10)}.csv`,
       ["ID", "제목", "심각도", "상태", "서비스", "환경", "발생 횟수", "담당자", "최근 발생"],
-      filteredItems.map((issue) => [issue.id, issue.title, issue.severity, issue.status, issue.serviceName, issue.environment, issue.occurrenceCount, issue.assignee, issue.lastOccurredAt])
+      filteredItems.map((issue) => [
+        issue.id,
+        issue.title,
+        issue.severity,
+        issue.status,
+        issue.serviceName,
+        issue.environment,
+        issue.occurrenceCount,
+        issue.assignee,
+        issue.lastOccurredAt
+      ])
     );
   };
 
@@ -248,8 +264,16 @@ export default function IssuesPage() {
             <Typography as="p" variant="caption" color="subtle" className="mr-[var(--space-1)]">
               최근 갱신: {lastUpdatedLabel}
             </Typography>
-            <Badge variant="secondary" size="sm">서비스: {serviceLabel}</Badge>
-            <Button type="button" variant="secondary" size="sm" onClick={exportIssues} disabled={filteredItems.length === 0}>
+            <Badge variant="secondary" size="sm">
+              서비스: {serviceLabel}
+            </Badge>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={exportIssues}
+              disabled={filteredItems.length === 0}
+            >
               CSV 내보내기
             </Button>
           </Flex>
@@ -273,7 +297,41 @@ export default function IssuesPage() {
             setPage(1);
           }}
         />
-        {selectedIssueIds.length > 0 ? <Box className="border-primary/30 bg-primary/5 my-[var(--space-3)] rounded-[var(--radius-md)] border p-[var(--space-2)]"><Typography as="p" variant="caption" className="mb-[var(--space-2)] font-semibold">{selectedIssueIds.length}개 선택</Typography><Grid className="min-w-0 gap-[var(--space-2)] sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]"><Select className="min-w-0" value={bulkStatus} onChange={(value) => setBulkStatus(String(value))} options={[{ label: "분석중", value: "analyzing" }, { label: "대응중", value: "in_progress" }, { label: "해결", value: "resolved" }]} /><Input value={bulkAssignee} onChange={(event) => setBulkAssignee(event.target.value)} placeholder="담당자 (선택)" /><Button type="button" size="sm" loading={bulkMutation.isPending} onClick={() => bulkMutation.mutate()}>일괄 적용</Button><Button type="button" variant="ghost" size="sm" onClick={() => setSelectedIssueIds([])}>선택 해제</Button></Grid></Box> : null}
+        {selectedIssueIds.length > 0 ? (
+          <Box className="border-primary/30 bg-primary/5 my-[var(--space-3)] rounded-[var(--radius-md)] border p-[var(--space-2)]">
+            <Typography as="p" variant="caption" className="mb-[var(--space-2)] font-semibold">
+              {selectedIssueIds.length}개 선택
+            </Typography>
+            <Grid className="min-w-0 gap-[var(--space-2)] sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
+              <Select
+                className="min-w-0"
+                value={bulkStatus}
+                onChange={(value) => setBulkStatus(String(value))}
+                options={[
+                  { label: "분석중", value: "analyzing" },
+                  { label: "대응중", value: "in_progress" },
+                  { label: "해결", value: "resolved" }
+                ]}
+              />
+              <Input
+                value={bulkAssignee}
+                onChange={(event) => setBulkAssignee(event.target.value)}
+                placeholder="담당자 (선택)"
+              />
+              <Button
+                type="button"
+                size="sm"
+                loading={bulkMutation.isPending}
+                onClick={() => bulkMutation.mutate()}
+              >
+                일괄 적용
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedIssueIds([])}>
+                선택 해제
+              </Button>
+            </Grid>
+          </Box>
+        ) : null}
 
         <DataTable
           columns={columns}

@@ -28,7 +28,12 @@ export function QaAssistantForm({
   return (
     <form className="grid gap-[var(--space-3)]" onSubmit={form.handleSubmit(onSubmit)}>
       <Grid className="gap-[var(--space-3)] lg:grid-cols-[minmax(0,1fr)_220px]">
-        <FormField label="기능/릴리즈 항목" htmlFor="qa-feature-name" size="sm" error={form.formState.errors.featureName?.message}>
+        <FormField
+          label="기능/릴리즈 항목"
+          htmlFor="qa-feature-name"
+          size="sm"
+          error={form.formState.errors.featureName?.message}
+        >
           <Input
             id="qa-feature-name"
             {...form.register("featureName", {
@@ -55,7 +60,12 @@ export function QaAssistantForm({
       </Grid>
 
       <Grid className="gap-[var(--space-3)] lg:grid-cols-2">
-        <FormField label="변경 화면/사용자 플로우" htmlFor="qa-changed-screens" size="sm" error={form.formState.errors.changedScreens?.message}>
+        <FormField
+          label="변경 화면/사용자 플로우"
+          htmlFor="qa-changed-screens"
+          size="sm"
+          error={form.formState.errors.changedScreens?.message}
+        >
           <Textarea
             id="qa-changed-screens"
             {...form.register("changedScreens", { required: "변경 화면을 입력하세요." })}
@@ -66,20 +76,30 @@ export function QaAssistantForm({
           />
         </FormField>
 
-        <FormField label="관련 API/이벤트 계약" htmlFor="qa-related-apis" size="sm" error={form.formState.errors.relatedApis?.message}>
+        <FormField
+          label="관련 API/이벤트 계약"
+          htmlFor="qa-related-apis"
+          size="sm"
+          error={form.formState.errors.relatedApis?.message}
+        >
           <Textarea
             id="qa-related-apis"
             {...form.register("relatedApis", { required: "관련 API를 입력하세요." })}
             rows={4}
             size="sm"
             resize="none"
-            className="font-mono text-caption"
+            className="text-caption font-mono"
             placeholder={"GET /orders/{id}\nGET /discounts/{id}"}
           />
         </FormField>
       </Grid>
 
-      <FormField label="배포 노트/변경 맥락" htmlFor="qa-release-note" size="sm" error={form.formState.errors.releaseNote?.message}>
+      <FormField
+        label="배포 노트/변경 맥락"
+        htmlFor="qa-release-note"
+        size="sm"
+        error={form.formState.errors.releaseNote?.message}
+      >
         <Textarea
           id="qa-release-note"
           {...form.register("releaseNote", {
@@ -93,7 +113,7 @@ export function QaAssistantForm({
         />
       </FormField>
 
-      <Box className="border-t border-default pt-[var(--space-3)]">
+      <Box className="border-default border-t pt-[var(--space-3)]">
         <Flex className="flex-wrap items-center gap-[var(--space-2)]">
           <Typography as="p" variant="caption" color="subtle" className="font-semibold">
             품질 게이트

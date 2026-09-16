@@ -94,7 +94,7 @@ export function OpsFilterStoreProvider({
   return createElement(OpsFilterStoreContext.Provider, { value: storeRef.current }, children);
 }
 
-export const useOpsFilterStore = <Selected,>(selector: (state: OpsFilterState) => Selected): Selected => {
+export const useOpsFilterStore = <Selected>(selector: (state: OpsFilterState) => Selected): Selected => {
   const store = useContext(OpsFilterStoreContext);
   if (!store) {
     throw new Error("OpsFilterStoreContext: Provider가 필요합니다.");

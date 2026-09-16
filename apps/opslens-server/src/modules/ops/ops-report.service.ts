@@ -2,7 +2,11 @@ import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleIni
 import { IssueSeverity, Prisma } from "@prisma/client";
 
 import { PrismaService } from "../../integration/db/prisma.service.js";
-import type { DashboardFilterInput, UpdateReportActionInput, UpdateReportSnapshotInput } from "./ops.inputs.js";
+import type {
+  DashboardFilterInput,
+  UpdateReportActionInput,
+  UpdateReportSnapshotInput
+} from "./ops.inputs.js";
 import { writeOpsAuditLog } from "./ops-audit-writer.js";
 import { buildIssueWhere, toEnvironment } from "./ops.filters.js";
 import { OpsDashboardService } from "./ops-dashboard.service.js";
@@ -19,14 +23,27 @@ export class OpsReportService implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    const timer = setInterval(() => void this.runScheduledReport().catch((error) => this.logger.warn(`예약 리포트 생성 오류: ${error instanceof Error ? error.message : String(error)}`)), 60 * 60_000);
+    const timer = setInterval(
+      () =>
+        void this.runScheduledReport().catch((error) =>
+          this.logger.warn(`예약 리포트 생성 오류: ${error instanceof Error ? error.message : String(error)}`)
+        ),
+      60 * 60_000
+    );
     timer.unref();
-    void this.runScheduledReport().catch((error) => this.logger.warn(`예약 리포트 초기 점검 오류: ${error instanceof Error ? error.message : String(error)}`));
+    void this.runScheduledReport().catch((error) =>
+      this.logger.warn(
+        `예약 리포트 초기 점검 오류: ${error instanceof Error ? error.message : String(error)}`
+      )
+    );
   }
 
   private async runScheduledReport(): Promise<void> {
     if (this.scheduleRunning) return;
-    const setting = await this.prisma.opsSetting.findUnique({ where: { key: "report.schedule" }, select: { value: true } });
+    const setting = await this.prisma.opsSetting.findUnique({
+      where: { key: "report.schedule" },
+      select: { value: true }
+    });
     const schedule = setting?.value as { enabled?: unknown; weekday?: unknown; hour?: unknown } | undefined;
     if (schedule?.enabled !== true) return;
     const weekday = typeof schedule.weekday === "number" ? Math.min(6, Math.max(0, schedule.weekday)) : 1;
@@ -34,12 +51,27 @@ export class OpsReportService implements OnModuleInit {
     const now = new Date();
     if (now.getUTCDay() !== weekday || now.getUTCHours() < hour) return;
     const runKey = now.toISOString().slice(0, 10);
-    const lastRun = await this.prisma.opsSetting.findUnique({ where: { key: "report.schedule.last_run" }, select: { value: true } });
+    const lastRun = await this.prisma.opsSetting.findUnique({
+      where: { key: "report.schedule.last_run" },
+      select: { value: true }
+    });
     if ((lastRun?.value as { date?: string } | null)?.date === runKey) return;
     this.scheduleRunning = true;
     try {
       await this.getOpsReport();
-      await this.prisma.opsSetting.upsert({ where: { key: "report.schedule.last_run" }, update: { value: { date: runKey, generatedAt: now.toISOString() }, updatedBy: "system" }, create: { key: "report.schedule.last_run", value: { date: runKey, generatedAt: now.toISOString() }, description: "예약 리포트 마지막 생성 시각", category: "report", riskLevel: "low", editable: false, updatedBy: "system" } });
+      await this.prisma.opsSetting.upsert({
+        where: { key: "report.schedule.last_run" },
+        update: { value: { date: runKey, generatedAt: now.toISOString() }, updatedBy: "system" },
+        create: {
+          key: "report.schedule.last_run",
+          value: { date: runKey, generatedAt: now.toISOString() },
+          description: "예약 리포트 마지막 생성 시각",
+          category: "report",
+          riskLevel: "low",
+          editable: false,
+          updatedBy: "system"
+        }
+      });
       this.logger.log(`예약 운영 리포트 생성 완료: ${runKey}`);
     } finally {
       this.scheduleRunning = false;
@@ -53,7 +85,8 @@ export class OpsReportService implements OnModuleInit {
       orderBy: [{ severity: "asc" }, { occurrenceCount: "desc" }, { lastOccurredAt: "desc" }],
       take: 5
     });
-    const criticalCount = summary.severityDistribution.find((item) => item.severity === "critical")?.count ?? 0;
+    const criticalCount =
+      summary.severityDistribution.find((item) => item.severity === "critical")?.count ?? 0;
     const highCount = summary.severityDistribution.find((item) => item.severity === "high")?.count ?? 0;
     const now = new Date();
     const openIssueWhere: Prisma.IssueWhereInput = {
@@ -74,11 +107,22 @@ export class OpsReportService implements OnModuleInit {
       if (durations.length === 0) return "-";
       return `${Math.round(durations.reduce((sum, value) => sum + value, 0) / durations.length)}분`;
     };
-    const mtta = averageMinutes(resolvedForMetrics.filter((item) => item.acknowledgedAt).map((item) => (item.acknowledgedAt!.getTime() - item.firstOccurredAt.getTime()) / 60_000));
-    const mttr = averageMinutes(resolvedForMetrics.map((item) => (item.resolvedAt!.getTime() - item.firstOccurredAt.getTime()) / 60_000));
+    const mtta = averageMinutes(
+      resolvedForMetrics
+        .filter((item) => item.acknowledgedAt)
+        .map((item) => (item.acknowledgedAt!.getTime() - item.firstOccurredAt.getTime()) / 60_000)
+    );
+    const mttr = averageMinutes(
+      resolvedForMetrics.map((item) => (item.resolvedAt!.getTime() - item.firstOccurredAt.getTime()) / 60_000)
+    );
     const deployRiskCount = summary.newAfterLatestDeployment.length;
     const topIssue = issues[0];
-    const riskLevel = criticalCount > 0 || deployRiskCount >= 3 ? "critical" : highCount > 0 || deployRiskCount > 0 ? "warning" : "normal";
+    const riskLevel =
+      criticalCount > 0 || deployRiskCount >= 3
+        ? "critical"
+        : highCount > 0 || deployRiskCount > 0
+          ? "warning"
+          : "normal";
     const environment = filter?.environment ?? "all";
     const generatedAt = new Date().toISOString();
     const title = `[${environment}] 운영 리포트`;
@@ -98,28 +142,34 @@ export class OpsReportService implements OnModuleInit {
     ].join("\n");
     const actionItems = [
       ...(topIssue
-        ? [{
-            title: "최우선 이슈 담당자 지정",
-            description: `${topIssue.title} 상태와 담당자를 확인하고 대응 계획을 남깁니다.`,
-            owner: topIssue.assignee || "운영담당자",
-            priority: topIssue.severity === IssueSeverity.critical ? "P0" : "P1"
-          }]
+        ? [
+            {
+              title: "최우선 이슈 담당자 지정",
+              description: `${topIssue.title} 상태와 담당자를 확인하고 대응 계획을 남깁니다.`,
+              owner: topIssue.assignee || "운영담당자",
+              priority: topIssue.severity === IssueSeverity.critical ? "P0" : "P1"
+            }
+          ]
         : []),
       ...(deployRiskCount > 0
-        ? [{
-            title: "배포 영향 확인",
-            description: "최근 배포 이후 증가한 이슈를 배포 변경 범위와 대조합니다.",
-            owner: "배포담당자",
-            priority: "P1"
-          }]
+        ? [
+            {
+              title: "배포 영향 확인",
+              description: "최근 배포 이후 증가한 이슈를 배포 변경 범위와 대조합니다.",
+              owner: "배포담당자",
+              priority: "P1"
+            }
+          ]
         : []),
       ...(slaRiskCount > 0 || unassignedCount > 0
-        ? [{
-            title: "SLA 및 소유권 정리",
-            description: `SLA 위험 ${slaRiskCount}건과 담당자 미지정 ${unassignedCount}건을 확인합니다.`,
-            owner: "운영 리드",
-            priority: slaRiskCount > 0 ? "P1" : "P2"
-          }]
+        ? [
+            {
+              title: "SLA 및 소유권 정리",
+              description: `SLA 위험 ${slaRiskCount}건과 담당자 미지정 ${unassignedCount}건을 확인합니다.`,
+              owner: "운영 리드",
+              priority: slaRiskCount > 0 ? "P1" : "P2"
+            }
+          ]
         : []),
       {
         title: "공유 리포트 전파",
@@ -152,8 +202,18 @@ export class OpsReportService implements OnModuleInit {
       technicalSummary,
       shareText,
       kpis: [
-        { label: "오늘 이슈", value: String(summary.todayIssueCount), helper: "현재 필터 기준", tone: summary.todayIssueCount > 0 ? "warning" : "default" },
-        { label: "Critical / High", value: `${criticalCount} / ${highCount}`, helper: "즉시 확인 대상", tone: criticalCount > 0 ? "danger" : highCount > 0 ? "warning" : "default" },
+        {
+          label: "오늘 이슈",
+          value: String(summary.todayIssueCount),
+          helper: "현재 필터 기준",
+          tone: summary.todayIssueCount > 0 ? "warning" : "default"
+        },
+        {
+          label: "Critical / High",
+          value: `${criticalCount} / ${highCount}`,
+          helper: "즉시 확인 대상",
+          tone: criticalCount > 0 ? "danger" : highCount > 0 ? "warning" : "default"
+        },
         {
           label: "배포 이후 증가",
           value: String(deployRiskCount),
@@ -204,7 +264,9 @@ export class OpsReportService implements OnModuleInit {
         description: item.description,
         owner: item.owner,
         priority: item.priority,
-        dueAt: new Date(Date.now() + (item.priority === "P0" ? 24 : item.priority === "P1" ? 72 : 7 * 24) * 60 * 60 * 1000)
+        dueAt: new Date(
+          Date.now() + (item.priority === "P0" ? 24 : item.priority === "P1" ? 72 : 7 * 24) * 60 * 60 * 1000
+        )
       }))
     });
     await writeOpsAuditLog(this.prisma, this.logger, {
@@ -240,12 +302,25 @@ export class OpsReportService implements OnModuleInit {
 
   async updateReportAction(input: UpdateReportActionInput, actor?: string): Promise<OpsReportActionType> {
     const dueAt = input.dueAt?.trim() ? new Date(input.dueAt) : input.dueAt === undefined ? undefined : null;
-    if (dueAt instanceof Date && Number.isNaN(dueAt.getTime())) throw new BadRequestException("기한이 올바르지 않습니다.");
+    if (dueAt instanceof Date && Number.isNaN(dueAt.getTime()))
+      throw new BadRequestException("기한이 올바르지 않습니다.");
     const action = await this.prisma.opsReportAction.update({
       where: { id: input.actionId },
       data: input.completed
-        ? { completedAt: new Date(), completedBy: actor ?? input.actor ?? "unknown", reopenedReason: null, dueAt, owner: input.owner?.trim() || undefined }
-        : { completedAt: null, completedBy: null, reopenedReason: input.reopenedReason?.trim() || null, dueAt, owner: input.owner?.trim() || undefined }
+        ? {
+            completedAt: new Date(),
+            completedBy: actor ?? input.actor ?? "unknown",
+            reopenedReason: null,
+            dueAt,
+            owner: input.owner?.trim() || undefined
+          }
+        : {
+            completedAt: null,
+            completedBy: null,
+            reopenedReason: input.reopenedReason?.trim() || null,
+            dueAt,
+            owner: input.owner?.trim() || undefined
+          }
     });
     await writeOpsAuditLog(this.prisma, this.logger, {
       actor: actor ?? input.actor,

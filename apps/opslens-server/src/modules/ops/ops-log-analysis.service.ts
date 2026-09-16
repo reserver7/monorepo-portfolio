@@ -15,29 +15,74 @@ export class OpsLogAnalysisService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listSavedViews(actor?: string) {
-    return this.prisma.opsLogSavedView.findMany({ where: actor ? { OR: [{ visibility: "team" }, { owner: actor }] } : { visibility: "team" }, orderBy: [{ isFavorite: "desc" }, { updatedAt: "desc" }], take: 30 });
+    return this.prisma.opsLogSavedView.findMany({
+      where: actor ? { OR: [{ visibility: "team" }, { owner: actor }] } : { visibility: "team" },
+      orderBy: [{ isFavorite: "desc" }, { updatedAt: "desc" }],
+      take: 30
+    });
   }
 
-  async getLogSourceFreshness(): Promise<Array<{ serviceName: string; source: string; lastReceivedAt: Date | null; receivedLastHour: number; stale: boolean }>> {
+  async getLogSourceFreshness(): Promise<
+    Array<{
+      serviceName: string;
+      source: string;
+      lastReceivedAt: Date | null;
+      receivedLastHour: number;
+      stale: boolean;
+    }>
+  > {
     const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const staleBefore = new Date(Date.now() - 30 * 60 * 1000);
-    const rows = await this.prisma.$queryRaw<Array<{ serviceName: string; source: string; lastReceivedAt: Date | null; receivedLastHour: number }>>(Prisma.sql`
+    const rows = await this.prisma.$queryRaw<
+      Array<{ serviceName: string; source: string; lastReceivedAt: Date | null; receivedLastHour: number }>
+    >(Prisma.sql`
       SELECT issue."serviceName" AS "serviceName", event."source"::text AS "source", MAX(event."occurredAt") AS "lastReceivedAt",
         COUNT(*) FILTER (WHERE event."occurredAt" >= ${hourAgo})::int AS "receivedLastHour"
       FROM "LogEvent" event INNER JOIN "Issue" issue ON issue.id = event."issueId"
       WHERE event."occurredAt" >= ${new Date(Date.now() - 24 * 60 * 60 * 1000)}
       GROUP BY issue."serviceName", event."source" ORDER BY issue."serviceName", event."source"
     `);
-    return rows.map((row) => ({ ...row, receivedLastHour: Number(row.receivedLastHour), stale: !row.lastReceivedAt || row.lastReceivedAt < staleBefore }));
+    return rows.map((row) => ({
+      ...row,
+      receivedLastHour: Number(row.receivedLastHour),
+      stale: !row.lastReceivedAt || row.lastReceivedAt < staleBefore
+    }));
   }
 
   async upsertSavedView(input: UpsertLogSavedViewInput, actor?: string) {
     const owner = actor ?? "unknown";
     if (!input.name.trim()) throw new BadRequestException("뷰 이름이 필요합니다.");
     const view = input.id
-      ? await this.prisma.opsLogSavedView.update({ where: { id: input.id, owner }, data: { name: input.name.trim(), severity: input.severity, query: input.query, sort: input.sort, visibility: input.visibility === "private" ? "private" : "team", isFavorite: Boolean(input.isFavorite) } })
-      : await this.prisma.opsLogSavedView.create({ data: { name: input.name.trim(), owner, severity: input.severity, query: input.query, sort: input.sort, visibility: input.visibility === "private" ? "private" : "team", isFavorite: Boolean(input.isFavorite) } });
-    await writeOpsAuditLog(this.prisma, this.logger, { actor, action: input.id ? "log_saved_view.updated" : "log_saved_view.created", targetType: "OpsLogSavedView", targetId: view.id, summary: `${view.name} 로그 뷰 ${input.id ? "수정" : "생성"}`, metadata: { visibility: view.visibility, severity: view.severity, sort: view.sort } });
+      ? await this.prisma.opsLogSavedView.update({
+          where: { id: input.id, owner },
+          data: {
+            name: input.name.trim(),
+            severity: input.severity,
+            query: input.query,
+            sort: input.sort,
+            visibility: input.visibility === "private" ? "private" : "team",
+            isFavorite: Boolean(input.isFavorite)
+          }
+        })
+      : await this.prisma.opsLogSavedView.create({
+          data: {
+            name: input.name.trim(),
+            owner,
+            severity: input.severity,
+            query: input.query,
+            sort: input.sort,
+            visibility: input.visibility === "private" ? "private" : "team",
+            isFavorite: Boolean(input.isFavorite)
+          }
+        });
+    await writeOpsAuditLog(this.prisma, this.logger, {
+      actor,
+      action: input.id ? "log_saved_view.updated" : "log_saved_view.created",
+      targetType: "OpsLogSavedView",
+      targetId: view.id,
+      summary: `${view.name} 로그 뷰 ${input.id ? "수정" : "생성"}`,
+      metadata: { visibility: view.visibility, severity: view.severity, sort: view.sort }
+    });
     return view;
   }
 
@@ -45,7 +90,14 @@ export class OpsLogAnalysisService {
     const view = await this.prisma.opsLogSavedView.findFirst({ where: { id, owner: actor ?? "unknown" } });
     if (!view) return false;
     const result = await this.prisma.opsLogSavedView.deleteMany({ where: { id, owner: actor ?? "unknown" } });
-    await writeOpsAuditLog(this.prisma, this.logger, { actor, action: "log_saved_view.deleted", targetType: "OpsLogSavedView", targetId: id, summary: `${view.name} 로그 뷰 삭제`, metadata: { visibility: view.visibility } });
+    await writeOpsAuditLog(this.prisma, this.logger, {
+      actor,
+      action: "log_saved_view.deleted",
+      targetType: "OpsLogSavedView",
+      targetId: id,
+      summary: `${view.name} 로그 뷰 삭제`,
+      metadata: { visibility: view.visibility }
+    });
     return result.count > 0;
   }
 
@@ -139,14 +191,20 @@ export class OpsLogAnalysisService {
         affectedArea: cluster.affectedArea,
         deploymentCorrelation: cluster.deploymentCorrelation,
         deploymentId,
-        priority: cluster.severity === IssueSeverity.critical ? "P0" : cluster.severity === IssueSeverity.high ? "P1" : "P2",
+        priority:
+          cluster.severity === IssueSeverity.critical
+            ? "P0"
+            : cluster.severity === IssueSeverity.high
+              ? "P1"
+              : "P2",
         slaDueAt:
           cluster.severity === IssueSeverity.critical
             ? new Date(cluster.lastSeen.getTime() + 60 * 60 * 1000)
             : cluster.severity === IssueSeverity.high
               ? new Date(cluster.lastSeen.getTime() + 4 * 60 * 60 * 1000)
               : null,
-        escalationLevel: cluster.severity === IssueSeverity.critical ? 2 : cluster.severity === IssueSeverity.high ? 1 : 0
+        escalationLevel:
+          cluster.severity === IssueSeverity.critical ? 2 : cluster.severity === IssueSeverity.high ? 1 : 0
       };
 
       const existing = await this.prisma.issue.findUnique({ where: { signature } });

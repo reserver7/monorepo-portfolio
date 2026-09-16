@@ -7,7 +7,8 @@ import {
 
 type DeploymentBadgeVariant = "secondary" | "outline" | "success" | "warning" | "danger" | "info";
 
-export const getDeploymentStatusLabel = (status: string): string => DEPLOYMENT_STATUS_LABELS[status] ?? status;
+export const getDeploymentStatusLabel = (status: string): string =>
+  DEPLOYMENT_STATUS_LABELS[status] ?? status;
 
 export const getDeploymentStatusVariant = (status: string): DeploymentBadgeVariant =>
   DEPLOYMENT_STATUS_VARIANTS[status as keyof typeof DEPLOYMENT_STATUS_VARIANTS] ?? "outline";

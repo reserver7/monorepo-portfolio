@@ -76,7 +76,10 @@ export class OpsResolver {
   }
 
   @Query(() => ServiceSloType)
-  serviceSlo(@Args("serviceName", { type: () => String }) serviceName: string, @Args("environment", { type: () => String }) environment: string): Promise<ServiceSloType> {
+  serviceSlo(
+    @Args("serviceName", { type: () => String }) serviceName: string,
+    @Args("environment", { type: () => String }) environment: string
+  ): Promise<ServiceSloType> {
     return this.opsService.getServiceSlo(serviceName, environment);
   }
 
@@ -102,7 +105,9 @@ export class OpsResolver {
   }
 
   @Query(() => [IncidentTimelineItemType])
-  incidentTimeline(@Args("issueId", { type: () => String }) issueId: string): Promise<IncidentTimelineItemType[]> {
+  incidentTimeline(
+    @Args("issueId", { type: () => String }) issueId: string
+  ): Promise<IncidentTimelineItemType[]> {
     return this.opsService.getIncidentTimeline(issueId);
   }
 
@@ -115,7 +120,9 @@ export class OpsResolver {
   }
 
   @Query(() => DeploymentReadinessType)
-  deploymentReadiness(@Args("environment", { type: () => String }) environment: string): Promise<DeploymentReadinessType> {
+  deploymentReadiness(
+    @Args("environment", { type: () => String }) environment: string
+  ): Promise<DeploymentReadinessType> {
     return this.opsService.getDeploymentReadiness(environment);
   }
 
@@ -149,7 +156,9 @@ export class OpsResolver {
   }
 
   @Query(() => [OpsReportActionType])
-  reportActions(@Args("snapshotId", { type: () => String }) snapshotId: string): Promise<OpsReportActionType[]> {
+  reportActions(
+    @Args("snapshotId", { type: () => String }) snapshotId: string
+  ): Promise<OpsReportActionType[]> {
     return this.opsService.listReportActions(snapshotId);
   }
 
@@ -170,10 +179,14 @@ export class OpsResolver {
   }
 
   @Query(() => [OpsLogSavedViewType])
-  logSavedViews(@Context() context: { req?: AuthenticatedRequest }) { return this.opsService.listLogSavedViews(this.actor(context)); }
+  logSavedViews(@Context() context: { req?: AuthenticatedRequest }) {
+    return this.opsService.listLogSavedViews(this.actor(context));
+  }
 
   @Query(() => [LogSourceFreshnessType])
-  logSourceFreshness() { return this.opsService.getLogSourceFreshness(); }
+  logSourceFreshness() {
+    return this.opsService.getLogSourceFreshness();
+  }
 
   @Query(() => [OpsSettingType])
   opsSettings(): Promise<OpsSettingType[]> {
@@ -204,17 +217,29 @@ export class OpsResolver {
 
   @Mutation(() => Boolean)
   @RequireOpsPermission("operate")
-  ingestServiceMetric(@Args("input", { type: () => IngestServiceMetricInput }) input: IngestServiceMetricInput): Promise<boolean> {
+  ingestServiceMetric(
+    @Args("input", { type: () => IngestServiceMetricInput }) input: IngestServiceMetricInput
+  ): Promise<boolean> {
     return this.opsService.ingestServiceMetric(input);
   }
 
   @Mutation(() => OpsLogSavedViewType)
   @RequireOpsPermission("operate")
-  upsertLogSavedView(@Args("input", { type: () => UpsertLogSavedViewInput }) input: UpsertLogSavedViewInput, @Context() context: { req?: AuthenticatedRequest }) { return this.opsService.upsertLogSavedView(input, this.actor(context)); }
+  upsertLogSavedView(
+    @Args("input", { type: () => UpsertLogSavedViewInput }) input: UpsertLogSavedViewInput,
+    @Context() context: { req?: AuthenticatedRequest }
+  ) {
+    return this.opsService.upsertLogSavedView(input, this.actor(context));
+  }
 
   @Mutation(() => Boolean)
   @RequireOpsPermission("operate")
-  deleteLogSavedView(@Args("id", { type: () => String }) id: string, @Context() context: { req?: AuthenticatedRequest }) { return this.opsService.deleteLogSavedView(id, this.actor(context)); }
+  deleteLogSavedView(
+    @Args("id", { type: () => String }) id: string,
+    @Context() context: { req?: AuthenticatedRequest }
+  ) {
+    return this.opsService.deleteLogSavedView(id, this.actor(context));
+  }
 
   @Mutation(() => OpsAlertType)
   @RequireOpsPermission("operate")
@@ -336,7 +361,10 @@ export class OpsResolver {
 
   @Mutation(() => Int)
   @RequireOpsPermission("operate")
-  bulkUpdateIssues(@Args("input", { type: () => BulkUpdateIssuesInput }) input: BulkUpdateIssuesInput, @Context() context: { req?: AuthenticatedRequest }): Promise<number> {
+  bulkUpdateIssues(
+    @Args("input", { type: () => BulkUpdateIssuesInput }) input: BulkUpdateIssuesInput,
+    @Context() context: { req?: AuthenticatedRequest }
+  ): Promise<number> {
     return this.opsService.bulkUpdateIssues(input, this.actor(context));
   }
 

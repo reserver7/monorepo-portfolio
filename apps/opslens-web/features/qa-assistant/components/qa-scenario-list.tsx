@@ -34,11 +34,25 @@ export function QaScenarioList({
   }
 
   if (isError) {
-    return <FeedbackState variant="error" size="sm" title="시나리오 조회에 실패했습니다." className="mt-[var(--space-3)]" />;
+    return (
+      <FeedbackState
+        variant="error"
+        size="sm"
+        title="시나리오 조회에 실패했습니다."
+        className="mt-[var(--space-3)]"
+      />
+    );
   }
 
   if (scenarios.length === 0) {
-    return <FeedbackState variant="empty" size="sm" title="아직 생성된 시나리오가 없습니다." className="mt-[var(--space-3)]" />;
+    return (
+      <FeedbackState
+        variant="empty"
+        size="sm"
+        title="아직 생성된 시나리오가 없습니다."
+        className="mt-[var(--space-3)]"
+      />
+    );
   }
 
   return (
@@ -51,7 +65,7 @@ export function QaScenarioList({
             key={scenario.id}
             role="button"
             tabIndex={0}
-            className={`focus-visible:ring-primary focus-visible:ring-offset-surface relative cursor-pointer rounded-[var(--radius-md)] border border-default p-[var(--space-3)] pr-[var(--space-12)] text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+            className={`focus-visible:ring-primary focus-visible:ring-offset-surface border-default relative cursor-pointer rounded-[var(--radius-md)] border p-[var(--space-3)] pr-[var(--space-12)] text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
               selected ? "bg-surface-elevated" : "hover:bg-surface-elevated"
             }`}
             onClick={() => onSelectScenario(scenario.id)}
@@ -66,7 +80,12 @@ export function QaScenarioList({
                 <Typography as="span" variant="bodySm" className="line-clamp-2 font-semibold">
                   {scenario.featureName}
                 </Typography>
-                <Badge variant="secondary" size="sm" shape="rounded" className={`${QA_NEUTRAL_BADGE_CLASS} shrink-0`}>
+                <Badge
+                  variant="secondary"
+                  size="sm"
+                  shape="rounded"
+                  className={`${QA_NEUTRAL_BADGE_CLASS} shrink-0`}
+                >
                   {QA_AUDIENCE_LABELS[scenario.audience as QaAudience] ?? scenario.audience}
                 </Badge>
               </Flex>
@@ -87,7 +106,7 @@ export function QaScenarioList({
               leftIcon={<Trash2 />}
               aria-label="QA 산출물 삭제"
               disabled={isDeleting}
-              className="absolute right-[var(--space-2)] top-[var(--space-2)] h-7 w-7 border-transparent !bg-transparent text-muted hover:!bg-danger/10 hover:text-danger"
+              className="text-muted hover:!bg-danger/10 hover:text-danger absolute right-[var(--space-2)] top-[var(--space-2)] h-7 w-7 border-transparent !bg-transparent"
               onClick={(event) => {
                 event.stopPropagation();
                 onDeleteScenario(scenario);

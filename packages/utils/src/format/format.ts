@@ -18,4 +18,3 @@ export const formatNumber = (value?: number | null, locale = "ko-KR"): string =>
 export const toIsoDate = (value: Date): string => {
   return value.toISOString().slice(0, 10);
 };
-

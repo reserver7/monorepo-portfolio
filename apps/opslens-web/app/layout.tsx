@@ -27,8 +27,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <AppHead />
       </head>
-      <body className={`${appFont.className} font-body text-foreground dark:text-foreground min-h-screen antialiased`}>
-        <Providers initialLocale={locale} initialMessages={initialMessages}>{children}</Providers>
+      <body
+        className={`${appFont.className} font-body text-foreground dark:text-foreground min-h-screen antialiased`}
+      >
+        <Providers initialLocale={locale} initialMessages={initialMessages}>
+          {children}
+        </Providers>
       </body>
     </html>
   );

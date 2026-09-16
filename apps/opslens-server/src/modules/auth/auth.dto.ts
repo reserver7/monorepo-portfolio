@@ -1,4 +1,13 @@
-import { IsBoolean, IsEmail, IsHexColor, IsIn, IsOptional, IsString, Matches, MinLength } from "class-validator";
+import {
+  IsBoolean,
+  IsEmail,
+  IsHexColor,
+  IsIn,
+  IsOptional,
+  IsString,
+  Matches,
+  MinLength
+} from "class-validator";
 
 export class AuthLoginDto {
   @IsEmail()

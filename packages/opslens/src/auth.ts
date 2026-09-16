@@ -52,7 +52,11 @@ export async function loginOpslens(input: { email: string; password: string }): 
   return (await response.json()) as OpsLoginResponse;
 }
 
-export async function signupOpslens(input: { email: string; name: string; password: string }): Promise<OpsLoginResponse> {
+export async function signupOpslens(input: {
+  email: string;
+  name: string;
+  password: string;
+}): Promise<OpsLoginResponse> {
   const response = await fetch(`${resolveAuthApiUrl()}/auth/signup`, {
     method: "POST",
     headers: {

@@ -8,12 +8,22 @@ export class OpsSlackNotifier {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async notify(input: { level: string; title: string; message: string; source: string; link?: string | null }): Promise<void> {
+  async notify(input: {
+    level: string;
+    title: string;
+    message: string;
+    source: string;
+    link?: string | null;
+  }): Promise<void> {
     if (!env.OPS_SLACK_WEBHOOK_URL) throw new Error("OPS_SLACK_WEBHOOK_URL이 설정되지 않았습니다.");
-    const onCall = await this.prisma.opsSetting.findUnique({ where: { key: "oncall.primary" }, select: { value: true } });
-    const owner = onCall?.value && typeof onCall.value === "object" && !Array.isArray(onCall.value)
-      ? String((onCall.value as { primary?: unknown }).primary ?? "운영 담당자")
-      : "운영 담당자";
+    const onCall = await this.prisma.opsSetting.findUnique({
+      where: { key: "oncall.primary" },
+      select: { value: true }
+    });
+    const owner =
+      onCall?.value && typeof onCall.value === "object" && !Array.isArray(onCall.value)
+        ? String((onCall.value as { primary?: unknown }).primary ?? "운영 담당자")
+        : "운영 담당자";
     const response = await fetch(env.OPS_SLACK_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

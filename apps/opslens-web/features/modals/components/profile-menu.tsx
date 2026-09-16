@@ -52,7 +52,7 @@ export function ProfileMenu({
         <Button
           variant="secondary"
           size="sm"
-          className="h-[var(--size-control-md)] w-[var(--size-control-md)] rounded-full border-transparent bg-transparent p-0 hover:bg-surface-elevated active:bg-surface focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="hover:bg-surface-elevated active:bg-surface h-[var(--size-control-md)] w-[var(--size-control-md)] rounded-full border-transparent bg-transparent p-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
           aria-label={tCommon("profileMenu")}
         >
           <Avatar size="sm" name={userName} status="online" color={avatarColor} bordered={false} />
@@ -61,9 +61,15 @@ export function ProfileMenu({
       <DropdownMenuContent align="end" className="w-[260px]">
         <DropdownMenuLabel>
           <Box className="grid gap-[2px]">
-            <Typography as="p" className="text-foreground text-sm font-semibold leading-none">{userName}</Typography>
-            <Typography as="p" className="text-muted text-xs leading-none">{userEmail}</Typography>
-            <Typography as="p" className="text-muted text-[11px] leading-none uppercase">{userRole}</Typography>
+            <Typography as="p" className="text-foreground text-sm font-semibold leading-none">
+              {userName}
+            </Typography>
+            <Typography as="p" className="text-muted text-xs leading-none">
+              {userEmail}
+            </Typography>
+            <Typography as="p" className="text-muted text-[11px] uppercase leading-none">
+              {userRole}
+            </Typography>
           </Box>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -87,7 +93,11 @@ export function ProfileMenu({
         </DropdownMenuItem>
         <DropdownMenuItem
           leftSlot={<Zap className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />}
-          rightSlot={focusModeEnabled ? <Check className="h-[var(--size-icon-sm)] w-[var(--size-icon-sm)]" /> : undefined}
+          rightSlot={
+            focusModeEnabled ? (
+              <Check className="h-[var(--size-icon-sm)] w-[var(--size-icon-sm)]" />
+            ) : undefined
+          }
           onSelect={onToggleFocusMode}
         >
           운영 집중 모드
@@ -107,7 +117,7 @@ export function ProfileMenu({
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          leftSlot={<LogOut className="h-[var(--size-icon-md)] w-[var(--size-icon-md)] text-danger" />}
+          leftSlot={<LogOut className="text-danger h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />}
           color="danger"
           onSelect={onLogout}
         >

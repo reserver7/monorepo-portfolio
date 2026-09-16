@@ -1,6 +1,11 @@
 import { docsClientEnv } from "@/lib/config";
 import { getCollabText } from "@/lib/i18n/runtime";
-import { DocumentComment, DocumentRecord, DocumentSummary, HistoryEntry } from "@/features/docs/collaboration/model";
+import {
+  DocumentComment,
+  DocumentRecord,
+  DocumentSummary,
+  HistoryEntry
+} from "@/features/docs/collaboration/model";
 import { createQueryKeys, createResourceClient, requestJson } from "@repo/react-query";
 
 export const API_BASE_URL = docsClientEnv.apiBaseUrl;

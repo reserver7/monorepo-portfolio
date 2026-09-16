@@ -34,7 +34,9 @@ export class HttpMetricsInterceptor implements NestInterceptor {
         if (process.env.NODE_ENV === "development" && this.totalSamples % 50 === 0) {
           const p50 = this.percentile(list, 50);
           const p95 = this.percentile(list, 95);
-          this.logger.debug(`[http-metrics] ${routeKey} p50=${p50.toFixed(1)}ms p95=${p95.toFixed(1)}ms n=${list.length}`);
+          this.logger.debug(
+            `[http-metrics] ${routeKey} p50=${p50.toFixed(1)}ms p95=${p95.toFixed(1)}ms n=${list.length}`
+          );
         }
       })
     );

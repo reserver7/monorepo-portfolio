@@ -53,7 +53,13 @@ curl -X POST http://localhost:4100/ops/ingest/logs \
 Sentry webhook relay는 `POST /ops/ingest/sentry`로 최소 이벤트를 전달할 수 있습니다. 기존 `OPS_INGESTION_KEY`를 동일하게 사용합니다.
 
 ```json
-{"environment":"prod","project":"checkout","message":"payment timeout","level":"error","tags":{"service":"checkout-api","release":"v1.4.0"}}
+{
+  "environment": "prod",
+  "project": "checkout",
+  "message": "payment timeout",
+  "level": "error",
+  "tags": { "service": "checkout-api", "release": "v1.4.0" }
+}
 ```
 
 ### 배포 운영

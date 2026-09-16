@@ -1,6 +1,13 @@
 import "dotenv/config";
 import { scryptSync } from "node:crypto";
-import { AuthRole, IssueSeverity, IssueStatus, LogSource, OpsEnvironment, PrismaClient } from "@prisma/client";
+import {
+  AuthRole,
+  IssueSeverity,
+  IssueStatus,
+  LogSource,
+  OpsEnvironment,
+  PrismaClient
+} from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -587,7 +594,8 @@ async function main(): Promise<void> {
         riskLevel: "critical",
         executiveSummary: "오늘 Critical 2건, High 3건이 감지되었고 결제/주문 API를 우선 대응해야 합니다.",
         technicalSummary: "payments-web TypeError와 orders-api 500이 배포 이후 증가했습니다.",
-        shareText: "[prod] 운영 리포트\nCritical 2건 / High 3건\nAction: 결제 승인 오류와 주문 API 500 우선 대응",
+        shareText:
+          "[prod] 운영 리포트\nCritical 2건 / High 3건\nAction: 결제 승인 오류와 주문 API 500 우선 대응",
         generatedBy: "system",
         pinned: true,
         sharedAt: minutesAgo(45),

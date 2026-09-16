@@ -5,10 +5,34 @@ import { MetricCard } from "@/features/common/components/feedback-state";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Box, Button, ConsolePageStack, ConsoleSectionCard, Flex, FormField, Grid, Input, Select, SplitWorkspaceLayout, Textarea, Badge, Typography, toast } from "@repo/ui";
+import {
+  Box,
+  Button,
+  ConsolePageStack,
+  ConsoleSectionCard,
+  Flex,
+  FormField,
+  Grid,
+  Input,
+  Select,
+  SplitWorkspaceLayout,
+  Textarea,
+  Badge,
+  Typography,
+  toast
+} from "@repo/ui";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
-import { analyzeLogs, createOpsLogTailEventSource, deleteLogSavedView, getLogSavedViews, getLogSourceFreshness, opslensQueryKeys, upsertLogSavedView, type OpsLogTailEvent } from "@repo/opslens";
+import {
+  analyzeLogs,
+  createOpsLogTailEventSource,
+  deleteLogSavedView,
+  getLogSavedViews,
+  getLogSourceFreshness,
+  opslensQueryKeys,
+  upsertLogSavedView,
+  type OpsLogTailEvent
+} from "@repo/opslens";
 import { useOpsFilters } from "@/features/common/stores";
 import { formatDateTimeByLocale, resolveServiceLabel } from "@/features/common/utils/ops-display";
 import { downloadCsv } from "@/features/common/utils/download-csv";
@@ -16,7 +40,13 @@ import { readAuthSession } from "@/lib/auth";
 import { formatNumber } from "@repo/utils";
 import { LogAnalysisSidebar, LogClusterResults } from "../components";
 import { LOGS_DEFAULT_CLUSTER_LIMIT, LOGS_SAMPLE } from "../constants";
-import type { LogsFormValues, LogsSavedView, LogsSavedViewsState, LogsSeverityFilter, LogsSortKey } from "../types";
+import type {
+  LogsFormValues,
+  LogsSavedView,
+  LogsSavedViewsState,
+  LogsSeverityFilter,
+  LogsSortKey
+} from "../types";
 import {
   extractCorrelationTokens,
   getAnalyzeErrorMessage,
@@ -47,13 +77,31 @@ export default function LogsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryInputRef = useRef<HTMLInputElement>(null);
   const lastSubmittedRef = useRef<LogsFormValues | null>(null);
-  const sourceFreshnessQuery = useQuery({ queryKey: opslensQueryKeys.logSourceFreshness(), queryFn: getLogSourceFreshness, staleTime: 15_000, refetchInterval: 30_000 });
-  const savedViewsQuery = useQuery({ queryKey: opslensQueryKeys.logSavedViews(), queryFn: getLogSavedViews, staleTime: 15_000 });
+  const sourceFreshnessQuery = useQuery({
+    queryKey: opslensQueryKeys.logSourceFreshness(),
+    queryFn: getLogSourceFreshness,
+    staleTime: 15_000,
+    refetchInterval: 30_000
+  });
+  const savedViewsQuery = useQuery({
+    queryKey: opslensQueryKeys.logSavedViews(),
+    queryFn: getLogSavedViews,
+    staleTime: 15_000
+  });
   const sourceFreshness = useMemo(() => {
     return ["server", "client", "api", "console", "sentry"].map((source) => {
-      const item = (sourceFreshnessQuery.data ?? []).find((entry) => entry.source === source && (serviceName === "all" || entry.serviceName === serviceName));
-      const ageMinutes = item?.lastReceivedAt ? Math.max(0, Math.floor((Date.now() - new Date(item.lastReceivedAt).getTime()) / 60_000)) : null;
-      return { source, session: item ? { createdAt: item.lastReceivedAt, rawLineCount: item.receivedLastHour } : null, ageMinutes, stale: item?.stale ?? true };
+      const item = (sourceFreshnessQuery.data ?? []).find(
+        (entry) => entry.source === source && (serviceName === "all" || entry.serviceName === serviceName)
+      );
+      const ageMinutes = item?.lastReceivedAt
+        ? Math.max(0, Math.floor((Date.now() - new Date(item.lastReceivedAt).getTime()) / 60_000))
+        : null;
+      return {
+        source,
+        session: item ? { createdAt: item.lastReceivedAt, rawLineCount: item.receivedLastHour } : null,
+        ageMinutes,
+        stale: item?.stale ?? true
+      };
     });
   }, [serviceName, sourceFreshnessQuery.data]);
 
@@ -66,12 +114,27 @@ export default function LogsPage() {
 
   useEffect(() => {
     if (!savedViewsQuery.data) return;
-    setSavedViewsState((previous) => ({ ...previous, items: savedViewsQuery.data.map((view) => ({ id: view.id, name: view.name, owner: view.owner, visibility: view.visibility === "private" ? "private" : "team", isFavorite: view.isFavorite, severity: view.severity as LogsSeverityFilter, query: view.query, sort: view.sort as LogsSortKey })) }));
+    setSavedViewsState((previous) => ({
+      ...previous,
+      items: savedViewsQuery.data.map((view) => ({
+        id: view.id,
+        name: view.name,
+        owner: view.owner,
+        visibility: view.visibility === "private" ? "private" : "team",
+        isFavorite: view.isFavorite,
+        severity: view.severity as LogsSeverityFilter,
+        query: view.query,
+        sort: view.sort as LogsSortKey
+      }))
+    }));
   }, [savedViewsQuery.data]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "/" && !(event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)) {
+      if (
+        event.key === "/" &&
+        !(event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)
+      ) {
         event.preventDefault();
         queryInputRef.current?.focus();
       }
@@ -173,27 +236,31 @@ export default function LogsPage() {
     return extractCorrelationTokens(rawLogsValue);
   }, [rawLogsValue]);
   const visibleCorrelationTokens = useMemo(
-    () => correlationTokens.filter((token) => !dismissedCorrelationKeys.includes(`${token.key}:${token.value}`)),
+    () =>
+      correlationTokens.filter((token) => !dismissedCorrelationKeys.includes(`${token.key}:${token.value}`)),
     [correlationTokens, dismissedCorrelationKeys]
   );
   const filteredClusters = useMemo(() => {
     const keyword = searchQuery.trim().toLowerCase();
-    const bySeverity = severityFilter === "all"
-      ? clusters
-      : clusters.filter((cluster) => cluster.severity === severityFilter);
-    const byKeyword = keyword.length === 0
-      ? bySeverity
-      : bySeverity.filter((cluster) =>
-          `${cluster.title} ${cluster.normalizedMessage} ${cluster.suggestedActions.join(" ")}`
-            .toLowerCase()
-            .includes(keyword)
-        );
+    const bySeverity =
+      severityFilter === "all" ? clusters : clusters.filter((cluster) => cluster.severity === severityFilter);
+    const byKeyword =
+      keyword.length === 0
+        ? bySeverity
+        : bySeverity.filter((cluster) =>
+            `${cluster.title} ${cluster.normalizedMessage} ${cluster.suggestedActions.join(" ")}`
+              .toLowerCase()
+              .includes(keyword)
+          );
 
     return sortLogClusters(byKeyword, sortKey);
   }, [clusters, searchQuery, severityFilter, sortKey]);
 
   const selectedCluster = useMemo(
-    () => filteredClusters.find((cluster) => cluster.normalizedMessage === selectedClusterKey) ?? filteredClusters[0] ?? null,
+    () =>
+      filteredClusters.find((cluster) => cluster.normalizedMessage === selectedClusterKey) ??
+      filteredClusters[0] ??
+      null,
     [filteredClusters, selectedClusterKey]
   );
 
@@ -218,8 +285,27 @@ export default function LogsPage() {
     deleteViewMutation.mutate(id);
   };
 
-  const saveViewMutation = useMutation({ mutationFn: (view: LogsSavedView) => upsertLogSavedView({ name: view.name, severity: view.severity, query: view.query, sort: view.sort, visibility: "team" }), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.logSavedViews() }); toast.success("팀 공유 로그 뷰를 저장했습니다."); } });
-  const deleteViewMutation = useMutation({ mutationFn: deleteLogSavedView, onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.logSavedViews() }); toast.success("저장 뷰를 삭제했습니다."); } });
+  const saveViewMutation = useMutation({
+    mutationFn: (view: LogsSavedView) =>
+      upsertLogSavedView({
+        name: view.name,
+        severity: view.severity,
+        query: view.query,
+        sort: view.sort,
+        visibility: "team"
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.logSavedViews() });
+      toast.success("팀 공유 로그 뷰를 저장했습니다.");
+    }
+  });
+  const deleteViewMutation = useMutation({
+    mutationFn: deleteLogSavedView,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.logSavedViews() });
+      toast.success("저장 뷰를 삭제했습니다.");
+    }
+  });
 
   const clearSavedViews = async () => {
     const actor = readAuthSession()?.user.email;
@@ -257,7 +343,15 @@ export default function LogsPage() {
     downloadCsv(
       `opslens-log-clusters-${new Date().toISOString().slice(0, 10)}.csv`,
       ["제목", "심각도", "발생 횟수", "최초 발생", "최근 발생", "영향 영역", "정규화 메시지"],
-      filteredClusters.map((cluster) => [cluster.title, cluster.severity, cluster.count, cluster.firstSeen, cluster.lastSeen, cluster.affectedArea, cluster.normalizedMessage])
+      filteredClusters.map((cluster) => [
+        cluster.title,
+        cluster.severity,
+        cluster.count,
+        cluster.firstSeen,
+        cluster.lastSeen,
+        cluster.affectedArea,
+        cluster.normalizedMessage
+      ])
     );
   };
 
@@ -265,22 +359,55 @@ export default function LogsPage() {
     <ConsolePageStack>
       <Box className="border-default bg-surface rounded-[var(--radius-xl)] border px-[var(--space-4)] py-[var(--space-3)] md:px-[var(--space-5)]">
         <Flex className="items-center justify-between gap-[var(--space-3)]">
-          <Typography as="h2" variant="headingMd" className="tracking-[-0.01em]">로그 운영 분석</Typography>
+          <Typography as="h2" variant="headingMd" className="tracking-[-0.01em]">
+            로그 운영 분석
+          </Typography>
           <Flex className="flex-wrap items-center gap-[var(--space-2)]">
             <Typography as="p" variant="caption" color="subtle" className="mr-[var(--space-1)]">
               최근 분석: {analyzedAtLabel}
             </Typography>
-            <Badge variant="secondary" size="sm">서비스: {serviceLabel}</Badge>
-            <Button type="button" variant="secondary" size="sm" onClick={exportClusters} disabled={filteredClusters.length === 0}>
+            <Badge variant="secondary" size="sm">
+              서비스: {serviceLabel}
+            </Badge>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={exportClusters}
+              disabled={filteredClusters.length === 0}
+            >
               CSV 내보내기
             </Button>
           </Flex>
         </Flex>
       </Box>
 
-      <ConsoleSectionCard title="로그 수집 신선도" description="서비스·소스별 실제 로그 수신 시각입니다. 30분을 넘기면 수집 상태를 확인하세요.">
+      <ConsoleSectionCard
+        title="로그 수집 신선도"
+        description="서비스·소스별 실제 로그 수신 시각입니다. 30분을 넘기면 수집 상태를 확인하세요."
+      >
         <Grid className="gap-[var(--space-2)] sm:grid-cols-2 xl:grid-cols-5">
-          {sourceFreshness.map((item) => <Box key={item.source} className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]"><Flex className="items-center justify-between gap-[var(--space-2)]"><Typography as="p" variant="bodySm" className="font-semibold">{item.source}</Typography><Badge size="sm" variant={item.stale ? "warning" : "success"}>{item.stale ? "확인 필요" : "정상"}</Badge></Flex><Typography as="p" variant="caption" color="muted" className="mt-[var(--space-2)]">{item.ageMinutes == null ? "수신 이력 없음" : `${item.ageMinutes}분 전 수신`}</Typography><Typography as="p" variant="caption" color="subtle">{item.session ? `최근 1시간 ${item.session.rawLineCount}건` : "로그 소스를 연결하세요"}</Typography></Box>)}
+          {sourceFreshness.map((item) => (
+            <Box
+              key={item.source}
+              className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]"
+            >
+              <Flex className="items-center justify-between gap-[var(--space-2)]">
+                <Typography as="p" variant="bodySm" className="font-semibold">
+                  {item.source}
+                </Typography>
+                <Badge size="sm" variant={item.stale ? "warning" : "success"}>
+                  {item.stale ? "확인 필요" : "정상"}
+                </Badge>
+              </Flex>
+              <Typography as="p" variant="caption" color="muted" className="mt-[var(--space-2)]">
+                {item.ageMinutes == null ? "수신 이력 없음" : `${item.ageMinutes}분 전 수신`}
+              </Typography>
+              <Typography as="p" variant="caption" color="subtle">
+                {item.session ? `최근 1시간 ${item.session.rawLineCount}건` : "로그 소스를 연결하세요"}
+              </Typography>
+            </Box>
+          ))}
         </Grid>
       </ConsoleSectionCard>
 
@@ -372,25 +499,45 @@ export default function LogsPage() {
                           message: "로그를 10자 이상 입력하세요."
                         }
                       })}
-                      className="font-mono text-caption"
+                      className="text-caption font-mono"
                       placeholder="2026-03-25T10:14:11Z ERROR Cannot read properties of undefined at ..."
                     />
                     <Flex className="items-center justify-between gap-[var(--space-2)]">
                       <Flex className="items-center gap-[var(--space-1-5)]">
-                        <Badge size="sm" variant="secondary">라인 {formatNumber(rawLineCount)}</Badge>
-                        {uploadedFileName ? <Badge size="sm" variant="outline">{uploadedFileName}</Badge> : null}
-                        <Badge size="sm" variant={liveTailEnabled ? "info" : "outline"}>Live Tail {liveTailEnabled ? liveTailPaused ? "Paused" : "On" : "Off"}</Badge>
+                        <Badge size="sm" variant="secondary">
+                          라인 {formatNumber(rawLineCount)}
+                        </Badge>
+                        {uploadedFileName ? (
+                          <Badge size="sm" variant="outline">
+                            {uploadedFileName}
+                          </Badge>
+                        ) : null}
+                        <Badge size="sm" variant={liveTailEnabled ? "info" : "outline"}>
+                          Live Tail {liveTailEnabled ? (liveTailPaused ? "Paused" : "On") : "Off"}
+                        </Badge>
                       </Flex>
                       <Flex className="items-center gap-[var(--space-1-5)]">
                         <Button
                           type="button"
                           variant={liveTailEnabled ? "secondary" : "ghost"}
                           size="sm"
-                          onClick={() => { setLiveTailEnabled((prev) => !prev); setLiveTailPaused(false); }}
+                          onClick={() => {
+                            setLiveTailEnabled((prev) => !prev);
+                            setLiveTailPaused(false);
+                          }}
                         >
                           {liveTailEnabled ? "Live Tail 중지" : "Live Tail 시작"}
                         </Button>
-                        {liveTailEnabled ? <Button type="button" variant="ghost" size="sm" onClick={() => setLiveTailPaused((prev) => !prev)}>{liveTailPaused ? "수신 재개" : "수신 일시정지"}</Button> : null}
+                        {liveTailEnabled ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setLiveTailPaused((prev) => !prev)}
+                          >
+                            {liveTailPaused ? "수신 재개" : "수신 일시정지"}
+                          </Button>
+                        ) : null}
                         <Button
                           type="button"
                           variant="ghost"
@@ -429,7 +576,11 @@ export default function LogsPage() {
                               interactive
                               removable
                               onClick={() => setSearchQuery(token.value)}
-                              onRemove={() => setDismissedCorrelationKeys((prev) => (prev.includes(key) ? prev : [...prev, key]))}
+                              onRemove={() =>
+                                setDismissedCorrelationKeys((prev) =>
+                                  prev.includes(key) ? prev : [...prev, key]
+                                )
+                              }
                               removeLabel="토큰 숨기기"
                               className="cursor-pointer"
                             >
@@ -507,9 +658,14 @@ export default function LogsPage() {
             />
           </Box>
         }
-        sidebar={<LogAnalysisSidebar selectedCluster={selectedCluster} summary={summary} onCreateIssue={createIssueFromCluster} />}
+        sidebar={
+          <LogAnalysisSidebar
+            selectedCluster={selectedCluster}
+            summary={summary}
+            onCreateIssue={createIssueFromCluster}
+          />
+        }
       />
-
     </ConsolePageStack>
   );
 }

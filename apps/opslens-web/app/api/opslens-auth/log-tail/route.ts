@@ -35,7 +35,10 @@ export async function GET(request: NextRequest) {
     cache: "no-store"
   });
   if (!upstream.ok || !upstream.body) {
-    return NextResponse.json({ message: "라이브 로그 연결에 실패했습니다." }, { status: upstream.status || 502 });
+    return NextResponse.json(
+      { message: "라이브 로그 연결에 실패했습니다." },
+      { status: upstream.status || 502 }
+    );
   }
 
   const response = new NextResponse(upstream.body, {
@@ -46,6 +49,8 @@ export async function GET(request: NextRequest) {
       "X-Accel-Buffering": "no"
     }
   });
-  createSessionResponse(session).cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
+  createSessionResponse(session)
+    .cookies.getAll()
+    .forEach((cookie) => response.cookies.set(cookie));
   return response;
 }

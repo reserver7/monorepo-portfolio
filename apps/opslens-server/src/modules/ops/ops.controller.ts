@@ -106,17 +106,38 @@ export class OpsController {
   }
 
   @Post("ingest/metrics")
-  ingestMetrics(@Headers("x-opslens-ingestion-key") ingestionKey: string | undefined, @Body() body: ServiceMetricBody) {
-    if (!env.OPS_INGESTION_KEY) throw new ServiceUnavailableException("메트릭 ingestion API가 설정되지 않았습니다.");
-    if (!verifyIngestionKey(ingestionKey, env.OPS_INGESTION_KEY)) throw new UnauthorizedException("메트릭 ingestion 인증에 실패했습니다.");
-    return this.opsService.ingestServiceMetric({ environment: body.environment ?? "", serviceName: body.serviceName ?? "", requests: body.requests ?? -1, errors: body.errors ?? -1, latencyP95Ms: body.latencyP95Ms, occurredAt: body.occurredAt });
+  ingestMetrics(
+    @Headers("x-opslens-ingestion-key") ingestionKey: string | undefined,
+    @Body() body: ServiceMetricBody
+  ) {
+    if (!env.OPS_INGESTION_KEY)
+      throw new ServiceUnavailableException("메트릭 ingestion API가 설정되지 않았습니다.");
+    if (!verifyIngestionKey(ingestionKey, env.OPS_INGESTION_KEY))
+      throw new UnauthorizedException("메트릭 ingestion 인증에 실패했습니다.");
+    return this.opsService.ingestServiceMetric({
+      environment: body.environment ?? "",
+      serviceName: body.serviceName ?? "",
+      requests: body.requests ?? -1,
+      errors: body.errors ?? -1,
+      latencyP95Ms: body.latencyP95Ms,
+      occurredAt: body.occurredAt
+    });
   }
 
   @Post("ingest/ci-status")
-  ingestCiStatus(@Headers("x-opslens-ingestion-key") ingestionKey: string | undefined, @Body() body: CiStatusBody) {
+  ingestCiStatus(
+    @Headers("x-opslens-ingestion-key") ingestionKey: string | undefined,
+    @Body() body: CiStatusBody
+  ) {
     if (!env.OPS_INGESTION_KEY) throw new ServiceUnavailableException("CI webhook이 설정되지 않았습니다.");
-    if (!verifyIngestionKey(ingestionKey, env.OPS_INGESTION_KEY)) throw new UnauthorizedException("CI webhook 인증에 실패했습니다.");
-    return this.opsService.syncDeploymentCiStatus({ environment: body.environment ?? "", version: body.version ?? "", status: body.status ?? "", ciUrl: body.ciUrl });
+    if (!verifyIngestionKey(ingestionKey, env.OPS_INGESTION_KEY))
+      throw new UnauthorizedException("CI webhook 인증에 실패했습니다.");
+    return this.opsService.syncDeploymentCiStatus({
+      environment: body.environment ?? "",
+      version: body.version ?? "",
+      status: body.status ?? "",
+      ciUrl: body.ciUrl
+    });
   }
 
   @UseGuards(OpsAuthGuard)

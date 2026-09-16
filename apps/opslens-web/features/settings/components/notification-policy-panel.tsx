@@ -1,6 +1,17 @@
 "use client";
 
-import { Badge, Box, Button, FormField, Grid, Select, Switch, TimePicker, Typography, type TimeRangeValue } from "@repo/ui";
+import {
+  Badge,
+  Box,
+  Button,
+  FormField,
+  Grid,
+  Select,
+  Switch,
+  TimePicker,
+  Typography,
+  type TimeRangeValue
+} from "@repo/ui";
 import type { OpsNotificationPolicy } from "@/lib/auth";
 import { SETTINGS_IN_APP_NOTIFICATION_LEVEL_OPTIONS } from "../constants";
 
@@ -42,10 +53,20 @@ type ChannelRowProps = {
 
 function ChannelRow({ title, description, checked, onCheckedChange }: ChannelRowProps) {
   return (
-    <Box className={checked ? "border-default flex items-center justify-between rounded-[var(--radius-sm)] border p-[var(--space-2)]" : "border-default bg-surface-elevated/70 flex items-center justify-between rounded-[var(--radius-sm)] border p-[var(--space-2)]"}>
+    <Box
+      className={
+        checked
+          ? "border-default flex items-center justify-between rounded-[var(--radius-sm)] border p-[var(--space-2)]"
+          : "border-default bg-surface-elevated/70 flex items-center justify-between rounded-[var(--radius-sm)] border p-[var(--space-2)]"
+      }
+    >
       <Box className="grid gap-[2px]">
-        <Typography as="p" className="text-body-sm">{title}</Typography>
-        <Typography as="p" color="muted" className="text-caption">{description}</Typography>
+        <Typography as="p" className="text-body-sm">
+          {title}
+        </Typography>
+        <Typography as="p" color="muted" className="text-caption">
+          {description}
+        </Typography>
       </Box>
       <Box className="flex items-center gap-[var(--space-2)]">
         <Badge variant="outline" size="md" shape="pill">
@@ -68,7 +89,9 @@ export function NotificationPolicyPanel({
     <Grid className="gap-[var(--space-3)]">
       <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
         <Grid className="gap-[var(--space-3)]">
-          <Typography as="p" className="text-body-sm font-semibold">채널</Typography>
+          <Typography as="p" className="text-body-sm font-semibold">
+            채널
+          </Typography>
           <ChannelRow
             title="인앱 알림"
             description="대시보드/화면 내 알림을 표시합니다."
@@ -92,7 +115,9 @@ export function NotificationPolicyPanel({
 
       <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
         <Grid className="gap-[var(--space-3)]">
-          <Typography as="p" className="text-body-sm font-semibold">노출 기준</Typography>
+          <Typography as="p" className="text-body-sm font-semibold">
+            노출 기준
+          </Typography>
           <FormField label="최소 알림 레벨" htmlFor="notification-min-level">
             <Select
               value={policy.minLevel}

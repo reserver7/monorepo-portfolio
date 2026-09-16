@@ -24,7 +24,12 @@ import {
   Typography
 } from "@repo/ui";
 import { CollabLocaleFilter } from "@/features/common/components/collab-locale-filter";
-import { createBoard, deleteBoardById, listBoards, whiteboardQueryKeys } from "@/features/whiteboard/boards/api";
+import {
+  createBoard,
+  deleteBoardById,
+  listBoards,
+  whiteboardQueryKeys
+} from "@/features/whiteboard/boards/api";
 import { whiteboardClientEnv } from "@/lib/config";
 import {
   getStoredDisplayName,
@@ -214,9 +219,12 @@ export default function WhiteboardHomePage() {
         ]}
       />
       <main className="mx-auto min-h-screen w-full max-w-[1360px] px-4 pb-10 pt-3 md:px-8 md:pb-12 md:pt-4">
-        <MarketingSection tone="light" className="mb-6 bg-surface-elevated/45">
+        <MarketingSection tone="light" className="bg-surface-elevated/45 mb-6">
           <section className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-            <Card className="border-default/80 bg-surface border p-6 shadow-[var(--shadow-card)] md:p-8" radius="lg">
+            <Card
+              className="border-default/80 bg-surface border p-6 shadow-[var(--shadow-card)] md:p-8"
+              radius="lg"
+            >
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <Badge variant="success" size="lg" className="font-semibold uppercase tracking-wide">
                   Realtime Whiteboard
@@ -290,7 +298,10 @@ export default function WhiteboardHomePage() {
               </div>
             </Card>
 
-            <Card className="border-default/80 bg-surface border p-6 shadow-[var(--shadow-card)] md:p-8" radius="lg">
+            <Card
+              className="border-default/80 bg-surface border p-6 shadow-[var(--shadow-card)] md:p-8"
+              radius="lg"
+            >
               <Typography as="h2" variant="title">
                 {t("overview.title")}
               </Typography>
@@ -415,7 +426,7 @@ export default function WhiteboardHomePage() {
                       </div>
                     </div>
 
-                    <div className="border-default/70 mt-2 min-h-[3.2rem] space-y-1 rounded-xl border bg-surface-elevated/60 p-3">
+                    <div className="border-default/70 bg-surface-elevated/60 mt-2 min-h-[3.2rem] space-y-1 rounded-xl border p-3">
                       <Typography as="p" variant="bodySm" color="subtle">
                         {t("list.card.updatedRelative")}: {formatRelativeTime(board.updatedAt, locale)}
                       </Typography>

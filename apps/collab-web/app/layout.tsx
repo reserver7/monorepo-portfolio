@@ -25,7 +25,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <head>
         <AppHead />
       </head>
-      <body className={`${appFont.className} font-body text-foreground dark:text-foreground min-h-screen antialiased`}>
+      <body
+        className={`${appFont.className} font-body text-foreground dark:text-foreground min-h-screen antialiased`}
+      >
         <Providers initialLocale={locale}>{children}</Providers>
       </body>
     </html>

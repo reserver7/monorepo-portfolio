@@ -13,13 +13,23 @@ type ReportPriorityIssuesProps = {
 
 export function ReportPriorityIssues({ issues }: ReportPriorityIssuesProps) {
   if (issues.length === 0) {
-    return <FeedbackState variant="empty" size="sm" title="우선 대응 이슈가 없습니다." className="mt-[var(--space-3)]" />;
+    return (
+      <FeedbackState
+        variant="empty"
+        size="sm"
+        title="우선 대응 이슈가 없습니다."
+        className="mt-[var(--space-3)]"
+      />
+    );
   }
 
   return (
     <Box className="space-y-[var(--space-2)]">
       {issues.map((issue) => (
-        <Box key={issue.issueId} className="border-default bg-surface-elevated rounded-[var(--radius-md)] border p-[var(--space-3)]">
+        <Box
+          key={issue.issueId}
+          className="border-default bg-surface-elevated rounded-[var(--radius-md)] border p-[var(--space-3)]"
+        >
           <Typography as="p" variant="bodySm" className="line-clamp-2 font-semibold">
             {issue.title}
           </Typography>

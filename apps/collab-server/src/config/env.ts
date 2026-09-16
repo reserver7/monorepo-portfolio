@@ -3,10 +3,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 const loadEnvFiles = (): void => {
-  const candidates = [
-    resolve(process.cwd(), "apps/collab-server/.env"),
-    resolve(process.cwd(), ".env")
-  ];
+  const candidates = [resolve(process.cwd(), "apps/collab-server/.env"), resolve(process.cwd(), ".env")];
 
   for (const filePath of new Set(candidates)) {
     if (existsSync(filePath)) loadDotenv({ path: filePath, override: false });

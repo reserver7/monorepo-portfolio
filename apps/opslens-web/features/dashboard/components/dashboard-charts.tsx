@@ -46,7 +46,11 @@ ChartJS.register(
 
 type Summary = Pick<DashboardSummary, "severityDistribution" | "errorTrend24h" | "topRepeatedErrors">;
 
-export const SeverityDistributionChart = memo(function SeverityDistributionChart({ summary }: { summary: Summary }) {
+export const SeverityDistributionChart = memo(function SeverityDistributionChart({
+  summary
+}: {
+  summary: Summary;
+}) {
   const tDashboard = useTranslations("dashboard");
   const eventUnit = tDashboard("units.events");
   const total = summary.severityDistribution.reduce((acc, item) => acc + item.count, 0);
@@ -222,7 +226,8 @@ export const ErrorTrendChart = memo(function ErrorTrendChart({ summary }: { summ
           label: (context) => `${context.dataset.label}: ${context.parsed.y}${eventUnit}`,
           afterBody: (items) => {
             const current = items[0]?.parsed?.y ?? 0;
-            const previous = items[0]?.dataIndex && items[0].dataIndex > 0 ? counts[items[0].dataIndex - 1] ?? 0 : 0;
+            const previous =
+              items[0]?.dataIndex && items[0].dataIndex > 0 ? (counts[items[0].dataIndex - 1] ?? 0) : 0;
             const diff = current - previous;
             if (items[0]?.dataIndex === 0) return [];
             return [`${deltaLabel}: ${diff > 0 ? "+" : ""}${diff}${eventUnit}`];
@@ -252,7 +257,11 @@ export const ErrorTrendChart = memo(function ErrorTrendChart({ summary }: { summ
   );
 });
 
-export const TopRepeatedErrorsChart = memo(function TopRepeatedErrorsChart({ summary }: { summary: Summary }) {
+export const TopRepeatedErrorsChart = memo(function TopRepeatedErrorsChart({
+  summary
+}: {
+  summary: Summary;
+}) {
   const tDashboard = useTranslations("dashboard");
   const eventUnit = tDashboard("units.events");
   const total = summary.topRepeatedErrors.reduce((acc, item) => acc + item.count, 0);

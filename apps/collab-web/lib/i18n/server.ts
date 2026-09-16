@@ -68,7 +68,8 @@ export const getAppMetadataText = (locale: CollabLocale) => {
     },
     ja: {
       appName: "Collaborative Suite",
-      description: "ドキュメントとホワイトボードを1つのワークスペースで提供するリアルタイム共同作業プラットフォーム",
+      description:
+        "ドキュメントとホワイトボードを1つのワークスペースで提供するリアルタイム共同作業プラットフォーム",
       keywords: ["コラボレーション", "ドキュメント", "ホワイトボード", "リアルタイム編集", "ワークスペース"],
       ogLocale: "ja_JP",
       docsEntityLabel: "ドキュメント",
