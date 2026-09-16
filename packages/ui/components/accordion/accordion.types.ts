@@ -18,7 +18,9 @@ export interface AccordionItemProps extends React.ComponentPropsWithoutRef<typeo
   variant?: AccordionVariant;
 }
 
-export interface AccordionTriggerProps extends React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger> {
+export interface AccordionTriggerProps extends React.ComponentPropsWithoutRef<
+  typeof AccordionPrimitive.Trigger
+> {
   inset?: boolean;
   chevronPosition?: AccordionChevronPosition;
   rotateChevron?: boolean;
@@ -27,6 +29,8 @@ export interface AccordionTriggerProps extends React.ComponentPropsWithoutRef<ty
   rightSlot?: React.ReactNode;
 }
 
-export interface AccordionContentProps extends React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content> {
+export interface AccordionContentProps extends React.ComponentPropsWithoutRef<
+  typeof AccordionPrimitive.Content
+> {
   noPadding?: boolean;
 }

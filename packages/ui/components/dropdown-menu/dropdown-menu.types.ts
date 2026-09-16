@@ -7,17 +7,22 @@ export type DropdownMenuItemSize = "sm" | "md" | "lg";
 export type DropdownMenuLabelSize = "sm" | "md" | "lg";
 export type DropdownMenuItemColor = "default" | "danger" | UiColorToken;
 
-export interface DropdownMenuContentProps extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> {
+export interface DropdownMenuContentProps extends React.ComponentPropsWithoutRef<
+  typeof DropdownMenuPrimitive.Content
+> {
   size?: DropdownMenuContentSize;
 }
 
-export interface DropdownMenuSubTriggerProps
-  extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> {
+export interface DropdownMenuSubTriggerProps extends React.ComponentPropsWithoutRef<
+  typeof DropdownMenuPrimitive.SubTrigger
+> {
   inset?: boolean;
   size?: DropdownMenuItemSize;
 }
 
-export interface DropdownMenuItemProps extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> {
+export interface DropdownMenuItemProps extends React.ComponentPropsWithoutRef<
+  typeof DropdownMenuPrimitive.Item
+> {
   inset?: boolean;
   size?: DropdownMenuItemSize;
   color?: DropdownMenuItemColor;
@@ -26,21 +31,25 @@ export interface DropdownMenuItemProps extends React.ComponentPropsWithoutRef<ty
   rightSlot?: React.ReactNode;
 }
 
-export interface DropdownMenuCheckboxItemProps
-  extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem> {
+export interface DropdownMenuCheckboxItemProps extends React.ComponentPropsWithoutRef<
+  typeof DropdownMenuPrimitive.CheckboxItem
+> {
   size?: DropdownMenuItemSize;
   color?: DropdownMenuItemColor;
   keepOpenOnSelect?: boolean;
 }
 
-export interface DropdownMenuRadioItemProps
-  extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem> {
+export interface DropdownMenuRadioItemProps extends React.ComponentPropsWithoutRef<
+  typeof DropdownMenuPrimitive.RadioItem
+> {
   size?: DropdownMenuItemSize;
   color?: DropdownMenuItemColor;
   keepOpenOnSelect?: boolean;
 }
 
-export interface DropdownMenuLabelProps extends React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> {
+export interface DropdownMenuLabelProps extends React.ComponentPropsWithoutRef<
+  typeof DropdownMenuPrimitive.Label
+> {
   inset?: boolean;
   size?: DropdownMenuLabelSize;
 }

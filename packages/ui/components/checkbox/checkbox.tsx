@@ -42,8 +42,11 @@ function CheckboxBase(
 ) {
   const generatedId = React.useId();
   const resolvedId = id ?? `checkbox-${generatedId}`;
-  const supportText = errorMessage ?? helperText ?? (required && !label ? "필수 체크 항목입니다." : undefined);
-  const hasWrapper = Boolean(required || label || supportText || containerClassName || labelClassName || helperClassName);
+  const supportText =
+    errorMessage ?? helperText ?? (required && !label ? "필수 체크 항목입니다." : undefined);
+  const hasWrapper = Boolean(
+    required || label || supportText || containerClassName || labelClassName || helperClassName
+  );
   const resolvedSize = resolveOption(size, CHECKBOX_SIZE_CLASS, CHECKBOX_DEFAULTS.size);
   const handleCheckedChange = React.useCallback(
     (next: CheckboxPrimitive.CheckedState) => {
@@ -76,13 +79,15 @@ function CheckboxBase(
       className={cn(
         CHECKBOX_BASE_CLASS,
         CHECKBOX_SIZE_CLASS[resolvedSize],
-        "shadow-none ring-offset-surface",
+        "ring-offset-surface shadow-none",
         errorMessage ? "border-danger/50 focus-visible:ring-danger/20" : null,
         className
       )}
       {...props}
     >
-      <CheckboxPrimitive.Indicator className="flex items-center justify-center text-current">{icon}</CheckboxPrimitive.Indicator>
+      <CheckboxPrimitive.Indicator className="flex items-center justify-center text-current">
+        {icon}
+      </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
   );
 
@@ -92,7 +97,12 @@ function CheckboxBase(
 
   return (
     <div className={cn("grid gap-[var(--space-1)]", containerClassName)}>
-      <div className={cn("gap-2", orientation === "vertical" ? "flex flex-col items-start" : "flex items-center")}>
+      <div
+        className={cn(
+          "gap-2",
+          orientation === "vertical" ? "flex flex-col items-start" : "flex items-center"
+        )}
+      >
         {checkboxNode}
         {label ? (
           <Label htmlFor={resolvedId} size="sm" className={cn("cursor-pointer leading-5", labelClassName)}>
@@ -111,7 +121,10 @@ function CheckboxBase(
       <FieldSupportText
         message={supportText}
         error={Boolean(errorMessage)}
-        className={cn(orientation === "horizontal" ? (resolvedSize === "md" ? "pl-7" : "pl-6") : null, helperClassName)}
+        className={cn(
+          orientation === "horizontal" ? (resolvedSize === "md" ? "pl-7" : "pl-6") : null,
+          helperClassName
+        )}
       />
     </div>
   );
@@ -120,49 +133,51 @@ function CheckboxBase(
 const CheckboxBaseWithRef = React.forwardRef(CheckboxBase);
 CheckboxBaseWithRef.displayName = "CheckboxBase";
 
-const CheckboxComponent = React.forwardRef<React.ElementRef<typeof CheckboxPrimitive.Root>, CheckboxProps>((props, ref) => {
-  const { control, rules, name, onCheckedChange, checked, defaultChecked, required, ...rest } = props;
-  const mergedRules = React.useMemo<CheckboxProps["rules"]>(() => {
-    if (!required || rules?.required) return rules;
-    return { required: "필수 체크 항목입니다.", ...rules };
-  }, [required, rules]);
+const CheckboxComponent = React.forwardRef<React.ElementRef<typeof CheckboxPrimitive.Root>, CheckboxProps>(
+  (props, ref) => {
+    const { control, rules, name, onCheckedChange, checked, defaultChecked, required, ...rest } = props;
+    const mergedRules = React.useMemo<CheckboxProps["rules"]>(() => {
+      if (!required || rules?.required) return rules;
+      return { required: "필수 체크 항목입니다.", ...rules };
+    }, [required, rules]);
 
-  if (control && typeof name === "string" && name.length > 0) {
+    if (control && typeof name === "string" && name.length > 0) {
+      return (
+        <Controller
+          control={control as any}
+          name={name as any}
+          rules={mergedRules}
+          render={({ field }) => (
+            <CheckboxBaseWithRef
+              {...rest}
+              required={required}
+              ref={ref}
+              name={field.name}
+              checked={Boolean(field.value)}
+              onCheckedChange={(next) => {
+                field.onChange(next);
+                onCheckedChange?.(next);
+              }}
+              onBlur={field.onBlur}
+            />
+          )}
+        />
+      );
+    }
+
     return (
-      <Controller
-        control={control as any}
-        name={name as any}
-        rules={mergedRules}
-        render={({ field }) => (
-          <CheckboxBaseWithRef
-            {...rest}
-            required={required}
-            ref={ref}
-            name={field.name}
-            checked={Boolean(field.value)}
-            onCheckedChange={(next) => {
-              field.onChange(next);
-              onCheckedChange?.(next);
-            }}
-            onBlur={field.onBlur}
-          />
-        )}
+      <CheckboxBaseWithRef
+        {...rest}
+        required={required}
+        ref={ref}
+        name={name}
+        checked={checked}
+        defaultChecked={defaultChecked}
+        onCheckedChange={onCheckedChange}
       />
     );
   }
-
-  return (
-    <CheckboxBaseWithRef
-      {...rest}
-      required={required}
-      ref={ref}
-      name={name}
-      checked={checked}
-      defaultChecked={defaultChecked}
-      onCheckedChange={onCheckedChange}
-    />
-  );
-});
+);
 CheckboxComponent.displayName = "Checkbox";
 
 export const Checkbox = React.memo(CheckboxComponent);

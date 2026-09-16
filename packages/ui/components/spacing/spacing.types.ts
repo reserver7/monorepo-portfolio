@@ -8,4 +8,3 @@ export interface SpacingProps extends React.HTMLAttributes<HTMLDivElement> {
   axis?: SpacingAxis;
   responsive?: boolean;
 }
-

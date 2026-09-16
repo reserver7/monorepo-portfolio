@@ -142,8 +142,11 @@ body {
 }
 
 .marketing-nav-glass {
-  background:
-    linear-gradient(180deg, rgb(var(--color-bg-surface) / 0.94), rgb(var(--color-bg-surface-raised) / 0.9));
+  background: linear-gradient(
+    180deg,
+    rgb(var(--color-bg-surface) / 0.94),
+    rgb(var(--color-bg-surface-raised) / 0.9)
+  );
   border-bottom: 1px solid rgb(var(--color-border-default) / 0.9);
   box-shadow: 0 8px 28px rgb(15 23 42 / 0.08);
   backdrop-filter: saturate(180%) blur(20px);

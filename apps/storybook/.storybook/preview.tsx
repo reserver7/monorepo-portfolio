@@ -51,7 +51,11 @@ const preview: Preview = {
         return <Story />;
       }
 
-      return <div className="sb-center-wrap"><Story /></div>;
+      return (
+        <div className="sb-center-wrap">
+          <Story />
+        </div>
+      );
     }
   ],
   parameters: {

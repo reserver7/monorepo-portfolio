@@ -19,7 +19,11 @@ export const getSpacingClassName = (params: {
 }) => {
   const { size, axis, responsive, className } = params;
   const resolvedSize = resolveOption(size, SPACING_BLOCK_CLASS, SPACING_DEFAULTS.size);
-  const resolvedAxis = resolveOption(axis, { vertical: true, horizontal: true, both: true }, SPACING_DEFAULTS.axis);
+  const resolvedAxis = resolveOption(
+    axis,
+    { vertical: true, horizontal: true, both: true },
+    SPACING_DEFAULTS.axis
+  );
   const responsiveClass =
     responsive && resolvedAxis === "vertical"
       ? SPACING_BLOCK_RESPONSIVE_CLASS[resolvedSize]

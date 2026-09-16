@@ -31,7 +31,11 @@ export const Skeleton = React.memo(function Skeleton({
 }: SkeletonProps) {
   const resolvedVariant = resolveOption(variant, SKELETON_VARIANT_CLASS, SKELETON_DEFAULTS.variant);
   const requestedAnimation = animation ?? (shimmer ? "pulse" : "none");
-  const resolvedAnimation = resolveOption(requestedAnimation, SKELETON_ANIMATION_CLASS, SKELETON_DEFAULTS.animation);
+  const resolvedAnimation = resolveOption(
+    requestedAnimation,
+    SKELETON_ANIMATION_CLASS,
+    SKELETON_DEFAULTS.animation
+  );
   const hasPresetColor = Object.prototype.hasOwnProperty.call(SKELETON_COLOR_CLASS, color);
   const resolvedColor = hasPresetColor
     ? resolveOption(color as keyof typeof SKELETON_COLOR_CLASS, SKELETON_COLOR_CLASS, SKELETON_DEFAULTS.color)

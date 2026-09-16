@@ -28,7 +28,11 @@ const PopoverContent = React.forwardRef<
   ) => {
     const resolvedSize = resolveOption(size, POPOVER_SIZE_CLASS, POPOVER_DEFAULTS.size);
     const resolvedVariant = resolveOption(variant, POPOVER_VARIANT_CLASS, POPOVER_DEFAULTS.variant);
-    const resolvedAlign = resolveOption(align, { start: true, center: true, end: true }, POPOVER_DEFAULTS.align);
+    const resolvedAlign = resolveOption(
+      align,
+      { start: true, center: true, end: true },
+      POPOVER_DEFAULTS.align
+    );
     return (
       <PopoverPrimitive.Portal>
         <PopoverPrimitive.Content
@@ -36,7 +40,7 @@ const PopoverContent = React.forwardRef<
           align={resolvedAlign}
           sideOffset={sideOffset}
           className={cn(
-            "z-50 rounded-[var(--radius-md)] border p-4 shadow-card outline-none",
+            "shadow-card z-50 rounded-[var(--radius-md)] border p-4 outline-none",
             POPOVER_SIZE_CLASS[resolvedSize],
             POPOVER_VARIANT_CLASS[resolvedVariant],
             className

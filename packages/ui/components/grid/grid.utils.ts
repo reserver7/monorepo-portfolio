@@ -35,7 +35,9 @@ export const getGridClassName = (params: {
 
   return cn(
     "grid",
-    autoFit ? "[grid-template-columns:repeat(auto-fit,minmax(var(--grid-min-column-width),1fr))]" : GRID_COLUMNS_CLASS[resolvedColumns],
+    autoFit
+      ? "[grid-template-columns:repeat(auto-fit,minmax(var(--grid-min-column-width),1fr))]"
+      : GRID_COLUMNS_CLASS[resolvedColumns],
     GRID_ALIGN_CLASS[resolvedAlign],
     GRID_JUSTIFY_CLASS[resolvedJustify],
     GRID_GAP_CLASS[resolvedGap],
@@ -54,7 +56,11 @@ export const getGridStyle = (params: {
 }) => {
   const { autoFit, minColumnWidth, style } = params;
   if (!autoFit) return style;
-  const resolvedMinColumnWidth = resolveOption(minColumnWidth, GRID_MIN_COLUMN_WIDTH_VALUE, GRID_DEFAULTS.minColumnWidth);
+  const resolvedMinColumnWidth = resolveOption(
+    minColumnWidth,
+    GRID_MIN_COLUMN_WIDTH_VALUE,
+    GRID_DEFAULTS.minColumnWidth
+  );
   return {
     ...(style ?? {}),
     "--grid-min-column-width": GRID_MIN_COLUMN_WIDTH_VALUE[resolvedMinColumnWidth]

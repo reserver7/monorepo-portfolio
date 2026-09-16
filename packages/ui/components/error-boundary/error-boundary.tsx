@@ -8,11 +8,7 @@ import { cn } from "../cn";
 import { Typography } from "../typography";
 import { ERROR_BOUNDARY_DEFAULTS } from "./error-boundary.constants";
 import { navigateToHomeSafely, shouldShowErrorDetail } from "./error-boundary.utils";
-import type {
-  ErrorBoundaryProps,
-  ErrorBoundaryState,
-  ErrorFallbackViewProps
-} from "./error-boundary.types";
+import type { ErrorBoundaryProps, ErrorBoundaryState, ErrorFallbackViewProps } from "./error-boundary.types";
 
 function ErrorFallbackView({
   title,
@@ -30,10 +26,12 @@ function ErrorFallbackView({
       <div
         className={cn(
           "mx-auto flex w-full max-w-2xl items-center justify-center",
-          fullScreen ? "min-h-[var(--size-error-boundary-full-min-h)]" : "min-h-[var(--size-error-boundary-min-h)]"
+          fullScreen
+            ? "min-h-[var(--size-error-boundary-full-min-h)]"
+            : "min-h-[var(--size-error-boundary-min-h)]"
         )}
       >
-        <Card className="border-default bg-surface w-full rounded-[var(--radius-xl)] border p-6 shadow-card md:p-8">
+        <Card className="border-default bg-surface shadow-card w-full rounded-[var(--radius-xl)] border p-6 md:p-8">
           <div className="mx-auto flex max-w-xl flex-col items-center text-center">
             <div className="bg-danger/10 text-danger mb-4 flex h-12 w-12 items-center justify-center rounded-full">
               <AlertCircle className="h-6 w-6" />

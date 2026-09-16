@@ -15,4 +15,3 @@ export interface FlexProps extends React.HTMLAttributes<HTMLDivElement> {
   inline?: boolean;
   fullWidth?: boolean;
 }
-

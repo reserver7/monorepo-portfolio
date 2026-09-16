@@ -5,10 +5,7 @@ import { cn } from "../cn";
 
 export type FieldStatus = "default" | "error" | "success";
 
-export const resolveFieldStatus = (
-  status?: FieldStatus,
-  hasErrorMessage?: boolean
-): FieldStatus => {
+export const resolveFieldStatus = (status?: FieldStatus, hasErrorMessage?: boolean): FieldStatus => {
   if (status) return status;
   return hasErrorMessage ? "error" : "default";
 };

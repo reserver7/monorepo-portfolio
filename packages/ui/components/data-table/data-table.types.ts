@@ -103,9 +103,7 @@ export interface DataTableProps<T> {
   columnDivider?: boolean;
   headerTextAlign?: DataTableTextAlign;
   cellTextAlign?: DataTableTextAlign;
-  rowClassName?:
-    | string
-    | ((ctx: { row: DataTableRowMeta<T>; selected: boolean }) => string | undefined);
+  rowClassName?: string | ((ctx: { row: DataTableRowMeta<T>; selected: boolean }) => string | undefined);
   onRowClick?: (ctx: { row: DataTableRowMeta<T>; selected: boolean }) => void;
   selectable?: boolean;
   rowSelectionMode?: "single" | "multiple";

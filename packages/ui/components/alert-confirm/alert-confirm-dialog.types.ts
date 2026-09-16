@@ -5,8 +5,9 @@ import type { ButtonProps } from "../button";
 export type AlertConfirmContentSize = "sm" | "md" | "lg";
 export type AlertConfirmContentIntent = "default" | "danger" | "warning" | "info";
 
-export interface AlertConfirmContentProps
-  extends React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content> {
+export interface AlertConfirmContentProps extends React.ComponentPropsWithoutRef<
+  typeof AlertDialogPrimitive.Content
+> {
   size?: AlertConfirmContentSize;
   intent?: AlertConfirmContentIntent;
   preventEscapeClose?: boolean;

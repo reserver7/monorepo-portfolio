@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import prettier from "prettier";
 import { parseExportedNames } from "./lib/ui-storybook-targets.mjs";
 import { loadUiComponentManifest } from "./lib/ui-component-manifest.mjs";
 import { loadUiStorybookMetadata } from "./lib/ui-storybook-metadata.mjs";
@@ -3305,7 +3306,9 @@ const runGenerate = async () => {
     const storyFileName = `${componentName}.stories.tsx`;
     const storyPath = path.join(categoryDir, storyFileName);
     const relativeStoryPath = path.join(category.key, storyFileName);
-    const nextStorySource = ensureStoryArgSanitizer(createStorySource(componentName));
+    const nextStorySource = await prettier.format(ensureStoryArgSanitizer(createStorySource(componentName)), {
+      parser: "typescript"
+    });
 
     await fs.mkdir(categoryDir, { recursive: true });
     nextStoryRelativePaths.add(relativeStoryPath);

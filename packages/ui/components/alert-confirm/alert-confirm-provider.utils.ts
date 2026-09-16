@@ -1,4 +1,11 @@
-import type { AlertInput, AlertOptions, ConfirmInput, ConfirmOptions, PromptConfirmInput, PromptConfirmOptions } from "./alert-confirm.types";
+import type {
+  AlertInput,
+  AlertOptions,
+  ConfirmInput,
+  ConfirmOptions,
+  PromptConfirmInput,
+  PromptConfirmOptions
+} from "./alert-confirm.types";
 
 export const normalizeAlertOptions = (input: AlertInput): AlertOptions =>
   typeof input === "string"

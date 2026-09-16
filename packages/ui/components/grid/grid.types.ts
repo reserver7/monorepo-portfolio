@@ -18,4 +18,3 @@ export interface GridProps extends React.HTMLAttributes<HTMLDivElement> {
   dense?: boolean;
   fullWidth?: boolean;
 }
-

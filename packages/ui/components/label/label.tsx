@@ -31,7 +31,12 @@ const LabelComponent = React.forwardRef<React.ElementRef<typeof LabelPrimitive.R
     return (
       <LabelPrimitive.Root
         ref={ref}
-        className={cn("font-medium leading-none", LABEL_SIZE_CLASS[resolvedSize], LABEL_COLOR_CLASS[resolvedColor], className)}
+        className={cn(
+          "font-medium leading-none",
+          LABEL_SIZE_CLASS[resolvedSize],
+          LABEL_COLOR_CLASS[resolvedColor],
+          className
+        )}
         style={tokenColorValue ? { ...(style ?? {}), color: tokenColorValue } : style}
         {...props}
       >

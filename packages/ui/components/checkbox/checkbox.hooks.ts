@@ -1,7 +1,11 @@
 import * as React from "react";
 import type { CheckboxGroupState } from "./checkbox.types";
 
-export function useCheckboxGroup<T>(items: T[], selected: T[], onChange: (next: T[]) => void): CheckboxGroupState<T> {
+export function useCheckboxGroup<T>(
+  items: T[],
+  selected: T[],
+  onChange: (next: T[]) => void
+): CheckboxGroupState<T> {
   const selectedSet = React.useMemo(() => new Set(selected), [selected]);
   const totalCount = items.length;
   const selectedCount = items.filter((item) => selectedSet.has(item)).length;

@@ -18,7 +18,15 @@ export interface PaginationProps extends React.HTMLAttributes<HTMLElement> {
   boundaryCount?: number;
   showFirstLast?: boolean;
   showPrevNext?: boolean;
-  showTotal?: boolean | ((params: { from: number; to: number; total: number; page: number; pageSize: number }) => React.ReactNode);
+  showTotal?:
+    | boolean
+    | ((params: {
+        from: number;
+        to: number;
+        total: number;
+        page: number;
+        pageSize: number;
+      }) => React.ReactNode);
   showPageInfo?: boolean;
   showPageSizeSelector?: boolean;
   showQuickJumper?: boolean;

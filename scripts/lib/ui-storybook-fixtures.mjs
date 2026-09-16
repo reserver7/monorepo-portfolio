@@ -1,9 +1,5 @@
 const escapeText = (value) =>
-  String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 export const STORYBOOK_SELECT_OPTIONS = [
   { label: "옵션 A", value: "a" },
@@ -46,4 +42,3 @@ export const toCardChildrenMarkup = (items) =>
         `<div className="rounded-[var(--radius-md)] border border-default bg-surface-elevated p-3 text-body-sm">${escapeText(item)}</div>`
     )
     .join("\n    ");
-

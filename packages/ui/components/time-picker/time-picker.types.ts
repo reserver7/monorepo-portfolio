@@ -5,7 +5,14 @@ import type { InputProps } from "../input";
 export type TimeValue = string;
 export type TimeFormat = "HH:mm" | "HH:mm:ss" | "h:mm A" | "h:mm:ss A";
 export type TimePickerPlacement = "bottomLeft" | "bottomRight" | "topLeft" | "topRight";
-export type TimePickerVariant = "outlined" | "filled" | "borderless" | "underlined" | "default" | "outline" | "ghost";
+export type TimePickerVariant =
+  | "outlined"
+  | "filled"
+  | "borderless"
+  | "underlined"
+  | "default"
+  | "outline"
+  | "ghost";
 export type TimePickerStatus = "error" | "warning" | "success" | "validating" | "default";
 export type TimeRangeValue = {
   start?: TimeValue;
@@ -17,8 +24,10 @@ export type DisabledTimeConfig = {
   disabledSeconds?: (selectedHour: number, selectedMinute: number) => number[];
 };
 
-export interface TimePickerProps
-  extends Omit<InputProps, "type" | "value" | "defaultValue" | "onChange" | "prefix" | "suffix" | "status" | "variant"> {
+export interface TimePickerProps extends Omit<
+  InputProps,
+  "type" | "value" | "defaultValue" | "onChange" | "prefix" | "suffix" | "status" | "variant"
+> {
   value?: TimeValue;
   defaultValue?: TimeValue;
   format?: TimeFormat;
@@ -52,7 +61,10 @@ export interface TimePickerProps
   rules?: RegisterOptions<FieldValues>;
 }
 
-export interface TimeRangePickerProps extends Omit<TimePickerProps, "value" | "defaultValue" | "onValueChange" | "onChange" | "name" | "id"> {
+export interface TimeRangePickerProps extends Omit<
+  TimePickerProps,
+  "value" | "defaultValue" | "onValueChange" | "onChange" | "name" | "id"
+> {
   value?: TimeRangeValue;
   defaultValue?: TimeRangeValue;
   onValueChange?: (nextValue: TimeRangeValue) => void;

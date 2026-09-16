@@ -1,5 +1,10 @@
 export { Separator } from "./separator";
-export type { SeparatorProps, SeparatorColor, SeparatorLineStyle, SeparatorThickness } from "./separator.types";
+export type {
+  SeparatorProps,
+  SeparatorColor,
+  SeparatorLineStyle,
+  SeparatorThickness
+} from "./separator.types";
 export {
   SEPARATOR_DEFAULTS,
   SEPARATOR_COLOR_CLASS,

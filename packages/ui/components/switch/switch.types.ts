@@ -6,8 +6,10 @@ import type { UiColorToken } from "../../styles/color-token";
 export type SwitchSize = "sm" | "md";
 export type SwitchColor = "primary" | "success" | "warning" | "danger" | UiColorToken;
 
-export interface SwitchProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>, "onCheckedChange"> {
+export interface SwitchProps extends Omit<
+  React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>,
+  "onCheckedChange"
+> {
   size?: SwitchSize;
   color?: SwitchColor;
   loading?: boolean;
