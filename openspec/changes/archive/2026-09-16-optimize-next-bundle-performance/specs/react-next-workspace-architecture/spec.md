@@ -1,10 +1,4 @@
-# React Next Workspace Architecture Specification
-
-## Purpose
-
-React/Next 애플리케이션과 monorepo 설정의 실행 경계와 계약을 일관되게 관리하여 초기 로딩, hydration, 빌드 재현성과 신규 앱 확장성을 보장한다.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: React와 Next 실행 경계는 의도적으로 분리된다
 
@@ -72,20 +66,6 @@ Next, TypeScript, ESLint, Tailwind, PostCSS, Turbo, pnpm workspace 및 앱 templ
 
 - **WHEN** 앱이 workspace package를 build 대상에 포함한다
 - **THEN** 해당 package가 실제로 소스 변환을 필요로 하는지에 따라 `transpilePackages`가 최소 범위로 설정되고, 불필요한 package의 변환 비용은 포함되지 않는다.
-
-### Requirement: JSON 기반 계약은 schema와 환경별 일관성을 가진다
-
-i18n, component manifest, generated metadata 및 환경 설정 JSON은 schema 검증을 통과해야 하며(MUST), locale 간 필수 key와 생성 원본의 계약을 유지해야 한다(MUST). JSON을 임의의 코드 설정 저장소로 사용해서는 안 된다(MUST NOT).
-
-#### Scenario: locale를 추가하거나 변경한다
-
-- **WHEN** 한 locale의 메시지 JSON이 변경된다
-- **THEN** 필수 key parity, 값 타입 및 중복 key 검사가 실행되어 누락·오탈자를 차단한다
-
-#### Scenario: manifest를 생성한다
-
-- **WHEN** 컴포넌트나 package export가 변경된다
-- **THEN** generated JSON과 실제 export의 차이가 검증 단계에서 감지되고 재생성 또는 명시적 승인 없이는 통과하지 않는다
 
 ### Requirement: 구조 및 성능 변경은 앱 단위로 검증된다
 

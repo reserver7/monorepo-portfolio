@@ -1,10 +1,4 @@
-# UI Performance Composition Audit Specification
-
-## Purpose
-
-UI 컴포넌트의 중복 API와 불필요한 렌더링 비용을 줄이고, 역할에 맞는 composition 경계를 통해 업무 화면에서도 예측 가능한 성능과 유지보수성을 제공한다.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: 모든 workspace package는 감사 범위를 가진다
 
@@ -24,20 +18,6 @@ UI 컴포넌트의 중복 API와 불필요한 렌더링 비용을 줄이고, 역
 
 - **WHEN** workspace package의 barrel import가 사용하지 않는 모듈까지 초기 route에 포함시킨다
 - **THEN** 감사는 영향 route와 모듈을 식별하고, package export 또는 소비 import를 변경할지 근거를 남긴다.
-
-### Requirement: UI public API는 하나의 의미에 하나의 선택지를 제공한다
-
-공용 컴포넌트는 같은 의미의 상태·동작을 여러 prop 이름이나 boolean 조합으로 중복 제공해서는 안 된다(MUST NOT). 복합 동작은 명시적인 compound component 또는 children composition으로 확장할 수 있어야 한다(MUST).
-
-#### Scenario: Modal 닫기 동작을 설정한다
-
-- **WHEN** 개발자가 overlay 닫기 동작을 설정한다
-- **THEN** Escape와 outside click마다 단일한 옵션 체계를 사용하고 서로 반대 의미의 중복 prop을 함께 요구하지 않는다
-
-#### Scenario: 복합 컴포넌트를 확장한다
-
-- **WHEN** 제품이 DataTable 또는 overlay에 toolbar, footer, action을 추가한다
-- **THEN** boolean prop 조합을 늘리지 않고 명시적인 children 또는 slot composition으로 확장할 수 있다
 
 ### Requirement: React 렌더링은 불필요한 작업을 반복하지 않는다
 
