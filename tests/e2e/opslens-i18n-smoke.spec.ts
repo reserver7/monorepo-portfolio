@@ -24,7 +24,7 @@ test.describe("OpsLens locale smoke", () => {
       for (const route of ["/", "/issues", "/logs", "/deployments", "/settings"]) {
         await page.goto(`${opslensUrl}${route}`);
         await expect(page.locator("html")).toHaveAttribute("lang", locale);
-        await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /.+/);
+        await expect(page.locator('meta[name="description"]').first()).toHaveAttribute("content", /.+/);
         await expect(page.locator('meta[property="og:locale"]')).toHaveAttribute("content", ogLocale[locale]);
         await expect(page.locator("body")).not.toContainText("__TODO_TRANSLATE__");
       }
