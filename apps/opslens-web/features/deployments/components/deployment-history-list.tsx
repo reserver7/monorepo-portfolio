@@ -3,11 +3,13 @@
 import { FeedbackState } from "@/features/common/components/feedback-state";
 
 import { CheckCircle2, GitBranch, History } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Badge, Box, Button, Flex, Typography } from "@repo/ui";
+import { useLocale } from "next-intl";
 import { formatDateTime } from "@repo/utils";
 import { OpsCardListSkeleton } from "@/features";
 import type { DeploymentItem } from "../types";
-import { getDeploymentStatusLabel, getDeploymentStatusVariant } from "../utils/deployment-utils";
+import { getDeploymentStatusVariant } from "../utils/deployment-utils";
 
 type DeploymentHistoryListProps = {
   deployments: DeploymentItem[];
@@ -26,24 +28,28 @@ export function DeploymentHistoryList({
   selectedVersion,
   onSelectVersion
 }: DeploymentHistoryListProps) {
+  const locale = useLocale();
+  const t = useTranslations("deployments");
+  const statusLabels = {
+    planned: t("status.planned"),
+    deploying: t("status.deploying"),
+    completed: t("status.completed"),
+    failed: t("status.failed"),
+    rolled_back: t("status.rolledBack")
+  } as const;
   if (isLoading) return <OpsCardListSkeleton count={5} />;
   if (isError)
     return (
       <FeedbackState
         variant="error"
         size="sm"
-        title="배포 이력 조회에 실패했습니다."
+        title={t("history.loadFailed")}
         className="mt-[var(--space-3)]"
       />
     );
   if (deployments.length === 0)
     return (
-      <FeedbackState
-        variant="empty"
-        size="sm"
-        title="등록된 배포가 없습니다."
-        className="mt-[var(--space-3)]"
-      />
+      <FeedbackState variant="empty" size="sm" title={t("history.empty")} className="mt-[var(--space-3)]" />
     );
 
   return (
@@ -74,7 +80,7 @@ export function DeploymentHistoryList({
                     </Typography>
                   </Flex>
                   <Typography as="p" variant="caption" color="subtle" className="mt-[var(--space-1)]">
-                    {formatDateTime(deployment.deployedAt)}
+                    {formatDateTime(deployment.deployedAt, locale)}
                   </Typography>
                 </Box>
                 <Flex className="shrink-0 items-center gap-[var(--space-1)]">
@@ -85,7 +91,7 @@ export function DeploymentHistoryList({
                       shape="rounded"
                       className="border-default bg-surface-elevated border font-semibold"
                     >
-                      최신
+                      {t("history.latest")}
                     </Badge>
                   ) : null}
                   {selected ? (
@@ -102,13 +108,13 @@ export function DeploymentHistoryList({
                   shape="rounded"
                   className="font-semibold"
                 >
-                  {getDeploymentStatusLabel(deployment.status)}
+                  {statusLabels[deployment.status as keyof typeof statusLabels] ?? deployment.status}
                 </Badge>
                 <Badge variant="outline" size="sm" shape="rounded" className="bg-surface font-semibold">
-                  담당 {deployment.owner}
+                  {t("owner", { owner: deployment.owner })}
                 </Badge>
                 <Badge variant="outline" size="sm" shape="rounded" className="bg-surface font-semibold">
-                  {deployment.monitoringWindowMin}분
+                  {t("minutes", { count: deployment.monitoringWindowMin })}
                 </Badge>
               </Flex>
               {deployment.scopeTags.length > 0 ? (

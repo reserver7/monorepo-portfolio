@@ -3,7 +3,7 @@
 import type { ComponentType, ReactNode } from "react";
 import Link from "next/link";
 import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
-import { Button, Typography } from "../components";
+import { Button, Typography, useUiLocale } from "../components";
 import { cn } from "../components/cn";
 
 export type ConsoleNavItem = {
@@ -49,6 +49,7 @@ export function ConsoleAppLayout({
   brandSlot,
   className
 }: ConsoleAppLayoutProps) {
+  const labels = useUiLocale();
   const sidebarExpandedWidthClass = "md:w-64";
   const sidebarCollapsedWidthClass = "md:w-16";
   const sidebarExpandedOffsetClass = "md:pl-64";
@@ -61,7 +62,7 @@ export function ConsoleAppLayout({
           variant="secondary"
           className="bg-foreground/30 hover:bg-foreground/30 active:bg-foreground/30 fixed inset-0 z-30 h-auto w-auto rounded-none border-0 shadow-none md:hidden"
           onClick={onCloseMobile}
-          aria-label="사이드바 닫기"
+          aria-label={labels.closeSidebar}
         />
       ) : null}
 
@@ -126,7 +127,7 @@ export function ConsoleAppLayout({
               leftIcon={<X />}
               onClick={onCloseMobile}
               className="inline-flex md:hidden"
-              aria-label="사이드바 닫기"
+              aria-label={labels.closeSidebar}
             />
           </div>
         </div>
@@ -169,7 +170,7 @@ export function ConsoleAppLayout({
             leftIcon={sidebarCollapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
             onClick={onToggleSidebar}
             className="h-9 w-9 p-0"
-            aria-label="사이드바 접기/펼치기"
+            aria-label={labels.toggleSidebar}
           />
         </div>
       </aside>
@@ -195,7 +196,7 @@ export function ConsoleAppLayout({
                   leftIcon={<Menu />}
                   onClick={onOpenMobile}
                   className="inline-flex md:hidden"
-                  aria-label="사이드바 열기"
+                  aria-label={labels.openSidebar}
                 />
                 <Typography as="p" variant="bodySm" className="font-semibold tracking-[0.01em]">
                   {headerTitle}

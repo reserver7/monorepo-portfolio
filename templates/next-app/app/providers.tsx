@@ -8,6 +8,6 @@ export const Providers = createAppProviders({
       queries: { retry: 1 }
     }
   },
-  fallbackTitle: "__APP_TITLE__ 화면에서 오류가 발생했습니다.",
-  fallbackDescription: "잠시 후 다시 시도하거나 새로고침해 주세요."
+  fallbackTitle: "An error occurred in __APP_TITLE__.",
+  fallbackDescription: "Try again shortly or refresh the page."
 });

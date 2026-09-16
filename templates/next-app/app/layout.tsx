@@ -5,14 +5,14 @@ import "./globals.css";
 
 export const metadata: Metadata = createAppMetadata({
   appName: process.env.NEXT_PUBLIC_APP_TITLE?.trim() || "__APP_TITLE__",
-  description: process.env.NEXT_PUBLIC_APP_DESCRIPTION?.trim() || "__APP_TITLE__ 서비스",
+  description: process.env.NEXT_PUBLIC_APP_DESCRIPTION?.trim() || "__APP_TITLE__ service",
   appUrl: process.env.NEXT_PUBLIC_APP_URL,
   keywords: ["__APP_NAME__", "__APP_TITLE__", "nextjs", "monorepo", "design-system"]
 });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <AppHead />
       </head>

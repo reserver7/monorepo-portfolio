@@ -83,13 +83,13 @@ export function ProfileMenu({
           leftSlot={<ClipboardList className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />}
           onSelect={onMoveToMyIssues}
         >
-          내 담당 이슈
+          {tProfile("myIssues")}
         </DropdownMenuItem>
         <DropdownMenuItem
           leftSlot={<Bell className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />}
           onSelect={onMoveToNotifications}
         >
-          내 알림 설정
+          {tProfile("myNotifications")}
         </DropdownMenuItem>
         <DropdownMenuItem
           leftSlot={<Zap className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />}
@@ -100,7 +100,7 @@ export function ProfileMenu({
           }
           onSelect={onToggleFocusMode}
         >
-          운영 집중 모드
+          {tProfile("focusMode")}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -113,7 +113,7 @@ export function ProfileMenu({
           leftSlot={<History className="h-[var(--size-icon-md)] w-[var(--size-icon-md)]" />}
           onSelect={onMoveToAudit}
         >
-          감사 로그
+          {tProfile("auditLog")}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem

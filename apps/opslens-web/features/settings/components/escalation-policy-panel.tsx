@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Badge, Box, Button, Grid, Input, Select, Typography } from "@repo/ui";
 import type { OpsSetting } from "@repo/opslens";
 
@@ -51,6 +52,7 @@ export function EscalationPolicyPanel({
   saving: boolean;
   onSave: (value: string) => void;
 }) {
+  const t = useTranslations("settings.escalation");
   const [policy, setPolicy] = useState<EscalationPolicy>(() => parseEscalationPolicy(setting?.value));
 
   useEffect(() => setPolicy(parseEscalationPolicy(setting?.value)), [setting?.value]);
@@ -65,11 +67,11 @@ export function EscalationPolicyPanel({
   return (
     <Box className="space-y-[var(--space-3)]">
       <Typography as="p" variant="caption" color="muted">
-        Critical/High 인시던트가 확인 또는 다음 공지 기한을 넘기면 커맨드 센터의 에스컬레이션 큐에 표시됩니다.
+        {t("description")}
       </Typography>
       <Grid className="gap-[var(--space-3)] md:grid-cols-3">
         <Input
-          label="최초 확인 기한(분)"
+          label={t("acknowledge")}
           type="number"
           min={1}
           value={String(policy.acknowledgeWithinMinutes)}
@@ -79,7 +81,7 @@ export function EscalationPolicyPanel({
           disabled={!isAdmin}
         />
         <Input
-          label="상태 공지 기한(분)"
+          label={t("statusUpdate")}
           type="number"
           min={1}
           value={String(policy.statusUpdateWithinMinutes)}
@@ -89,7 +91,7 @@ export function EscalationPolicyPanel({
           disabled={!isAdmin}
         />
         <Select
-          label="최대 에스컬레이션"
+          label={t("maxLevel")}
           value={String(policy.maxLevel)}
           onChange={(value) => setPolicy((previous) => ({ ...previous, maxLevel: Number(value) }))}
           disabled={!isAdmin}
@@ -97,19 +99,22 @@ export function EscalationPolicyPanel({
         />
       </Grid>
       <Input
-        label="에스컬레이션 순서 / 대상"
+        label={t("targets")}
         value={policy.escalationTargets}
         onChange={(event) =>
           setPolicy((previous) => ({ ...previous, escalationTargets: event.target.value }))
         }
         disabled={!isAdmin}
-        placeholder="예: Primary on-call → Backup → Incident commander"
+        placeholder={t("targetsPlaceholder")}
       />
       <Box className="flex flex-wrap items-center gap-[var(--space-2)]">
         <Badge size="sm" variant={valid ? "success" : "warning"}>
           {valid
-            ? `확인 ${policy.acknowledgeWithinMinutes}분 · 공지 ${policy.statusUpdateWithinMinutes}분`
-            : "기한과 대상을 입력하세요"}
+            ? t("valid", {
+                acknowledge: policy.acknowledgeWithinMinutes,
+                update: policy.statusUpdateWithinMinutes
+              })
+            : t("invalid")}
         </Badge>
         {isAdmin ? (
           <Button
@@ -119,7 +124,7 @@ export function EscalationPolicyPanel({
             disabled={!valid || unchanged}
             onClick={() => onSave(serialized)}
           >
-            에스컬레이션 정책 저장
+            {t("save")}
           </Button>
         ) : null}
       </Box>

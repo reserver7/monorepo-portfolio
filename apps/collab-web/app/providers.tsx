@@ -1,18 +1,47 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AppProviders } from "@repo/theme";
-import { NextIntlClientProvider } from "next-intl";
-import { COLLAB_DEFAULT_LOCALE, collabMessages, type CollabLocale } from "@/lib/i18n/messages";
+import { NextIntlClientProvider, useLocale, useTranslations } from "next-intl";
+import { COLLAB_DEFAULT_LOCALE, type CollabLocale } from "@/lib/i18n/messages";
 import { CollabLocaleStoreProvider, useCollabLocaleStore } from "@/features/stores";
 
-function CollabI18nProvider({ children }: { children: React.ReactNode }) {
+const loadLocaleMessages = async (locale: CollabLocale): Promise<Record<string, unknown>> => {
+  if (locale === "en") {
+    const mod = await import("@/lib/i18n/messages/en.json");
+    return mod.default as Record<string, unknown>;
+  }
+  if (locale === "ja") {
+    const mod = await import("@/lib/i18n/messages/ja.json");
+    return mod.default as Record<string, unknown>;
+  }
+  const mod = await import("@/lib/i18n/messages/ko.json");
+  return mod.default as Record<string, unknown>;
+};
+
+function CollabI18nProvider({
+  children,
+  initialMessages
+}: {
+  children: React.ReactNode;
+  initialMessages: Record<string, unknown>;
+}) {
   const locale = useCollabLocaleStore((state) => state.locale);
   const resolvedLocale = locale ?? COLLAB_DEFAULT_LOCALE;
-  const messages = collabMessages[resolvedLocale] ?? collabMessages[COLLAB_DEFAULT_LOCALE];
+  const [messages, setMessages] = useState<Record<string, unknown>>(initialMessages);
 
   useEffect(() => {
     document.cookie = `collab-locale=${resolvedLocale}; path=/; max-age=31536000; samesite=lax`;
+  }, [resolvedLocale]);
+
+  useEffect(() => {
+    let active = true;
+    void loadLocaleMessages(resolvedLocale).then((nextMessages) => {
+      if (active) setMessages(nextMessages);
+    });
+    return () => {
+      active = false;
+    };
   }, [resolvedLocale]);
 
   return (
@@ -22,24 +51,39 @@ function CollabI18nProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+function LocalizedAppProviders({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("error");
+  const locale = useLocale();
+
+  return (
+    <AppProviders
+      locale={locale}
+      queryClientConfig={{
+        defaultOptions: {
+          queries: { retry: 1 }
+        }
+      }}
+      fallbackTitle={t("fallbackTitle")}
+      fallbackDescription={t("fallbackDescription")}
+    >
+      {children}
+    </AppProviders>
+  );
+}
+
 export function Providers({
   children,
-  initialLocale
-}: Readonly<{ children: React.ReactNode; initialLocale: CollabLocale }>) {
+  initialLocale,
+  initialMessages
+}: Readonly<{
+  children: React.ReactNode;
+  initialLocale: CollabLocale;
+  initialMessages: Record<string, unknown>;
+}>) {
   return (
     <CollabLocaleStoreProvider initialLocale={initialLocale}>
-      <CollabI18nProvider>
-        <AppProviders
-          queryClientConfig={{
-            defaultOptions: {
-              queries: { retry: 1 }
-            }
-          }}
-          fallbackTitle="문서 화면에서 오류가 발생했습니다."
-          fallbackDescription="잠시 후 다시 시도하거나 새로고침해 주세요."
-        >
-          {children}
-        </AppProviders>
+      <CollabI18nProvider initialMessages={initialMessages}>
+        <LocalizedAppProviders>{children}</LocalizedAppProviders>
       </CollabI18nProvider>
     </CollabLocaleStoreProvider>
   );

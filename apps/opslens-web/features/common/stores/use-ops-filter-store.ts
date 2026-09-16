@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, createElement, useContext, useRef, type PropsWithChildren } from "react";
+import { normalizeLocale } from "@repo/configs/i18n";
 import { createAppStore } from "@repo/zustand";
 import { OPS_DEFAULT_LOCALE, type OpsLocale } from "@/lib/i18n/messages";
 
@@ -20,10 +21,6 @@ type OpsFilterState = {
   toggleSidebar: () => void;
 };
 
-const isOpsLocale = (value: string | null | undefined): value is OpsLocale => {
-  return value === "ko" || value === "en" || value === "ja";
-};
-
 const readLocaleFromCookie = (): OpsLocale | null => {
   if (typeof document === "undefined") {
     return null;
@@ -36,7 +33,7 @@ const readLocaleFromCookie = (): OpsLocale | null => {
     ?.split("=")[1]
     ?.trim();
 
-  return isOpsLocale(localeCookie) ? localeCookie : null;
+  return normalizeLocale(localeCookie);
 };
 
 const resolveInitialLocale = (): OpsLocale => {

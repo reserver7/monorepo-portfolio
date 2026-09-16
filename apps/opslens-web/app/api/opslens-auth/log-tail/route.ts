@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { API_ERROR_CODES, createApiErrorPayload } from "@repo/configs/errors";
 import {
   clearSessionCookie,
   createSessionResponse,
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
   const cookieStore = await cookies();
   const refreshToken = cookieStore.get(OPS_REFRESH_COOKIE)?.value;
   if (!refreshToken) {
-    return NextResponse.json({ message: "세션이 만료되었습니다." }, { status: 401 });
+    return NextResponse.json(createApiErrorPayload(API_ERROR_CODES.UNAUTHORIZED), { status: 401 });
   }
 
   const refreshResponse = await fetch(`${resolveAuthApiUrl()}/auth/refresh`, {
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     cache: "no-store"
   });
   if (!refreshResponse.ok) {
-    const response = NextResponse.json({ message: "세션이 만료되었습니다." }, { status: 401 });
+    const response = NextResponse.json(createApiErrorPayload(API_ERROR_CODES.UNAUTHORIZED), { status: 401 });
     clearSessionCookie(response);
     return response;
   }
@@ -35,10 +36,9 @@ export async function GET(request: NextRequest) {
     cache: "no-store"
   });
   if (!upstream.ok || !upstream.body) {
-    return NextResponse.json(
-      { message: "라이브 로그 연결에 실패했습니다." },
-      { status: upstream.status || 502 }
-    );
+    return NextResponse.json(createApiErrorPayload(API_ERROR_CODES.UPSTREAM_UNAVAILABLE), {
+      status: upstream.status || 502
+    });
   }
 
   const response = new NextResponse(upstream.body, {

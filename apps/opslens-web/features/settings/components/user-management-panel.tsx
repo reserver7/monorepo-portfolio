@@ -1,16 +1,11 @@
 "use client";
 
 import { FeedbackState } from "@/features/common/components/feedback-state";
+import { useTranslations } from "next-intl";
 
 import type { AuthRole, OpsAuthUser } from "@repo/opslens";
 import { Badge, Box, Button, Flex, Select, Typography } from "@repo/ui";
 import { OpsSectionSkeleton } from "@/features";
-
-const roleOptions = [
-  { label: "관리자", value: "admin" },
-  { label: "운영자", value: "operator" },
-  { label: "조회자", value: "viewer" }
-];
 
 export function UserManagementPanel({
   users,
@@ -25,9 +20,14 @@ export function UserManagementPanel({
   pendingUserId?: string;
   onUpdate: (user: OpsAuthUser, input: { role?: AuthRole; isActive?: boolean }) => void;
 }) {
+  const t = useTranslations("settings.users");
+  const roleOptions = [
+    { label: t("admin"), value: "admin" },
+    { label: t("operator"), value: "operator" },
+    { label: t("viewer"), value: "viewer" }
+  ];
   if (isLoading) return <OpsSectionSkeleton rows={4} />;
-  if (users.length === 0)
-    return <FeedbackState variant="empty" size="sm" title="등록된 사용자가 없습니다." />;
+  if (users.length === 0) return <FeedbackState variant="empty" size="sm" title={t("empty")} />;
 
   return (
     <Box className="divide-default border-default divide-y border-y">

@@ -1,6 +1,7 @@
 "use client";
 
 import { FeedbackState } from "@/features/common/components/feedback-state";
+import { useLocale, useTranslations } from "next-intl";
 
 import { Trash2 } from "lucide-react";
 import { Badge, Box, Button, Flex, Typography } from "@repo/ui";
@@ -29,30 +30,20 @@ export function QaScenarioList({
   onSelectScenario,
   onDeleteScenario
 }: QaScenarioListProps) {
+  const t = useTranslations("qa.list");
+  const locale = useLocale();
   if (isLoading) {
     return <OpsCardListSkeleton count={3} />;
   }
 
   if (isError) {
     return (
-      <FeedbackState
-        variant="error"
-        size="sm"
-        title="시나리오 조회에 실패했습니다."
-        className="mt-[var(--space-3)]"
-      />
+      <FeedbackState variant="error" size="sm" title={t("loadFailed")} className="mt-[var(--space-3)]" />
     );
   }
 
   if (scenarios.length === 0) {
-    return (
-      <FeedbackState
-        variant="empty"
-        size="sm"
-        title="아직 생성된 시나리오가 없습니다."
-        className="mt-[var(--space-3)]"
-      />
-    );
+    return <FeedbackState variant="empty" size="sm" title={t("empty")} className="mt-[var(--space-3)]" />;
   }
 
   return (
@@ -91,10 +82,10 @@ export function QaScenarioList({
               </Flex>
               <Flex className="mt-[var(--space-2)] flex-wrap items-center gap-[var(--space-1-5)]">
                 <Badge variant="outline" size="sm" shape="rounded" className="bg-surface font-semibold">
-                  항목 {formatNumber(totalItems)}
+                  {t("items", { count: formatNumber(totalItems, locale) })}
                 </Badge>
                 <Typography as="span" variant="caption" color="subtle">
-                  {formatDateTime(scenario.createdAt)}
+                  {formatDateTime(scenario.createdAt, locale)}
                 </Typography>
               </Flex>
             </Box>
@@ -104,7 +95,7 @@ export function QaScenarioList({
               size="sm"
               iconOnly
               leftIcon={<Trash2 />}
-              aria-label="QA 산출물 삭제"
+              aria-label={t("delete")}
               disabled={isDeleting}
               className="text-muted hover:!bg-danger/10 hover:text-danger absolute right-[var(--space-2)] top-[var(--space-2)] h-7 w-7 border-transparent !bg-transparent"
               onClick={(event) => {

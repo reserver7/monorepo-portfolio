@@ -1,13 +1,13 @@
+"use client";
+
 import { FeedbackState } from "@/features/common/components/feedback-state";
+import { useTranslations } from "next-intl";
 
 export default function Loading() {
+  const t = useTranslations("error");
   return (
     <main className="flex min-h-screen items-center justify-center p-6">
-      <FeedbackState
-        variant="loading"
-        title="화면을 불러오는 중입니다."
-        description="잠시만 기다려 주세요."
-      />
+      <FeedbackState variant="loading" title={t("loadingTitle")} description={t("loadingDescription")} />
     </main>
   );
 }

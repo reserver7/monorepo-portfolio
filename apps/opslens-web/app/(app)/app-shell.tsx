@@ -23,7 +23,7 @@ const DynamicAppShellHeaderControls = dynamic(() => import("./app-shell-header-c
   loading: () => <Box className="h-[var(--toolbar-height)] w-full" />
 });
 
-const NAV_LABEL_KEYS: Record<string, string> = {
+const NAV_LABEL_KEYS = {
   "/": "dashboard",
   "/command-center": "commandCenter",
   "/logs": "logs",
@@ -32,7 +32,9 @@ const NAV_LABEL_KEYS: Record<string, string> = {
   "/deployments": "deployments",
   "/reports": "reports",
   "/settings": "settings"
-};
+} as const;
+
+const getNavLabelKey = (href: string) => NAV_LABEL_KEYS[href as keyof typeof NAV_LABEL_KEYS];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const tCommon = useTranslations("common");
@@ -77,7 +79,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const localizedNavItems = useMemo(
     () =>
       opsNavItems.map((item) => {
-        const key = NAV_LABEL_KEYS[item.href];
+        const key = getNavLabelKey(item.href);
         return { ...item, label: key ? tNav(key) : item.label };
       }),
     [tNav]
@@ -164,7 +166,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Box
         className="bg-surface min-h-screen space-y-[var(--space-4)] p-[var(--space-5)]"
         aria-busy="true"
-        aria-label="세션을 확인하는 중입니다."
+        aria-label={tCommon("sessionChecking")}
       >
         <Skeleton className="h-10 w-44 rounded-[var(--radius-md)]" />
         <Skeleton className="h-24 w-full rounded-[var(--radius-lg)]" />
@@ -201,7 +203,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="flex h-10 w-10 items-center justify-center"
             role="button"
             tabIndex={0}
-            aria-label="대시보드로 이동"
+            aria-label={tCommon("goDashboard")}
             onClick={() => router.push("/")}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
@@ -217,7 +219,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="flex h-10 w-[148px] items-center justify-start"
             role="button"
             tabIndex={0}
-            aria-label="대시보드로 이동"
+            aria-label={tCommon("goDashboard")}
             onClick={() => router.push("/")}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {

@@ -1,4 +1,5 @@
 import { COLLAB_DEFAULT_LOCALE, collabMessages, type CollabLocale } from "@/lib/i18n/messages";
+import { normalizeLocale } from "@repo/configs/i18n";
 
 const LOCALE_STORAGE_KEY = "collab-locale-store";
 
@@ -24,9 +25,7 @@ const resolveLocaleFromStorage = (): CollabLocale | null => {
     const state = isRecord(parsed.state) ? parsed.state : parsed;
     const locale = state.locale;
 
-    if (locale === "ko" || locale === "en" || locale === "ja") {
-      return locale;
-    }
+    return normalizeLocale(typeof locale === "string" ? locale : null);
   } catch {
     return null;
   }

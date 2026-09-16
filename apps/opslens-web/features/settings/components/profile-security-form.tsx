@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Button, ColorPicker, FormField, Grid, Input, Typography } from "@repo/ui";
+import { useTranslations } from "next-intl";
 import { SETTINGS_AVATAR_COLOR_PRESETS } from "../constants";
 
 type ProfileSecurityFormProps = {
@@ -36,73 +37,74 @@ export function ProfileSecurityForm({
   onSubmitPassword,
   onSave
 }: ProfileSecurityFormProps) {
+  const t = useTranslations("settings.profile");
   return (
     <Grid className="gap-[var(--space-4)]">
-      <FormField label="이름" htmlFor="profile-name">
+      <FormField label={t("name")} htmlFor="profile-name">
         <Input
           id="profile-name"
           control={profileControl}
           name="name"
           rules={{
-            required: "이름을 입력해 주세요.",
-            minLength: { value: 2, message: "이름은 2자 이상이어야 합니다." }
+            required: t("nameRequired"),
+            minLength: { value: 2, message: t("nameMin") }
           }}
           errorMessage={profileNameError}
           onEnter={() => onSubmitProfile()}
         />
       </FormField>
-      <FormField label="아바타 배경색" htmlFor="profile-avatar-color">
+      <FormField label={t("avatarColor")} htmlFor="profile-avatar-color">
         <ColorPicker
           value={avatarColor}
           onChange={onAvatarColorChange}
           presets={SETTINGS_AVATAR_COLOR_PRESETS}
-          label="Avatar color"
+          label={t("avatarColor")}
         />
       </FormField>
       {profileProvider !== "local" ? (
         <Box className="border-default bg-surface rounded-[var(--radius-md)] border p-[var(--space-3)]">
           <Typography as="p" color="muted" className="text-body-sm leading-[1.6]">
-            현재 계정은 소셜 로그인 계정입니다. 비밀번호는 소셜 제공자에서 관리됩니다.
+            {t("socialPassword")}
           </Typography>
         </Box>
       ) : (
         <Grid className="gap-[var(--space-3)] md:grid-cols-3">
-          <FormField label="현재 비밀번호" htmlFor="profile-current-password">
+          <FormField label={t("currentPassword")} htmlFor="profile-current-password">
             <Input
               id="profile-current-password"
               type="password"
               control={passwordControl}
               name="currentPassword"
               rules={{
-                required: "현재 비밀번호를 입력해 주세요.",
-                minLength: { value: 8, message: "8자 이상 입력해 주세요." }
+                required: t("currentPasswordRequired"),
+                minLength: { value: 8, message: t("passwordMin") }
               }}
               errorMessage={currentPasswordError}
               onEnter={() => onSubmitPassword()}
             />
           </FormField>
-          <FormField label="새 비밀번호" htmlFor="profile-new-password">
+          <FormField label={t("newPassword")} htmlFor="profile-new-password">
             <Input
               id="profile-new-password"
               type="password"
               control={passwordControl}
               name="newPassword"
               rules={{
-                required: "새 비밀번호를 입력해 주세요.",
-                minLength: { value: 8, message: "8자 이상 입력해 주세요." }
+                required: t("newPasswordRequired"),
+                minLength: { value: 8, message: t("passwordMin") }
               }}
               errorMessage={newPasswordError}
               onEnter={() => onSubmitPassword()}
             />
           </FormField>
-          <FormField label="새 비밀번호 확인" htmlFor="profile-confirm-password">
+          <FormField label={t("confirmPassword")} htmlFor="profile-confirm-password">
             <Input
               id="profile-confirm-password"
               type="password"
               control={passwordControl}
               name="confirmPassword"
               rules={{
-                required: "새 비밀번호 확인을 입력해 주세요."
+                required: t("confirmPasswordRequired")
               }}
               errorMessage={confirmPasswordError}
               onEnter={() => onSubmitPassword()}
@@ -112,7 +114,7 @@ export function ProfileSecurityForm({
       )}
       <Box className="mt-[var(--space-2)] flex justify-end gap-[var(--space-2)]">
         <Button variant="primary" disabled={!canSubmit} loading={submitting} onClick={onSave}>
-          변경사항 저장
+          {t("save")}
         </Button>
       </Box>
     </Grid>

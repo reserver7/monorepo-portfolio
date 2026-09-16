@@ -1,6 +1,7 @@
 "use client";
 
 import { RotateCcw, UploadCloud } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button, Checkbox, Flex, FormField, Grid, Input, Select, Textarea } from "@repo/ui";
 import type { useAppForm } from "@repo/forms";
 import {
@@ -20,8 +21,22 @@ type DeploymentRegisterFormProps = {
 };
 
 export function DeploymentRegisterForm({ form, isSubmitting, onSubmit }: DeploymentRegisterFormProps) {
+  const t = useTranslations("deployments");
   const selectedScopeTags = form.watch("scopeTags") ?? [];
   const checklist = form.watch("checklist") ?? [];
+  const scopeLabels = {
+    frontend: t("form.scopeOptions.frontend"),
+    api: t("form.scopeOptions.api"),
+    db: t("form.scopeOptions.db"),
+    infra: t("form.scopeOptions.infra"),
+    auth: t("form.scopeOptions.auth"),
+    payment: t("form.scopeOptions.payment")
+  } as const;
+  const checklistLabels = {
+    "배포 전 알림 확인": t("form.checklistOptions.preDeployNotification"),
+    "핵심 플로우 스모크 테스트": t("form.checklistOptions.smokeTest"),
+    "배포 후 로그 모니터링": t("form.checklistOptions.postDeployMonitoring")
+  } as const;
 
   const toggleScopeTag = (tag: string, checked: boolean) => {
     const current = form.getValues("scopeTags") ?? [];
@@ -45,7 +60,7 @@ export function DeploymentRegisterForm({ form, isSubmitting, onSubmit }: Deploym
     <form className="grid gap-[var(--space-3)]" onSubmit={form.handleSubmit(onSubmit)}>
       <Grid className="gap-[var(--space-3)]">
         <FormField
-          label="배포 버전"
+          label={t("form.version")}
           htmlFor="deployment-version"
           size="sm"
           error={form.formState.errors.version?.message}
@@ -53,42 +68,42 @@ export function DeploymentRegisterForm({ form, isSubmitting, onSubmit }: Deploym
           <Input
             id="deployment-version"
             {...form.register("version", {
-              required: "배포 버전을 입력하세요.",
-              minLength: { value: 3, message: "배포 버전을 3자 이상 입력하세요." }
+              required: t("form.versionRequired"),
+              minLength: { value: 3, message: t("form.versionMin") }
             })}
-            placeholder="예: 2026.03.25-hotfix.1"
+            placeholder={t("form.versionPlaceholder")}
             size="md"
           />
         </FormField>
 
-        <FormField label="배포 상태" htmlFor="deployment-status" size="sm">
+        <FormField label={t("form.status")} htmlFor="deployment-status" size="sm">
           <Select options={[...DEPLOYMENT_STATUS_OPTIONS]} control={form.control} name="status" size="md" />
         </FormField>
 
         <FormField
-          label="담당자"
+          label={t("form.owner")}
           htmlFor="deployment-owner"
           size="sm"
           error={form.formState.errors.owner?.message}
         >
           <Input
             id="deployment-owner"
-            {...form.register("owner", { required: "담당자를 입력하세요." })}
-            placeholder="예: 운영담당자"
+            {...form.register("owner", { required: t("form.ownerRequired") })}
+            placeholder={t("form.ownerPlaceholder")}
             size="md"
           />
         </FormField>
 
-        <FormField label="승인자" htmlFor="deployment-approver" size="sm">
+        <FormField label={t("form.approver")} htmlFor="deployment-approver" size="sm">
           <Input
             id="deployment-approver"
             {...form.register("approver")}
-            placeholder="예: Tech Lead"
+            placeholder={t("form.approverPlaceholder")}
             size="md"
           />
         </FormField>
 
-        <FormField label="CI / 배포 링크" htmlFor="deployment-ci-url" size="sm">
+        <FormField label={t("form.ciUrl")} htmlFor="deployment-ci-url" size="sm">
           <Input
             id="deployment-ci-url"
             type="url"
@@ -98,23 +113,23 @@ export function DeploymentRegisterForm({ form, isSubmitting, onSubmit }: Deploym
           />
         </FormField>
 
-        <FormField label="Override 사유" htmlFor="deployment-override-reason" size="sm">
+        <FormField label={t("form.overrideReason")} htmlFor="deployment-override-reason" size="sm">
           <Textarea
             id="deployment-override-reason"
             {...form.register("overrideReason")}
             rows={2}
             resize="none"
-            placeholder="차단 신호가 있는 경우 승인 배포가 필요한 이유를 기록하세요."
+            placeholder={t("form.overridePlaceholder")}
           />
         </FormField>
 
-        <FormField label="변경 범위" htmlFor="deployment-scope" size="sm">
+        <FormField label={t("form.scope")} htmlFor="deployment-scope" size="sm">
           <Flex id="deployment-scope" className="flex-wrap gap-x-[var(--space-3)] gap-y-[var(--space-2)]">
             {DEPLOYMENT_SCOPE_OPTIONS.map((option) => (
               <Checkbox
                 key={option.value}
                 size="sm"
-                label={option.label}
+                label={scopeLabels[option.value]}
                 checked={selectedScopeTags.includes(option.value)}
                 onCheckedChange={(checked) => toggleScopeTag(option.value, checked)}
               />
@@ -122,7 +137,7 @@ export function DeploymentRegisterForm({ form, isSubmitting, onSubmit }: Deploym
           </Flex>
         </FormField>
 
-        <FormField label="모니터링 윈도우" htmlFor="deployment-monitoring-window" size="sm">
+        <FormField label={t("form.monitoringWindow")} htmlFor="deployment-monitoring-window" size="sm">
           <Select
             options={[...DEPLOYMENT_MONITORING_WINDOW_OPTIONS]}
             control={form.control}
@@ -131,13 +146,13 @@ export function DeploymentRegisterForm({ form, isSubmitting, onSubmit }: Deploym
           />
         </FormField>
 
-        <FormField label="배포 체크리스트" htmlFor="deployment-checklist" size="sm">
+        <FormField label={t("form.checklist")} htmlFor="deployment-checklist" size="sm">
           <Grid id="deployment-checklist" className="gap-[var(--space-2)]">
             {DEPLOYMENT_FORM_DEFAULT_VALUES.checklist.map((item) => (
               <Checkbox
                 key={item}
                 size="sm"
-                label={item}
+                label={checklistLabels[item as keyof typeof checklistLabels] ?? item}
                 checked={checklist.includes(item)}
                 onCheckedChange={(checked) => toggleChecklist(item, checked)}
               />
@@ -145,18 +160,18 @@ export function DeploymentRegisterForm({ form, isSubmitting, onSubmit }: Deploym
           </Grid>
         </FormField>
 
-        <FormField label="롤백 기준" htmlFor="deployment-rollback-criteria" size="sm">
+        <FormField label={t("form.rollbackCriteria")} htmlFor="deployment-rollback-criteria" size="sm">
           <Textarea
             id="deployment-rollback-criteria"
             {...form.register("rollbackCriteria")}
             rows={2}
             resize="none"
-            placeholder="Critical 증가, 결제 실패, 로그인 장애 등 롤백 판단 기준"
+            placeholder={t("form.rollbackPlaceholder")}
           />
         </FormField>
 
         <FormField
-          label="변경 요약"
+          label={t("form.changelog")}
           htmlFor="deployment-changelog"
           size="sm"
           error={form.formState.errors.changelog?.message}
@@ -164,12 +179,12 @@ export function DeploymentRegisterForm({ form, isSubmitting, onSubmit }: Deploym
           <Textarea
             id="deployment-changelog"
             {...form.register("changelog", {
-              required: "변경 요약을 입력하세요.",
-              minLength: { value: 12, message: "변경 요약을 12자 이상 입력하세요." }
+              required: t("form.changelogRequired"),
+              minLength: { value: 12, message: t("form.changelogMin") }
             })}
             rows={4}
             resize="none"
-            placeholder="결제 모듈 null-safe 처리 및 세션 토큰 검증 로직 개선"
+            placeholder={t("form.changelogPlaceholder")}
           />
         </FormField>
       </Grid>
@@ -182,7 +197,7 @@ export function DeploymentRegisterForm({ form, isSubmitting, onSubmit }: Deploym
           disabled={isSubmitting || !form.formState.isDirty}
           onClick={() => form.reset(DEPLOYMENT_FORM_DEFAULT_VALUES)}
         >
-          초기화
+          {t("form.reset")}
         </Button>
         <Button
           type="submit"
@@ -190,7 +205,7 @@ export function DeploymentRegisterForm({ form, isSubmitting, onSubmit }: Deploym
           leftIcon={<UploadCloud />}
           loading={isSubmitting ? true : undefined}
         >
-          배포 등록
+          {t("form.submit")}
         </Button>
       </Flex>
     </form>

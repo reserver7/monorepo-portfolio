@@ -1,41 +1,14 @@
 import { cookies, headers } from "next/headers";
-import { COLLAB_DEFAULT_LOCALE, COLLAB_LOCALE_VALUES, type CollabLocale } from "@/lib/i18n/messages";
-
-const ACCEPT_LANGUAGE_SPLIT_PATTERN = /[,;]/;
-
-const isCollabLocale = (value: string | null | undefined): value is CollabLocale => {
-  return Boolean(value) && COLLAB_LOCALE_VALUES.includes(value as CollabLocale);
-};
-
-const extractLocaleFromAcceptLanguage = (acceptLanguage: string | null): CollabLocale | null => {
-  if (!acceptLanguage) {
-    return null;
-  }
-
-  const candidates = acceptLanguage
-    .split(ACCEPT_LANGUAGE_SPLIT_PATTERN)
-    .map((token) => token.trim().toLowerCase())
-    .filter((token) => token.length > 0);
-
-  for (const candidate of candidates) {
-    const normalized = candidate.split("-")[0];
-    if (isCollabLocale(normalized)) {
-      return normalized;
-    }
-  }
-
-  return null;
-};
+import { resolveLocale } from "@repo/configs/i18n";
+import { COLLAB_DEFAULT_LOCALE, type CollabLocale } from "@/lib/i18n/messages";
 
 export const resolveRequestLocale = async (): Promise<CollabLocale> => {
   const cookieStore = await cookies();
-  const localeCookie = cookieStore.get("collab-locale")?.value;
-  if (isCollabLocale(localeCookie)) {
-    return localeCookie;
-  }
-
   const headerStore = await headers();
-  return extractLocaleFromAcceptLanguage(headerStore.get("accept-language")) ?? COLLAB_DEFAULT_LOCALE;
+  return resolveLocale({
+    cookieLocale: cookieStore.get("collab-locale")?.value,
+    acceptLanguage: headerStore.get("accept-language")
+  }) as CollabLocale;
 };
 
 export const getAppMetadataText = (locale: CollabLocale) => {
@@ -78,4 +51,17 @@ export const getAppMetadataText = (locale: CollabLocale) => {
   };
 
   return dictionary[locale] ?? dictionary[COLLAB_DEFAULT_LOCALE];
+};
+
+export const getCollabMessages = async (locale: CollabLocale): Promise<Record<string, unknown>> => {
+  if (locale === "en") {
+    const mod = await import("./messages/en.json");
+    return mod.default as Record<string, unknown>;
+  }
+  if (locale === "ja") {
+    const mod = await import("./messages/ja.json");
+    return mod.default as Record<string, unknown>;
+  }
+  const mod = await import("./messages/ko.json");
+  return mod.default as Record<string, unknown>;
 };

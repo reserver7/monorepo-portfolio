@@ -1,6 +1,7 @@
 "use client";
 
 import { Avatar, Badge, Box, Button, Grid, Typography } from "@repo/ui";
+import { useTranslations } from "next-intl";
 
 type AccountSummaryCardProps = {
   profileName: string;
@@ -29,6 +30,7 @@ export function AccountSummaryCard({
   logoutPending,
   onLogoutCurrentSession
 }: AccountSummaryCardProps) {
+  const t = useTranslations("settings.account");
   return (
     <Box className="border-default bg-surface mb-[var(--space-4)] rounded-[var(--radius-lg)] border p-[var(--space-4)]">
       <Grid className="gap-[var(--space-4)] lg:items-center">
@@ -58,7 +60,7 @@ export function AccountSummaryCard({
           <Grid className="gap-[var(--space-2)]">
             <Box className="flex items-center justify-between gap-[var(--space-2)]">
               <Typography as="p" color="muted" className="text-body-sm">
-                세션 타입
+                {t("sessionType")}
               </Typography>
               <Badge variant="secondary" size="sm">
                 {sessionTypeLabel}
@@ -66,7 +68,7 @@ export function AccountSummaryCard({
             </Box>
             <Box className="flex items-center justify-between gap-[var(--space-2)]">
               <Typography as="p" color="muted" className="text-body-sm">
-                만료 시각
+                {t("expiresAt")}
               </Typography>
               <Typography as="p" className="text-body-sm font-medium">
                 {sessionExpiresLabel}
@@ -74,7 +76,7 @@ export function AccountSummaryCard({
             </Box>
             <Box className="mt-[var(--space-2)] flex justify-end">
               <Button variant="secondary" loading={logoutPending} onClick={onLogoutCurrentSession}>
-                현재 세션 로그아웃
+                {t("logout")}
               </Button>
             </Box>
           </Grid>

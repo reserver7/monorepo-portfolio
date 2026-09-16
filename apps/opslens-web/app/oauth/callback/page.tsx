@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Box, Typography, toast } from "@repo/ui";
 import { loginWithOAuth, readAuthSession } from "@/lib/auth";
@@ -26,6 +27,7 @@ export default function OAuthCallbackPage() {
   const searchParams = useSearchParams();
   const nextPath = useMemo(() => resolveNextPath(searchParams.get("next")), [searchParams]);
   const hasStartedLogin = useRef(false);
+  const t = useTranslations("auth");
 
   useEffect(() => {
     const session = readAuthSession();
@@ -39,11 +41,11 @@ export default function OAuthCallbackPage() {
 
     void loginWithOAuth()
       .then(() => {
-        toast.success("로그인되었습니다.");
+        toast.success(t("loginSuccess"));
         router.replace(nextPath);
       })
       .catch((error) => {
-        toast.error(getErrorMessage(error, "소셜 로그인 처리에 실패했습니다."));
+        toast.error(getErrorMessage(error, t("oauthLoginErrorFallback")));
         router.replace(`/login?next=${encodeURIComponent(nextPath)}`);
       });
   }, [nextPath, router]);
@@ -52,10 +54,10 @@ export default function OAuthCallbackPage() {
     <Box className="bg-surface-elevated flex min-h-screen items-center justify-center p-[var(--space-4)]">
       <Box className="grid justify-items-center gap-[var(--space-2)] text-center">
         <Typography as="p" className="text-foreground text-body-lg font-semibold">
-          Signing in...
+          {t("loggingIn")}
         </Typography>
         <Typography as="p" color="muted" className="text-body-sm">
-          Please wait a moment.
+          {t("waitDescription")}
         </Typography>
       </Box>
     </Box>

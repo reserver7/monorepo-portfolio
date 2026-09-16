@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AppHead, appFont, createAppMetadata } from "@repo/theme";
 import { Providers } from "@/app/providers";
-import { getAppMetadataText, resolveRequestLocale } from "@/lib/i18n/server";
+import { getAppMetadataText, getCollabMessages, resolveRequestLocale } from "@/lib/i18n/server";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -19,6 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const locale = await resolveRequestLocale();
+  const initialMessages = await getCollabMessages(locale);
 
   return (
     <html lang={locale} suppressHydrationWarning>
@@ -28,7 +29,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body
         className={`${appFont.className} font-body text-foreground dark:text-foreground min-h-screen antialiased`}
       >
-        <Providers initialLocale={locale}>{children}</Providers>
+        <Providers initialLocale={locale} initialMessages={initialMessages}>
+          {children}
+        </Providers>
       </body>
     </html>
   );

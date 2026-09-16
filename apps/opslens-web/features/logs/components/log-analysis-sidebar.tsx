@@ -1,4 +1,5 @@
 import { Box, Badge, Button, ConsoleSectionCard, Flex, Typography } from "@repo/ui";
+import { useLocale, useTranslations } from "next-intl";
 import { FeedbackState, MetricCard } from "@/features/common/components/feedback-state";
 import { formatDateTime, formatNumber } from "@repo/utils";
 
@@ -12,32 +13,34 @@ type LogAnalysisSidebarProps = {
 };
 
 export function LogAnalysisSidebar({ selectedCluster, summary, onCreateIssue }: LogAnalysisSidebarProps) {
+  const locale = useLocale();
+  const t = useTranslations("logs");
   if (!summary) {
-    return <FeedbackState variant="info" size="sm" title="로그를 분석하면 요약 카드가 표시됩니다." />;
+    return <FeedbackState variant="info" size="sm" title={t("analysis.summaryHint")} />;
   }
 
   return (
     <Box className="space-y-[var(--space-3)]">
       <MetricCard
-        label="신규 이슈 생성"
-        value={`${formatNumber(summary.createdIssues)}건`}
-        helper="새로 생성된 항목"
+        label={t("analysis.createdIssues")}
+        value={t("count", { count: formatNumber(summary.createdIssues, locale) })}
+        helper={t("analysis.createdHelper")}
         color="success"
         size="sm"
         className="rounded-[var(--radius-lg)]"
       />
       <MetricCard
-        label="기존 이슈 업데이트"
-        value={`${formatNumber(summary.updatedIssues)}건`}
-        helper="기존 항목에 반영"
+        label={t("analysis.updatedIssues")}
+        value={t("count", { count: formatNumber(summary.updatedIssues, locale) })}
+        helper={t("analysis.updatedHelper")}
         color="warning"
         size="sm"
         className="rounded-[var(--radius-lg)]"
       />
       {selectedCluster ? (
         <ConsoleSectionCard
-          title="선택 클러스터 상세"
-          description="우선 처리 대상을 빠르게 확인합니다."
+          title={t("analysis.selectedCluster")}
+          description={t("analysis.selectedDescription")}
           contentClassName="pt-[var(--space-2)]"
         >
           <Box className="space-y-[var(--space-2)]">
@@ -46,7 +49,7 @@ export function LogAnalysisSidebar({ selectedCluster, summary, onCreateIssue }: 
                 {selectedCluster.severity}
               </Badge>
               <Badge variant="secondary" size="sm">
-                {formatNumber(selectedCluster.count)}건
+                {t("count", { count: formatNumber(selectedCluster.count, locale) })}
               </Badge>
             </Flex>
             <Typography as="p" variant="bodySm" className="font-semibold">
@@ -56,11 +59,11 @@ export function LogAnalysisSidebar({ selectedCluster, summary, onCreateIssue }: 
               {selectedCluster.normalizedMessage}
             </Typography>
             <Typography as="p" variant="caption" color="subtle">
-              최초 {formatDateTime(selectedCluster.firstSeen)} · 최근{" "}
-              {formatDateTime(selectedCluster.lastSeen)}
+              {t("firstSeen")} {formatDateTime(selectedCluster.firstSeen, locale)} · {t("lastSeen")}{" "}
+              {formatDateTime(selectedCluster.lastSeen, locale)}
             </Typography>
             <Button type="button" size="sm" variant="outline" onClick={onCreateIssue}>
-              이슈 생성
+              {t("analysis.createIssue")}
             </Button>
           </Box>
         </ConsoleSectionCard>

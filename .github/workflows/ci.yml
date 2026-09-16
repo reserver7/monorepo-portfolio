@@ -175,7 +175,7 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: ./.github/actions/setup-workspace
-      - run: pnpm i18n:check && pnpm i18n:extract:check && pnpm i18n:sync:check
+      - run: pnpm i18n:check && pnpm i18n:extract:check && pnpm i18n:sync:check && pnpm i18n:draft:check
       - run: pnpm audit:workspace && pnpm infra:check
       - if: ${{ needs.changes.outputs.ui == 'true' || github.event_name == 'schedule' || inputs.full_validation }}
         run: pnpm storybook:check

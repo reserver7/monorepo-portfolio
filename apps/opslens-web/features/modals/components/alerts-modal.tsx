@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { CheckCheck, Clock3, X } from "lucide-react";
 import {
@@ -40,6 +40,7 @@ export function AlertsModal({
   onMoveToAlert
 }: AlertsModalProps) {
   const tAlerts = useTranslations("alerts");
+  const locale = useLocale();
   const unreadCount = alerts.filter((item) => !item.readAt).length;
   const [levelFilter, setLevelFilter] = useState("all");
   const [readFilter, setReadFilter] = useState("all");
@@ -159,7 +160,7 @@ export function AlertsModal({
               </Button>
             ) : (
               <Typography as="span" variant="caption" color="subtle">
-                모두 확인됨
+                {tAlerts("allRead")}
               </Typography>
             )}
           </Flex>
@@ -167,7 +168,7 @@ export function AlertsModal({
           <Box className="grid min-w-0 gap-[var(--space-2)] sm:grid-cols-2">
             <Select
               className="min-w-0"
-              aria-label="알림 심각도 필터"
+              aria-label={tAlerts("levelFilter")}
               value={levelFilter}
               onChange={(value) => setLevelFilter(String(value))}
               options={[
@@ -180,7 +181,7 @@ export function AlertsModal({
             />
             <Select
               className="min-w-0"
-              aria-label="알림 읽음 상태 필터"
+              aria-label={tAlerts("readFilter")}
               value={readFilter}
               onChange={(value) => setReadFilter(String(value))}
               options={[
@@ -191,7 +192,7 @@ export function AlertsModal({
             />
             <Select
               className="min-w-0 sm:col-span-2"
-              aria-label="알림 소스 필터"
+              aria-label={tAlerts("sourceFilter")}
               value={sourceFilter}
               onChange={(value) => setSourceFilter(String(value))}
               options={sourceOptions}
@@ -199,14 +200,14 @@ export function AlertsModal({
           </Box>
           {activeSnoozeCount > 0 ? (
             <Typography as="p" variant="caption" color="muted">
-              1시간 동안 숨긴 알림 {activeSnoozeCount}건
+              {tAlerts("snoozed", { count: activeSnoozeCount })}
             </Typography>
           ) : null}
 
           {groupedSummary.length > 0 ? (
             <Box className="border-default bg-surface-elevated rounded-[var(--radius-md)] border p-[var(--space-2)]">
               <Typography as="p" variant="caption" color="muted">
-                반복 알림 묶음
+                {tAlerts("grouped")}
               </Typography>
               <Box className="mt-[var(--space-1)] space-y-[var(--space-1)]">
                 {groupedSummary.map((group) => (
@@ -215,7 +216,7 @@ export function AlertsModal({
                       {group.source} · {group.title}
                     </Typography>
                     <Badge size="sm" variant={group.unread > 0 ? "warning" : "secondary"}>
-                      {group.count}건
+                      {tAlerts("count", { count: group.count })}
                     </Badge>
                   </Flex>
                 ))}
@@ -279,11 +280,11 @@ export function AlertsModal({
                               </Typography>
                             ) : null}
                             <Typography as="span" variant="caption" color="subtle">
-                              {formatDateTime(alert.createdAt)}
+                              {formatDateTime(alert.createdAt, locale)}
                             </Typography>
                             {unread ? (
                               <Typography as="span" variant="caption" className="text-primary font-semibold">
-                                New
+                                {tAlerts("new")}
                               </Typography>
                             ) : null}
                           </Flex>
@@ -299,7 +300,7 @@ export function AlertsModal({
                             snoozeAlert(alert.id);
                           }}
                         >
-                          1시간 숨김
+                          {tAlerts("snooze")}
                         </Button>
                       </Flex>
                       <Button

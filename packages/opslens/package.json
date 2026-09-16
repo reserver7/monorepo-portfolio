@@ -13,10 +13,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@repo/configs": "workspace:*",
     "@repo/react-query": "workspace:*"
   },
   "devDependencies": {
-    "@repo/configs": "workspace:*",
     "@repo/eslint-config": "workspace:*",
     "typescript": "^5.8.2"
   }

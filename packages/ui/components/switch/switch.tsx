@@ -5,6 +5,7 @@ import * as SwitchPrimitives from "@radix-ui/react-switch";
 import { Controller } from "react-hook-form";
 import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
+import { useUiLocale } from "../ui-locale";
 import { FieldSupportText } from "../field/field-utils";
 import { Label } from "../label";
 import { resolveUiColorValue } from "../../styles/color-token";
@@ -88,10 +89,11 @@ function SwitchFieldBase(
   }: SwitchFieldProps,
   ref: React.ForwardedRef<React.ElementRef<typeof SwitchPrimitives.Root>>
 ) {
+  const labels = useUiLocale();
   const generatedId = React.useId();
   const resolvedId = id ?? `switch-${generatedId}`;
   const supportText =
-    errorMessage ?? helperText ?? (required && !label ? "필수 설정 항목입니다." : undefined);
+    errorMessage ?? helperText ?? (required && !label ? `${labels.requiredSetting}.` : undefined);
 
   return (
     <div className={cn("grid gap-[var(--space-1-5)]", containerClassName)}>
@@ -107,7 +109,7 @@ function SwitchFieldBase(
               <span aria-hidden className="text-danger leading-none">
                 *
               </span>
-              <span className="sr-only">필수 설정 항목</span>
+              <span className="sr-only">{labels.requiredSetting}</span>
             </div>
           ) : null}
           {description ? (

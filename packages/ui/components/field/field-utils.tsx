@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "../cn";
+import { useUiLocale } from "../ui-locale";
 
 export type FieldStatus = "default" | "error" | "success";
 
@@ -22,12 +23,13 @@ export const RequiredMark = React.memo(function RequiredMark({
   align?: "start" | "end";
   className?: string;
 }) {
+  const labels = useUiLocale();
   return (
     <div className={cn("flex", align === "start" ? "justify-start" : "justify-end", className)}>
       <span aria-hidden className="text-danger">
         *
       </span>
-      <span className="sr-only">필수 입력 항목</span>
+      <span className="sr-only">{labels.required}</span>
     </div>
   );
 });

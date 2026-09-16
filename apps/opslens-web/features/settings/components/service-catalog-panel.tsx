@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Badge, Box, Button, Grid, Input, Typography } from "@repo/ui";
 import type { OpsSetting } from "@repo/opslens";
 
@@ -59,6 +60,7 @@ export function ServiceCatalogPanel({
   saving: boolean;
   onSave: (value: string) => void;
 }) {
+  const t = useTranslations("settings.catalog");
   const [services, setServices] = useState<ServiceCatalogItem[]>(() => parseServices(setting?.value));
   const [parseError, setParseError] = useState(false);
 
@@ -110,11 +112,11 @@ export function ServiceCatalogPanel({
   return (
     <Box className="space-y-[var(--space-3)]">
       <Typography as="p" variant="caption" color="muted">
-        서비스 오너, 온콜, 런북, SLO는 인시던트 대응과 배포 판단에 공통으로 사용됩니다.
+        {t("description")}
       </Typography>
       {parseError ? (
         <Typography as="p" variant="caption" className="text-warning">
-          기존 카탈로그 형식을 읽을 수 없어 기본 입력값으로 표시했습니다. 저장하면 표준 형식으로 교체됩니다.
+          {t("parseError")}
         </Typography>
       ) : null}
       {services.map((service, index) => (
@@ -124,35 +126,35 @@ export function ServiceCatalogPanel({
         >
           <Grid className="gap-[var(--space-3)] md:grid-cols-2 xl:grid-cols-3">
             <Input
-              label="서비스명"
+              label={t("name")}
               value={service.name}
               onChange={(event) => updateService(index, "name", event.target.value)}
               disabled={!isAdmin}
-              placeholder="예: checkout"
+              placeholder={t("namePlaceholder")}
             />
             <Input
-              label="오너"
+              label={t("owner")}
               value={service.owner}
               onChange={(event) => updateService(index, "owner", event.target.value)}
               disabled={!isAdmin}
-              placeholder="예: 결제 플랫폼팀"
+              placeholder={t("ownerPlaceholder")}
             />
             <Input
               label="SLO"
               value={service.slo}
               onChange={(event) => updateService(index, "slo", event.target.value)}
               disabled={!isAdmin}
-              placeholder="예: 99.9%"
+              placeholder={t("sloPlaceholder")}
             />
             <Input
-              label="온콜"
+              label={t("onCall")}
               value={service.onCall}
               onChange={(event) => updateService(index, "onCall", event.target.value)}
               disabled={!isAdmin}
-              placeholder="예: oncall@company.com"
+              placeholder={t("onCallPlaceholder")}
             />
             <Input
-              label="런북 URL"
+              label={t("runbook")}
               type="url"
               value={service.runbook}
               onChange={(event) => updateService(index, "runbook", event.target.value)}
@@ -161,7 +163,7 @@ export function ServiceCatalogPanel({
               className="md:col-span-2"
             />
             <Input
-              label="저장소 URL"
+              label={t("repository")}
               type="url"
               value={service.repository}
               onChange={(event) => updateService(index, "repository", event.target.value)}
@@ -169,7 +171,7 @@ export function ServiceCatalogPanel({
               placeholder="https://github.com/org/repo"
             />
             <Input
-              label="대시보드 URL"
+              label={t("dashboard")}
               type="url"
               value={service.dashboard}
               onChange={(event) => updateService(index, "dashboard", event.target.value)}
@@ -177,11 +179,11 @@ export function ServiceCatalogPanel({
               placeholder="https://grafana.example.com/..."
             />
             <Input
-              label="의존 서비스"
+              label={t("dependencies")}
               value={service.dependencies}
               onChange={(event) => updateService(index, "dependencies", event.target.value)}
               disabled={!isAdmin}
-              placeholder="예: payments, inventory"
+              placeholder={t("dependenciesPlaceholder")}
             />
           </Grid>
           {isAdmin && services.length > 1 ? (
@@ -194,14 +196,14 @@ export function ServiceCatalogPanel({
                 setServices((previous) => previous.filter((_, serviceIndex) => serviceIndex !== index))
               }
             >
-              서비스 제거
+              {t("remove")}
             </Button>
           ) : null}
         </Box>
       ))}
       <Box className="flex flex-wrap items-center gap-[var(--space-2)]">
         <Badge variant={valid ? "success" : "warning"} size="sm">
-          {valid ? `${normalized.length}개 서비스 준비됨` : "서비스명·오너·SLO와 런북 URL을 확인하세요"}
+          {valid ? t("ready", { count: normalized.length }) : t("invalid")}
         </Badge>
         {isAdmin ? (
           <Button
@@ -224,7 +226,7 @@ export function ServiceCatalogPanel({
               ])
             }
           >
-            서비스 추가
+            {t("add")}
           </Button>
         ) : null}
         {isAdmin ? (
@@ -235,7 +237,7 @@ export function ServiceCatalogPanel({
             disabled={!valid || serialized === initialSerialized}
             onClick={() => onSave(serialized)}
           >
-            서비스 카탈로그 저장
+            {t("save")}
           </Button>
         ) : null}
       </Box>

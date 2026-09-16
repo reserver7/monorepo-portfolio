@@ -253,3 +253,4 @@ export {
 export { chartColorTokens } from "./chart";
 export { emitToast, toast } from "./toast";
 export { ErrorBoundary } from "./error-boundary";
+export { UiLocaleProvider, useUiLocale, type UiLabels, type UiLocale } from "./ui-locale";

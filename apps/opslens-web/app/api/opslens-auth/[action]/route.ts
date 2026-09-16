@@ -1,10 +1,10 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { API_ERROR_CODES, createApiErrorPayload } from "@repo/configs/errors";
 import {
   clearSessionCookie,
   createSessionResponse,
   OPS_REFRESH_COOKIE,
-  parseServerErrorMessage,
   resolveAuthApiUrl,
   type BackendLoginResponse
 } from "@/lib/auth/server-session";
@@ -14,7 +14,7 @@ const LOGIN_ACTIONS = new Set(["login", "signup"]);
 export async function POST(request: NextRequest, context: { params: Promise<{ action: string }> }) {
   const { action } = await context.params;
   if (!LOGIN_ACTIONS.has(action) && action !== "refresh" && action !== "logout") {
-    return NextResponse.json({ message: "지원하지 않는 인증 요청입니다." }, { status: 404 });
+    return NextResponse.json(createApiErrorPayload(API_ERROR_CODES.NOT_FOUND), { status: 404 });
   }
 
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ac
   }
 
   if (action === "refresh" && !refreshToken) {
-    return NextResponse.json({ message: "세션이 만료되었습니다." }, { status: 401 });
+    return NextResponse.json(createApiErrorPayload(API_ERROR_CODES.UNAUTHORIZED), { status: 401 });
   }
 
   const upstream = await fetch(`${resolveAuthApiUrl()}/auth/${action}`, {
@@ -51,7 +51,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ac
 
   if (!upstream.ok) {
     const response = NextResponse.json(
-      { message: await parseServerErrorMessage(upstream) },
+      createApiErrorPayload(
+        upstream.status === 401 ? API_ERROR_CODES.UNAUTHORIZED : API_ERROR_CODES.INTERNAL
+      ),
       { status: upstream.status }
     );
     if (action === "refresh") clearSessionCookie(response);

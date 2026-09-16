@@ -118,6 +118,9 @@ importers:
 
   apps/collab-web:
     dependencies:
+      '@repo/configs':
+        specifier: workspace:*
+        version: link:../../packages/configs
       '@repo/forms':
         specifier: workspace:*
         version: link:../../packages/forms
@@ -155,9 +158,6 @@ importers:
         specifier: ^13.6.27
         version: 13.6.30
     devDependencies:
-      '@repo/configs':
-        specifier: workspace:*
-        version: link:../../packages/configs
       '@repo/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
@@ -249,6 +249,9 @@ importers:
 
   apps/opslens-web:
     dependencies:
+      '@repo/configs':
+        specifier: workspace:*
+        version: link:../../packages/configs
       '@repo/forms':
         specifier: workspace:*
         version: link:../../packages/forms
@@ -298,9 +301,6 @@ importers:
         specifier: ^19.0.0
         version: 19.2.4(react@19.2.4)
     devDependencies:
-      '@repo/configs':
-        specifier: workspace:*
-        version: link:../../packages/configs
       '@repo/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
@@ -322,6 +322,9 @@ importers:
       tailwindcss:
         specifier: ^3.4.17
         version: 3.4.17(ts-node@10.9.2(@swc/core@1.15.30)(@types/node@22.19.15)(typescript@5.9.3))
+      tsx:
+        specifier: ^4.20.6
+        version: 4.21.0
 
   apps/storybook:
     dependencies:
@@ -401,6 +404,13 @@ importers:
       tailwindcss:
         specifier: ^3.4.17
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.5
+        version: 22.19.15
+      tsx:
+        specifier: ^4.19.2
+        version: 4.21.0
 
   packages/eslint-config:
     dependencies:
@@ -462,13 +472,13 @@ importers:
 
   packages/opslens:
     dependencies:
+      '@repo/configs':
+        specifier: workspace:*
+        version: link:../configs
       '@repo/react-query':
         specifier: workspace:*
         version: link:../react-query
     devDependencies:
-      '@repo/configs':
-        specifier: workspace:*
-        version: link:../configs
       '@repo/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
@@ -478,6 +488,9 @@ importers:
 
   packages/react-query:
     dependencies:
+      '@repo/configs':
+        specifier: workspace:*
+        version: link:../configs
       '@tanstack/react-query':
         specifier: ^5.29.2
         version: 5.91.0(react@19.2.4)
@@ -491,9 +504,6 @@ importers:
         specifier: ^4.0.13
         version: 4.1.2(react@19.2.4)
     devDependencies:
-      '@repo/configs':
-        specifier: workspace:*
-        version: link:../configs
       '@repo/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
@@ -661,6 +671,9 @@ importers:
 
   packages/utils:
     dependencies:
+      '@repo/configs':
+        specifier: workspace:*
+        version: link:../configs
       clsx:
         specifier: ^2.1.0
         version: 2.1.1
@@ -668,12 +681,15 @@ importers:
         specifier: ^2.2.2
         version: 2.6.1
     devDependencies:
-      '@repo/configs':
-        specifier: workspace:*
-        version: link:../configs
       '@repo/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
+      '@types/node':
+        specifier: ^22.13.5
+        version: 22.19.15
+      tsx:
+        specifier: ^4.19.2
+        version: 4.21.0
       typescript:
         specifier: ^5.8.2
         version: 5.9.3

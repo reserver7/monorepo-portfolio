@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { useComposedRefs, useControlledValue } from "../../hooks";
 import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
+import { useUiLocale } from "../ui-locale";
 import { buildFieldDescribedBy, FieldSupportText, RequiredMark } from "../field/field-utils";
 import { Label } from "../label";
 import {
@@ -56,6 +57,7 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
+    const labels = useUiLocale();
     const localRef = React.useRef<HTMLInputElement | null>(null);
     const setRefs = useComposedRefs<HTMLInputElement>(ref, localRef);
     const generatedId = React.useId();
@@ -215,7 +217,7 @@ const InputBase = React.forwardRef<HTMLInputElement, InputProps>(
                 }}
                 onClick={handleClear}
                 tabIndex={-1}
-                aria-label="입력값 비우기"
+                aria-label={labels.clearInput}
                 className="text-muted hover:bg-surface-elevated hover:text-foreground inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[var(--radius-round)] transition-colors"
               >
                 <X aria-hidden className="h-[var(--size-icon-sm)] w-[var(--size-icon-sm)]" />

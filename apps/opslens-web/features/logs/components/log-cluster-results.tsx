@@ -1,4 +1,5 @@
 import type { RefObject } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Box, Badge, Button, ConsoleSectionCard, Flex, Grid, Input, Select, Typography } from "@repo/ui";
 import { FeedbackState } from "@/features/common/components/feedback-state";
 import { formatDateTime, formatNumber } from "@repo/utils";
@@ -61,25 +62,24 @@ export function LogClusterResults({
   onSortKeyChange,
   resolveErrorMessage
 }: LogClusterResultsProps) {
+  const locale = useLocale();
+  const t = useTranslations("logs");
   return (
-    <ConsoleSectionCard
-      title="분석 결과 클러스터"
-      description="중복 패턴과 심각도를 기준으로 정리된 결과입니다."
-    >
+    <ConsoleSectionCard title={t("results.title")} description={t("results.description")}>
       <Box className="mb-[var(--space-3)]">
         <Grid className="gap-[var(--space-2)] md:grid-cols-[minmax(0,1fr)_180px_180px_auto]">
           <Input
             ref={queryInputRef}
             value={searchQuery}
             onChange={(event) => onSearchQueryChange(event.target.value)}
-            placeholder="클러스터 검색 (/)"
+            placeholder={t("results.searchPlaceholder")}
             size="md"
           />
           <Select
             value={severityFilter}
             onChange={(value) => onSeverityFilterChange(String(value) as LogsSeverityFilter)}
             options={[
-              { label: "심각도: 전체", value: "all" },
+              { label: t("severity.all"), value: "all" },
               { label: "Critical", value: "critical" },
               { label: "High", value: "high" },
               { label: "Medium", value: "medium" },
@@ -90,14 +90,14 @@ export function LogClusterResults({
             value={sortKey}
             onChange={(value) => onSortKeyChange(String(value) as LogsSortKey)}
             options={[
-              { label: "정렬: 발생량", value: "countDesc" },
-              { label: "정렬: 최근순", value: "latestDesc" },
-              { label: "정렬: 심각도", value: "severityDesc" }
+              { label: t("sort.count"), value: "countDesc" },
+              { label: t("sort.latest"), value: "latestDesc" },
+              { label: t("sort.severity"), value: "severityDesc" }
             ]}
           />
           <Flex className="items-center justify-end gap-[var(--space-1-5)]">
             <Button type="button" size="sm" variant="outline" onClick={onSaveCurrentView}>
-              뷰 저장
+              {t("results.saveView")}
             </Button>
           </Flex>
         </Grid>
@@ -112,7 +112,7 @@ export function LogClusterResults({
                 removable
                 onClick={() => onApplySavedView(view.id)}
                 onRemove={() => onRemoveSavedView(view.id)}
-                removeLabel={`${view.name} 삭제`}
+                removeLabel={t("results.removeView", { name: view.name })}
                 className={`cursor-pointer transition-[background-color,border-color,box-shadow,color] duration-150 ease-out ${
                   savedViewsState.activeId === view.id
                     ? "ring-primary/35 shadow-none ring-1"
@@ -129,7 +129,7 @@ export function LogClusterResults({
               onClick={onClearSavedViews}
               className="cursor-pointer"
             >
-              내 뷰 삭제
+              {t("results.clearViews")}
             </Badge>
           </Flex>
         ) : null}
@@ -137,10 +137,10 @@ export function LogClusterResults({
       {clusterMeta ? (
         <Flex className="mb-[var(--space-2)] items-center gap-[var(--space-1-5)]">
           <Badge variant="secondary" size="sm">
-            표시 {formatNumber(clusters.length)}건
+            {t("results.displayed", { count: formatNumber(clusters.length, locale) })}
           </Badge>
           <Badge variant="outline" size="sm">
-            전체 {formatNumber(clusterMeta.totalCount)}건
+            {t("results.total", { count: formatNumber(clusterMeta.totalCount, locale) })}
           </Badge>
         </Flex>
       ) : null}
@@ -158,9 +158,9 @@ export function LogClusterResults({
                   variant="outline"
                   onClick={() => onRetry(lastSubmitted)}
                   loading={isPending ? true : undefined}
-                  loadingLabel="재시도 중..."
+                  loadingLabel={t("retrying")}
                 >
-                  다시 시도
+                  {t("retry")}
                 </Button>
               ) : undefined
             }
@@ -168,7 +168,7 @@ export function LogClusterResults({
         </Box>
       ) : null}
       {clusters.length === 0 ? (
-        <FeedbackState variant="empty" size="sm" title="분석 결과가 없습니다." />
+        <FeedbackState variant="empty" size="sm" title={t("results.empty")} />
       ) : (
         <Box className="space-y-[var(--space-2)]">
           {clusters.map((cluster) => (
@@ -194,7 +194,7 @@ export function LogClusterResults({
                     {cluster.severity}
                   </Badge>
                   <Badge size="sm" variant="secondary">
-                    {formatNumber(cluster.count)}건
+                    {t("count", { count: formatNumber(cluster.count, locale) })}
                   </Badge>
                 </Flex>
               </Flex>
@@ -202,7 +202,8 @@ export function LogClusterResults({
                 {cluster.normalizedMessage}
               </Typography>
               <Typography as="p" variant="caption" color="subtle" className="mt-[var(--space-2)]">
-                최초 {formatDateTime(cluster.firstSeen)} · 최근 {formatDateTime(cluster.lastSeen)}
+                {t("firstSeen")} {formatDateTime(cluster.firstSeen, locale)} · {t("lastSeen")}{" "}
+                {formatDateTime(cluster.lastSeen, locale)}
               </Typography>
               <Box className="mt-[var(--space-2)] space-y-[var(--space-1)]">
                 {cluster.suggestedActions.map((action) => (

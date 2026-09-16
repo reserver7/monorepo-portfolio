@@ -7,7 +7,9 @@ test.describe("OpsLens 서비스 상세", () => {
     await page.goto(`${opslensUrl}/services/checkout`);
 
     await expect(
-      page.getByText("checkout 서비스 운영").or(page.getByText("서비스 운영 데이터를 불러오지 못했습니다."))
+      page
+        .getByText(/checkout (서비스 운영|operations)/)
+        .or(page.getByText(/(서비스 운영 데이터를 불러오지 못했습니다|Unable to load service operations)/))
     ).toBeVisible();
   });
 
@@ -16,7 +18,9 @@ test.describe("OpsLens 서비스 상세", () => {
     await page.goto(`${opslensUrl}/services/checkout`);
 
     await expect(
-      page.getByText("checkout 서비스 운영").or(page.getByText("서비스 운영 데이터를 불러오지 못했습니다."))
+      page
+        .getByText(/checkout (서비스 운영|operations)/)
+        .or(page.getByText(/(서비스 운영 데이터를 불러오지 못했습니다|Unable to load service operations)/))
     ).toBeVisible();
   });
 });

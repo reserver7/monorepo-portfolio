@@ -135,7 +135,7 @@ export const SeverityDistributionChart = memo(function SeverityDistributionChart
   };
 
   return (
-    <Box role="img" aria-label="심각도별 이슈 분포 도넛 차트" className="h-[232px] w-full">
+    <Box role="img" aria-label={tDashboard("charts.severityDistributionAria")} className="h-[232px] w-full">
       <Doughnut data={data} options={options} />
     </Box>
   );
@@ -172,7 +172,7 @@ export const ErrorTrendChart = memo(function ErrorTrendChart({ summary }: { summ
       labels: summary.errorTrend24h.map((item) => item.hour),
       datasets: [
         {
-          label: "Error events",
+          label: tDashboard("charts.errorEvents"),
           data: counts,
           borderColor: resolveCanvasColor(chartColorTokens.trend, "#2563eb"),
           borderWidth: 2.75,
@@ -251,7 +251,7 @@ export const ErrorTrendChart = memo(function ErrorTrendChart({ summary }: { summ
   };
 
   return (
-    <Box role="img" aria-label="최근 24시간 에러 추이 선 그래프" className="h-[232px] w-full">
+    <Box role="img" aria-label={tDashboard("charts.errorTrendAria")} className="h-[232px] w-full">
       <Line data={data} options={options} />
     </Box>
   );
@@ -284,7 +284,7 @@ export const TopRepeatedErrorsChart = memo(function TopRepeatedErrorsChart({
       labels,
       datasets: [
         {
-          label: "Count",
+          label: tDashboard("charts.count"),
           data: summary.topRepeatedErrors.map((item) => item.count),
           borderRadius: 8,
           borderSkipped: false,
@@ -337,7 +337,7 @@ export const TopRepeatedErrorsChart = memo(function TopRepeatedErrorsChart({
   };
 
   return (
-    <Box role="img" aria-label="반복 에러 상위 5개 막대 그래프" className="h-[248px] w-full">
+    <Box role="img" aria-label={tDashboard("charts.topRepeatedErrorsAria")} className="h-[248px] w-full">
       <Bar data={data} options={options} plugins={[createBarValueLabelPlugin(eventUnit)]} />
     </Box>
   );

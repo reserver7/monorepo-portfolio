@@ -191,7 +191,7 @@ export default function AppShellHeaderControls({
     mutationFn: markAllOpsAlertsRead,
     onSuccess: async () => {
       await refreshAlerts();
-      toast.success("모든 알림을 읽음 처리했습니다.");
+      toast.success(tCommon("alertsMarkedRead"));
     },
     onError: async (error) => {
       await refreshAlerts();
@@ -203,7 +203,7 @@ export default function AppShellHeaderControls({
     mutationFn: deleteOpsAlert,
     onSuccess: async () => {
       await refreshAlerts();
-      toast.success("알림을 삭제했습니다.");
+      toast.success(tCommon("alertDeleted"));
     },
     onError: async (error) => {
       await refreshAlerts();
@@ -252,9 +252,9 @@ export default function AppShellHeaderControls({
   const copyCurrentViewLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      toast.success("현재 필터가 적용된 보기 링크를 복사했습니다.");
+      toast.success(tCommon("viewLinkCopied"));
     } catch {
-      toast.error("보기 링크를 복사하지 못했습니다.");
+      toast.error(tCommon("viewLinkCopyFailed"));
     }
   };
 
@@ -280,7 +280,7 @@ export default function AppShellHeaderControls({
     const nextEnabled = !focusModeEnabled;
     setFocusModeEnabled(nextEnabled);
     window.localStorage.setItem("opslens.focus-mode", nextEnabled ? "1" : "0");
-    toast.info(nextEnabled ? "운영 집중 모드가 켜졌습니다." : "운영 집중 모드가 꺼졌습니다.");
+    toast.info(nextEnabled ? tCommon("focusModeOn") : tCommon("focusModeOff"));
   };
 
   const commitSearch = (value = watchSearch) => {
@@ -598,7 +598,7 @@ export default function AppShellHeaderControls({
                 {watchSearch.trim() ? (
                   <Box className="border-default mt-[var(--space-2)] border-t pt-[var(--space-2)]">
                     <Typography as="p" variant="caption" color="muted">
-                      검색 결과로 이동
+                      {tCommon("searchResults")}
                     </Typography>
                     <Flex className="mt-[var(--space-1)] flex-wrap gap-[var(--space-1)]">
                       {[
@@ -634,7 +634,7 @@ export default function AppShellHeaderControls({
             size="sm"
             iconOnly
             leftIcon={<Link2 />}
-            aria-label="현재 보기 링크 복사"
+            aria-label={tCommon("copyCurrentView")}
             onClick={() => void copyCurrentViewLink()}
             className="hidden md:inline-flex"
           />
@@ -643,7 +643,7 @@ export default function AppShellHeaderControls({
             size="sm"
             iconOnly
             leftIcon={<Keyboard />}
-            aria-label="키보드 단축키 도움말"
+            aria-label={tCommon("keyboardShortcutsHelp")}
             onClick={() => setShortcutHelpOpen((open) => !open)}
             className="hidden md:inline-flex"
           />
@@ -717,14 +717,14 @@ export default function AppShellHeaderControls({
         <Box
           className="border-default bg-surface fixed bottom-[var(--space-4)] right-[var(--space-4)] z-40 w-[min(320px,calc(100vw-var(--space-8)))] rounded-[var(--radius-lg)] border p-[var(--space-3)] shadow-lg"
           role="dialog"
-          aria-label="키보드 단축키"
+          aria-label={tCommon("keyboardShortcuts")}
         >
           <Flex className="items-center justify-between">
             <Typography as="p" variant="bodySm" className="font-semibold">
-              키보드 단축키
+              {tCommon("keyboardShortcuts")}
             </Typography>
             <Button type="button" variant="ghost" size="sm" onClick={() => setShortcutHelpOpen(false)}>
-              닫기
+              {tCommon("close")}
             </Button>
           </Flex>
           <Box className="mt-[var(--space-2)] space-y-[var(--space-1)]">

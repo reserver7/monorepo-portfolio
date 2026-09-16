@@ -198,7 +198,7 @@ export default function DashboardPage() {
                 onClick={() => void previousSummaryQuery.refetch()}
                 loading={previousSummaryQuery.isFetching}
               >
-                이전 기간 비교
+                {tDashboard("previousPeriodCompare")}
               </Button>
             ) : null}
           </Flex>
@@ -206,16 +206,19 @@ export default function DashboardPage() {
       </Box>
 
       {showOnboarding ? (
-        <OpsSectionCard title="OpsLens 시작하기" description="처음 사용하는 운영자를 위한 짧은 안내입니다.">
+        <OpsSectionCard
+          title={tDashboard("onboarding.title")}
+          description={tDashboard("onboarding.description")}
+        >
           <Grid className="gap-[var(--space-2)] md:grid-cols-3">
             <Typography as="p" variant="caption" color="muted">
-              1. 상단 필터로 환경과 서비스를 선택합니다.
+              {tDashboard("onboarding.step1")}
             </Typography>
             <Typography as="p" variant="caption" color="muted">
-              2. 커맨드 센터에서 즉시 대응 이슈를 확인합니다.
+              {tDashboard("onboarding.step2")}
             </Typography>
             <Typography as="p" variant="caption" color="muted">
-              3. 로그 분석과 이슈 상세에서 대응을 이어갑니다.
+              {tDashboard("onboarding.step3")}
             </Typography>
           </Grid>
           <Button
@@ -228,37 +231,37 @@ export default function DashboardPage() {
               setShowOnboarding(false);
             }}
           >
-            다시 보지 않기
+            {tDashboard("onboarding.dismiss")}
           </Button>
         </OpsSectionCard>
       ) : null}
 
       <OpsSectionCard
-        title="내 운영 시작점"
+        title={tDashboard("startingPoint.title")}
         description={
           role === "admin"
-            ? "연동·권한·알림 전달 상태를 먼저 점검하세요."
+            ? tDashboard("startingPoint.adminDescription")
             : role === "operator"
-              ? "내 대응 큐와 즉시 대응 인시던트를 먼저 확인하세요."
-              : "현재 운영 상태와 공유 리포트를 확인하세요."
+              ? tDashboard("startingPoint.operatorDescription")
+              : tDashboard("startingPoint.viewerDescription")
         }
       >
         <Flex className="flex-wrap gap-[var(--space-2)]">
           {(role === "admin"
             ? [
-                { label: "운영 설정", href: "/settings?tab=workspace" },
-                { label: "알림 전달", href: "/settings?tab=notifications" },
-                { label: "커맨드 센터", href: "/command-center" }
+                { label: tDashboard("quickLinks.workspace"), href: "/settings?tab=workspace" },
+                { label: tDashboard("quickLinks.notifications"), href: "/settings?tab=notifications" },
+                { label: tDashboard("quickLinks.commandCenter"), href: "/command-center" }
               ]
             : role === "operator"
               ? [
-                  { label: "내 대응 큐", href: "/issues?assignee=me" },
-                  { label: "커맨드 센터", href: "/command-center" },
-                  { label: "로그 분석", href: "/logs" }
+                  { label: tDashboard("quickLinks.myQueue"), href: "/issues?assignee=me" },
+                  { label: tDashboard("quickLinks.commandCenter"), href: "/command-center" },
+                  { label: tDashboard("quickLinks.logAnalysis"), href: "/logs" }
                 ]
               : [
-                  { label: "운영 리포트", href: "/reports" },
-                  { label: "대시보드", href: "/" }
+                  { label: tDashboard("quickLinks.reports"), href: "/reports" },
+                  { label: tDashboard("quickLinks.dashboard"), href: "/" }
                 ]
           ).map((item) => (
             <Button
@@ -277,7 +280,7 @@ export default function DashboardPage() {
       <Grid className="justify-items-stretch gap-[var(--space-3)] md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label={tDashboard("stats.todayIssues.label")}
-          value={formatNumber(summary.todayIssueCount)}
+          value={formatNumber(summary.todayIssueCount, locale)}
           helper={
             topIssue
               ? tDashboard("stats.todayIssues.helperTopPrefix")
@@ -288,7 +291,7 @@ export default function DashboardPage() {
         />
         <MetricCard
           label={tDashboard("stats.criticalHigh.label")}
-          value={`${formatNumber(criticalCount)} / ${formatNumber(highCount)}`}
+          value={`${formatNumber(criticalCount, locale)} / ${formatNumber(highCount, locale)}`}
           helper={
             criticalCount > 0
               ? tDashboard("stats.criticalHigh.helperAlert")
@@ -300,7 +303,7 @@ export default function DashboardPage() {
         />
         <MetricCard
           label={tDashboard("stats.newAfterDeploy.label")}
-          value={formatNumber(summary.newAfterLatestDeployment.length)}
+          value={formatNumber(summary.newAfterLatestDeployment.length, locale)}
           helper={
             summary.newAfterLatestDeployment.length > 0
               ? tDashboard("stats.newAfterDeploy.helperHasRisk")
@@ -312,11 +315,13 @@ export default function DashboardPage() {
         />
         <MetricCard
           label={tDashboard("stats.total24h.label")}
-          value={formatNumber(total24h)}
+          value={formatNumber(total24h, locale)}
           helper={
             totalDelta === null
               ? tDashboard("stats.total24h.helper")
-              : `이전 기간 대비 ${totalDelta > 0 ? "+" : ""}${formatNumber(totalDelta)}건`
+              : tDashboard("stats.total24h.helperDelta", {
+                  delta: `${totalDelta > 0 ? "+" : ""}${formatNumber(totalDelta, locale)}`
+                })
           }
           color="primary"
           className="h-full rounded-[var(--radius-lg)] [&>p:last-child]:line-clamp-1 [&>p:last-child]:text-[11px] [&>p:nth-of-type(2)]:text-[1.625rem] [&>p:nth-of-type(2)]:leading-[1.1]"
@@ -325,8 +330,8 @@ export default function DashboardPage() {
       </Grid>
 
       <OpsSectionCard
-        title="서비스 상태"
-        description="열린 이슈와 Critical/High 신호를 기준으로 서비스 상태를 정리합니다."
+        title={tDashboard("serviceHealth.title")}
+        description={tDashboard("serviceHealth.description")}
       >
         {serviceHealthQuery.isLoading ? (
           <OpsSectionSkeleton rows={4} />
@@ -353,22 +358,30 @@ export default function DashboardPage() {
                           : "success"
                     }
                   >
-                    {item.status === "incident" ? "장애" : item.status === "degraded" ? "주의" : "정상"}
+                    {item.status === "incident"
+                      ? tDashboard("serviceHealth.statusIncident")
+                      : item.status === "degraded"
+                        ? tDashboard("serviceHealth.statusDegraded")
+                        : tDashboard("serviceHealth.statusHealthy")}
                   </Badge>
                 </Flex>
                 <Typography as="p" variant="caption" color="muted" className="mt-[var(--space-3)]">
-                  열린 이슈 {formatNumber(item.openIssueCount)} · Critical/High{" "}
-                  {formatNumber(item.criticalHighCount)}
+                  {tDashboard("serviceHealth.openIssues", {
+                    count: formatNumber(item.openIssueCount, locale)
+                  })}{" "}
+                  · Critical/High {formatNumber(item.criticalHighCount, locale)}
                 </Typography>
                 <Typography as="p" variant="caption" color="subtle" className="mt-[var(--space-1)]">
-                  최근 이벤트{" "}
-                  {item.lastOccurredAt ? formatDateTimeByLocale(item.lastOccurredAt, locale) : "없음"}
+                  {tDashboard("serviceHealth.lastEvent")}{" "}
+                  {item.lastOccurredAt
+                    ? formatDateTimeByLocale(item.lastOccurredAt, locale)
+                    : tDashboard("serviceHealth.none")}
                 </Typography>
               </Link>
             ))}
           </Grid>
         ) : (
-          <FeedbackState variant="empty" size="sm" title="현재 필터에 해당하는 서비스 이벤트가 없습니다." />
+          <FeedbackState variant="empty" size="sm" title={tDashboard("serviceHealth.noFilteredEvents")} />
         )}
       </OpsSectionCard>
 
@@ -439,7 +452,7 @@ export default function DashboardPage() {
                       </Box>
                       <Flex className="text-muted text-caption mt-[var(--space-2)] items-center justify-between gap-[var(--space-2)]">
                         <Box as="p" className="text-muted text-caption">
-                          {tDashboard("queue.countPrefix")} {formatNumber(item.count)}
+                          {tDashboard("queue.countPrefix")} {formatNumber(item.count, locale)}
                           {tDashboard("queue.countSuffix")}
                         </Box>
                         <Typography as="p" variant="caption" className="font-medium">
@@ -451,7 +464,7 @@ export default function DashboardPage() {
                 </Box>
               )}
               <Button asChild variant="outline" size="sm" className="mt-[var(--space-3)] w-full">
-                <Link href="/command-center">커맨드 센터에서 전체 대응 보기</Link>
+                <Link href="/command-center">{tDashboard("quickLinks.viewAllResponse")}</Link>
               </Button>
             </OpsSectionCard>
           </Box>

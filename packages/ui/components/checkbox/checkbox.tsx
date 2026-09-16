@@ -6,6 +6,7 @@ import { Controller } from "react-hook-form";
 import { Check, Minus } from "lucide-react";
 import { resolveOption } from "../internal/resolve-option";
 import { cn } from "../cn";
+import { useUiLocale } from "../ui-locale";
 import { FieldSupportText } from "../field/field-utils";
 import { Label } from "../label";
 import {
@@ -40,10 +41,11 @@ function CheckboxBase(
   }: CheckboxProps,
   ref: React.ForwardedRef<React.ElementRef<typeof CheckboxPrimitive.Root>>
 ) {
+  const labels = useUiLocale();
   const generatedId = React.useId();
   const resolvedId = id ?? `checkbox-${generatedId}`;
   const supportText =
-    errorMessage ?? helperText ?? (required && !label ? "필수 체크 항목입니다." : undefined);
+    errorMessage ?? helperText ?? (required && !label ? `${labels.requiredCheck}.` : undefined);
   const hasWrapper = Boolean(
     required || label || supportText || containerClassName || labelClassName || helperClassName
   );
@@ -114,7 +116,7 @@ function CheckboxBase(
             <span aria-hidden className="text-danger leading-none">
               *
             </span>
-            <span className="sr-only">필수 체크 항목</span>
+            <span className="sr-only">{labels.requiredCheck}</span>
           </>
         ) : null}
       </div>
@@ -135,11 +137,12 @@ CheckboxBaseWithRef.displayName = "CheckboxBase";
 
 const CheckboxComponent = React.forwardRef<React.ElementRef<typeof CheckboxPrimitive.Root>, CheckboxProps>(
   (props, ref) => {
+    const labels = useUiLocale();
     const { control, rules, name, onCheckedChange, checked, defaultChecked, required, ...rest } = props;
     const mergedRules = React.useMemo<CheckboxProps["rules"]>(() => {
       if (!required || rules?.required) return rules;
-      return { required: "필수 체크 항목입니다.", ...rules };
-    }, [required, rules]);
+      return { required: `${labels.requiredCheck}.`, ...rules };
+    }, [labels.requiredCheck, required, rules]);
 
     if (control && typeof name === "string" && name.length > 0) {
       return (

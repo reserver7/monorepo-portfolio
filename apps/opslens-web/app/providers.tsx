@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { configureOpslensClient } from "@repo/opslens";
 import { configureHttpAuth, setHttpAccessToken } from "@repo/react-query";
 import { AppProviders } from "@repo/theme";
-import { NextIntlClientProvider } from "next-intl";
+import { NextIntlClientProvider, useLocale, useTranslations } from "next-intl";
 import { OpsAlertStoreProvider } from "@/features/alerts";
 import { OpsFilterStoreProvider, useOpsFilterStore } from "@/features/common/stores";
 import { getAuthAccessToken } from "@/lib/auth";
@@ -75,6 +75,27 @@ function OpsHttpAuthBridge() {
   return null;
 }
 
+function LocalizedAppProviders({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("error");
+  const locale = useLocale();
+
+  return (
+    <AppProviders
+      locale={locale}
+      queryClientConfig={{
+        defaultOptions: {
+          queries: { staleTime: 15_000 }
+        }
+      }}
+      fallbackTitle={t("loadFailedTitle")}
+      fallbackDescription={t("retryDescription")}
+    >
+      <OpsHttpAuthBridge />
+      <OpsAlertStoreProvider>{children}</OpsAlertStoreProvider>
+    </AppProviders>
+  );
+}
+
 export function Providers({
   children,
   initialLocale,
@@ -87,18 +108,7 @@ export function Providers({
   return (
     <OpsFilterStoreProvider initialLocale={initialLocale}>
       <OpsI18nProvider initialMessages={initialMessages}>
-        <AppProviders
-          queryClientConfig={{
-            defaultOptions: {
-              queries: { staleTime: 15_000 }
-            }
-          }}
-          fallbackTitle="OpsLens AI 화면에서 오류가 발생했습니다."
-          fallbackDescription="잠시 후 다시 시도하거나 새로고침해 주세요."
-        >
-          <OpsHttpAuthBridge />
-          <OpsAlertStoreProvider>{children}</OpsAlertStoreProvider>
-        </AppProviders>
+        <LocalizedAppProviders>{children}</LocalizedAppProviders>
       </OpsI18nProvider>
     </OpsFilterStoreProvider>
   );

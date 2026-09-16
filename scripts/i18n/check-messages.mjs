@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import path from "node:path";
-import { ROOT, flattenKeys, listMessageGroups, readJson } from "./lib/message-groups.mjs";
+import { ROOT, flattenKeys, getByPath, listMessageGroups, readJson } from "./lib/message-groups.mjs";
+import { comparePlaceholders } from "./lib/message-validation.mjs";
 
 function compareGroup(group) {
   const referenceKeys = new Set(flattenKeys(readJson(group.baseFile)));
@@ -12,10 +13,30 @@ function compareGroup(group) {
     const missing = [...referenceKeys].filter((key) => !currentKeys.has(key));
     const extra = [...currentKeys].filter((key) => !referenceKeys.has(key));
     if (missing.length === 0 && extra.length === 0) {
+      const source = readJson(group.baseFile);
+      const current = readJson(file);
+      const placeholderDrift = flattenKeys(source)
+        .map((key) => ({ key, ...comparePlaceholders(getByPath(source, key), getByPath(current, key)) }))
+        .filter(
+          ({ missing: missingPlaceholders, extra: extraPlaceholders }) =>
+            missingPlaceholders.length > 0 || extraPlaceholders.length > 0
+        );
+      if (placeholderDrift.length === 0) continue;
+      errors.push({ file, missing: [], extra: [], placeholderDrift });
       continue;
     }
 
-    errors.push({ file, missing, extra });
+    const source = readJson(group.baseFile);
+    const current = readJson(file);
+    const placeholderDrift = [...referenceKeys]
+      .filter((key) => currentKeys.has(key))
+      .map((key) => ({ key, ...comparePlaceholders(getByPath(source, key), getByPath(current, key)) }))
+      .filter(
+        ({ missing: missingPlaceholders, extra: extraPlaceholders }) =>
+          missingPlaceholders.length > 0 || extraPlaceholders.length > 0
+      );
+
+    errors.push({ file, missing, extra, placeholderDrift });
   }
 
   return { group, errors };
@@ -47,6 +68,18 @@ function main() {
       }
       if (err.extra.length > 0) {
         console.error(`    extra(${err.extra.length}): ${err.extra.join(", ")}`);
+      }
+      for (const drift of err.placeholderDrift ?? []) {
+        if (drift.missing.length > 0) {
+          console.error(
+            `    placeholder missing(${drift.missing.length}) ${drift.key}: ${drift.missing.join(", ")}`
+          );
+        }
+        if (drift.extra.length > 0) {
+          console.error(
+            `    placeholder extra(${drift.extra.length}) ${drift.key}: ${drift.extra.join(", ")}`
+          );
+        }
       }
     }
   }

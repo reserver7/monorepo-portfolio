@@ -1,41 +1,14 @@
 import { cookies, headers } from "next/headers";
+import { resolveLocale } from "@repo/configs/i18n";
 import { OPS_DEFAULT_LOCALE, type OpsLocale } from "@/lib/i18n/messages";
-
-const ACCEPT_LANGUAGE_SPLIT_PATTERN = /[,;]/;
-
-const isOpsLocale = (value: string | null | undefined): value is OpsLocale => {
-  return value === "ko" || value === "en" || value === "ja";
-};
-
-const extractLocaleFromAcceptLanguage = (acceptLanguage: string | null): OpsLocale | null => {
-  if (!acceptLanguage) {
-    return null;
-  }
-
-  const candidates = acceptLanguage
-    .split(ACCEPT_LANGUAGE_SPLIT_PATTERN)
-    .map((token) => token.trim().toLowerCase())
-    .filter((token) => token.length > 0);
-
-  for (const candidate of candidates) {
-    const normalized = candidate.split("-")[0];
-    if (isOpsLocale(normalized)) {
-      return normalized;
-    }
-  }
-
-  return null;
-};
 
 export const resolveRequestLocale = async (): Promise<OpsLocale> => {
   const cookieStore = await cookies();
-  const localeCookie = cookieStore.get("opslens-locale")?.value;
-  if (isOpsLocale(localeCookie)) {
-    return localeCookie;
-  }
-
   const headerStore = await headers();
-  return extractLocaleFromAcceptLanguage(headerStore.get("accept-language")) ?? OPS_DEFAULT_LOCALE;
+  return resolveLocale({
+    cookieLocale: cookieStore.get("opslens-locale")?.value,
+    acceptLanguage: headerStore.get("accept-language")
+  }) as OpsLocale;
 };
 
 export const getOpsMetadataText = (locale: OpsLocale) => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge, Box, Button, Checkbox, Flex, Grid, Input, Typography } from "@repo/ui";
 import type { OpsReportAction } from "@repo/opslens";
 import { formatDateTime } from "@repo/utils";
@@ -13,6 +14,8 @@ type ReportActionListProps = {
 };
 
 export function ReportActionList({ actions, disabled, onToggle, onUpdate }: ReportActionListProps) {
+  const t = useTranslations("reports");
+  const locale = useLocale();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, { owner: string; dueAt: string }>>({});
   const edit = (action: OpsReportAction) => {
@@ -40,7 +43,7 @@ export function ReportActionList({ actions, disabled, onToggle, onUpdate }: Repo
                 <Checkbox
                   checked={isComplete}
                   disabled={disabled}
-                  aria-label={`${action.title} 완료`}
+                  aria-label={t("actionCompleteAria", { title: action.title })}
                   onCheckedChange={(checked) => onToggle(action, checked === true)}
                 />
                 <Box className="min-w-0">
@@ -74,13 +77,20 @@ export function ReportActionList({ actions, disabled, onToggle, onUpdate }: Repo
               color={overdue ? "danger" : "subtle"}
               className="mt-[var(--space-2)]"
             >
-              담당: {action.owner} · {action.dueAt ? `기한 ${formatDateTime(action.dueAt)} · ` : ""}
-              {isComplete ? `${action.completedBy || "운영자"} 완료` : overdue ? "기한 지연" : "진행 필요"}
+              {t("actionMeta", {
+                owner: action.owner,
+                due: action.dueAt ? `${t("due")} ${formatDateTime(action.dueAt, locale)} · ` : "",
+                status: isComplete
+                  ? `${action.completedBy || t("operator")} ${t("completed")}`
+                  : overdue
+                    ? t("overdue")
+                    : t("needsAction")
+              })}
             </Typography>
             {editingId === action.id ? (
               <Grid className="mt-[var(--space-2)] gap-[var(--space-2)] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
                 <Input
-                  aria-label={`${action.title} 담당자`}
+                  aria-label={t("ownerAria", { title: action.title })}
                   value={drafts[action.id]?.owner ?? action.owner}
                   onChange={(event) =>
                     setDrafts((previous) => ({
@@ -90,7 +100,7 @@ export function ReportActionList({ actions, disabled, onToggle, onUpdate }: Repo
                   }
                 />
                 <Input
-                  aria-label={`${action.title} 기한`}
+                  aria-label={t("dueAria", { title: action.title })}
                   type="datetime-local"
                   value={drafts[action.id]?.dueAt ?? ""}
                   onChange={(event) =>
@@ -112,10 +122,10 @@ export function ReportActionList({ actions, disabled, onToggle, onUpdate }: Repo
                     setEditingId(null);
                   }}
                 >
-                  저장
+                  {t("save")}
                 </Button>
                 <Button type="button" size="sm" variant="ghost" onClick={() => setEditingId(null)}>
-                  취소
+                  {t("cancel")}
                 </Button>
               </Grid>
             ) : (
@@ -127,7 +137,7 @@ export function ReportActionList({ actions, disabled, onToggle, onUpdate }: Repo
                 disabled={disabled}
                 onClick={() => edit(action)}
               >
-                담당·기한 편집
+                {t("editOwnerDue")}
               </Button>
             )}
           </Box>
@@ -135,7 +145,7 @@ export function ReportActionList({ actions, disabled, onToggle, onUpdate }: Repo
       })}
       {actions.length === 0 ? (
         <Typography as="p" variant="bodySm" color="muted">
-          현재 리포트에 생성된 액션 아이템이 없습니다.
+          {t("actions.empty")}
         </Typography>
       ) : null}
     </Box>

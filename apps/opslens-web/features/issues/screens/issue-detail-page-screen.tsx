@@ -5,6 +5,7 @@ import { FeedbackState } from "@/features/common/components/feedback-state";
 import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useAppForm } from "@repo/forms";
 import { Box, Button, Flex, Grid, Input, Label, Progress, Select, Typography, toast } from "@repo/ui";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
@@ -31,6 +32,7 @@ import { formatDateTime, formatNumber } from "@repo/utils";
 import { ISSUE_DETAIL_STATUS_OPTIONS } from "../constants";
 import { IncidentTimeline, IssueCommentsPanel, IssueLogList } from "../components";
 import { readAuthSession } from "@/lib/auth";
+import { resolveLocalizedError } from "@/lib/i18n/errors";
 
 const formatElapsed = (from?: string | null, to?: string | null) => {
   if (!from) return "—";
@@ -45,6 +47,9 @@ const formatElapsed = (from?: string | null, to?: string | null) => {
 };
 
 export default function IssueDetailPage() {
+  const t = useTranslations("issues.detail");
+  const tError = useTranslations("error");
+  const locale = useLocale();
   const params = useParams<{ id: string }>();
   const issueId = params.id;
   const queryClient = useQueryClient();
@@ -111,10 +116,10 @@ export default function IssueDetailPage() {
         queryClient.invalidateQueries({ queryKey: opslensQueryKeys.incidentTimeline(issueId) }),
         queryClient.invalidateQueries({ queryKey: opslensQueryKeys.all })
       ]);
-      toast.success("이슈 상태를 변경했습니다.");
+      toast.success(t("statusUpdated"));
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "이슈 상태 변경에 실패했습니다.");
+      toast.error(resolveLocalizedError(error, tError as never, t("statusUpdateFailed")));
     }
   });
 
@@ -127,24 +132,24 @@ export default function IssueDetailPage() {
         queryClient.invalidateQueries({ queryKey: opslensQueryKeys.incidentTimeline(issueId) }),
         queryClient.invalidateQueries({ queryKey: opslensQueryKeys.all })
       ]);
-      toast.success("담당자를 지정했습니다.");
+      toast.success(t("assigneeUpdated"));
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "담당자 지정에 실패했습니다.");
+      toast.error(resolveLocalizedError(error, tError as never, t("assigneeUpdateFailed")));
     }
   });
 
   const commentMutation = useMutation({
     mutationFn: (values: { author: string; body: string }) =>
-      addIssueComment(issueId, values.author.trim() || "익명", values.body.trim()),
+      addIssueComment(issueId, values.author.trim() || t("anonymous"), values.body.trim()),
     onSuccess: async () => {
       commentForm.setValue("body", "");
       await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.issueDetail(issueId) });
       await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.incidentTimeline(issueId) });
-      toast.success("댓글을 등록했습니다.");
+      toast.success(t("commentAdded"));
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "댓글 등록에 실패했습니다.");
+      toast.error(resolveLocalizedError(error, tError as never, t("commentAddFailed")));
     }
   });
   const closureMutation = useMutation({
@@ -155,9 +160,9 @@ export default function IssueDetailPage() {
         queryClient.invalidateQueries({ queryKey: opslensQueryKeys.issueDetail(issueId) }),
         queryClient.invalidateQueries({ queryKey: opslensQueryKeys.incidentTimeline(issueId) })
       ]);
-      toast.success("종료 정보를 저장했습니다.");
+      toast.success(t("closureSaved"));
     },
-    onError: (error) => toast.error(error instanceof Error ? error.message : "종료 정보 저장에 실패했습니다.")
+    onError: (error) => toast.error(resolveLocalizedError(error, tError as never, t("closureSaveFailed")))
   });
   const responseMutation = useMutation({
     mutationFn: (values: {
@@ -179,27 +184,26 @@ export default function IssueDetailPage() {
         queryClient.invalidateQueries({ queryKey: opslensQueryKeys.incidentTimeline(issueId) }),
         queryClient.invalidateQueries({ queryKey: opslensQueryKeys.all })
       ]);
-      toast.success("대응 지휘 및 공지 정보를 저장했습니다.");
+      toast.success(t("responseSaved"));
     },
-    onError: (error) =>
-      toast.error(error instanceof Error ? error.message : "대응 정보를 저장하지 못했습니다.")
+    onError: (error) => toast.error(resolveLocalizedError(error, tError as never, t("responseSaveFailed")))
   });
 
   const statusLabel = useMemo(() => {
     if (!issue) return "-";
-    if (issue.status === "new") return "신규";
-    if (issue.status === "analyzing") return "분석중";
-    if (issue.status === "in_progress") return "대응중";
-    return "해결";
-  }, [issue]);
+    if (issue.status === "new") return t("statuses.new");
+    if (issue.status === "analyzing") return t("statuses.analyzing");
+    if (issue.status === "in_progress") return t("statuses.inProgress");
+    return t("statuses.resolved");
+  }, [issue, t]);
   const responseChecklist = issue
     ? [
-        { label: "담당자 지정", complete: Boolean(issue.assignee) },
-        { label: "지휘자 지정", complete: Boolean(issue.commander) },
-        { label: "대응 시작", complete: issue.status !== "new" },
-        { label: "상태 공지 예약", complete: Boolean(issue.nextUpdateAt) },
-        { label: "원인 기록", complete: Boolean(issue.rootCause) },
-        { label: "사후 분석", complete: Boolean(issue.postmortemUrl) }
+        { label: t("checklist.assignee"), complete: Boolean(issue.assignee) },
+        { label: t("checklist.commander"), complete: Boolean(issue.commander) },
+        { label: t("checklist.responseStarted"), complete: issue.status !== "new" },
+        { label: t("checklist.nextUpdate"), complete: Boolean(issue.nextUpdateAt) },
+        { label: t("checklist.rootCause"), complete: Boolean(issue.rootCause) },
+        { label: t("checklist.postmortem"), complete: Boolean(issue.postmortemUrl) }
       ]
     : [];
   const responseProgress =
@@ -211,12 +215,12 @@ export default function IssueDetailPage() {
   const responseStartedAt = issue?.acknowledgedAt ?? issue?.firstOccurredAt;
   const copyIncidentSummary = async () => {
     if (!issue) return;
-    const summary = `[${issue.severity.toUpperCase()}] ${issue.title}\n상태: ${statusLabel} · 담당: ${issue.assignee || "미지정"}\n서비스: ${issue.serviceName} (${issue.environment})\n최근 발생: ${formatDateTime(issue.lastOccurredAt)}\n대응: ${issue.suggestedActions[0] || "확인 필요"}`;
+    const summary = `[${issue.severity.toUpperCase()}] ${issue.title}\n${t("summary.status")}: ${statusLabel} · ${t("summary.assignee")}: ${issue.assignee || t("unassigned")}\n${t("summary.service")}: ${issue.serviceName} (${issue.environment})\n${t("summary.lastOccurred")}: ${formatDateTime(issue.lastOccurredAt, locale)}\n${t("summary.response")}: ${issue.suggestedActions[0] || t("needsReview")}`;
     try {
       await navigator.clipboard.writeText(summary);
-      toast.success("인시던트 공유 요약을 복사했습니다.");
+      toast.success(t("summaryCopied"));
     } catch {
-      toast.error("공유 요약 복사에 실패했습니다.");
+      toast.error(t("summaryCopyFailed"));
     }
   };
 
@@ -229,8 +233,8 @@ export default function IssueDetailPage() {
       <FeedbackState
         variant="error"
         size="lg"
-        title="이슈 상세 조회에 실패했습니다."
-        description="네트워크 상태를 확인한 뒤 다시 시도해 주세요."
+        title={t("loadFailed")}
+        description={t("loadFailedDescription")}
         action={
           <Button
             variant="outline"
@@ -238,7 +242,7 @@ export default function IssueDetailPage() {
             onClick={() => void issueQuery.refetch()}
             loading={issueQuery.isFetching}
           >
-            다시 시도
+            {t("retry")}
           </Button>
         }
       />
@@ -247,10 +251,7 @@ export default function IssueDetailPage() {
 
   return (
     <OpsPageShell>
-      <OpsSectionCard
-        title="인시던트 워룸"
-        description="상태·담당·지휘·다음 공지를 먼저 정리하고, 조사와 종료 기록을 이어가세요."
-      >
+      <OpsSectionCard title={t("warRoomTitle")} description={t("warRoomDescription")}>
         <Flex className="flex-wrap items-start justify-between gap-[var(--space-3)]">
           <Box>
             <Typography as="h2" variant="h2" className="text-heading-xl">
@@ -261,64 +262,81 @@ export default function IssueDetailPage() {
             </Typography>
           </Box>
           <Link href="/issues" className="text-primary text-sm font-semibold hover:underline">
-            목록으로 이동
+            {t("backToList")}
           </Link>
           <Button type="button" variant="secondary" size="md" onClick={() => void copyIncidentSummary()}>
-            공유 요약 복사
+            {t("copySummary")}
           </Button>
           <Link
             href={`/logs?service=${encodeURIComponent(issue.serviceName)}${issue.deploymentVersion ? `&deployment=${encodeURIComponent(issue.deploymentVersion)}` : ""}`}
             className="text-primary text-sm font-semibold hover:underline"
           >
-            관련 로그 탐색
+            {t("exploreLogs")}
           </Link>
         </Flex>
 
         <Grid className="mt-[var(--space-4)] gap-[var(--space-3)] md:grid-cols-4">
-          <OpsInfoItem label="심각도" value={issue.severity} />
-          <OpsInfoItem label="상태" value={statusLabel} />
-          <OpsInfoItem label="발생 횟수" value={`${formatNumber(issue.occurrenceCount)}회`} />
-          <OpsInfoItem label="담당자" value={issue.assignee || "미지정"} />
-          <OpsInfoItem label="지휘자" value={issue.commander || "미지정"} />
-          <OpsInfoItem label="에스컬레이션" value={`L${issue.escalationLevel}`} />
-          <OpsInfoItem label="서비스" value={issue.serviceName} />
-          <OpsInfoItem label="환경" value={issue.environment} />
-          <OpsInfoItem label="최초 발생" value={formatDateTime(issue.firstOccurredAt)} />
-          <OpsInfoItem label="최근 발생" value={formatDateTime(issue.lastOccurredAt)} />
+          <OpsInfoItem label={t("fields.severity")} value={issue.severity} />
+          <OpsInfoItem label={t("fields.status")} value={statusLabel} />
           <OpsInfoItem
-            label="최초 확인"
-            value={issue.acknowledgedAt ? formatDateTime(issue.acknowledgedAt) : "미확인"}
+            label={t("fields.occurrences")}
+            value={`${formatNumber(issue.occurrenceCount, locale)}${t("occurrenceUnit")}`}
+          />
+          <OpsInfoItem label={t("fields.assignee")} value={issue.assignee || t("unassigned")} />
+          <OpsInfoItem label={t("fields.commander")} value={issue.commander || t("unassigned")} />
+          <OpsInfoItem label={t("fields.escalation")} value={`L${issue.escalationLevel}`} />
+          <OpsInfoItem label={t("fields.service")} value={issue.serviceName} />
+          <OpsInfoItem label={t("fields.environment")} value={issue.environment} />
+          <OpsInfoItem
+            label={t("fields.firstOccurred")}
+            value={formatDateTime(issue.firstOccurredAt, locale)}
           />
           <OpsInfoItem
-            label="해결 시각"
-            value={issue.resolvedAt ? formatDateTime(issue.resolvedAt) : "미해결"}
+            label={t("fields.lastOccurred")}
+            value={formatDateTime(issue.lastOccurredAt, locale)}
           />
           <OpsInfoItem
-            label="확인까지"
+            label={t("fields.acknowledged")}
+            value={issue.acknowledgedAt ? formatDateTime(issue.acknowledgedAt, locale) : t("notConfirmed")}
+          />
+          <OpsInfoItem
+            label={t("fields.resolvedAt")}
+            value={issue.resolvedAt ? formatDateTime(issue.resolvedAt, locale) : t("unresolved")}
+          />
+          <OpsInfoItem
+            label={t("fields.timeToAcknowledge")}
             value={
-              issue.acknowledgedAt ? formatElapsed(issue.firstOccurredAt, issue.acknowledgedAt) : "미확인"
+              issue.acknowledgedAt
+                ? formatElapsed(issue.firstOccurredAt, issue.acknowledgedAt)
+                : t("notConfirmed")
             }
           />
-          <OpsInfoItem label="대응 경과" value={formatElapsed(responseStartedAt, issue.resolvedAt)} />
           <OpsInfoItem
-            label="다음 공지"
-            value={issue.nextUpdateAt ? formatDateTime(issue.nextUpdateAt) : "미설정"}
+            label={t("fields.responseElapsed")}
+            value={formatElapsed(responseStartedAt, issue.resolvedAt)}
           />
-          <OpsInfoItem label="대응 완료율" value={`${responseProgress}%`} />
+          <OpsInfoItem
+            label={t("fields.nextUpdate")}
+            value={issue.nextUpdateAt ? formatDateTime(issue.nextUpdateAt, locale) : t("notConfigured")}
+          />
+          <OpsInfoItem label={t("fields.responseProgress")} value={`${responseProgress}%`} />
         </Grid>
         <Box className="border-primary/20 bg-primary/5 mt-[var(--space-4)] rounded-[var(--radius-lg)] border p-[var(--space-4)]">
           <Flex className="items-center justify-between gap-[var(--space-3)]">
             <Typography as="p" variant="bodySm" className="font-semibold">
-              대응 체크리스트
+              {t("checklist.title")}
             </Typography>
             <Typography as="p" variant="caption" color="muted">
-              {responseChecklist.filter((item) => item.complete).length}/{responseChecklist.length} 완료
+              {t("checklist.progress", {
+                complete: responseChecklist.filter((item) => item.complete).length,
+                total: responseChecklist.length
+              })}
             </Typography>
           </Flex>
           <Progress
             value={responseProgress}
             className="mt-[var(--space-2)]"
-            aria-label="인시던트 대응 진행률"
+            aria-label={t("checklist.progressAria")}
           />
           <Flex className="mt-[var(--space-3)] flex-wrap gap-[var(--space-2)]">
             {responseChecklist.map((item) => (
@@ -336,26 +354,23 @@ export default function IssueDetailPage() {
       </OpsSectionCard>
 
       <Grid className="gap-[var(--space-5)] xl:grid-cols-2">
-        <OpsSectionCard
-          title="1. 빠른 대응 시작"
-          description="역할과 초기 대응 절차를 메모에 바로 적용합니다."
-        >
+        <OpsSectionCard title={t("steps.quickStart.title")} description={t("steps.quickStart.description")}>
           <Flex className="flex-wrap gap-[var(--space-2)]">
             {[
               {
-                label: "초기 대응",
+                label: t("templates.initialResponse"),
                 body: "[초기 대응]\n- 영향 범위 확인\n- 담당자 지정\n- 고객 영향 여부 확인"
               },
               {
-                label: "역할 배정",
+                label: t("templates.roleAssignment"),
                 body: "[워룸 역할]\n- 지휘자: 의사결정·에스컬레이션\n- 조사 담당: 로그·배포 원인 분석\n- 공지 담당: 내부/고객 상태 공지"
               },
               {
-                label: "배포 확인",
+                label: t("templates.deploymentCheck"),
                 body: "[배포 영향 확인]\n- 최근 배포 버전 대조\n- 오류 증가량 확인\n- 롤백 기준 검토"
               },
               {
-                label: "종료 점검",
+                label: t("templates.closureCheck"),
                 body: "[종료 점검]\n- Root cause 기록\n- 재발 방지 액션 등록\n- Postmortem 링크 첨부"
               }
             ].map((template) => (
@@ -366,7 +381,7 @@ export default function IssueDetailPage() {
                 size="sm"
                 onClick={() => {
                   commentForm.setValue("body", template.body);
-                  toast.info(`${template.label} 템플릿을 메모에 적용했습니다.`);
+                  toast.info(t("templateApplied", { label: template.label }));
                 }}
               >
                 {template.label}
@@ -375,16 +390,12 @@ export default function IssueDetailPage() {
           </Flex>
         </OpsSectionCard>
         <OpsSectionCard
-          title="2. 담당·상태 정리"
-          description={
-            canOperate
-              ? "대응을 시작할 때 담당자와 상태를 함께 정리하세요."
-              : "조회 전용 역할에서는 변경할 수 없습니다."
-          }
+          title={t("steps.assignment.title")}
+          description={canOperate ? t("steps.assignment.operatorDescription") : t("readOnly")}
         >
           <Grid className="mt-[var(--space-3)] gap-[var(--space-3)] md:grid-cols-2">
             <Grid className="gap-[var(--space-1)]">
-              <Label htmlFor="issue-status">상태 변경</Label>
+              <Label htmlFor="issue-status">{t("fields.changeStatus")}</Label>
               <Select
                 options={ISSUE_DETAIL_STATUS_OPTIONS}
                 value={issue.status}
@@ -395,14 +406,14 @@ export default function IssueDetailPage() {
             </Grid>
 
             <Grid className="gap-[var(--space-1)] text-sm">
-              <Label htmlFor="issue-assignee">담당자 지정</Label>
+              <Label htmlFor="issue-assignee">{t("fields.assignAssignee")}</Label>
               <form
                 className="flex gap-[var(--space-2)]"
                 onSubmit={assigneeForm.handleSubmit((values) => assigneeMutation.mutate(values))}
               >
                 <Input
                   id="issue-assignee"
-                  placeholder="예: reserver7"
+                  placeholder={t("assigneePlaceholder")}
                   className="flex-1"
                   size="md"
                   control={assigneeForm.control}
@@ -414,7 +425,7 @@ export default function IssueDetailPage() {
                   variant="primary"
                   loading={assigneeMutation.isPending ? true : undefined}
                 >
-                  저장
+                  {t("save")}
                 </Button>
                 {authSession?.user.name && issue.assignee !== authSession.user.name ? (
                   <Button
@@ -423,7 +434,7 @@ export default function IssueDetailPage() {
                     disabled={!canOperate || assigneeMutation.isPending}
                     onClick={() => assigneeMutation.mutate({ assignee: authSession.user.name })}
                   >
-                    내게 할당
+                    {t("assignToMe")}
                   </Button>
                 ) : null}
               </form>
@@ -431,24 +442,21 @@ export default function IssueDetailPage() {
           </Grid>
         </OpsSectionCard>
 
-        <OpsSectionCard
-          title="3. 지휘·상태 공지"
-          description="지휘자와 다음 공지 시각을 팀 공용 대응 기록으로 남깁니다."
-        >
+        <OpsSectionCard title={t("steps.command.title")} description={t("steps.command.description")}>
           <form
             className="mt-[var(--space-3)] grid gap-[var(--space-3)]"
             onSubmit={responseForm.handleSubmit((values) => responseMutation.mutate(values))}
           >
             <Grid className="gap-[var(--space-3)] md:grid-cols-2">
               <Input
-                label="인시던트 지휘자"
-                placeholder="예: oncall@company.com"
+                label={t("fields.incidentCommander")}
+                placeholder={t("commanderPlaceholder")}
                 control={responseForm.control}
                 name="commander"
                 disabled={!canOperate}
               />
               <Select
-                label="에스컬레이션 단계"
+                label={t("fields.escalationLevel")}
                 value={responseForm.watch("escalationLevel")}
                 onChange={(value) => responseForm.setValue("escalationLevel", String(value))}
                 disabled={!canOperate}
@@ -456,15 +464,15 @@ export default function IssueDetailPage() {
               />
             </Grid>
             <Input
-              label="다음 상태 공지"
+              label={t("fields.nextStatusUpdate")}
               type="datetime-local"
               control={responseForm.control}
               name="nextUpdateAt"
               disabled={!canOperate}
             />
             <Input
-              label="현재 상태 공지"
-              placeholder="예: 결제 요청 지연 원인을 분석 중이며 15분 내 다음 공지를 공유합니다."
+              label={t("fields.currentStatusUpdate")}
+              placeholder={t("statusUpdatePlaceholder")}
               control={responseForm.control}
               name="statusUpdate"
               disabled={!canOperate}
@@ -472,8 +480,10 @@ export default function IssueDetailPage() {
             {issue.lastStatusUpdate ? (
               <Flex className="flex-wrap items-center gap-[var(--space-2)]">
                 <Typography as="p" variant="caption" color="muted">
-                  최근 공지: {issue.lastStatusUpdate}
-                  {issue.nextUpdateAt ? ` · 다음 ${formatDateTime(issue.nextUpdateAt)}` : ""}
+                  {t("recentUpdate", { update: issue.lastStatusUpdate })}
+                  {issue.nextUpdateAt
+                    ? ` · ${t("nextUpdate", { value: formatDateTime(issue.nextUpdateAt, locale) })}`
+                    : ""}
                 </Typography>
                 <Button
                   type="button"
@@ -482,30 +492,30 @@ export default function IssueDetailPage() {
                   onClick={() =>
                     void navigator.clipboard
                       .writeText(`[${issue.serviceName}] ${issue.lastStatusUpdate}`)
-                      .then(() => toast.success("상태 공지를 복사했습니다."))
-                      .catch(() => toast.error("상태 공지를 복사하지 못했습니다."))
+                      .then(() => toast.success(t("statusUpdateCopied")))
+                      .catch(() => toast.error(t("statusUpdateCopyFailed")))
                   }
                 >
-                  공지 복사
+                  {t("copyUpdate")}
                 </Button>
               </Flex>
             ) : null}
             {canOperate ? (
               <Button type="submit" size="sm" className="w-fit" loading={responseMutation.isPending}>
-                대응 정보 저장
+                {t("saveResponse")}
               </Button>
             ) : null}
           </form>
         </OpsSectionCard>
 
         <OpsSectionCard
-          title="4. 조사 가이드"
-          description="원인 후보와 권장 액션을 로그·배포 조사에 연결합니다."
+          title={t("steps.investigation.title")}
+          description={t("steps.investigation.description")}
         >
           <Box className="mt-[var(--space-3)] space-y-[var(--space-3)] text-sm">
             <Box>
               <Box as="p" className="text-foreground mb-[var(--space-1)] font-semibold">
-                원인 후보
+                {t("investigation.causes")}
               </Box>
               <ul className="text-muted list-disc space-y-[var(--space-1)] pl-[var(--space-5)]">
                 {issue.probableCauses.map((cause) => (
@@ -515,7 +525,7 @@ export default function IssueDetailPage() {
             </Box>
             <Box>
               <Box as="p" className="text-foreground mb-[var(--space-1)] font-semibold">
-                권장 액션
+                {t("investigation.actions")}
               </Box>
               <ul className="text-muted list-disc space-y-[var(--space-1)] pl-[var(--space-5)]">
                 {issue.suggestedActions.map((action) => (
@@ -525,7 +535,7 @@ export default function IssueDetailPage() {
             </Box>
             <Box>
               <Box as="p" className="text-foreground mb-[var(--space-1)] font-semibold">
-                재현 가이드
+                {t("investigation.reproduction")}
               </Box>
               <Box as="p" className="text-muted">
                 {issue.reproductionGuide}
@@ -536,17 +546,15 @@ export default function IssueDetailPage() {
       </Grid>
 
       <OpsSectionCard
-        title="종료 정보"
+        title={t("closure.title")}
         description={
-          issue.status === "resolved"
-            ? "해결 근거와 사후 분석 문서를 기록하세요."
-            : "해결 후 사후 분석을 위해 원인과 문서 링크를 미리 기록할 수 있습니다."
+          issue.status === "resolved" ? t("closure.resolvedDescription") : t("closure.openDescription")
         }
       >
         <Grid className="mt-[var(--space-3)] gap-[var(--space-2)] md:grid-cols-2">
           {[
-            ["담당자 지정", Boolean(issue.assignee)],
-            ["최초 확인", Boolean(issue.acknowledgedAt)],
+            [t("checklist.assignee"), Boolean(issue.assignee)],
+            [t("fields.acknowledged"), Boolean(issue.acknowledgedAt)],
             ["Root cause", Boolean(issue.rootCause)],
             ["Postmortem", Boolean(issue.postmortemUrl)]
           ].map(([label, complete]) => (
@@ -558,22 +566,21 @@ export default function IssueDetailPage() {
                 {label}
               </Typography>
               <Typography as="p" variant="caption" className={complete ? "text-success" : "text-warning"}>
-                {complete ? "완료" : "필요"}
+                {complete ? t("complete") : t("required")}
               </Typography>
             </Box>
           ))}
         </Grid>
         {issue.status === "resolved" && (!issue.rootCause || !issue.postmortemUrl) ? (
           <Typography as="p" variant="bodySm" className="text-warning mt-[var(--space-3)]">
-            해결된 이슈입니다. 재발 방지를 위해 {!issue.rootCause ? "root cause" : "postmortem 링크"}를
-            기록하세요.
+            {t("closure.missing", { field: !issue.rootCause ? "root cause" : "postmortem link" })}
           </Typography>
         ) : null}
         {canOperate ? (
           <Box className="mt-[var(--space-3)] grid gap-[var(--space-3)]">
             <Input
               label="Root cause"
-              placeholder="예: 결제 API의 timeout 재시도 정책 누락"
+              placeholder={t("rootCausePlaceholder")}
               control={closureForm.control}
               name="rootCause"
             />
@@ -592,13 +599,13 @@ export default function IssueDetailPage() {
               onClick={() => {
                 const values = closureForm.getValues();
                 if (values.postmortemUrl.trim() && !/^https?:\/\//i.test(values.postmortemUrl.trim())) {
-                  toast.error("Postmortem URL은 http:// 또는 https://로 시작해야 합니다.");
+                  toast.error(t("postmortemUrlInvalid"));
                   return;
                 }
                 closureMutation.mutate(values);
               }}
             >
-              종료 정보 저장
+              {t("saveClosure")}
             </Button>
             {issue.postmortemUrl ? (
               <Link
@@ -606,22 +613,19 @@ export default function IssueDetailPage() {
                 target="_blank"
                 className="text-primary text-sm font-semibold hover:underline"
               >
-                Postmortem 열기
+                {t("openPostmortem")}
               </Link>
             ) : null}
           </Box>
         ) : (
           <Typography as="p" variant="bodySm" color="muted">
-            조회 전용 역할에서는 종료 정보를 변경할 수 없습니다.
+            {t("readOnlyClosure")}
           </Typography>
         )}
       </OpsSectionCard>
 
       <Grid className="gap-[var(--space-6)] xl:grid-cols-2">
-        <OpsSectionCard
-          title="인시던트 타임라인"
-          description="감지·배포·로그·운영 조치의 상관관계를 시간순으로 확인합니다."
-        >
+        <OpsSectionCard title={t("timelineTitle")} description={t("timelineDescription")}>
           {timelineQuery.isLoading ? (
             <OpsSectionSkeleton rows={4} />
           ) : (
@@ -629,11 +633,11 @@ export default function IssueDetailPage() {
           )}
         </OpsSectionCard>
 
-        <OpsSectionCard title="관련 로그 (최근 30개)">
+        <OpsSectionCard title={t("relatedLogs")}>
           <IssueLogList logs={issue.logs} />
         </OpsSectionCard>
 
-        <OpsSectionCard title="메모 / 댓글">
+        <OpsSectionCard title={t("commentsTitle")}>
           {canOperate ? (
             <IssueCommentsPanel
               comments={issue.comments}
@@ -644,7 +648,7 @@ export default function IssueDetailPage() {
           ) : (
             <Box className="mt-[var(--space-3)]">
               <Typography as="p" variant="bodySm" color="muted">
-                조회 전용 역할에서는 메모를 추가할 수 없습니다.
+                {t("readOnlyComments")}
               </Typography>
               <IncidentTimeline items={timelineQuery.data?.filter((item) => item.kind === "comment") ?? []} />
             </Box>
@@ -663,7 +667,7 @@ export default function IssueDetailPage() {
                 loading={statusMutation.isPending}
                 onClick={() => statusMutation.mutate(issue.status === "new" ? "analyzing" : "in_progress")}
               >
-                {issue.status === "new" ? "대응 시작" : "대응 계속"}
+                {issue.status === "new" ? t("startResponse") : t("continueResponse")}
               </Button>
               <Button
                 type="button"
@@ -672,7 +676,7 @@ export default function IssueDetailPage() {
                 className="flex-1"
                 onClick={() => void copyIncidentSummary()}
               >
-                공유 복사
+                {t("copySummaryShort")}
               </Button>
             </Flex>
           </Box>

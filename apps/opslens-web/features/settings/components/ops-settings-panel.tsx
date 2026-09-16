@@ -1,6 +1,7 @@
 "use client";
 
 import type { OpsSetting } from "@repo/opslens";
+import { useTranslations } from "next-intl";
 import { Badge, Box, Button, Flex, Grid, Input, Textarea, Typography } from "@repo/ui";
 import { SETTING_RISK_TONE } from "../utils/settings-utils";
 
@@ -33,11 +34,12 @@ export function OpsSettingsPanel({
   onResetDraft,
   onSave
 }: OpsSettingsPanelProps) {
+  const t = useTranslations("settings.ops");
   if (isError) {
     return (
       <Box className="border-default bg-surface-elevated rounded-[var(--radius-md)] border p-[var(--space-3)]">
         <Typography as="p" color="muted" className="text-body-sm">
-          운영 설정을 불러오지 못했습니다.
+          {t("loadFailed")}
         </Typography>
       </Box>
     );
@@ -69,7 +71,7 @@ export function OpsSettingsPanel({
                     {setting.category}
                   </Badge>
                   <Badge variant={setting.editable ? "success" : "secondary"} size="sm">
-                    {setting.editable ? "편집 가능" : "읽기 전용"}
+                    {setting.editable ? t("editable") : t("readOnly")}
                   </Badge>
                 </Flex>
                 {setting.description ? (
@@ -92,7 +94,7 @@ export function OpsSettingsPanel({
                   {selectedSetting.key}
                 </Typography>
                 <Typography as="p" color="muted" className="text-body-sm mt-[var(--space-1)]">
-                  {selectedSetting.description ?? "설명 없음"}
+                  {selectedSetting.description ?? t("noDescription")}
                 </Typography>
               </Box>
               <Flex className="shrink-0 flex-wrap justify-end gap-[var(--space-1)]">
@@ -108,7 +110,7 @@ export function OpsSettingsPanel({
             <Grid className="gap-[var(--space-3)] md:grid-cols-2">
               <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
                 <Typography as="p" color="muted" className="text-caption">
-                  마지막 수정자
+                  {t("updatedBy")}
                 </Typography>
                 <Typography as="p" className="text-body-sm mt-[var(--space-1)] font-semibold">
                   {selectedSetting.updatedBy}
@@ -116,16 +118,16 @@ export function OpsSettingsPanel({
               </Box>
               <Box className="border-default rounded-[var(--radius-md)] border p-[var(--space-3)]">
                 <Typography as="p" color="muted" className="text-caption">
-                  마지막 변경 사유
+                  {t("changeReason")}
                 </Typography>
                 <Typography as="p" className="text-body-sm mt-[var(--space-1)] font-semibold">
-                  {selectedSetting.changeReason ?? "기록 없음"}
+                  {selectedSetting.changeReason ?? t("noRecord")}
                 </Typography>
               </Box>
             </Grid>
 
             <Textarea
-              label="설정 값(JSON)"
+              label={t("valueJson")}
               value={valueDraft}
               rows={10}
               resize="vertical"
@@ -134,15 +136,15 @@ export function OpsSettingsPanel({
               onChange={(event) => onValueDraftChange(event.target.value)}
             />
             <Input
-              label="변경 사유"
+              label={t("reason")}
               value={reasonDraft}
               disabled={!selectedSetting.editable}
-              placeholder="예: critical 알림의 슬랙 전파 기준 강화"
+              placeholder={t("reasonPlaceholder")}
               onChange={(event) => onReasonDraftChange(event.target.value)}
             />
             <Flex className="justify-end gap-[var(--space-2)]">
               <Button variant="secondary" disabled={!selectedChanged} onClick={onResetDraft}>
-                되돌리기
+                {t("revert")}
               </Button>
               <Button
                 variant="primary"
@@ -150,13 +152,13 @@ export function OpsSettingsPanel({
                 loading={savePending}
                 onClick={onSave}
               >
-                설정 저장
+                {t("save")}
               </Button>
             </Flex>
           </Grid>
         ) : (
           <Typography as="p" color="muted" className="text-body-sm">
-            등록된 운영 설정이 없습니다.
+            {t("empty")}
           </Typography>
         )}
       </Box>

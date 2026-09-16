@@ -6,6 +6,25 @@ React/Next 애플리케이션과 monorepo 설정의 실행 경계와 계약을 �
 
 ## Requirements
 
+### Requirement: React/Next 앱의 국제화 경계는 재사용 가능해야 한다
+
+각 Next 앱은 locale 목록, 기본 locale, 메시지 로딩, 요청 locale 해석 및 client provider를 명시적인 설정 경계로 제공해야 하며(MUST), 새로운 앱 템플릿은 동일한 계약을 재사용할 수 있어야 한다(MUST). 서버 전용 메시지 로딩과 client bundle 메시지 로딩은 필요한 범위만 포함해야 한다(MUST).
+
+#### Scenario: 새 Next 앱을 생성한다
+
+- **WHEN** workspace template에서 새 Next 앱을 생성한다
+- **THEN** locale 설정, 메시지 디렉터리, 서버 요청 설정, client provider 및 검증 명령이 추가 수동 작업 없이 연결된다.
+
+#### Scenario: 서버 route를 렌더링한다
+
+- **WHEN** 서버 컴포넌트가 locale 메시지나 metadata를 필요로 한다
+- **THEN** 요청 locale에 맞는 메시지를 서버에서 로드하고 client 전용 전체 메시지 bundle을 불필요하게 포함하지 않는다.
+
+#### Scenario: client locale을 전환한다
+
+- **WHEN** client component에서 locale을 변경한다
+- **THEN** provider와 저장 상태가 동일한 locale을 사용하고 현재 route의 interactive state를 깨뜨리지 않는다.
+
 ### Requirement: React와 Next 실행 경계는 의도적으로 분리된다
 
 앱과 패키지는 Server/Client Component 경계를 필요한 최소 범위로 유지해야 하며(MUST), 서버에서 처리할 수 있는 데이터 조회와 렌더링을 불필요하게 Client Component로 전파해서는 안 된다(MUST NOT). route loading, error, not-found 및 hydration 계약은 사용자 상태를 보존해야 하며(MUST), 각 앱은 Client 경계와 초기 client module 비용을 측정·검토할 수 있어야 한다(MUST).

@@ -3,6 +3,7 @@
 import { MetricCard } from "@/features/common/components/feedback-state";
 
 import { useMemo } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge, Box, Flex, Grid, SplitWorkspaceLayout, Typography } from "@repo/ui";
 import { useAppForm } from "@repo/forms";
 import { formatNumber } from "@repo/utils";
@@ -20,6 +21,8 @@ import {
 } from "../utils/qa-assistant-utils";
 
 export default function QaAssistantPage() {
+  const t = useTranslations("qa.page");
+  const locale = useLocale();
   const { canAdminister, canOperate } = useOpsPermissions();
   const form = useAppForm<QaFormValues>({
     defaultValues: QA_FORM_DEFAULT_VALUES
@@ -56,11 +59,11 @@ export default function QaAssistantPage() {
       <Box className="border-default bg-surface rounded-[var(--radius-xl)] border px-[var(--space-4)] py-[var(--space-3)] md:px-[var(--space-5)]">
         <Flex className="items-center justify-between gap-[var(--space-3)]">
           <Typography as="h2" variant="headingMd" className="tracking-[-0.01em]">
-            QA 릴리즈 어시스턴트
+            {t("title")}
           </Typography>
           <Flex className="flex-wrap items-center gap-[var(--space-2)]">
             <Badge variant="secondary" size="sm" shape="rounded" className={QA_NEUTRAL_BADGE_CLASS}>
-              대상: {QA_AUDIENCE_LABELS[watchedValues.audience]}
+              {t("audience", { value: QA_AUDIENCE_LABELS[watchedValues.audience] })}
             </Badge>
           </Flex>
         </Flex>
@@ -68,24 +71,30 @@ export default function QaAssistantPage() {
 
       <Grid className="gap-[var(--space-3)] md:grid-cols-3">
         <MetricCard
-          label="준비도"
+          label={t("readiness")}
           value={`${readinessScore}%`}
-          helper={`${readinessItems.filter((item) => item.ready).length}/${readinessItems.length} 조건 충족`}
+          helper={t("readinessHelper", {
+            complete: readinessItems.filter((item) => item.ready).length,
+            total: readinessItems.length
+          })}
           color={readinessScore >= 75 ? "primary" : "default"}
           size="sm"
           className="h-full rounded-[var(--radius-lg)]"
         />
         <MetricCard
-          label="입력 범위"
-          value={formatNumber(changedScreenItems.length + relatedApiItems.length)}
-          helper={`화면 ${formatNumber(changedScreenItems.length)} / API ${formatNumber(relatedApiItems.length)}`}
+          label={t("inputScope")}
+          value={formatNumber(changedScreenItems.length + relatedApiItems.length, locale)}
+          helper={t("inputScopeHelper", {
+            screens: formatNumber(changedScreenItems.length, locale),
+            apis: formatNumber(relatedApiItems.length, locale)
+          })}
           size="sm"
           className="h-full rounded-[var(--radius-lg)]"
         />
         <MetricCard
-          label="선택 산출물"
-          value={formatNumber(selectedScenarioItemCount)}
-          helper={`최근 산출물 ${formatNumber(scenarios.length)}건`}
+          label={t("selectedOutput")}
+          value={formatNumber(selectedScenarioItemCount, locale)}
+          helper={t("selectedOutputHelper", { count: formatNumber(scenarios.length, locale) })}
           size="sm"
           className="h-full rounded-[var(--radius-lg)]"
         />
@@ -96,12 +105,8 @@ export default function QaAssistantPage() {
         main={
           <Box className="space-y-[var(--stack-gap)]">
             <OpsSectionCard
-              title="릴리즈 변경 정보"
-              description={
-                canOperate
-                  ? "QA가 바로 실행할 수 있도록 화면, API, 변경 맥락을 함께 입력합니다."
-                  : "조회 전용 역할에서는 QA 산출물을 생성할 수 없습니다."
-              }
+              title={t("releaseInfo")}
+              description={canOperate ? t("releaseInfoOperator") : t("readOnly")}
               contentClassName="pt-[var(--space-2)]"
             >
               <QaAssistantForm
@@ -118,10 +123,7 @@ export default function QaAssistantPage() {
           </Box>
         }
         sidebar={
-          <OpsSectionCard
-            title="최근 QA 산출물"
-            description="최신 생성 결과를 선택해 테스트 실행 단위로 검토합니다."
-          >
+          <OpsSectionCard title={t("recentOutputs")} description={t("recentOutputsDescription")}>
             <QaScenarioList
               isError={scenariosQuery.isError}
               isLoading={scenariosQuery.isLoading}

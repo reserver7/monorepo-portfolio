@@ -3,6 +3,7 @@
 import { MetricCard } from "@/features/common/components/feedback-state";
 
 import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge, Box, Button, Flex, Grid, Input, Textarea, Typography, toast } from "@repo/ui";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
@@ -20,11 +21,32 @@ import { useOpsPermissions } from "@/features/common/hooks/use-ops-permissions";
 import { useOpsFilters } from "@/features/common/stores";
 import { formatNumber } from "@repo/utils";
 import { DeploymentHistoryList, DeploymentImpactPanel, DeploymentRegisterForm } from "../components";
+import { resolveLocalizedError } from "@/lib/i18n/errors";
 import { DEPLOYMENT_FORM_DEFAULT_VALUES } from "../constants";
 import type { DeploymentFormValues } from "../types";
 
 export default function DeploymentsPage() {
+  const t = useTranslations("deployments");
+  const tError = useTranslations("error");
+  const readinessLabel = (status: string) => {
+    if (status === "blocked") return t("screen.gateBlocked");
+    if (status === "approval_required") return t("screen.gateApprovalRequired");
+    return t("screen.gateReady");
+  };
+  const approvalStatusLabel = (status: string) =>
+    status === "approved"
+      ? t("screen.approved")
+      : status === "rejected"
+        ? t("screen.rejected")
+        : t("screen.pending");
+  const rollbackStatusLabel = (status: string) =>
+    status === "rolled_back"
+      ? t("screen.rolledBack")
+      : status === "rollback_requested"
+        ? t("screen.rollbackRequested")
+        : t("screen.pending");
   const { environment } = useOpsFilters();
+  const locale = useLocale();
   const queryClient = useQueryClient();
   const { canOperate } = useOpsPermissions();
 
@@ -98,10 +120,10 @@ export default function DeploymentsPage() {
     onSuccess: async () => {
       setDecisionReason("");
       await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.deployments(environment) });
-      toast.success("배포 결정을 기록했습니다.");
+      toast.success(t("screen.decisionRecorded"));
     },
     onError: (error) =>
-      toast.error(error instanceof Error ? error.message : "배포 결정을 저장하지 못했습니다.")
+      toast.error(resolveLocalizedError(error, tError as never, t("screen.decisionSaveFailed")))
   });
 
   return (
@@ -110,7 +132,7 @@ export default function DeploymentsPage() {
         <Flex className="flex-col items-stretch justify-between gap-[var(--space-3)] sm:flex-row sm:items-center">
           <Box className="min-w-0">
             <Typography as="h2" variant="headingMd" className="tracking-[-0.01em]">
-              배포 운영
+              {t("screen.title")}
             </Typography>
           </Box>
           <Flex className="shrink-0 flex-wrap justify-start gap-[var(--space-2)] sm:justify-end">
@@ -120,7 +142,7 @@ export default function DeploymentsPage() {
               shape="rounded"
               className="border-default bg-surface-elevated border font-semibold"
             >
-              환경: {environment}
+              {t("screen.environment", { environment })}
             </Badge>
           </Flex>
         </Flex>
@@ -129,25 +151,29 @@ export default function DeploymentsPage() {
       <Grid className="gap-[var(--space-3)] xl:grid-cols-[minmax(0,1fr)_420px]">
         <Grid className="gap-[var(--space-3)] md:grid-cols-2">
           <MetricCard
-            label="배포 이력"
-            value={formatNumber(deployments.length)}
-            helper={latestVersion ? `최신 ${latestVersion}` : "등록된 배포 없음"}
+            label={t("screen.deploymentHistory")}
+            value={formatNumber(deployments.length, locale)}
+            helper={
+              latestVersion
+                ? t("screen.latestVersion", { version: latestVersion })
+                : t("screen.noDeployments")
+            }
             size="sm"
             className="h-full rounded-[var(--radius-lg)]"
           />
           <MetricCard
-            label="증가 이슈"
-            value={formatNumber(increasedIssueCount)}
-            helper={selectedVersion ? "선택 배포 기준" : "분석 대기"}
+            label={t("screen.increasedIssues")}
+            value={formatNumber(increasedIssueCount, locale)}
+            helper={selectedVersion ? t("screen.selectedDeployment") : t("screen.analysisPending")}
             color={increasedIssueCount > 0 ? "warning" : "default"}
             size="sm"
             className="h-full rounded-[var(--radius-lg)]"
           />
         </Grid>
         <MetricCard
-          label="배포 후 에러"
-          value={formatNumber(totalAfterErrorCount)}
-          helper={selectedDeployment ? selectedDeployment.version : "버전을 선택하세요"}
+          label={t("screen.afterErrors")}
+          value={formatNumber(totalAfterErrorCount, locale)}
+          helper={selectedDeployment ? selectedDeployment.version : t("screen.selectVersion")}
           color={totalAfterErrorCount > 0 ? "info" : "default"}
           size="sm"
           className="h-full rounded-[var(--radius-lg)]"
@@ -155,10 +181,7 @@ export default function DeploymentsPage() {
       </Grid>
 
       {readinessQuery.data ? (
-        <OpsSectionCard
-          title="배포 전 게이트"
-          description="미해결 운영 이슈를 기준으로 배포 전 확인이 필요한 항목입니다."
-        >
+        <OpsSectionCard title={t("screen.gateTitle")} description={t("screen.gateDescription")}>
           <Flex className="flex-wrap items-start justify-between gap-[var(--space-3)]">
             <Flex className="flex-wrap items-center gap-[var(--space-2)]">
               <Badge
@@ -171,15 +194,13 @@ export default function DeploymentsPage() {
                       : "success"
                 }
               >
-                {readinessQuery.data.status === "blocked"
-                  ? "배포 차단"
-                  : readinessQuery.data.status === "approval_required"
-                    ? "승인 필요"
-                    : "배포 가능"}
+                {readinessLabel(readinessQuery.data.status)}
               </Badge>
               <Typography as="p" variant="caption" color="muted">
-                Critical/High {readinessQuery.data.criticalHighCount} · 미지정{" "}
-                {readinessQuery.data.unassignedCount}
+                {t("screen.criticalHighUnassigned", {
+                  criticalHigh: readinessQuery.data.criticalHighCount,
+                  unassigned: readinessQuery.data.unassignedCount
+                })}
               </Typography>
             </Flex>
             <Box className="min-w-0 flex-1 xl:max-w-[720px]">
@@ -202,7 +223,7 @@ export default function DeploymentsPage() {
       <Grid className="items-start gap-[var(--space-4)] xl:grid-cols-[minmax(0,1fr)_420px]">
         <Box className="min-w-0 space-y-[var(--space-4)]">
           <Grid className="gap-[var(--space-4)] 2xl:grid-cols-[minmax(320px,380px)_minmax(0,1fr)]">
-            <OpsSectionCard title="배포 이력" description="최근 배포를 선택하면 영향 분석이 갱신됩니다.">
+            <OpsSectionCard title={t("screen.historyTitle")} description={t("screen.historyDescription")}>
               <Flex className="items-center justify-end">
                 <Button
                   type="button"
@@ -211,7 +232,7 @@ export default function DeploymentsPage() {
                   onClick={() => setSelectedVersion(latestVersion)}
                   disabled={!latestVersion}
                 >
-                  최신 분석
+                  {t("screen.latestAnalysis")}
                 </Button>
               </Flex>
               <DeploymentHistoryList
@@ -224,10 +245,7 @@ export default function DeploymentsPage() {
               />
             </OpsSectionCard>
 
-            <OpsSectionCard
-              title="영향 분석"
-              description="배포 후 증가한 에러와 이슈를 기준으로 대응 우선순위를 확인합니다."
-            >
+            <OpsSectionCard title={t("screen.impactTitle")} description={t("screen.impactDescription")}>
               <DeploymentImpactPanel
                 impact={impactQuery.data}
                 isError={impactQuery.isError}
@@ -238,8 +256,8 @@ export default function DeploymentsPage() {
 
             {selectedDeployment ? (
               <OpsSectionCard
-                title="승인 및 롤백 기록"
-                description="승인자, CI 링크, 롤백 판단을 배포 이력에 남깁니다."
+                title={t("screen.approvalRollbackTitle")}
+                description={t("screen.approvalRollbackDescription")}
               >
                 <Box className="space-y-[var(--space-3)]">
                   <Flex className="flex-wrap gap-[var(--space-2)]">
@@ -253,7 +271,9 @@ export default function DeploymentsPage() {
                             : "secondary"
                       }
                     >
-                      승인 {selectedDeployment.approvalStatus}
+                      {t("screen.approvalStatus", {
+                        status: approvalStatusLabel(selectedDeployment.approvalStatus)
+                      })}
                     </Badge>
                     <Badge
                       size="sm"
@@ -265,23 +285,25 @@ export default function DeploymentsPage() {
                             : "secondary"
                       }
                     >
-                      롤백 {selectedDeployment.rollbackStatus}
+                      {t("screen.rollbackStatus", {
+                        status: rollbackStatusLabel(selectedDeployment.rollbackStatus)
+                      })}
                     </Badge>
                   </Flex>
                   {selectedDeployment.ciUrl ? (
                     <Button asChild variant="outline" size="sm">
                       <a href={selectedDeployment.ciUrl} target="_blank" rel="noreferrer">
-                        CI / 배포 실행 보기
+                        {t("screen.viewCi")}
                       </a>
                     </Button>
                   ) : null}
                   {canOperate ? (
                     <>
                       <Input
-                        label="승인/반려자"
+                        label={t("screen.approver")}
                         value={decisionActor}
                         onChange={(event) => setDecisionActor(event.target.value)}
-                        placeholder="예: tech-lead@company.com"
+                        placeholder={t("screen.approverPlaceholder")}
                       />
                       <Flex className="flex-wrap gap-[var(--space-2)]">
                         <Button
@@ -292,7 +314,7 @@ export default function DeploymentsPage() {
                           disabled={!decisionActor.trim()}
                           onClick={() => decisionMutation.mutate("approved")}
                         >
-                          승인 기록
+                          {t("screen.recordApproval")}
                         </Button>
                         <Button
                           type="button"
@@ -302,15 +324,15 @@ export default function DeploymentsPage() {
                           disabled={!decisionActor.trim()}
                           onClick={() => decisionMutation.mutate("rejected")}
                         >
-                          반려 기록
+                          {t("screen.recordRejection")}
                         </Button>
                       </Flex>
                       <Textarea
-                        label="롤백 사유"
+                        label={t("screen.rollbackReason")}
                         value={decisionReason}
                         onChange={(event) => setDecisionReason(event.target.value)}
                         rows={2}
-                        placeholder="예: 결제 오류 증가로 이전 안정 버전으로 복구"
+                        placeholder={t("screen.rollbackPlaceholder")}
                       />
                       <Flex className="flex-wrap gap-[var(--space-2)]">
                         <Button
@@ -321,7 +343,7 @@ export default function DeploymentsPage() {
                           disabled={!decisionReason.trim()}
                           onClick={() => decisionMutation.mutate("rollback_requested")}
                         >
-                          롤백 요청
+                          {t("screen.requestRollback")}
                         </Button>
                         <Button
                           type="button"
@@ -331,7 +353,7 @@ export default function DeploymentsPage() {
                           disabled={!decisionReason.trim()}
                           onClick={() => decisionMutation.mutate("rolled_back")}
                         >
-                          롤백 완료
+                          {t("screen.completeRollback")}
                         </Button>
                       </Flex>
                     </>
@@ -344,12 +366,8 @@ export default function DeploymentsPage() {
 
         <Box className="min-w-0">
           <OpsSectionCard
-            title="배포 등록"
-            description={
-              canOperate
-                ? "운영자가 추적할 수 있는 버전명과 변경 요약을 남깁니다."
-                : "조회 전용 역할에서는 배포를 등록할 수 없습니다."
-            }
+            title={t("screen.registerTitle")}
+            description={canOperate ? t("screen.registerDescription") : t("screen.viewerDescription")}
           >
             {canOperate ? (
               <DeploymentRegisterForm
@@ -359,7 +377,7 @@ export default function DeploymentsPage() {
               />
             ) : (
               <Typography as="p" variant="bodySm" color="muted">
-                배포 이력과 영향 분석은 계속 확인할 수 있습니다.
+                {t("screen.viewerDescription")}
               </Typography>
             )}
           </OpsSectionCard>

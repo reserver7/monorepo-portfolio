@@ -45,5 +45,6 @@ export const parseErrorMessage = async (response: Response): Promise<string> => 
   } catch {
     // noop
   }
-  return response.status === 401 ? "로그인이 필요합니다." : "요청 처리 중 오류가 발생했습니다.";
+  return response.status === 401 ? API_ERROR_CODES.UNAUTHORIZED : API_ERROR_CODES.INTERNAL;
 };
+import { API_ERROR_CODES } from "@repo/configs/errors";

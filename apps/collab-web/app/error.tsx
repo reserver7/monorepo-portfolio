@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@repo/ui";
 import { FeedbackState } from "@/features/common/components/feedback-state";
 
@@ -11,6 +12,7 @@ export default function RootError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("error");
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -19,9 +21,9 @@ export default function RootError({
     <main className="flex min-h-screen items-center justify-center p-6">
       <FeedbackState
         variant="error"
-        title="화면을 불러오지 못했습니다."
-        description="잠시 후 다시 시도해 주세요."
-        action={<Button onClick={reset}>다시 시도</Button>}
+        title={t("loadFailedTitle")}
+        description={t("retryDescription")}
+        action={<Button onClick={reset}>{t("retry")}</Button>}
       />
     </main>
   );

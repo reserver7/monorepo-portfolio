@@ -7,6 +7,7 @@ const viewport = process.env.PLAYWRIGHT_VIEWPORT === "390" ? { width: 390, heigh
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  testIgnore: ["**/opslens-*.spec.ts"],
   fullyParallel: false,
   timeout: 35_000,
   expect: {

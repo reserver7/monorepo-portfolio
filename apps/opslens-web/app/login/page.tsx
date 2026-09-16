@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 import { useAppForm } from "@repo/forms";
 import { useMutation } from "@repo/react-query";
 import { Box, Button, Card, CardContent, Checkbox, FormField, Input, Typography, toast } from "@repo/ui";
@@ -14,6 +15,7 @@ import {
   signupWithPassword,
   validateCurrentSession
 } from "@/lib/auth";
+import { resolveLocalizedError } from "@/lib/i18n/errors";
 
 type LoginFormValues = {
   email: string;
@@ -29,13 +31,6 @@ const resolveNextPath = (rawNext: string | null): string => {
   return trimmed;
 };
 
-const getErrorMessage = (error: unknown, fallback: string): string => {
-  if (error instanceof Error && error.message.trim().length > 0) {
-    return error.message;
-  }
-  return fallback;
-};
-
 const deriveNameFromEmail = (email: string): string => {
   const localPart = email.split("@")[0]?.trim();
   return localPart && localPart.length > 0 ? localPart : "user";
@@ -45,6 +40,8 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { resolvedTheme } = useTheme();
+  const t = useTranslations("auth");
+  const tError = useTranslations("error");
 
   const nextPath = useMemo(() => resolveNextPath(searchParams.get("next")), [searchParams]);
   const oauthPending = searchParams.get("oauth") === "1";
@@ -70,32 +67,32 @@ export default function LoginPage() {
   const loginMutation = useMutation({
     mutationFn: loginWithPassword,
     onSuccess: () => {
-      toast.success("로그인되었습니다.");
+      toast.success(t("loginSuccess"));
       router.replace(nextPath);
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error, "로그인에 실패했습니다."));
+      toast.error(resolveLocalizedError(error, tError as never, t("loginErrorFallback")));
     }
   });
 
   const signupMutation = useMutation({
     mutationFn: signupWithPassword,
     onSuccess: () => {
-      toast.success("회원가입이 완료되었습니다.");
+      toast.success(t("signupSuccess"));
       router.replace(nextPath);
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error, "회원가입에 실패했습니다."));
+      toast.error(resolveLocalizedError(error, tError as never, t("signupErrorFallback")));
     }
   });
 
   const forgotPasswordMutation = useMutation({
     mutationFn: requestPasswordReset,
     onSuccess: () => {
-      toast.success("비밀번호 재설정 요청이 접수되었습니다.");
+      toast.success(t("resetRequested"));
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error, "비밀번호 재설정 요청 처리에 실패했습니다."));
+      toast.error(resolveLocalizedError(error, tError as never, t("resetErrorFallback")));
     }
   });
 
@@ -111,8 +108,8 @@ export default function LoginPage() {
   const submitAuth = form.handleSubmit((values) => {
     if (authMode === "signup") {
       if (values.password !== values.confirmPassword) {
-        form.setError("confirmPassword", { type: "validate", message: "비밀번호가 일치하지 않습니다." });
-        toast.error("비밀번호가 일치하지 않습니다.");
+        form.setError("confirmPassword", { type: "validate", message: t("passwordMismatch") });
+        toast.error(t("passwordMismatch"));
         return;
       }
       signupMutation.mutate({
@@ -133,8 +130,8 @@ export default function LoginPage() {
   const handleForgotPassword = () => {
     const email = form.getValues("email")?.trim() ?? "";
     if (!email) {
-      form.setError("email", { type: "required", message: "이메일을 입력해 주세요." });
-      toast.error("이메일을 먼저 입력해 주세요.");
+      form.setError("email", { type: "required", message: t("emailRequired") });
+      toast.error(t("emailRequired"));
       return;
     }
 
@@ -168,7 +165,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!oauthError) return;
-    toast.error("소셜 로그인 인증에 실패했습니다. 다시 시도해 주세요.");
+    toast.error(t("oauthProviderError"));
   }, [oauthError]);
 
   useEffect(() => {
@@ -212,12 +209,10 @@ export default function LoginPage() {
                 as="p"
                 className="text-[56px] font-semibold leading-[1.05] tracking-[-0.02em] text-white"
               >
-                {authMode === "login" ? "Hello, Friend!" : "Welcome Back!"}
+                {authMode === "login" ? t("heroLoginTitle") : t("heroSignupTitle")}
               </Typography>
               <Typography as="p" className="max-w-[380px] text-[18px] leading-[1.55] text-white">
-                {authMode === "login"
-                  ? "Enter your personal details and start your journey with us"
-                  : "To stay connected with us, please log in with your personal info"}
+                {authMode === "login" ? t("heroLoginDescription") : t("heroSignupDescription")}
               </Typography>
               <Button
                 type="button"
@@ -225,7 +220,7 @@ export default function LoginPage() {
                 className="hover:bg-white/12 mt-[var(--space-3)] h-[54px] min-w-[220px] rounded-full border-white/85 bg-transparent text-white"
                 onClick={() => switchMode(authMode === "login" ? "signup" : "login")}
               >
-                {authMode === "login" ? "SIGN UP" : "SIGN IN"}
+                {authMode === "login" ? t("modeSignup") : t("modeLogin")}
               </Button>
             </Box>
           </Box>
@@ -241,10 +236,10 @@ export default function LoginPage() {
                   as="p"
                   className="text-foreground text-[56px] font-semibold leading-[1.05] tracking-[-0.02em]"
                 >
-                  {authMode === "signup" ? "Create Account" : "Sign in"}
+                  {authMode === "signup" ? t("createAccountTitle") : t("modeLogin")}
                 </Typography>
                 <Typography as="p" variant="bodyMd" color="muted" className="leading-[1.6]">
-                  or use your {authMode === "signup" ? "email for registration" : "account"}
+                  {authMode === "signup" ? t("emailRegistrationHint") : t("accountHint")}
                 </Typography>
               </Box>
 
@@ -255,7 +250,7 @@ export default function LoginPage() {
                       type="button"
                       variant="secondary"
                       className="border-default h-[56px] w-[56px] rounded-full border p-0"
-                      aria-label="Continue with Google"
+                      aria-label={t("continueWithGoogle")}
                       onClick={() => startOAuthLogin("google")}
                     >
                       <Image src="/icons/google-color.svg" alt="Google" width={22} height={22} />
@@ -264,7 +259,7 @@ export default function LoginPage() {
                       type="button"
                       variant="secondary"
                       className="border-default h-[56px] w-[56px] rounded-full border p-0"
-                      aria-label="Continue with GitHub"
+                      aria-label={t("continueWithGithub")}
                       onClick={() => startOAuthLogin("github")}
                     >
                       <Image
@@ -278,7 +273,7 @@ export default function LoginPage() {
                     </Button>
                   </Box>
 
-                  <FormField label="Email" htmlFor="opslens-login-email">
+                  <FormField label={t("email")} htmlFor="opslens-login-email">
                     <Input
                       id="opslens-login-email"
                       type="email"
@@ -286,10 +281,10 @@ export default function LoginPage() {
                       control={form.control}
                       name="email"
                       rules={{
-                        required: "이메일을 입력해 주세요.",
+                        required: t("emailRequired"),
                         pattern: {
                           value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                          message: "올바른 이메일 형식을 입력해 주세요."
+                          message: t("emailInvalid")
                         }
                       }}
                       errorMessage={form.formState.errors.email?.message}
@@ -298,7 +293,7 @@ export default function LoginPage() {
                     />
                   </FormField>
 
-                  <FormField label="Password" htmlFor="opslens-login-password">
+                  <FormField label={t("password")} htmlFor="opslens-login-password">
                     <Input
                       id="opslens-login-password"
                       type="password"
@@ -306,10 +301,10 @@ export default function LoginPage() {
                       control={form.control}
                       name="password"
                       rules={{
-                        required: "비밀번호를 입력해 주세요.",
+                        required: t("passwordRequired"),
                         minLength: {
                           value: 8,
-                          message: "비밀번호는 8자 이상이어야 합니다."
+                          message: t("passwordMinLength")
                         }
                       }}
                       errorMessage={form.formState.errors.password?.message}
@@ -320,7 +315,7 @@ export default function LoginPage() {
 
                   <Box className="min-h-[96px]">
                     {authMode === "signup" ? (
-                      <FormField label="Confirm Password" htmlFor="opslens-signup-confirm-password">
+                      <FormField label={t("confirmPassword")} htmlFor="opslens-signup-confirm-password">
                         <Input
                           id="opslens-signup-confirm-password"
                           type="password"
@@ -328,11 +323,11 @@ export default function LoginPage() {
                           control={form.control}
                           name="confirmPassword"
                           rules={{
-                            required: "비밀번호 확인을 입력해 주세요.",
+                            required: t("confirmPasswordRequired"),
                             validate: (value) =>
                               authMode !== "signup" ||
                               value === form.getValues("password") ||
-                              "비밀번호가 일치하지 않습니다."
+                              t("passwordMismatch")
                           }}
                           errorMessage={form.formState.errors.confirmPassword?.message}
                           onEnter={() => submitAuth()}
@@ -344,7 +339,7 @@ export default function LoginPage() {
                         <Checkbox
                           checked={rememberMe}
                           onCheckedChange={(next) => setRememberMe(Boolean(next))}
-                          label="Keep me logged in"
+                          label={t("keepLoggedIn")}
                           size="sm"
                         />
                         <Button
@@ -355,7 +350,7 @@ export default function LoginPage() {
                           onClick={handleForgotPassword}
                           loading={forgotPasswordMutation.isPending}
                         >
-                          Forgot Password?
+                          {t("forgotPassword")}
                         </Button>
                       </Box>
                     )}
@@ -369,11 +364,11 @@ export default function LoginPage() {
                   >
                     {authMode === "signup"
                       ? signupMutation.isPending
-                        ? "Signing up..."
-                        : "Sign up"
+                        ? t("signingUp")
+                        : t("signupSubmit")
                       : loginMutation.isPending
-                        ? "Signing in..."
-                        : "Sign in"}
+                        ? t("loggingIn")
+                        : t("submit")}
                   </Button>
                 </Box>
               </CardContent>

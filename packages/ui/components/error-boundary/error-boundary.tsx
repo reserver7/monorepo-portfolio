@@ -5,6 +5,7 @@ import { AlertCircle } from "lucide-react";
 import { Button } from "../button";
 import { Card } from "../card";
 import { cn } from "../cn";
+import { useUiLocale } from "../ui-locale";
 import { Typography } from "../typography";
 import { ERROR_BOUNDARY_DEFAULTS } from "./error-boundary.constants";
 import { navigateToHomeSafely, shouldShowErrorDetail } from "./error-boundary.utils";
@@ -21,6 +22,7 @@ function ErrorFallbackView({
   showHomeButton,
   showDetailInDev
 }: ErrorFallbackViewProps) {
+  const labels = useUiLocale();
   return (
     <div className="bg-background px-4 py-8 md:px-8">
       <div
@@ -47,7 +49,7 @@ function ErrorFallbackView({
             <div className="mt-6 flex w-full flex-wrap items-center justify-center gap-2">
               {showRetryButton ? (
                 <Button variant="primary" size="md" onClick={onRetry}>
-                  다시 시도
+                  {labels.retry}
                 </Button>
               ) : null}
               {showRefreshButton ? (
@@ -60,7 +62,7 @@ function ErrorFallbackView({
                     }
                   }}
                 >
-                  새로고침
+                  {labels.reload}
                 </Button>
               ) : null}
               {showHomeButton ? (
@@ -71,7 +73,7 @@ function ErrorFallbackView({
                     navigateToHomeSafely();
                   }}
                 >
-                  홈으로
+                  {labels.home}
                 </Button>
               ) : null}
             </div>
@@ -79,7 +81,7 @@ function ErrorFallbackView({
             {shouldShowErrorDetail(showDetailInDev) && detail ? (
               <details className="border-default bg-surface-elevated mt-6 w-full rounded-[var(--radius-xl)] border p-3 text-left">
                 <summary className="text-body-sm text-foreground cursor-pointer font-semibold">
-                  개발용 오류 상세
+                  {labels.errorDetails}
                 </summary>
                 <Typography
                   as="pre"
