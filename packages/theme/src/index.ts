@@ -1,8 +1,4 @@
-export {
-  AppThemeProvider,
-  type AppThemeProviderProps,
-  type ResolvedTheme
-} from "./theme-provider";
+export { AppThemeProvider, type AppThemeProviderProps, type ResolvedTheme } from "./theme-provider";
 export type { AppTheme } from "./theme.utils";
 export { ThemeToggle, type ThemeToggleProps } from "./theme-toggle";
 export { THEME_BOOTSTRAP_SCRIPT } from "./bootstrap-script";
