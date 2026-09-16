@@ -20,6 +20,7 @@
     "./typescript/react-library.json": "./src/typescript/react-library.json"
   },
   "dependencies": {
-    "tailwindcss": "^3.4.3"
+    "@next/bundle-analyzer": "^15.5.13",
+    "tailwindcss": "^3.4.17"
   }
 }

@@ -3,6 +3,7 @@ import { defineConfig } from "@playwright/test";
 const editorAccessKey = "integration-editor-key";
 const serverUrl = "http://127.0.0.1:4010";
 const collabWebUrl = "http://127.0.0.1:3010";
+const viewport = process.env.PLAYWRIGHT_VIEWPORT === "390" ? { width: 390, height: 844 } : undefined;
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -16,6 +17,7 @@ export default defineConfig({
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
     baseURL: collabWebUrl,
+    viewport,
     locale: "ko-KR",
     extraHTTPHeaders: {
       "accept-language": "ko-KR,ko;q=0.9"
@@ -34,8 +36,7 @@ export default defineConfig({
         PORT: "4010",
         STATE_BACKEND: "file",
         STATE_FILE_PATH: "/tmp/monorepo-portfolio-e2e-state.json",
-        CORS_ORIGINS:
-          "http://127.0.0.1:3010,http://localhost:3010",
+        CORS_ORIGINS: "http://127.0.0.1:3010,http://localhost:3010",
         COLLAB_SESSION_SECRET: "e2e-collab-session-secret",
         EDITOR_ACCESS_KEY: editorAccessKey,
         SOCKET_RATE_LIMIT_WINDOW_MS: "10000",
