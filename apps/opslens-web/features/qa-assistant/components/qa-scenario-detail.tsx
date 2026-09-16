@@ -1,6 +1,7 @@
 "use client";
 
 import { FeedbackState } from "@/features/common/components/feedback-state";
+import { useLocale, useTranslations } from "next-intl";
 
 import { Badge, Box, Flex, Grid, Typography } from "@repo/ui";
 import { formatDateTime, formatNumber } from "@repo/utils";
@@ -17,8 +18,8 @@ export function QaScenarioDetail({ scenario }: QaScenarioDetailProps) {
   const locale = useLocale();
   if (!scenario) {
     return (
-      <OpsSectionCard title="생성 결과 상세" description="시나리오를 생성하거나 최근 산출물을 선택하면 상세가 표시됩니다.">
-        <FeedbackState variant="info" size="sm" title="검토할 QA 산출물이 없습니다." className="mt-[var(--space-3)]" />
+      <OpsSectionCard title={t("title")} description={t("emptyDescription")}>
+        <FeedbackState variant="info" size="sm" title={t("empty")} className="mt-[var(--space-3)]" />
       </OpsSectionCard>
     );
   }

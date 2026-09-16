@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useControlledValue } from "../../hooks";
 import { cn } from "../cn";
+import { useUiLocale } from "../ui-locale";
 import { FieldSupportText, RequiredMark } from "../field/field-utils";
 import { Label } from "../label";
 import type { MentionOption, MentionsProps } from "./mentions.types";
@@ -32,6 +33,7 @@ export const Mentions = React.forwardRef<HTMLTextAreaElement, MentionsProps>(fun
   },
   ref
 ) {
+  const labels = useUiLocale();
   const [current, setCurrent] = useControlledValue({ value, defaultValue, onChange });
   const [active, setActive] = React.useState(false);
   const [highlighted, setHighlighted] = React.useState(0);
@@ -124,7 +126,7 @@ export const Mentions = React.forwardRef<HTMLTextAreaElement, MentionsProps>(fun
           >
             {loading ? (
               <p role="status" className="text-muted px-3 py-2 text-sm">
-                불러오는 중…
+                {labels.loading}
               </p>
             ) : filtered.length ? (
               filtered.map((option, index) => (

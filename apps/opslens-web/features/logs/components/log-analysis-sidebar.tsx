@@ -1,4 +1,5 @@
 import { Box, Badge, Button, ConsoleSectionCard, Flex, Typography } from "@repo/ui";
+import { useLocale, useTranslations } from "next-intl";
 import { FeedbackState, MetricCard } from "@/features/common/components/feedback-state";
 import { formatDateTime, formatNumber } from "@repo/utils";
 
@@ -15,23 +16,23 @@ export function LogAnalysisSidebar({ selectedCluster, summary, onCreateIssue }: 
   const locale = useLocale();
   const t = useTranslations("logs");
   if (!summary) {
-    return <FeedbackState variant="info" size="sm" title="로그를 분석하면 요약 카드가 표시됩니다." />;
+    return <FeedbackState variant="info" size="sm" title={t("analysis.summaryHint")} />;
   }
 
   return (
     <Box className="space-y-[var(--space-3)]">
       <MetricCard
-        label="신규 이슈 생성"
-        value={`${formatNumber(summary.createdIssues)}건`}
-        helper="새로 생성된 항목"
+        label={t("analysis.createdIssues")}
+        value={t("count", { count: formatNumber(summary.createdIssues, locale) })}
+        helper={t("analysis.createdHelper")}
         color="success"
         size="sm"
         className="rounded-[var(--radius-lg)]"
       />
       <MetricCard
-        label="기존 이슈 업데이트"
-        value={`${formatNumber(summary.updatedIssues)}건`}
-        helper="기존 항목에 반영"
+        label={t("analysis.updatedIssues")}
+        value={t("count", { count: formatNumber(summary.updatedIssues, locale) })}
+        helper={t("analysis.updatedHelper")}
         color="warning"
         size="sm"
         className="rounded-[var(--radius-lg)]"

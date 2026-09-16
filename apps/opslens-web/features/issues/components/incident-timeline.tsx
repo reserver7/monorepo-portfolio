@@ -1,10 +1,29 @@
 import { Badge, Box, Flex, Typography } from "@repo/ui";
+import { useLocale, useTranslations } from "next-intl";
 import { FeedbackState } from "@/features/common/components/feedback-state";
 import { formatDateTime } from "@repo/utils";
 import type { IncidentTimelineItem } from "@repo/opslens";
 
 export function IncidentTimeline({ items }: { items: IncidentTimelineItem[] }) {
-  if (items.length === 0) return <FeedbackState variant="empty" size="sm" title="기록된 인시던트 타임라인이 없습니다." />;
+  const t = useTranslations("issues.timeline");
+  const locale = useLocale();
+  const getKindLabel = (kind: string) => {
+    switch (kind) {
+      case "incident":
+        return t("kind.incident");
+      case "deployment":
+        return t("kind.deployment");
+      case "log":
+        return t("kind.log");
+      case "comment":
+        return t("kind.comment");
+      case "activity":
+        return t("kind.activity");
+      default:
+        return kind;
+    }
+  };
+  if (items.length === 0) return <FeedbackState variant="empty" size="sm" title={t("empty")} />;
 
   return (
     <Box className="mt-[var(--space-3)] max-h-[440px] space-y-[var(--space-3)] overflow-auto pr-1">

@@ -5,7 +5,22 @@ import { MetricCard } from "@/features/common/components/feedback-state";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Box, Button, ConsolePageStack, ConsoleSectionCard, Flex, FormField, Grid, Input, Select, SplitWorkspaceLayout, Textarea, Badge, Typography, toast } from "@repo/ui";
+import {
+  Box,
+  Button,
+  ConsolePageStack,
+  ConsoleSectionCard,
+  Flex,
+  FormField,
+  Grid,
+  Input,
+  Select,
+  SplitWorkspaceLayout,
+  Textarea,
+  Badge,
+  Typography,
+  toast
+} from "@repo/ui";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
 import {
@@ -418,24 +433,24 @@ export default function LogsPage() {
               <Box className="grid gap-[var(--space-4)]">
                 <Grid className="gap-[var(--space-3)] md:grid-cols-3">
                   <MetricCard
-                    label="입력 라인"
-                    value={formatNumber(rawLineCount)}
-                    helper="현재 입력 기준"
+                    label={tLogs("input.lines")}
+                    value={formatNumber(rawLineCount, locale)}
+                    helper={tLogs("input.currentInput")}
                     size="sm"
                     className="h-full rounded-[var(--radius-lg)]"
                   />
                   <MetricCard
-                    label="클러스터"
-                    value={formatNumber(clusters.length)}
-                    helper="분석 결과 그룹 수"
+                    label={tLogs("input.clusters")}
+                    value={formatNumber(clusters.length, locale)}
+                    helper={tLogs("input.clusterCount")}
                     size="sm"
                     color="primary"
                     className="h-full rounded-[var(--radius-lg)]"
                   />
                   <MetricCard
-                    label="총 이벤트"
-                    value={formatNumber(totalClusterCount)}
-                    helper="클러스터 합계"
+                    label={tLogs("input.totalEvents")}
+                    value={formatNumber(totalClusterCount, locale)}
+                    helper={tLogs("input.clusterTotal")}
                     size="sm"
                     color="warning"
                     className="h-full rounded-[var(--radius-lg)]"

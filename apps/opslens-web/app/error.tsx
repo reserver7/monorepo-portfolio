@@ -3,7 +3,8 @@
 import { FeedbackState } from "@/features/common/components/feedback-state";
 
 import { useEffect } from "react";
-import { Box, Button, } from "@repo/ui";
+import { useTranslations } from "next-intl";
+import { Box, Button } from "@repo/ui";
 
 export default function RootError({
   error,

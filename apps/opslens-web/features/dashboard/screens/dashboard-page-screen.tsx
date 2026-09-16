@@ -7,16 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import {
-  Box,
-  Badge,
-  Button,
-  Flex,
-  Grid,
-  SplitWorkspaceLayout,
-  Skeleton,
-  Typography
-} from "@repo/ui";
+import { Box, Badge, Button, Flex, Grid, SplitWorkspaceLayout, Skeleton, Typography } from "@repo/ui";
 import { useQuery } from "@repo/react-query";
 import {
   getDashboardSummary,
@@ -390,7 +381,7 @@ export default function DashboardPage() {
             ))}
           </Grid>
         ) : (
-          <FeedbackState variant="empty" size="sm" title="현재 필터에 해당하는 서비스 이벤트가 없습니다." />
+          <FeedbackState variant="empty" size="sm" title={tDashboard("serviceHealth.noFilteredEvents")} />
         )}
       </OpsSectionCard>
 

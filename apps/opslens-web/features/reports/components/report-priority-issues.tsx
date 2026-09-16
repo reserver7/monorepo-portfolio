@@ -3,6 +3,7 @@
 import { FeedbackState } from "@/features/common/components/feedback-state";
 
 import { Box, Flex, Typography } from "@repo/ui";
+import { useLocale, useTranslations } from "next-intl";
 import { formatNumber } from "@repo/utils";
 import type { OpsReport } from "@repo/opslens";
 import { SeverityBadge, StatusBadge } from "@/features";
@@ -15,7 +16,9 @@ export function ReportPriorityIssues({ issues }: ReportPriorityIssuesProps) {
   const t = useTranslations("reports");
   const locale = useLocale();
   if (issues.length === 0) {
-    return <FeedbackState variant="empty" size="sm" title="우선 대응 이슈가 없습니다." className="mt-[var(--space-3)]" />;
+    return (
+      <FeedbackState variant="empty" size="sm" title={t("priority.empty")} className="mt-[var(--space-3)]" />
+    );
   }
 
   return (

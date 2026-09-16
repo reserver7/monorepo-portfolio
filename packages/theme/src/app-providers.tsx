@@ -2,7 +2,7 @@
 
 import type { PropsWithChildren } from "react";
 import { QueryClientProvider, createAppQueryClient, type QueryClientConfig } from "@repo/react-query";
-import { AutoEllipsisTooltip, ErrorBoundary, useStableValue } from "@repo/ui";
+import { AutoEllipsisTooltip, ErrorBoundary, UiLocaleProvider, useStableValue } from "@repo/ui";
 import { AlertConfirmProvider, Toast } from "@repo/ui/internal";
 import type { ToastProps } from "@repo/ui/internal";
 import { AppThemeProvider } from "./theme-provider";

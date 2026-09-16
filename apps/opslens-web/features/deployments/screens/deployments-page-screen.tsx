@@ -3,6 +3,7 @@
 import { MetricCard } from "@/features/common/components/feedback-state";
 
 import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge, Box, Button, Flex, Grid, Input, Textarea, Typography, toast } from "@repo/ui";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { useAppForm } from "@repo/forms";
@@ -150,25 +151,29 @@ export default function DeploymentsPage() {
       <Grid className="gap-[var(--space-3)] xl:grid-cols-[minmax(0,1fr)_420px]">
         <Grid className="gap-[var(--space-3)] md:grid-cols-2">
           <MetricCard
-            label="배포 이력"
-            value={formatNumber(deployments.length)}
-            helper={latestVersion ? `최신 ${latestVersion}` : "등록된 배포 없음"}
+            label={t("screen.deploymentHistory")}
+            value={formatNumber(deployments.length, locale)}
+            helper={
+              latestVersion
+                ? t("screen.latestVersion", { version: latestVersion })
+                : t("screen.noDeployments")
+            }
             size="sm"
             className="h-full rounded-[var(--radius-lg)]"
           />
           <MetricCard
-            label="증가 이슈"
-            value={formatNumber(increasedIssueCount)}
-            helper={selectedVersion ? "선택 배포 기준" : "분석 대기"}
+            label={t("screen.increasedIssues")}
+            value={formatNumber(increasedIssueCount, locale)}
+            helper={selectedVersion ? t("screen.selectedDeployment") : t("screen.analysisPending")}
             color={increasedIssueCount > 0 ? "warning" : "default"}
             size="sm"
             className="h-full rounded-[var(--radius-lg)]"
           />
         </Grid>
         <MetricCard
-          label="배포 후 에러"
-          value={formatNumber(totalAfterErrorCount)}
-          helper={selectedDeployment ? selectedDeployment.version : "버전을 선택하세요"}
+          label={t("screen.afterErrors")}
+          value={formatNumber(totalAfterErrorCount, locale)}
+          helper={selectedDeployment ? selectedDeployment.version : t("screen.selectVersion")}
           color={totalAfterErrorCount > 0 ? "info" : "default"}
           size="sm"
           className="h-full rounded-[var(--radius-lg)]"

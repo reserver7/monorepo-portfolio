@@ -1,4 +1,5 @@
 import { Grid } from "@repo/ui";
+import { useLocale, useTranslations } from "next-intl";
 import { MetricCard } from "@/features/common/components/feedback-state";
 import { formatNumber } from "@repo/utils";
 
@@ -21,27 +22,33 @@ export function IssuesSummaryCards({ summary }: IssuesSummaryCardsProps) {
   const locale = useLocale();
   return (
     <Grid className="mb-[var(--space-3)] grid-cols-2 gap-[var(--space-2)] md:grid-cols-4">
-      <MetricCard label="Open Issues" value={formatNumber(summary.open)} helper="현재 미해결 이슈" size="md" className={STAT_CARD_CLASS} />
       <MetricCard
-        label="Critical / High"
-        value={formatNumber(summary.criticalHigh)}
-        helper="우선 대응 대상"
+        label={t("open")}
+        value={formatNumber(summary.open, locale)}
+        helper={t("openHelper")}
+        size="md"
+        className={STAT_CARD_CLASS}
+      />
+      <MetricCard
+        label={t("criticalHigh")}
+        value={formatNumber(summary.criticalHigh, locale)}
+        helper={t("criticalHighHelper")}
         color={ISSUE_TONE.criticalHigh}
         size="md"
         className={STAT_CARD_CLASS}
       />
       <MetricCard
-        label="Unassigned"
-        value={formatNumber(summary.unassigned)}
-        helper="담당자 미지정"
+        label={t("unassigned")}
+        value={formatNumber(summary.unassigned, locale)}
+        helper={t("unassignedHelper")}
         color={ISSUE_TONE.unassigned}
         size="md"
         className={STAT_CARD_CLASS}
       />
       <MetricCard
-        label="SLA Risk"
-        value={formatNumber(summary.slaRisk)}
-        helper="지연 임계치 초과"
+        label={t("slaRisk")}
+        value={formatNumber(summary.slaRisk, locale)}
+        helper={t("slaRiskHelper")}
         color={ISSUE_TONE.slaRisk}
         size="md"
         className={STAT_CARD_CLASS}

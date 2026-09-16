@@ -3,6 +3,7 @@
 import { MetricCard } from "@/features/common/components/feedback-state";
 
 import { Badge, Box, Flex, Grid, Typography } from "@repo/ui";
+import { useTranslations } from "next-intl";
 import type { OpsReport } from "@repo/opslens";
 import { getReportGeneratedLabel, getReportRiskBadge, getReportTone } from "../utils/report-utils";
 
