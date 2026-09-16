@@ -25,11 +25,11 @@
     "./typescript/react-library.json": "./src/typescript/react-library.json"
   },
   "dependencies": {
-    "@next/bundle-analyzer": "^15.5.13",
-    "tailwindcss": "^3.4.17"
+    "@next/bundle-analyzer": "^16.3.5",
+    "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
-    "@types/node": "^22.13.5",
-    "tsx": "^4.19.2"
+    "@types/node": "^26.5.1",
+    "tsx": "^4.23.13"
   }
 }
