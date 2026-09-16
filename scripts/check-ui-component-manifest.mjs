@@ -18,10 +18,7 @@ if (duplicates.length || missing.length || stale.length || invalid.length) {
   if (duplicates.length) console.error(`duplicate manifest entries: ${[...new Set(duplicates)].join(", ")}`);
   if (missing.length) console.error(`missing public exports: ${missing.join(", ")}`);
   if (stale.length) console.error(`stale manifest entries: ${stale.join(", ")}`);
-  if (invalid.length)
-    console.error(
-      `invalid manifest entries: ${invalid.map((entry) => entry.name ?? "<unnamed>").join(", ")}`
-    );
+  if (invalid.length) console.error(`invalid manifest entries: ${invalid.map((entry) => entry.name ?? "<unnamed>").join(", ")}`);
   process.exit(1);
 }
 

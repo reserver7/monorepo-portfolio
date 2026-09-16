@@ -1,5 +1,4 @@
 import { Box } from "@repo/ui";
-import { useLocale, useTranslations } from "next-intl";
 import { FeedbackState } from "@/features/common/components/feedback-state";
 import { formatDateTime } from "@repo/utils";
 import type { Issue } from "@repo/opslens";
@@ -12,7 +11,7 @@ export function IssueLogList({ logs }: IssueLogListProps) {
   const t = useTranslations("issues.logs");
   const locale = useLocale();
   if (logs.length === 0) {
-    return <FeedbackState variant="empty" size="sm" title={t("empty")} className="mt-[var(--space-3)]" />;
+    return <FeedbackState variant="empty" size="sm" title="로그 데이터가 없습니다." className="mt-[var(--space-3)]" />;
   }
 
   return (

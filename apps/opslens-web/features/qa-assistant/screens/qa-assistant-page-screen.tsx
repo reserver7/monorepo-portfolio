@@ -3,7 +3,6 @@
 import { MetricCard } from "@/features/common/components/feedback-state";
 
 import { useMemo } from "react";
-import { useLocale, useTranslations } from "next-intl";
 import { Badge, Box, Flex, Grid, SplitWorkspaceLayout, Typography } from "@repo/ui";
 import { useAppForm } from "@repo/forms";
 import { formatNumber } from "@repo/utils";
@@ -71,7 +70,7 @@ export default function QaAssistantPage() {
 
       <Grid className="gap-[var(--space-3)] md:grid-cols-3">
         <MetricCard
-          label={t("readiness")}
+          label="준비도"
           value={`${readinessScore}%`}
           helper={t("readinessHelper", {
             complete: readinessItems.filter((item) => item.ready).length,
@@ -82,19 +81,16 @@ export default function QaAssistantPage() {
           className="h-full rounded-[var(--radius-lg)]"
         />
         <MetricCard
-          label={t("inputScope")}
-          value={formatNumber(changedScreenItems.length + relatedApiItems.length, locale)}
-          helper={t("inputScopeHelper", {
-            screens: formatNumber(changedScreenItems.length, locale),
-            apis: formatNumber(relatedApiItems.length, locale)
-          })}
+          label="입력 범위"
+          value={formatNumber(changedScreenItems.length + relatedApiItems.length)}
+          helper={`화면 ${formatNumber(changedScreenItems.length)} / API ${formatNumber(relatedApiItems.length)}`}
           size="sm"
           className="h-full rounded-[var(--radius-lg)]"
         />
         <MetricCard
-          label={t("selectedOutput")}
-          value={formatNumber(selectedScenarioItemCount, locale)}
-          helper={t("selectedOutputHelper", { count: formatNumber(scenarios.length, locale) })}
+          label="선택 산출물"
+          value={formatNumber(selectedScenarioItemCount)}
+          helper={`최근 산출물 ${formatNumber(scenarios.length)}건`}
           size="sm"
           className="h-full rounded-[var(--radius-lg)]"
         />

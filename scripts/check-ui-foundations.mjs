@@ -18,7 +18,6 @@ const required = [
 ];
 const missing = required.filter((token) => !css.includes(`${token}:`));
 if (missing.length) throw new Error(`missing foundation tokens: ${missing.join(", ")}`);
-if (!/@media\s*\(prefers-reduced-motion:\s*reduce\)/.test(css))
-  throw new Error("missing prefers-reduced-motion fallback");
+if (!/@media\s*\(prefers-reduced-motion:\s*reduce\)/.test(css)) throw new Error("missing prefers-reduced-motion fallback");
 if (!/color-scheme:\s*dark/.test(css)) throw new Error("missing dark color-scheme");
 console.log(`UI foundations valid: ${required.length} semantic tokens, dark mode, reduced motion`);

@@ -5,17 +5,7 @@ import { FeedbackState } from "@/features/common/components/feedback-state";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
-import { useLocale, useTranslations } from "next-intl";
-import {
-  getDeploymentImpact,
-  getDeployments,
-  getOpsAlerts,
-  getOpsSettings,
-  listIssues,
-  opslensQueryKeys,
-  type Issue,
-  updateIssueStatus
-} from "@repo/opslens";
+import { getDeploymentImpact, getDeployments, getOpsAlerts, getOpsSettings, listIssues, opslensQueryKeys, type Issue, updateIssueStatus } from "@repo/opslens";
 import { Badge, Box, Button, Flex, Grid, Select, Typography } from "@repo/ui";
 import { AlertTriangle, ExternalLink, ShieldAlert, Siren } from "lucide-react";
 import { OpsPageShell, OpsSectionCard, OpsSectionSkeleton, SeverityBadge, StatusBadge } from "@/features";
@@ -216,32 +206,8 @@ export default function CommandCenterPage() {
       </Grid>
 
       <Grid className="items-start gap-[var(--space-4)] xl:grid-cols-[minmax(0,1fr)_360px]">
-        <OpsSectionCard title={t("incidents.title")} description={t("incidents.description")}>
-          {issuesQuery.isLoading || settingsQuery.isLoading ? (
-            <OpsSectionSkeleton rows={4} />
-          ) : criticalQueryError ? (
-            <FeedbackState
-              variant="error"
-              size="sm"
-              title={t("incidents.loadFailed")}
-              description={t("incidents.loadFailedDescription")}
-              action={
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  loading={issuesQuery.isFetching || settingsQuery.isFetching}
-                  onClick={() => {
-                    void Promise.all([issuesQuery.refetch(), settingsQuery.refetch()]);
-                  }}
-                >
-                  {t("retry")}
-                </Button>
-              }
-            />
-          ) : incidents.length === 0 ? (
-            <FeedbackState variant="empty" size="sm" title={t("incidents.empty")} />
-          ) : (
+        <OpsSectionCard title="지금 대응할 인시던트" description="SLA 위험, 심각도, 최근 발생 시각 순으로 정렬됩니다.">
+          {issuesQuery.isLoading || settingsQuery.isLoading ? <OpsSectionSkeleton rows={4} /> : criticalQueryError ? <FeedbackState variant="error" size="sm" title="커맨드 센터 데이터를 불러오지 못했습니다." description="대응 큐와 운영 정책을 확인할 수 없습니다." action={<Button type="button" variant="secondary" size="sm" loading={issuesQuery.isFetching || settingsQuery.isFetching} onClick={() => { void Promise.all([issuesQuery.refetch(), settingsQuery.refetch()]); }}>다시 시도</Button>} /> : incidents.length === 0 ? <FeedbackState variant="empty" size="sm" title="즉시 대응이 필요한 인시던트가 없습니다." /> : (
             <Box className="space-y-[var(--space-2)]">
               {incidents.map((incident) => {
                 const service = serviceCatalog.services?.find((item) => item.name === incident.serviceName);
@@ -412,51 +378,9 @@ export default function CommandCenterPage() {
               <Link href="/settings?tab=notifications">{t("actions.adjustPolicy")}</Link>
             </Button>
           </OpsSectionCard>
-          <OpsSectionCard title={t("deployment.title")} description={t("deployment.description")}>
-            <Select
-              aria-label={t("deployment.selectVersion")}
-              value={deploymentVersion ?? ""}
-              onChange={(value) => setSelectedVersion(String(value))}
-              options={(deploymentsQuery.data ?? []).map((deployment) => ({
-                label: deployment.version,
-                value: deployment.version
-              }))}
-              className="mb-[var(--space-3)]"
-            />
-            {impactQuery.isLoading ? (
-              <OpsSectionSkeleton rows={3} />
-            ) : impactQuery.data ? (
-              <Box className="space-y-[var(--space-2)]">
-                <Badge
-                  size="sm"
-                  variant={
-                    impactQuery.data.riskLevel === "rollback_review"
-                      ? "danger"
-                      : impactQuery.data.riskLevel === "caution"
-                        ? "warning"
-                        : "success"
-                  }
-                >
-                  {impactQuery.data.riskLevel === "rollback_review"
-                    ? t("deployment.rollbackReview")
-                    : impactQuery.data.riskLevel === "caution"
-                      ? t("deployment.observe")
-                      : t("deployment.normal")}
-                </Badge>
-                <Typography as="p" variant="bodySm">
-                  {impactQuery.data.recommendedAction}
-                </Typography>
-                <Typography as="p" variant="caption" color="muted">
-                  증가 이슈 {formatNumber(impactQuery.data.increasedIssueCount, locale)}건 · 배포 후 오류{" "}
-                  {formatNumber(impactQuery.data.totalAfterErrorCount, locale)}건
-                </Typography>
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/deployments">{t("deployment.viewDetails")}</Link>
-                </Button>
-              </Box>
-            ) : (
-              <FeedbackState variant="empty" size="sm" title={t("deployment.empty")} />
-            )}
+          <OpsSectionCard title="최근 배포 판단" description="영향 분석 결과로 롤백 검토 여부를 확인합니다.">
+            <Select aria-label="분석할 배포 버전" value={deploymentVersion ?? ""} onChange={(value) => setSelectedVersion(String(value))} options={(deploymentsQuery.data ?? []).map((deployment) => ({ label: deployment.version, value: deployment.version }))} className="mb-[var(--space-3)]" />
+            {impactQuery.isLoading ? <OpsSectionSkeleton rows={3} /> : impactQuery.data ? <Box className="space-y-[var(--space-2)]"><Badge size="sm" variant={impactQuery.data.riskLevel === "rollback_review" ? "danger" : impactQuery.data.riskLevel === "caution" ? "warning" : "success"}>{impactQuery.data.riskLevel === "rollback_review" ? "롤백 검토" : impactQuery.data.riskLevel === "caution" ? "관찰 필요" : "정상"}</Badge><Typography as="p" variant="bodySm">{impactQuery.data.recommendedAction}</Typography><Typography as="p" variant="caption" color="muted">증가 이슈 {formatNumber(impactQuery.data.increasedIssueCount)}건 · 배포 후 오류 {formatNumber(impactQuery.data.totalAfterErrorCount)}건</Typography><Button asChild variant="outline" size="sm"><Link href="/deployments">배포 상세 보기</Link></Button></Box> : <FeedbackState variant="empty" size="sm" title="분석할 배포 이력이 없습니다." />}
           </OpsSectionCard>
           <OpsSectionCard title={t("onCall.title")} description={t("onCall.description")}>
             <Typography as="p" variant="bodySm" color="muted">

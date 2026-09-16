@@ -1,5 +1,4 @@
 import type { RefObject } from "react";
-import { useLocale, useTranslations } from "next-intl";
 import { Box, Badge, Button, ConsoleSectionCard, Flex, Grid, Input, Select, Typography } from "@repo/ui";
 import { FeedbackState } from "@/features/common/components/feedback-state";
 import { formatDateTime, formatNumber } from "@repo/utils";
@@ -168,7 +167,7 @@ export function LogClusterResults({
         </Box>
       ) : null}
       {clusters.length === 0 ? (
-        <FeedbackState variant="empty" size="sm" title={t("results.empty")} />
+        <FeedbackState variant="empty" size="sm" title="분석 결과가 없습니다." />
       ) : (
         <Box className="space-y-[var(--space-2)]">
           {clusters.map((cluster) => (

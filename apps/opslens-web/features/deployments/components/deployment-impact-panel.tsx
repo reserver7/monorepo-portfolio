@@ -33,14 +33,7 @@ export function DeploymentImpactPanel({
     rollback_review: t("risk.rollbackReview")
   } as const;
   if (!selectedVersion) {
-    return (
-      <FeedbackState
-        variant="info"
-        size="sm"
-        title={t("impact.selectVersion")}
-        className="mt-[var(--space-3)]"
-      />
-    );
+    return <FeedbackState variant="info" size="sm" title="분석할 배포 버전을 선택해 주세요." className="mt-[var(--space-3)]" />;
   }
 
   if (isLoading) {
@@ -53,14 +46,7 @@ export function DeploymentImpactPanel({
   }
 
   if (isError || !impact) {
-    return (
-      <FeedbackState
-        variant="error"
-        size="sm"
-        title={t("impact.loadFailed")}
-        className="mt-[var(--space-3)]"
-      />
-    );
+    return <FeedbackState variant="error" size="sm" title="영향 분석에 실패했습니다." className="mt-[var(--space-3)]" />;
   }
 
   const hasIncreasedIssues = impact.increasedIssues.length > 0;

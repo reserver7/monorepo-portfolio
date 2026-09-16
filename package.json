@@ -27,6 +27,7 @@
     "storybook:gen": "node ./scripts/generate-ui-stories.mjs",
     "storybook:watch": "node ./scripts/watch-ui-stories.mjs",
     "storybook:check": "node ./scripts/generate-ui-stories.mjs --check",
+    "storybook:validate": "node ./scripts/generate-ui-stories.mjs --check",
     "ui:manifest:check": "node ./scripts/check-ui-component-manifest.mjs",
     "ui:foundations:check": "node ./scripts/check-ui-foundations.mjs",
     "sync:fonts": "node ./scripts/sync-theme-fonts.mjs",

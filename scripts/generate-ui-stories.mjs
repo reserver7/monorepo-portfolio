@@ -3306,9 +3306,7 @@ const runGenerate = async () => {
     const storyFileName = `${componentName}.stories.tsx`;
     const storyPath = path.join(categoryDir, storyFileName);
     const relativeStoryPath = path.join(category.key, storyFileName);
-    const nextStorySource = await prettier.format(ensureStoryArgSanitizer(createStorySource(componentName)), {
-      parser: "typescript"
-    });
+    const nextStorySource = ensureStoryArgSanitizer(createStorySource(componentName));
 
     await fs.mkdir(categoryDir, { recursive: true });
     nextStoryRelativePaths.add(relativeStoryPath);

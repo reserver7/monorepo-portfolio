@@ -20,19 +20,7 @@ const isRenderableNode = (value: unknown): boolean => {
 
 const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknown> => {
   const next = { ...args };
-  for (const key of [
-    "children",
-    "leftIcon",
-    "rightIcon",
-    "prefix",
-    "suffix",
-    "label",
-    "helperText",
-    "errorMessage",
-    "title",
-    "description",
-    "helper"
-  ]) {
+  for (const key of ["children","leftIcon","rightIcon","prefix","suffix","label","helperText","errorMessage","title","description","helper"]) {
     if (!isRenderableNode(next[key])) delete next[key];
   }
   return next;
@@ -41,13 +29,7 @@ const sanitizeStoryArgs = (args: Record<string, unknown>): Record<string, unknow
 const meta: Meta<TooltipStoryArgs> = {
   title: "Components/Tooltip",
   tags: ["autodocs"],
-  decorators: [
-    (Story) => (
-      <TooltipProvider>
-        <Story />
-      </TooltipProvider>
-    )
-  ],
+  decorators: [(Story) => <TooltipProvider><Story /></TooltipProvider>],
   parameters: { layout: "centered", controls: { expanded: true } },
   args: { size: "md", color: "inverse", withArrow: true, placement: "top", alignment: "center", offset: 8 },
   argTypes: {
@@ -88,30 +70,45 @@ export const Playground: Story = {
 export const States: Story = {
   parameters: { controls: { disable: true } },
   render: (args) => (
-    <section className="border-default bg-surface space-y-3 rounded-[var(--radius-xl)] border p-4">
+    <section className="space-y-3 rounded-[var(--radius-xl)] border border-default bg-surface p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-body-md text-foreground font-semibold">상태</h3>
-        <span className="text-caption text-muted border-default bg-surface-elevated rounded-full border px-2 py-0.5">
+        <span className="text-caption text-muted rounded-full border border-default bg-surface-elevated px-2 py-0.5">
           Tooltip
         </span>
       </div>
       <div className="grid items-start gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        <div className="border-default bg-surface rounded-[var(--radius-md)] border p-3">
-          <div className="text-caption text-muted mb-2">기본</div>
-          <Tooltip {...sanitizeStoryArgs(args as Record<string, unknown>)} />
-        </div>
-        <div className="border-default bg-surface rounded-[var(--radius-md)] border p-3">
-          <div className="text-caption text-muted mb-2">withArrow</div>
-          <Tooltip {...sanitizeStoryArgs(args as Record<string, unknown>)} withArrow />
-        </div>
+          <div className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
+            <div className="text-caption text-muted mb-2">기본</div>
+            <Tooltip
+              {...sanitizeStoryArgs(args as Record<string, unknown>)}
+             />
+          </div>
+          <div className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
+            <div className="text-caption text-muted mb-2">withArrow</div>
+            <Tooltip
+              {...sanitizeStoryArgs(args as Record<string, unknown>)}
+
+              withArrow
+             />
+          </div>
       </div>
     </section>
   )
 };
 
+
 const OPTION_MATRIX = {
-  size: ["sm", "md", "lg"],
-  alignment: ["start", "center", "end"]
+  "size": [
+    "sm",
+    "md",
+    "lg"
+  ],
+  "alignment": [
+    "start",
+    "center",
+    "end"
+  ]
 } as const;
 
 const sanitizeMatrixArgs = (args: Record<string, unknown>) => {
@@ -125,35 +122,29 @@ const sanitizeMatrixArgs = (args: Record<string, unknown>) => {
 export const OptionMatrix: Story = {
   render: (args) => (
     <div className="space-y-4">
-      <section className="border-default bg-surface rounded-[var(--radius-xl)] border p-4">
+      <section className="rounded-[var(--radius-xl)] border border-default bg-surface p-4">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-body-md text-foreground font-semibold">옵션 매트릭스</h3>
-          <span className="text-caption text-muted border-default bg-surface-elevated rounded-full border px-2 py-0.5">
+          <span className="text-caption text-muted rounded-full border border-default bg-surface-elevated px-2 py-0.5">
             Tooltip
           </span>
         </div>
         <div className="space-y-4">
           {Object.entries(OPTION_MATRIX).map(([propName, values]) => (
-            <article
-              key={propName}
-              className="border-default bg-surface-elevated rounded-[var(--radius-lg)] border p-3"
-            >
+            <article key={propName} className="rounded-[var(--radius-lg)] border border-default bg-surface-elevated p-3">
               <div className="mb-3 flex items-center justify-between">
                 <h4 className="text-body-sm text-foreground font-medium">{propName}</h4>
                 <span className="text-caption text-muted">{values.length} options</span>
               </div>
               <div className="grid items-start gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 {(values as readonly unknown[]).map((value) => (
-                  <div
-                    key={`${propName}-${String(value)}`}
-                    className="border-default bg-surface rounded-[var(--radius-md)] border p-3"
-                  >
+                  <div key={`${propName}-${String(value)}`} className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
                     <div className="text-caption text-muted mb-2">{String(value)}</div>
                     <div className="min-h-10">
                       <Tooltip
                         {...sanitizeMatrixArgs(args as Record<string, unknown>)}
                         {...({ [propName]: value } as Record<string, unknown>)}
-                      />
+                       />
                     </div>
                   </div>
                 ))}
@@ -169,28 +160,33 @@ export const OptionMatrix: Story = {
   )
 };
 
+
 export const Examples: Story = {
   parameters: { controls: { disable: true } },
   render: (args) => (
-    <section className="border-default bg-surface space-y-3 rounded-[var(--radius-xl)] border p-4">
+    <section className="space-y-3 rounded-[var(--radius-xl)] border border-default bg-surface p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-body-md text-foreground font-semibold">사용 예시</h3>
-        <span className="text-caption text-muted border-default bg-surface-elevated rounded-full border px-2 py-0.5">
+        <span className="text-caption text-muted rounded-full border border-default bg-surface-elevated px-2 py-0.5">
           Tooltip
         </span>
       </div>
       <div className="grid items-start gap-2 sm:grid-cols-2">
-        <div className="border-default bg-surface rounded-[var(--radius-md)] border p-3">
+        <div className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
           <div className="text-caption text-muted mb-2">기본 사용</div>
           <div className="min-h-10">
-            <Tooltip {...sanitizeStoryArgs(args as Record<string, unknown>)} />
+            <Tooltip
+              {...sanitizeStoryArgs(args as Record<string, unknown>)}
+             />
           </div>
         </div>
-        <div className="border-default bg-surface rounded-[var(--radius-md)] border p-3">
+        <div className="rounded-[var(--radius-md)] border border-default bg-surface p-3">
           <div className="text-caption text-muted mb-1">레이아웃 배치 예시</div>
           <div className="text-caption text-muted mb-2">실제 화면 배치에서 기본 상태를 검증합니다.</div>
           <div className="min-h-10">
-            <Tooltip {...sanitizeStoryArgs(args as Record<string, unknown>)} />
+            <Tooltip
+                {...sanitizeStoryArgs(args as Record<string, unknown>)}
+               />
           </div>
         </div>
       </div>

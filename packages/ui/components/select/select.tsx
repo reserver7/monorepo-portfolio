@@ -262,7 +262,7 @@ function SelectSingle<T = SelectPrimitiveValue>({
           >
             {loading ? (
               <div role="status" className="text-body-sm text-muted px-2 py-2">
-                {labels.loading}
+                불러오는 중…
               </div>
             ) : filteredOptions.length === 0 ? (
               <div className="text-body-sm text-muted px-2 py-2">{emptyMessage}</div>
@@ -321,7 +321,7 @@ function SelectSingle<T = SelectPrimitiveValue>({
       <SelectContent className={contentClassName} style={contentStyle}>
         {loading ? (
           <div role="status" className="text-body-sm text-muted px-2 py-2">
-            {labels.loading}
+            불러오는 중…
           </div>
         ) : keyedOptions.length === 0 ? (
           <div className="text-body-sm text-muted px-2 py-2">{emptyMessage}</div>
@@ -558,7 +558,7 @@ function SelectMultiple<T = SelectPrimitiveValue>({
             className="text-body-sm text-muted hover:bg-surface-elevated hover:text-foreground mb-[var(--space-1)] flex h-[var(--size-control-sm)] w-full items-center justify-between gap-[var(--space-2)] rounded-[var(--radius-md)] px-[var(--space-3)]"
             onClick={handleToggleAll}
           >
-            <span>{isAllSelected ? labels.clearAll : labels.selectAll}</span>
+            <span>{isAllSelected ? "전체 해제" : "전체 선택"}</span>
             <span className="text-caption text-muted">
               {selectedSelectableCount}/{selectableKeys.length}
             </span>
@@ -566,7 +566,7 @@ function SelectMultiple<T = SelectPrimitiveValue>({
 
           {loading ? (
             <div role="status" className="text-body-sm text-muted px-[var(--space-2)] py-[var(--space-2)]">
-              {labels.loading}
+              불러오는 중…
             </div>
           ) : filteredOptions.length === 0 ? (
             <div className="text-body-sm text-muted px-2 py-2">{emptyMessage}</div>

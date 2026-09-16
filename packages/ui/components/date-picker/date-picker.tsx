@@ -383,7 +383,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
                       event.stopPropagation();
                       handleClear();
                     }}
-                    aria-label={labels.clearDate}
+                    aria-label="선택한 날짜 지우기"
                     className="text-muted hover:bg-surface-elevated hover:text-foreground focus-visible:ring-primary inline-flex h-[var(--size-icon-lg)] w-[var(--size-icon-lg)] items-center justify-center rounded-[var(--radius-round)] transition-colors focus-visible:outline-none focus-visible:ring-2"
                   >
                     <X className="h-[var(--size-icon-sm)] w-[var(--size-icon-sm)]" aria-hidden />
@@ -488,7 +488,7 @@ const DatePickerBase = React.forwardRef<HTMLInputElement, DatePickerProps>(
                 />
                 {withTime ? (
                   <div className="border-default grid gap-[var(--space-1)] border-t pt-[var(--space-2)]">
-                    <Label size="sm">{labels.time}</Label>
+                    <Label size="sm">시간</Label>
                     <TimePicker
                       value={singleTimeValue}
                       showSeconds={showSeconds}
