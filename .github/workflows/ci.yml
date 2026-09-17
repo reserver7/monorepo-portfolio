@@ -33,6 +33,7 @@ jobs:
       opslens: ${{ steps.filter.outputs.opslens }}
       opslens_e2e: ${{ steps.filter.outputs.opslens_e2e }}
       collab: ${{ steps.filter.outputs.collab }}
+      collab_e2e: ${{ steps.filter.outputs.collab_e2e }}
       ui: ${{ steps.filter.outputs.ui }}
       checks: ${{ steps.filter.outputs.checks }}
       format: ${{ steps.filter.outputs.format }}
@@ -65,6 +66,18 @@ jobs:
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'turbo.json'
+            collab_e2e:
+              - 'apps/collab-server/**'
+              - 'apps/collab-web/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'turbo.json'
+              - 'playwright.config.ts'
+              - 'tests/e2e/create-room-flow.spec.ts'
+              - 'tests/e2e/cross-app-navigation.spec.ts'
+              - 'tests/e2e/access-control-flow.spec.ts'
+              - 'tests/e2e/ui-state-sync.spec.ts'
             opslens_e2e:
               - 'apps/opslens-web/app/(app)/logs/**'
               - 'apps/opslens-web/app/(app)/services/**'
@@ -170,6 +183,30 @@ jobs:
       - uses: ./.github/actions/setup-workspace
       - run: pnpm turbo run lint typecheck --filter=@repo/collab-server --filter=@repo/collab-web
       - run: pnpm test:collab-server
+
+  collab-e2e:
+    name: Smoke test Collab flows
+    needs: changes
+    if: ${{ needs.changes.outputs.collab_e2e == 'true' || github.event_name == 'schedule' || inputs.full_validation }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-workspace
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm exec playwright install chromium
+      - run: pnpm test:e2e --workers=1 --reporter=line
+      - name: Upload Playwright failure report
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: collab-playwright-report-${{ github.run_id }}
+          path: playwright-report
+          if-no-files-found: ignore
+          retention-days: 7
 
   repository-checks:
     name: Validate repository checks

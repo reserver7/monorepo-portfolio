@@ -124,18 +124,17 @@ export const createServerEnv = (rawEnv: NodeJS.ProcessEnv = process.env): Server
 
   const corsOrigins = parseCorsOrigins(rawEnv.CORS_ORIGINS);
   const allowAllCorsExplicit = toBool(rawEnv.ALLOW_ALL_CORS, false);
+  if (isProduction && allowAllCorsExplicit) {
+    throw new Error("ALLOW_ALL_CORS is not allowed in production. Set explicit CORS_ORIGINS instead.");
+  }
   const allowAllCors = allowAllCorsExplicit || (!isProduction && corsOrigins.length === 0);
 
   if (isProduction && corsOrigins.includes("*")) {
-    throw new Error(
-      'CORS_ORIGINS cannot contain "*" in production. Use explicit origins or ALLOW_ALL_CORS=true.'
-    );
+    throw new Error('CORS_ORIGINS cannot contain "*" in production. Use explicit origins instead.');
   }
 
   if (isProduction && !allowAllCors && corsOrigins.length === 0) {
-    throw new Error(
-      "CORS_ORIGINS is required in production. Set CORS_ORIGINS or explicitly ALLOW_ALL_CORS=true."
-    );
+    throw new Error("CORS_ORIGINS is required in production. Set explicit origins.");
   }
 
   const collabSessionSecret = rawEnv.COLLAB_SESSION_SECRET?.trim() || DEFAULT_SESSION_SECRET;

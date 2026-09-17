@@ -16,6 +16,7 @@
 ## 운영 배포
 
 웹 앱은 Vercel, Node 서버는 Render, 데이터 저장소는 관리형 PostgreSQL과 Redis를 사용합니다.
+Render Free 서비스는 `/tmp`가 영속 디스크가 아니므로 `STATE_BACKEND=file` 상태는 재시작·재배포 시 유실될 수 있습니다. 무료 플랜은 데모/개발용으로만 사용하고, 운영 데이터는 `STATE_BACKEND=postgres`로 전환합니다.
 
 | 대상                  | 권장 서비스                                      | 연결 변수                                                                  |
 | --------------------- | ------------------------------------------------ | -------------------------------------------------------------------------- |
@@ -39,6 +40,6 @@
 
 1. PostgreSQL 연결 문자열과 SSL 옵션을 배포 공급자 요구사항에 맞춘다.
 2. Redis URL을 TLS 제공 시 `rediss://`로 설정한다.
-3. `CORS_ORIGINS`에 Vercel 운영 도메인만 명시한다.
+3. `CORS_ORIGINS`에 Vercel 운영 도메인만 명시하고 `ALLOW_ALL_CORS`는 설정하지 않는다.
 4. OpsLens migration을 배포 전에 적용한다.
 5. Render healthcheck URL과 Vercel API URL이 실제 도메인을 가리키는지 확인한다.
