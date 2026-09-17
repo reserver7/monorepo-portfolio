@@ -42,6 +42,7 @@ import { getDocsPath } from "@/lib/navigation";
 import { formatExactTime, formatRelativeTime } from "@/features/whiteboard/collaboration/model";
 import { coerceAccessRole } from "@repo/utils/collab";
 import { createLocaleGuestName, normalizeGuestDisplayName } from "@/lib/i18n/display-name";
+import { SignOutButton } from "@/features/auth/components/sign-out-button";
 
 export default function WhiteboardHomePage() {
   const t = useTranslations("collab.whiteboardHome");
@@ -207,7 +208,12 @@ export default function WhiteboardHomePage() {
       <MarketingGlassNav
         product="Realtime Whiteboard"
         subtitle="Collaborative visual workspace"
-        rightSlot={<CollabLocaleFilter />}
+        rightSlot={
+          <div className="flex items-center gap-2">
+            <CollabLocaleFilter />
+            <SignOutButton />
+          </div>
+        }
         actions={[
           {
             label: t("nav.toDocs"),

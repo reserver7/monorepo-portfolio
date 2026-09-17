@@ -20,7 +20,7 @@ Render Free 서비스는 `/tmp`가 영속 디스크가 아니므로 `STATE_BACKE
 
 | 대상                  | 권장 서비스                                      | 연결 변수                                                                  |
 | --------------------- | ------------------------------------------------ | -------------------------------------------------------------------------- |
-| Collab Server 상태    | Neon 또는 Render Postgres                        | `STATE_BACKEND=postgres`, `COLLAB_DATABASE_URL`                            |
+| Collab Server 상태    | Supabase `monorepo-portfolio`                    | `STATE_BACKEND=postgres`, `COLLAB_DATABASE_URL`                            |
 | Collab 실시간 pub/sub | Upstash Redis, Redis Cloud 또는 Render Key Value | `REDIS_URL`                                                                |
 | OpsLens DB            | Neon 또는 Render Postgres                        | `DATABASE_URL`, `DIRECT_DATABASE_URL`                                      |
 | Collab Web            | Vercel                                           | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`                               |
@@ -38,7 +38,7 @@ Render Free 서비스는 `/tmp`가 영속 디스크가 아니므로 `STATE_BACKE
 
 ## 배포 전 확인
 
-1. PostgreSQL 연결 문자열과 SSL 옵션을 배포 공급자 요구사항에 맞춘다.
+1. Supabase direct PostgreSQL 연결 문자열과 `sslmode=require`를 설정한다.
 2. Redis URL을 TLS 제공 시 `rediss://`로 설정한다.
 3. `CORS_ORIGINS`에 Vercel 운영 도메인만 명시하고 `ALLOW_ALL_CORS`는 설정하지 않는다.
 4. OpsLens migration을 배포 전에 적용한다.
