@@ -58,7 +58,9 @@ import {
   sanitizeEditorAccessKey,
   toJsonObject,
   verifyEditorAccessKey,
-  verifySessionToken
+  verifySessionToken,
+  extractAccountFromAuthorization,
+  type AccountIdentity
 } from "./features/workspace";
 
 const app = express();
@@ -179,6 +181,15 @@ const resolveSessionFromRequest = (
   const sessionTokenHeader = req.header("x-collab-session-token");
 
   return resolveSessionFromSocketPayload(sessionIdHeader ?? undefined, sessionTokenHeader ?? undefined);
+};
+
+const resolveAccountFromRequest = (req: Request, res: Response): AccountIdentity | null | undefined => {
+  const account = extractAccountFromAuthorization(req.header("authorization"), serverEnv.authBridgeSecret);
+  if (serverEnv.authBridgeSecret && !account) {
+    res.status(401).json({ message: "유효한 계정 세션이 필요합니다." });
+    return undefined;
+  }
+  return account;
 };
 
 const resolveLockedRole = async (
@@ -340,25 +351,32 @@ app.get(API_ROUTES.health, (_req, res) => {
   res.json({ ok: true, now: new Date().toISOString() });
 });
 
-app.get(API_ROUTES.documents, (_req, res) => {
-  res.json({ documents: store.listDocuments() });
+app.get(API_ROUTES.documents, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (account === undefined) return;
+  res.json({ documents: store.listDocuments(account?.id) });
 });
 
 app.post(API_ROUTES.documents, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (account === undefined) return;
   const body = toJsonObject(req.body);
   const actor = sanitizeDisplayName(readOptionalString(body, "actor"));
   const title = readOptionalString(body, "title") ?? EMPTY_TITLE;
   const editorAccessKey = readOptionalString(body, "editorAccessKey");
-  const created = store.createDocument(title, actor, editorAccessKey);
+  const created = store.createDocument(title, actor, editorAccessKey, account?.id);
   res.status(201).json({ document: created });
 });
 
 app.delete(API_ROUTES.documentById, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (account === undefined) return;
   const body = toJsonObject(req.body);
   const editorAccessKey = readOptionalString(body, "editorAccessKey");
   const deleted = store.deleteDocument({
     documentId: req.params.id,
-    editorAccessKey
+    editorAccessKey,
+    ownerId: account?.id
   });
 
   if (deleted === "not-found") {
@@ -440,25 +458,32 @@ app.post(API_ROUTES.documentComments, (req, res) => {
   });
 });
 
-app.get(API_ROUTES.boards, (_req, res) => {
-  res.json({ boards: store.listBoards() });
+app.get(API_ROUTES.boards, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (account === undefined) return;
+  res.json({ boards: store.listBoards(account?.id) });
 });
 
 app.post(API_ROUTES.boards, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (account === undefined) return;
   const body = toJsonObject(req.body);
   const actor = sanitizeDisplayName(readOptionalString(body, "actor"));
   const title = readOptionalString(body, "title") ?? EMPTY_TITLE;
   const editorAccessKey = readOptionalString(body, "editorAccessKey");
-  const board = store.createBoard(title, actor, editorAccessKey);
+  const board = store.createBoard(title, actor, editorAccessKey, account?.id);
   res.status(201).json({ board });
 });
 
 app.delete(API_ROUTES.boardById, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (account === undefined) return;
   const body = toJsonObject(req.body);
   const editorAccessKey = readOptionalString(body, "editorAccessKey");
   const deleted = store.deleteBoard({
     boardId: req.params.id,
-    editorAccessKey
+    editorAccessKey,
+    ownerId: account?.id
   });
 
   if (deleted === "not-found") {

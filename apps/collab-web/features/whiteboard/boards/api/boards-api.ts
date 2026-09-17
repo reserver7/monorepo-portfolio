@@ -18,7 +18,7 @@ const boardsResource = createResourceClient<
   "boards",
   "board",
   "boardId"
->(API_BASE_URL, "/api/boards", {
+>("", "/api/workspace/boards", {
   list: "boards",
   item: "board",
   deleteId: "boardId"

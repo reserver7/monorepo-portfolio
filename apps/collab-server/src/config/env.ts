@@ -110,6 +110,7 @@ export interface ServerEnv {
   collabDatabaseUrl: string | undefined;
   redisUrl: string | undefined;
   collabSessionSecret: string;
+  authBridgeSecret: string | undefined;
   editorAccessKey: string | undefined;
   socketRateLimitWindowMs: number;
   socketWriteEventsPerWindow: number;
@@ -142,6 +143,11 @@ export const createServerEnv = (rawEnv: NodeJS.ProcessEnv = process.env): Server
     throw new Error("COLLAB_SESSION_SECRET must be configured in production.");
   }
 
+  const authBridgeSecret = rawEnv.AUTH_BRIDGE_SECRET?.trim() || undefined;
+  if (isProduction && !authBridgeSecret) {
+    throw new Error("AUTH_BRIDGE_SECRET must be configured in production.");
+  }
+
   const stateFilePath = rawEnv.STATE_FILE_PATH?.trim() || undefined;
   const stateBackend = rawEnv.STATE_BACKEND?.trim().toLowerCase() === "postgres" ? "postgres" : "file";
   const collabDatabaseUrl = rawEnv.COLLAB_DATABASE_URL?.trim() || undefined;
@@ -165,6 +171,7 @@ export const createServerEnv = (rawEnv: NodeJS.ProcessEnv = process.env): Server
     collabDatabaseUrl,
     redisUrl: rawEnv.REDIS_URL?.trim() || undefined,
     collabSessionSecret,
+    authBridgeSecret,
     editorAccessKey: rawEnv.EDITOR_ACCESS_KEY?.trim() || undefined,
     socketRateLimitWindowMs: toPositiveInt(rawEnv.SOCKET_RATE_LIMIT_WINDOW_MS, 10_000),
     socketWriteEventsPerWindow: toPositiveInt(rawEnv.SOCKET_WRITE_EVENTS_PER_WINDOW, 120),
