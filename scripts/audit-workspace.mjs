@@ -52,7 +52,8 @@ for (const appName of frontendApps) {
 const bannedPatterns = [
   /from\s+["']@repo\/ui\/components\//,
   /from\s+["']@repo\/ui\/styles\//,
-  /from\s+["']\.\.\/\.\.\/packages\//
+  /from\s+["']\.\.\/\.\.\/packages\//,
+  /from\s+["'][^"']*packages\/configs\/src\//
 ];
 
 for (const appName of allApps) {

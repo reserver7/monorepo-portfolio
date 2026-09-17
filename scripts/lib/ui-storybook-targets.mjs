@@ -84,6 +84,7 @@ export const parseExportedNames = (source) => {
       .split(",")
       .map((token) => token.trim())
       .filter(Boolean)
+      .filter((token) => !/^type\s+/.test(token))
       .map((token) => token.replace(/^type\s+/, "").trim())
       .map((token) => token.split(/\s+as\s+/i)[0]?.trim())
       .filter(Boolean);

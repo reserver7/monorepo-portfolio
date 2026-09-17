@@ -16,6 +16,7 @@
     "./tailwind.config": "./src/tailwind/tailwind.config.ts",
     "./tailwind/create-app-config": "./src/tailwind/create-app-tailwind-config.ts",
     "./i18n": "./src/i18n/index.ts",
+    "./api": "./src/api/index.ts",
     "./errors": "./src/errors/index.ts",
     "./typescript/base.json": "./src/typescript/base.json",
     "./typescript/nest-service.json": "./src/typescript/nest-service.json",

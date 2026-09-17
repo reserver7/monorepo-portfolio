@@ -22,7 +22,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: "pnpm --filter @repo/opslens-server dev",
+      command: "pnpm --filter @repo/opslens-server build && node apps/opslens-server/dist/index.js",
       url: "http://127.0.0.1:4100/health",
       timeout: 120_000,
       reuseExistingServer: !process.env.CI,

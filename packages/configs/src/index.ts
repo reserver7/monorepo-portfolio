@@ -1,4 +1,5 @@
 export { createAppTailwindConfig } from "./tailwind/create-app-tailwind-config";
+export type { ApiResponse, ApiResponseBase } from "./api";
 export {
   API_ERROR_CODES,
   createApiErrorPayload,
