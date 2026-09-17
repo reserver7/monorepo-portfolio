@@ -28,8 +28,9 @@ pnpm test:collab-server
 
 - 기본 로컬 모드는 `STATE_BACKEND=file`이며 기존 JSON 파일을 사용합니다.
 - PostgreSQL은 `STATE_BACKEND=postgres`와 `COLLAB_DATABASE_URL`을 설정합니다.
+- 운영 Supabase 프로젝트는 `postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres?sslmode=require` 형식의 direct connection을 사용합니다.
 - 여러 서버 인스턴스의 Socket.IO 이벤트 공유는 `REDIS_URL`을 설정합니다.
-- PostgreSQL 초기 스키마는 `migrations/001_collab_workspace_state.sql`에 있습니다.
+- 로컬 PostgreSQL 초기 스키마는 `migrations/001_collab_workspace_state.sql`, Supabase 스키마는 루트 `supabase/migrations/`에 있습니다.
 - 기존 JSON 상태 이전: `pnpm --filter @repo/collab-server migrate:state:postgres`
 
 ## 의존성

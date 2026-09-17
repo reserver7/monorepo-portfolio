@@ -74,7 +74,12 @@ DIRECT_DATABASE_URL=postgresql://portfolio:portfolio-local-password@localhost:54
 STATE_BACKEND=postgres
 COLLAB_DATABASE_URL=postgresql://portfolio:portfolio-local-password@localhost:5433/collab
 REDIS_URL=redis://localhost:6379
+
+# 운영에서는 Supabase direct connection을 사용합니다.
+# COLLAB_DATABASE_URL=postgresql://postgres:<SUPABASE_DB_PASSWORD>@db.<PROJECT_REF>.supabase.co:5432/postgres?sslmode=require
 ```
+
+Supabase `monorepo-portfolio`에는 `public.collab_workspace_state` 테이블이 생성되어 있습니다. Collab 서버만 direct connection으로 접근하며, 브라우저·익명 API에는 데이터 접근 정책을 열지 않습니다.
 
 최초 OpsLens 스키마 적용:
 

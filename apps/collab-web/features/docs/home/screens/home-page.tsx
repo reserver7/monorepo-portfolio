@@ -42,6 +42,7 @@ import {
 } from "@repo/ui";
 import { CollabLocaleFilter } from "@/features/common/components/collab-locale-filter";
 import { createLocaleGuestName, normalizeGuestDisplayName } from "@/lib/i18n/display-name";
+import { SignOutButton } from "@/features/auth/components/sign-out-button";
 
 export default function HomePage() {
   const t = useTranslations("collab.docsHome");
@@ -208,7 +209,12 @@ export default function HomePage() {
       <MarketingGlassNav
         product="Collaborative Docs"
         subtitle="Real-time document workspace"
-        rightSlot={<CollabLocaleFilter />}
+        rightSlot={
+          <div className="flex items-center gap-2">
+            <CollabLocaleFilter />
+            <SignOutButton />
+          </div>
+        }
         actions={[
           {
             label: t("nav.toWhiteboard"),
