@@ -14,9 +14,25 @@ export async function configureRedisRealtimeAdapter(
 ): Promise<RealtimeAdapterHandle> {
   if (!redisUrl) return { roleLocks: new MemoryRoleLockStore(), close: async () => undefined };
 
-  const publisher = createClient({ url: redisUrl });
+  const publisher = createClient({ url: redisUrl, socket: { reconnectStrategy: false } });
   const subscriber = publisher.duplicate();
-  await Promise.all([publisher.connect(), subscriber.connect()]);
+  publisher.on("error", () => undefined);
+  subscriber.on("error", () => undefined);
+  try {
+    await Promise.all([publisher.connect(), subscriber.connect()]);
+  } catch {
+    try {
+      publisher.destroy();
+    } catch {
+      // The client may already be closed after a failed connection attempt.
+    }
+    try {
+      subscriber.destroy();
+    } catch {
+      // The client may already be closed after a failed connection attempt.
+    }
+    return { roleLocks: new MemoryRoleLockStore(), close: async () => undefined };
+  }
   io.adapter(createAdapter(publisher, subscriber));
 
   return {
