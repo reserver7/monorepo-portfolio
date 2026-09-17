@@ -1,0 +1,26 @@
+name: Monitor - Collab Server Health
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    name: Check Collab Server
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Validate healthcheck secret
+        env:
+          SERVER_HEALTHCHECK_URL: ${{ secrets.SERVER_HEALTHCHECK_URL }}
+        run: test -n "${SERVER_HEALTHCHECK_URL}"
+      - name: Request health endpoint
+        env:
+          SERVER_HEALTHCHECK_URL: ${{ secrets.SERVER_HEALTHCHECK_URL }}
+        run: |
+          curl --fail-with-body --retry 3 --retry-all-errors --retry-delay 5 --max-time 15 -sS \
+            "${SERVER_HEALTHCHECK_URL}"

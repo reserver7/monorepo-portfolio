@@ -48,16 +48,15 @@ describe("서버 환경 변수 파싱", () => {
     expect(env.corsOrigins).toEqual(["https://docs.example.com", "http://localhost:3000"]);
   });
 
-  it("운영 환경에서 ALLOW_ALL_CORS를 명시하면 허용한다", () => {
-    const env = createServerEnv({
-      NODE_ENV: "production",
-      ALLOW_ALL_CORS: "true",
-      COLLAB_SESSION_SECRET: "test-secret",
-      STATE_FILE_PATH: PROD_STATE_FILE_PATH
-    });
-
-    expect(env.isProduction).toBe(true);
-    expect(env.allowAllCors).toBe(true);
+  it("운영 환경에서 ALLOW_ALL_CORS를 명시하면 즉시 실패한다", () => {
+    expect(() =>
+      createServerEnv({
+        NODE_ENV: "production",
+        ALLOW_ALL_CORS: "true",
+        COLLAB_SESSION_SECRET: "test-secret",
+        STATE_FILE_PATH: PROD_STATE_FILE_PATH
+      })
+    ).toThrow("ALLOW_ALL_CORS is not allowed in production");
   });
 
   it("운영 환경에서 와일드카드 CORS_ORIGINS는 즉시 실패한다", () => {
@@ -153,13 +152,8 @@ describe("서버 환경 변수 파싱", () => {
     expect(env.maxSocketJsonChars).toBe(80_000);
   });
 
-  it("ALLOW_ALL_CORS는 1/0 문자열도 파싱한다", () => {
-    const allow = createServerEnv({
-      NODE_ENV: "production",
-      ALLOW_ALL_CORS: "1",
-      COLLAB_SESSION_SECRET: "test-secret",
-      STATE_FILE_PATH: PROD_STATE_FILE_PATH
-    });
+  it("개발 환경에서는 ALLOW_ALL_CORS를 1/0 문자열로 파싱한다", () => {
+    const allow = createServerEnv({ ALLOW_ALL_CORS: "1" });
     expect(allow.allowAllCors).toBe(true);
 
     const deny = createServerEnv({
