@@ -1072,23 +1072,26 @@ export default function WhiteboardRoomPage() {
                       }}
                     >
                       {!isReadOnly ? (
-                        <button
+                        <Button
                           type="button"
                           onMouseDown={(event) => event.stopPropagation()}
                           onClick={(event) => {
                             event.stopPropagation();
                             void requestRemoveShapeWithConfirm(shape.id);
                           }}
-                          className="border-default bg-surface text-muted hover:bg-surface-elevated text-caption absolute -right-2 -top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border"
+                          variant="ghost"
+                          size="sm"
+                          aria-label={t("actions.deleteSelected")}
+                          className="border-default bg-surface text-muted hover:bg-surface-elevated text-caption absolute -right-2 -top-2 z-20 h-5 w-5 rounded-full border p-0"
                         >
                           ×
-                        </button>
+                        </Button>
                       ) : null}
 
                       {!isReadOnly && isSelected ? (
                         <>
                           {(Object.keys(resizeHandleStyle) as ResizeHandle[]).map((handle) => (
-                            <button
+                            <Button
                               key={handle}
                               type="button"
                               onMouseDown={(event) => {
@@ -1106,7 +1109,9 @@ export default function WhiteboardRoomPage() {
                                   h: shape.h
                                 };
                               }}
-                              className="border-primary bg-surface absolute z-20 h-3 w-3 rounded-full border shadow"
+                              variant="ghost"
+                              size="sm"
+                              className="border-primary bg-surface absolute z-20 h-3 w-3 rounded-full border p-0 shadow"
                               style={resizeHandleStyle[handle]}
                               aria-label={`resize-${handle}`}
                             />
