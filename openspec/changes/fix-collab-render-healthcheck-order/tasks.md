@@ -6,4 +6,4 @@
 ## 2. Verification
 
 - [x] 2.1 Run repository validation and inspect the generated workflow diff
-- [ ] 2.2 Trigger a Collab Server semver tag deployment and verify Render reaches `live` followed by a successful health check
+- [x] 2.2 Trigger a Collab Server semver tag deployment and verify Render reaches `live` followed by a successful health check
