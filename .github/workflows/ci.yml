@@ -76,6 +76,8 @@ jobs:
               - 'playwright.config.ts'
               - 'tests/e2e/create-room-flow.spec.ts'
               - 'tests/e2e/cross-app-navigation.spec.ts'
+              - 'tests/e2e/access-control-flow.spec.ts'
+              - 'tests/e2e/ui-state-sync.spec.ts'
             opslens_e2e:
               - 'apps/opslens-web/app/(app)/logs/**'
               - 'apps/opslens-web/app/(app)/services/**'
@@ -196,7 +198,7 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm exec playwright install chromium
-      - run: pnpm test:e2e:smoke
+      - run: pnpm test:e2e --workers=1 --reporter=line
       - name: Upload Playwright failure report
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
