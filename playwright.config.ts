@@ -56,6 +56,9 @@ export default defineConfig({
         PORT: "3010",
         NEXT_PUBLIC_API_URL: serverUrl,
         NEXT_PUBLIC_APP_URL: collabWebUrl,
+        COLLAB_E2E_AUTH_BYPASS: "true",
+        OPSLENS_WEB_URL: "http://127.0.0.1:3002",
+        OPSLENS_AUTH_BRIDGE_SECRET: "opslens-e2e-bridge-secret",
         NEXT_PUBLIC_DEFAULT_DOC_ROLE: "editor",
         NEXT_PUBLIC_DEFAULT_BOARD_ROLE: "editor",
         NEXT_PUBLIC_EDITOR_ACCESS_KEY: editorAccessKey

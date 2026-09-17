@@ -3,6 +3,9 @@ import { COLLAB_AUTH_COOKIE, isProtectedPath, requiredAuthEnv } from "./lib/auth
 
 export async function middleware(request: NextRequest) {
   if (!isProtectedPath(request.nextUrl.pathname)) return NextResponse.next();
+  if (process.env.COLLAB_E2E_AUTH_BYPASS === "true" && process.env.NODE_ENV !== "production") {
+    return NextResponse.next();
+  }
 
   const sessionToken = request.cookies.get(COLLAB_AUTH_COOKIE)?.value;
   const login = new URL("/login", request.url);
