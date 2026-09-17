@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { COLLAB_AUTH_COOKIE, requiredAuthEnv } from "@/lib/auth/config";
 
-const safeNext = (value: string | null): string => (value?.startsWith("/") && !value.startsWith("//") ? value : "/docs");
+const safeNext = (value: string | null): string =>
+  value?.startsWith("/") && !value.startsWith("//") ? value : "/docs";
 
 export async function GET(request: NextRequest) {
   const next = safeNext(request.nextUrl.searchParams.get("next"));
@@ -17,10 +18,16 @@ export async function GET(request: NextRequest) {
     body: JSON.stringify({ token }),
     cache: "no-store"
   });
-  if (!response.ok) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(next)}&error=bridge`, request.url));
+  if (!response.ok)
+    return NextResponse.redirect(
+      new URL(`/login?next=${encodeURIComponent(next)}&error=bridge`, request.url)
+    );
 
   const { sessionToken } = (await response.json()) as { sessionToken?: string };
-  if (!sessionToken) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(next)}&error=bridge`, request.url));
+  if (!sessionToken)
+    return NextResponse.redirect(
+      new URL(`/login?next=${encodeURIComponent(next)}&error=bridge`, request.url)
+    );
 
   const redirectResponse = NextResponse.redirect(new URL(next, request.url));
   redirectResponse.cookies.set(COLLAB_AUTH_COOKIE, sessionToken, {

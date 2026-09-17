@@ -16,7 +16,10 @@ const allowedReturnTo = (value: string | null): URL | null => {
 
 const loginRedirect = (request: NextRequest, returnTo: URL) => {
   const login = new URL("/login", request.url);
-  login.searchParams.set("next", `/api/opslens-auth/bridge?returnTo=${encodeURIComponent(returnTo.toString())}`);
+  login.searchParams.set(
+    "next",
+    `/api/opslens-auth/bridge?returnTo=${encodeURIComponent(returnTo.toString())}`
+  );
   return NextResponse.redirect(login);
 };
 

@@ -9,7 +9,10 @@ export async function POST(request: NextRequest) {
   try {
     const token = verifyAuthBridgeToken(body.token ?? "");
     if (token.type === "bridge") {
-      return NextResponse.json({ sessionToken: createAuthBridgeToken(token, "session", 60 * 60 * 24 * 14), user: token });
+      return NextResponse.json({
+        sessionToken: createAuthBridgeToken(token, "session", 60 * 60 * 24 * 14),
+        user: token
+      });
     }
     if (token.type !== "session") throw new Error("Invalid bridge token type");
     return NextResponse.json({ user: token });
