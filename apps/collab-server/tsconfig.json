@@ -1,5 +1,5 @@
 {
-  "extends": "../../packages/configs/src/typescript/node-service.json",
+  "extends": "@repo/configs/typescript/node-service.json",
   "compilerOptions": {
     "module": "CommonJS",
     "moduleResolution": "Node",

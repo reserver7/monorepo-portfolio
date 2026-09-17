@@ -20,6 +20,28 @@ function walk(directory) {
   return files;
 }
 
+function collectPublicEnvKeys(directory) {
+  const keys = new Set();
+  for (const file of walk(directory).filter((file) => /\.(?:ts|tsx|js|mjs|cjs)$/.test(file))) {
+    const source = fs.readFileSync(file, "utf8");
+    for (const match of source.matchAll(/process\.env\.(NEXT_PUBLIC_[A-Z0-9_]+)/g)) keys.add(match[1]);
+  }
+  return keys;
+}
+
+function collectExampleEnvKeys(directory) {
+  const keys = new Set();
+  for (const file of walk(directory).filter(
+    (file) => path.basename(file).includes(".env") && file.endsWith(".example")
+  )) {
+    for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
+      const match = line.match(/^([A-Z][A-Z0-9_]*)=/);
+      if (match) keys.add(match[1]);
+    }
+  }
+  return keys;
+}
+
 for (const directory of roots) {
   for (const file of walk(path.join(root, directory)).filter((file) => file.endsWith(".json"))) {
     try {
@@ -27,6 +49,18 @@ for (const directory of roots) {
     } catch (error) {
       errors.push(`${path.relative(root, file)}: invalid JSON (${error.message})`);
     }
+  }
+}
+
+for (const app of fs
+  .readdirSync(path.join(root, "apps"), { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())) {
+  const appDir = path.join(root, "apps", app.name);
+  const used = collectPublicEnvKeys(appDir);
+  const examples = collectExampleEnvKeys(appDir);
+  for (const key of used) {
+    if (!examples.has(key))
+      errors.push(`${path.relative(root, appDir)}: missing public environment example (${key})`);
   }
 }
 

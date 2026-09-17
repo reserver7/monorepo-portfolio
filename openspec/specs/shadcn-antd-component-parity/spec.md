@@ -8,27 +8,27 @@ shadcn/Radix 기반의 자체 디자인시스템이 업무 화면에서 필요�
 
 ### Requirement: 모든 public 컴포넌트는 실제 동작하는 업무용 API를 제공한다
 
-모든 public 컴포넌트는 역할에 맞는 typed props와 기본값을 제공해야 하며(MUST), 선언된 prop은 실제 렌더링·상태 변경·이벤트 결과에 반영되어야 한다(MUST). 해당되는 경우 `size`, `variant`, `status`, `disabled`, `loading`, `readOnly`, `allowClear`, `open`, `value`, `defaultValue`, callback을 지원해야 한다(MUST). 서로 다른 컴포넌트가 같은 의미의 prop을 다른 이름이나 다른 동작으로 중복 제공해서는 안 되며(MUST NOT), breaking change가 필요한 경우 public API matrix에 명시해야 한다(MUST). 삭제 대상으로 결정된 컴포넌트는 public export와 내부 사용처에서 제거하고, 기능은 남은 primitive 또는 제품 로컬 조합으로 이전해야 한다(MUST). 내부 구현 primitive는 public package의 named export와 manifest component로 노출해서는 안 된다(MUST).
+모든 public 컴포넌트는 역할에 맞는 typed props와 기본값을 제공해야 하며(MUST), 선언된 prop은 실제 렌더링·상태 변경·이벤트 결과에 반영되어야 한다(MUST). 해당되는 경우 `size`, `variant`, `status`, `disabled`, `loading`, `readOnly`, `allowClear`, `open`, `value`, `defaultValue`, callback을 지원해야 한다(MUST). 서로 다른 컴포넌트가 같은 의미의 prop을 다른 이름이나 다른 동작으로 중복 제공해서는 안 되며(MUST NOT), breaking change가 필요한 경우 public API matrix에 명시해야 한다(MUST).
 
 #### Scenario: 개발자가 입력 컴포넌트 상태를 제어한다
 
 - **WHEN** 개발자가 controlled 또는 uncontrolled value와 disabled/status 옵션을 전달한다
 - **THEN** 컴포넌트는 동일한 값 모델로 렌더링하고 변경 callback과 접근성 상태를 일관되게 전달한다
 
+#### Scenario: 삭제 대상 component를 import한다
+
+- **WHEN** 삭제 대상으로 결정된 컴포넌트를 public package 또는 내부 사용처에서 import한다
+- **THEN** 해당 import는 제거되고 기능은 남은 primitive 또는 제품 로컬 조합으로 제공된다
+
+#### Scenario: 내부 primitive를 public import한다
+
+- **WHEN** 내부 구현 primitive를 public package의 named export 또는 manifest component로 등록한다
+- **THEN** public API와 manifest 검사가 해당 노출을 거부한다
+
 #### Scenario: 동일한 의미의 옵션을 비교한다
 
 - **WHEN** 개발자가 유사한 두 컴포넌트의 size, status, disabled, loading API를 사용한다
 - **THEN** 동일한 의미의 prop은 같은 타입·기본값·상태 표현 규칙을 따르고 중복 API는 허용되지 않는다
-
-#### Scenario: 삭제 대상 component를 import한다
-
-- **WHEN** 개발자가 삭제 대상 component를 public package에서 import한다
-- **THEN** 해당 export는 제공되지 않으며 migration 문서가 대체 primitive를 안내한다
-
-#### Scenario: 내부 primitive를 public import한다
-
-- **WHEN** 개발자가 `Table`, `Sheet` 또는 `Toast` renderer를 public package에서 import한다
-- **THEN** 해당 내부 symbol은 제공되지 않고 DataTable, Drawer 또는 message/notification 대체 API가 안내된다
 
 ### Requirement: 전체 엔터프라이즈 컴포넌트 범위를 실제 구현한다
 
@@ -84,8 +84,8 @@ Table, Tree, Select, Transfer, Upload, Date/Time Picker는 검색, 선택, 정�
 
 #### Scenario: Tabs와 Segmented를 선택한다
 
-- **WHEN** 제품 팀이 콘텐츠 영역 전환을 구현한다
-- **THEN** Tabs를 사용하며 Segmented와 중복되는 별도 공용 API를 추가하지 않는다
+- **WHEN** 제품 팀이 콘텐츠 영역 전환 또는 짧은 보기 모드 전환을 구현한다
+- **THEN** 콘텐츠 탐색에는 Tabs를, 즉시 적용되는 소수의 상호 배타적 보기 선택에는 Segmented를 사용하며 두 컴포넌트의 API와 키보드 모델이 혼용되지 않는다
 
 ### Requirement: 접근 가능한 키보드 흐름을 제공한다
 
@@ -98,9 +98,14 @@ Table, Tree, Select, Transfer, Upload, Date/Time Picker는 검색, 선택, 정�
 
 ### Requirement: 컴포넌트 완료는 동작 테스트로 증명한다
 
-각 public 컴포넌트는 기본 사용, 주요 prop 변경, 사용자 이벤트, disabled/loading/error 경계를 검증하는 테스트를 가져야 한다(MUST). 테스트가 없는 컴포넌트는 구현 완료로 간주하지 않는다(MUST NOT).
+각 public 컴포넌트는 기본 사용, 주요 prop 변경, 사용자 이벤트, disabled/loading/error 경계를 검증하는 테스트를 가져야 한다(MUST). 테스트가 없는 컴포넌트는 구현 완료로 간주하지 않는다(MUST NOT). 검증은 개별 컴포넌트에 고립되지 않고 기능군 batch로 실행되어 공통 primitive와 유사 컴포넌트의 회귀도 탐지해야 한다(MUST).
 
 #### Scenario: 컴포넌트의 prop과 이벤트를 검증한다
 
 - **WHEN** 테스트가 사용자의 클릭·키보드·입력 이벤트를 실행하고 public prop을 변경한다
 - **THEN** 화면 상태와 callback 결과가 기대한 값으로 변경되고 잘못된 상태에서는 작업이 차단된다
+
+#### Scenario: 전체 public component를 전수 감사한다
+
+- **WHEN** UI 품질 audit 명령을 기능군 batch로 실행한다
+- **THEN** 모든 manifest public component에 대해 기본·상태·좁은 화면·dark mode·focus·reduced-motion 결과가 기록되고 실패한 컴포넌트가 식별된다

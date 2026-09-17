@@ -1,5 +1,5 @@
 {
-  "extends": "../../packages/configs/src/typescript/nest-service.json",
+  "extends": "@repo/configs/typescript/nest-service.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",

@@ -1,15 +1,6 @@
 import type { AccessRole } from "../types";
 import { coerceAccessRole } from "../core/role";
-import { trimTrailingSlash } from "../../string/trim-trailing-slash";
-
-const normalizeUrl = (rawValue: string | undefined, fallback: string): string => {
-  const value = rawValue?.trim();
-  if (!value) {
-    return fallback;
-  }
-
-  return trimTrailingSlash(value);
-};
+import { normalizeUrl } from "../../string/normalize-url";
 
 const normalizeRole = (rawRole: string | undefined): AccessRole => {
   return coerceAccessRole(rawRole, "editor");

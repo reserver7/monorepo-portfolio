@@ -8,7 +8,7 @@
 
 ### Requirement: manifest가 Storybook 생성의 단일 입력이다
 
-각 public component는 category, export path, 표시명, 기본 args, Controls 타입을 manifest에 등록해야 한다(MUST). manifest는 실제 public export와 일치해야 하며(MUST), Popconfirm을 포함한 모든 public component는 동일한 생성 경로와 문서 노출 계약을 가져야 한다(MUST). 삭제되거나 통합된 component는 manifest, props matrix, generated story에 남아서는 안 된다(MUST). internal-only primitive는 manifest와 generated story에 등록해서는 안 된다(MUST).
+각 public component는 category, export path, 표시명, 기본 args, Controls 타입을 manifest에 등록해야 한다(MUST). manifest는 실제 public export와 일치해야 하며(MUST), Popconfirm을 포함한 모든 public component는 동일한 생성 경로와 문서 노출 계약을 가져야 한다(MUST).
 
 #### Scenario: 컴포넌트가 추가된다
 
@@ -22,8 +22,13 @@
 
 #### Scenario: internal primitive가 manifest에 등록된다
 
-- **WHEN** `Table`, `Sheet` 또는 다른 internal-only primitive가 manifest에 등록된다
-- **THEN** manifest check가 public 경계 위반을 표시하고 실패한다
+- **WHEN** internal-only primitive가 manifest 또는 generated story의 entry로 등록된다
+- **THEN** manifest check가 public component가 아닌 entry를 표시하고 실패한다
+
+#### Scenario: public export가 manifest에서 누락된다
+
+- **WHEN** public index에 export가 있지만 manifest에 metadata가 없다
+- **THEN** manifest check가 누락된 component를 표시하고 실패한다
 
 ### Requirement: 생성 결과의 drift를 검증한다
 
@@ -41,12 +46,22 @@
 
 ### Requirement: 복잡한 상호작용 story를 확장할 수 있다
 
-생성된 기본 Playground와 별도로 Table, Form, Tree, Upload처럼 상호작용이 복잡한 컴포넌트는 custom story를 추가할 수 있어야 한다(MUST).
+생성된 기본 Playground와 별도로 Table, Form, Tree, Upload처럼 상호작용이 복잡한 컴포넌트는 custom story를 추가할 수 있어야 한다(MUST). custom story도 manifest 기준의 기본 문서·Controls와 함께 discoverable해야 하며(MUST).
 
 #### Scenario: 생성 후 상호작용을 추가한다
 
 - **WHEN** custom story가 생성 story와 다른 파일에 작성된다
 - **THEN** 두 문서는 충돌 없이 함께 노출되고 generated 파일은 수동 수정 없이 재생성된다
+
+#### Scenario: Popconfirm story가 누락된다
+
+- **WHEN** Popconfirm이 public export와 manifest에는 있지만 generated story가 없다
+- **THEN** 전체 coverage check가 Popconfirm을 누락 대상으로 표시하고 실패한다
+
+#### Scenario: 전체 story를 재생성한다
+
+- **WHEN** 컴포넌트 batch 구현 또는 metadata 변경 후 전체 생성 명령을 실행한다
+- **THEN** 모든 public component story가 동일한 규칙으로 재생성되고 drift check가 통과한다
 
 #### Scenario: 전체 story를 재생성한다
 

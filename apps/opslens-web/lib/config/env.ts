@@ -1,14 +1,8 @@
-import { trimTrailingSlash } from "@repo/utils/string";
+import { normalizeUrl } from "@repo/utils/string";
 
 const normalizeAppTitle = (value: string | undefined): string => {
   const trimmed = value?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : "OpsLens AI";
-};
-
-const normalizeUrl = (value: string | undefined, fallback: string): string => {
-  const trimmed = value?.trim();
-  if (!trimmed) return fallback;
-  return trimTrailingSlash(trimmed);
 };
 
 export const opslensClientEnv = {
