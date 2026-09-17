@@ -25,7 +25,7 @@ const documentsResource = createResourceClient<
   "documents",
   "document",
   "documentId"
->(API_BASE_URL, "/api/documents", {
+>("", "/api/workspace/documents", {
   list: "documents",
   item: "document",
   deleteId: "documentId"

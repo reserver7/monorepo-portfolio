@@ -18,7 +18,8 @@ describe("서버 환경 변수 파싱", () => {
     expect(() =>
       createServerEnv({
         NODE_ENV: "production",
-        COLLAB_SESSION_SECRET: "test-secret"
+        COLLAB_SESSION_SECRET: "test-secret",
+        AUTH_BRIDGE_SECRET: "bridge-test-secret"
       })
     ).toThrow("CORS_ORIGINS is required in production");
   });
@@ -28,6 +29,7 @@ describe("서버 환경 변수 파싱", () => {
       NODE_ENV: "production",
       CORS_ORIGINS: " https://docs.example.com,https://whiteboard.example.com ",
       COLLAB_SESSION_SECRET: "test-secret",
+      AUTH_BRIDGE_SECRET: "bridge-test-secret",
       STATE_FILE_PATH: PROD_STATE_FILE_PATH
     });
 
@@ -42,6 +44,7 @@ describe("서버 환경 변수 파싱", () => {
       CORS_ORIGINS:
         "https://docs.example.com/, https://docs.example.com, http://localhost:3000/,http://localhost:3000",
       COLLAB_SESSION_SECRET: "test-secret",
+      AUTH_BRIDGE_SECRET: "bridge-test-secret",
       STATE_FILE_PATH: PROD_STATE_FILE_PATH
     });
 
@@ -54,6 +57,7 @@ describe("서버 환경 변수 파싱", () => {
         NODE_ENV: "production",
         ALLOW_ALL_CORS: "true",
         COLLAB_SESSION_SECRET: "test-secret",
+        AUTH_BRIDGE_SECRET: "bridge-test-secret",
         STATE_FILE_PATH: PROD_STATE_FILE_PATH
       })
     ).toThrow("ALLOW_ALL_CORS is not allowed in production");
@@ -64,7 +68,8 @@ describe("서버 환경 변수 파싱", () => {
       createServerEnv({
         NODE_ENV: "production",
         CORS_ORIGINS: "*",
-        COLLAB_SESSION_SECRET: "test-secret"
+        COLLAB_SESSION_SECRET: "test-secret",
+        AUTH_BRIDGE_SECRET: "bridge-test-secret"
       })
     ).toThrow('CORS_ORIGINS cannot contain "*" in production');
   });
@@ -74,7 +79,8 @@ describe("서버 환경 변수 파싱", () => {
       createServerEnv({
         NODE_ENV: "production",
         CORS_ORIGINS: "https://docs.example.com/app",
-        COLLAB_SESSION_SECRET: "test-secret"
+        COLLAB_SESSION_SECRET: "test-secret",
+        AUTH_BRIDGE_SECRET: "bridge-test-secret"
       })
     ).toThrow("CORS origin must not include path/query/hash");
 
@@ -82,7 +88,8 @@ describe("서버 환경 변수 파싱", () => {
       createServerEnv({
         NODE_ENV: "production",
         CORS_ORIGINS: "https://docs.example.com?preview=1",
-        COLLAB_SESSION_SECRET: "test-secret"
+        COLLAB_SESSION_SECRET: "test-secret",
+        AUTH_BRIDGE_SECRET: "bridge-test-secret"
       })
     ).toThrow("CORS origin must not include path/query/hash");
   });
@@ -92,7 +99,8 @@ describe("서버 환경 변수 파싱", () => {
       createServerEnv({
         NODE_ENV: "production",
         CORS_ORIGINS: "ws://localhost:3000",
-        COLLAB_SESSION_SECRET: "test-secret"
+        COLLAB_SESSION_SECRET: "test-secret",
+        AUTH_BRIDGE_SECRET: "bridge-test-secret"
       })
     ).toThrow("CORS origin must use http/https");
   });
@@ -102,7 +110,8 @@ describe("서버 환경 변수 파싱", () => {
       createServerEnv({
         NODE_ENV: "production",
         CORS_ORIGINS: "https://docs.example.com",
-        STATE_FILE_PATH: PROD_STATE_FILE_PATH
+        STATE_FILE_PATH: PROD_STATE_FILE_PATH,
+        AUTH_BRIDGE_SECRET: "bridge-test-secret"
       })
     ).toThrow("COLLAB_SESSION_SECRET must be configured in production");
   });
@@ -112,7 +121,8 @@ describe("서버 환경 변수 파싱", () => {
       createServerEnv({
         NODE_ENV: "production",
         CORS_ORIGINS: "https://docs.example.com",
-        COLLAB_SESSION_SECRET: "test-secret"
+        COLLAB_SESSION_SECRET: "test-secret",
+        AUTH_BRIDGE_SECRET: "bridge-test-secret"
       })
     ).toThrow("STATE_FILE_PATH must be configured in production");
   });
@@ -124,6 +134,7 @@ describe("서버 환경 변수 파싱", () => {
       NODE_ENV: "production",
       CORS_ORIGINS: "https://docs.example.com",
       COLLAB_SESSION_SECRET: "test-secret",
+      AUTH_BRIDGE_SECRET: "bridge-test-secret",
       STATE_BACKEND: "postgres",
       COLLAB_DATABASE_URL: "postgresql://localhost/collab",
       REDIS_URL: "redis://localhost:6379"
@@ -161,6 +172,7 @@ describe("서버 환경 변수 파싱", () => {
       CORS_ORIGINS: "https://docs.example.com",
       ALLOW_ALL_CORS: "0",
       COLLAB_SESSION_SECRET: "test-secret",
+      AUTH_BRIDGE_SECRET: "bridge-test-secret",
       STATE_FILE_PATH: PROD_STATE_FILE_PATH
     });
     expect(deny.allowAllCors).toBe(false);

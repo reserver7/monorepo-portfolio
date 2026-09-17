@@ -22,6 +22,7 @@ export interface DocumentComment {
 
 export interface DocumentSummary {
   id: string;
+  ownerId?: string;
   title: string;
   isProtected: boolean;
   snippet: string;
@@ -33,6 +34,7 @@ export interface DocumentSummary {
 
 export interface DocumentRecord {
   id: string;
+  ownerId?: string;
   title: string;
   content: string;
   yjsState: string;
@@ -67,6 +69,7 @@ export interface WhiteboardShape {
 
 export interface WhiteboardRecord {
   id: string;
+  ownerId?: string;
   title: string;
   shapes: WhiteboardShape[];
   createdAt: string;
@@ -76,6 +79,7 @@ export interface WhiteboardRecord {
 
 export interface WhiteboardSummary {
   id: string;
+  ownerId?: string;
   title: string;
   isProtected: boolean;
   shapeCount: number;

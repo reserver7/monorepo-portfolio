@@ -90,6 +90,29 @@ describe("실시간 스토어", () => {
     expect(allowedDelete).toBe(added.id);
   });
 
+  it("계정별 문서와 보드 목록을 분리하고 소유자만 삭제한다", async () => {
+    const aliceDocument = store.createDocument("Alice 문서", "Alice", undefined, "account-a");
+    const bobDocument = store.createDocument("Bob 문서", "Bob", undefined, "account-b");
+    const aliceBoard = store.createBoard("Alice 보드", "Alice", undefined, "account-a");
+
+    expect(store.listDocuments("account-a").map((item) => item.id)).toEqual(
+      expect.arrayContaining([aliceDocument.id])
+    );
+    expect(store.listDocuments("account-a").map((item) => item.id)).not.toContain(bobDocument.id);
+    expect(store.listBoards("account-a").map((item) => item.id)).toContain(aliceBoard.id);
+
+    expect(store.deleteDocument({ documentId: bobDocument.id, ownerId: "account-a" })).toBe("forbidden");
+    expect(store.deleteDocument({ documentId: aliceDocument.id, ownerId: "account-a" })).toEqual({
+      documentId: aliceDocument.id
+    });
+
+    await store.persistNow();
+    const restored = new RealtimeStore(stateFilePath);
+    await restored.init();
+    store = restored;
+    expect(restored.listDocuments("account-b").map((item) => item.id)).toContain(bobDocument.id);
+  });
+
   it("참조 도형 삭제 시 연결선도 함께 제거한다", () => {
     const seededBoard = store.listBoards()[0];
     expect(seededBoard).toBeDefined();

@@ -99,11 +99,13 @@ interface RemoveBoardShapeInput {
 interface DeleteDocumentInput {
   documentId: string;
   editorAccessKey?: string;
+  ownerId?: string;
 }
 
 interface DeleteBoardInput {
   boardId: string;
   editorAccessKey?: string;
+  ownerId?: string;
 }
 
 const MAX_HISTORY = 160;
@@ -274,11 +276,13 @@ export class RealtimeStore {
     this.schedulePersist(10);
   }
 
-  listDocuments(): DocumentSummary[] {
+  listDocuments(ownerId?: string): DocumentSummary[] {
     return [...this.documents.values()]
+      .filter((document) => !ownerId || !document.ownerId || document.ownerId === ownerId)
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .map((document) => ({
         id: document.id,
+        ownerId: document.ownerId,
         title: document.title.trim() || EMPTY_TITLE,
         isProtected: this.documentAccessKeys.has(document.id),
         snippet: summarize(document.content),
@@ -307,13 +311,19 @@ export class RealtimeStore {
     return clone(comments);
   }
 
-  createDocument(rawTitle: string, actor: string, editorAccessKey?: string): DocumentRecord {
+  createDocument(
+    rawTitle: string,
+    actor: string,
+    editorAccessKey?: string,
+    ownerId?: string
+  ): DocumentRecord {
     const now = nowIso();
     const title = sanitizeDocumentTitle(rawTitle);
 
     const ydoc = createYDoc(title, "");
     const created: DocumentRecord = {
       id: randomUUID(),
+      ownerId,
       title,
       content: "",
       yjsState: encodeBinary(Y.encodeStateAsUpdate(ydoc)),
@@ -638,7 +648,11 @@ export class RealtimeStore {
       return "not-found";
     }
 
-    const requiredAccessKey = this.documentAccessKeys.get(input.documentId);
+    if (current.ownerId && current.ownerId !== input.ownerId) {
+      return "forbidden";
+    }
+
+    const requiredAccessKey = current.ownerId ? undefined : this.documentAccessKeys.get(input.documentId);
     if (requiredAccessKey) {
       if (!verifyEditorAccessKey(requiredAccessKey, input.editorAccessKey)) {
         return "forbidden";
@@ -653,11 +667,13 @@ export class RealtimeStore {
     return { documentId: input.documentId };
   }
 
-  listBoards(): WhiteboardSummary[] {
+  listBoards(ownerId?: string): WhiteboardSummary[] {
     return [...this.boards.values()]
+      .filter((board) => !ownerId || !board.ownerId || board.ownerId === ownerId)
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .map((board) => ({
         id: board.id,
+        ownerId: board.ownerId,
         title: board.title.trim() || EMPTY_TITLE,
         isProtected: this.boardAccessKeys.has(board.id),
         shapeCount: board.shapes.length,
@@ -676,12 +692,13 @@ export class RealtimeStore {
     return this.boardAccessKeys.get(boardId);
   }
 
-  createBoard(rawTitle: string, actor: string, editorAccessKey?: string): WhiteboardRecord {
+  createBoard(rawTitle: string, actor: string, editorAccessKey?: string, ownerId?: string): WhiteboardRecord {
     const now = nowIso();
     const title = rawTitle.trim() || EMPTY_TITLE;
 
     const board: WhiteboardRecord = {
       id: randomUUID(),
+      ownerId,
       title,
       shapes: [],
       createdAt: now,
@@ -906,7 +923,11 @@ export class RealtimeStore {
       return "not-found";
     }
 
-    const requiredAccessKey = this.boardAccessKeys.get(input.boardId);
+    if (board.ownerId && board.ownerId !== input.ownerId) {
+      return "forbidden";
+    }
+
+    const requiredAccessKey = board.ownerId ? undefined : this.boardAccessKeys.get(input.boardId);
     if (requiredAccessKey) {
       if (!verifyEditorAccessKey(requiredAccessKey, input.editorAccessKey)) {
         return "forbidden";
