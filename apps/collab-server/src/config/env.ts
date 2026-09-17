@@ -130,9 +130,7 @@ export const createServerEnv = (rawEnv: NodeJS.ProcessEnv = process.env): Server
   const allowAllCors = allowAllCorsExplicit || (!isProduction && corsOrigins.length === 0);
 
   if (isProduction && corsOrigins.includes("*")) {
-    throw new Error(
-      'CORS_ORIGINS cannot contain "*" in production. Use explicit origins instead.'
-    );
+    throw new Error('CORS_ORIGINS cannot contain "*" in production. Use explicit origins instead.');
   }
 
   if (isProduction && !allowAllCors && corsOrigins.length === 0) {
