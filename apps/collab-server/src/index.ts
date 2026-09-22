@@ -60,7 +60,14 @@ import {
   verifyEditorAccessKey,
   verifySessionToken,
   extractAccountFromAuthorization,
-  type AccountIdentity
+  extractAccountFromRealtimeToken,
+  issueAccountRealtimeToken,
+  type AccountIdentity,
+  canEditWorkspace,
+  canManageWorkspace,
+  canReadWorkspace,
+  resolveWorkspacePermission,
+  normalizeWorkspaceMemberEmail
 } from "./features/workspace";
 
 const app = express();
@@ -185,12 +192,51 @@ const resolveSessionFromRequest = (
 
 const resolveAccountFromRequest = (req: Request, res: Response): AccountIdentity | null | undefined => {
   const account = extractAccountFromAuthorization(req.header("authorization"), serverEnv.authBridgeSecret);
-  if (serverEnv.authBridgeSecret && !account) {
+  const testBypass = process.env.COLLAB_E2E_AUTH_BYPASS === "true" && serverEnv.nodeEnv !== "production";
+  if (serverEnv.authBridgeSecret && !account && !testBypass) {
     res.status(401).json({ message: "유효한 계정 세션이 필요합니다." });
     return undefined;
   }
   return account;
 };
+
+const resolveWorkspaceRequest = (
+  req: Request,
+  res: Response,
+  kind: "document" | "board",
+  entityId: string,
+  required: "read" | "edit" | "manage" = "read"
+):
+  | { account: AccountIdentity | null; permission: ReturnType<typeof resolveWorkspacePermission> }
+  | undefined => {
+  const account = resolveAccountFromRequest(req, res);
+  if (account === undefined) return undefined;
+  const record = kind === "document" ? store.getDocument(entityId) : store.getBoard(entityId);
+  if (!record) {
+    res.status(404).json({ message: kind === "document" ? "Document not found" : "Board not found" });
+    return undefined;
+  }
+
+  const permission = resolveWorkspacePermission(record, account);
+  const allowed =
+    required === "manage"
+      ? canManageWorkspace(permission)
+      : required === "edit"
+        ? canEditWorkspace(permission)
+        : canReadWorkspace(permission);
+  if (!allowed) {
+    res
+      .status(account ? 403 : 401)
+      .json({ message: account ? "작업 공간 접근 권한이 없습니다." : "유효한 계정 세션이 필요합니다." });
+    return undefined;
+  }
+  return { account, permission };
+};
+
+const readWorkspaceMemberInput = (body: Record<string, unknown>) => ({
+  email: normalizeWorkspaceMemberEmail(typeof body.email === "string" ? body.email : ""),
+  role: body.role === "editor" ? ("editor" as const) : ("viewer" as const)
+});
 
 const resolveLockedRole = async (
   scope: "document" | "board",
@@ -351,10 +397,16 @@ app.get(API_ROUTES.health, (_req, res) => {
   res.json({ ok: true, now: new Date().toISOString() });
 });
 
+app.post(API_ROUTES.realtimeToken, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (!account) return;
+  res.json({ token: issueAccountRealtimeToken(account, serverEnv.collabSessionSecret) });
+});
+
 app.get(API_ROUTES.documents, (req, res) => {
   const account = resolveAccountFromRequest(req, res);
   if (account === undefined) return;
-  res.json({ documents: store.listDocuments(account?.id) });
+  res.json({ documents: store.listDocuments(account?.id, account?.email) });
 });
 
 app.post(API_ROUTES.documents, (req, res) => {
@@ -394,16 +446,17 @@ app.delete(API_ROUTES.documentById, (req, res) => {
 });
 
 app.get(API_ROUTES.documentById, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "document", req.params.id);
+  if (!access) return;
   const document = store.getDocument(req.params.id);
-  if (!document) {
-    res.status(404).json({ message: "Document not found" });
-    return;
-  }
+  if (!document) return;
 
-  res.json({ document });
+  res.json({ document, permission: access.permission });
 });
 
 app.get(API_ROUTES.documentHistory, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "document", req.params.id);
+  if (!access) return;
   const document = store.getDocument(req.params.id);
   if (!document) {
     res.status(404).json({ message: "Document not found" });
@@ -414,6 +467,8 @@ app.get(API_ROUTES.documentHistory, (req, res) => {
 });
 
 app.get(API_ROUTES.documentComments, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "document", req.params.id);
+  if (!access) return;
   const document = store.getDocument(req.params.id);
   if (!document) {
     res.status(404).json({ message: "Document not found" });
@@ -424,6 +479,8 @@ app.get(API_ROUTES.documentComments, (req, res) => {
 });
 
 app.post(API_ROUTES.documentComments, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "document", req.params.id);
+  if (!access) return;
   const document = store.getDocument(req.params.id);
   if (!document) {
     res.status(404).json({ message: "Document not found" });
@@ -458,10 +515,54 @@ app.post(API_ROUTES.documentComments, (req, res) => {
   });
 });
 
+app.get(API_ROUTES.documentMembers, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "document", req.params.id);
+  if (!access) return;
+  res.json({ members: store.listWorkspaceMembers("document", req.params.id) ?? [] });
+});
+
+app.post(API_ROUTES.documentMembers, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "document", req.params.id, "manage");
+  if (!access?.account) return;
+  const input = readWorkspaceMemberInput(toJsonObject(req.body));
+  if (!input.email || input.email === access.account.email.trim().toLowerCase()) {
+    res.status(400).json({ message: "유효한 초대 이메일이 필요합니다." });
+    return;
+  }
+  const member = store.upsertWorkspaceMember({
+    kind: "document",
+    entityId: req.params.id,
+    ownerId: access.account.id,
+    ...input
+  });
+  if (member === "invalid") {
+    res.status(400).json({ message: "유효한 멤버 정보가 필요합니다." });
+    return;
+  }
+  res.status(201).json({ member });
+});
+
+app.delete(API_ROUTES.documentMembers, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "document", req.params.id, "manage");
+  if (!access?.account) return;
+  const email = typeof req.query.email === "string" ? req.query.email : "";
+  const member = store.removeWorkspaceMember({
+    kind: "document",
+    entityId: req.params.id,
+    ownerId: access.account.id,
+    email
+  });
+  if (member === "member-not-found") {
+    res.status(404).json({ message: "멤버를 찾을 수 없습니다." });
+    return;
+  }
+  res.json({ member });
+});
+
 app.get(API_ROUTES.boards, (req, res) => {
   const account = resolveAccountFromRequest(req, res);
   if (account === undefined) return;
-  res.json({ boards: store.listBoards(account?.id) });
+  res.json({ boards: store.listBoards(account?.id, account?.email) });
 });
 
 app.post(API_ROUTES.boards, (req, res) => {
@@ -501,13 +602,56 @@ app.delete(API_ROUTES.boardById, (req, res) => {
 });
 
 app.get(API_ROUTES.boardById, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "board", req.params.id);
+  if (!access) return;
   const board = store.getBoard(req.params.id);
-  if (!board) {
-    res.status(404).json({ message: "Board not found" });
+  if (!board) return;
+
+  res.json({ board, permission: access.permission });
+});
+
+app.get(API_ROUTES.boardMembers, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "board", req.params.id);
+  if (!access) return;
+  res.json({ members: store.listWorkspaceMembers("board", req.params.id) ?? [] });
+});
+
+app.post(API_ROUTES.boardMembers, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "board", req.params.id, "manage");
+  if (!access?.account) return;
+  const input = readWorkspaceMemberInput(toJsonObject(req.body));
+  if (!input.email || input.email === access.account.email.trim().toLowerCase()) {
+    res.status(400).json({ message: "유효한 초대 이메일이 필요합니다." });
     return;
   }
+  const member = store.upsertWorkspaceMember({
+    kind: "board",
+    entityId: req.params.id,
+    ownerId: access.account.id,
+    ...input
+  });
+  if (member === "invalid") {
+    res.status(400).json({ message: "유효한 멤버 정보가 필요합니다." });
+    return;
+  }
+  res.status(201).json({ member });
+});
 
-  res.json({ board });
+app.delete(API_ROUTES.boardMembers, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "board", req.params.id, "manage");
+  if (!access?.account) return;
+  const email = typeof req.query.email === "string" ? req.query.email : "";
+  const member = store.removeWorkspaceMember({
+    kind: "board",
+    entityId: req.params.id,
+    ownerId: access.account.id,
+    email
+  });
+  if (member === "member-not-found") {
+    res.status(404).json({ message: "멤버를 찾을 수 없습니다." });
+    return;
+  }
+  res.json({ member });
 });
 
 app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
@@ -549,20 +693,32 @@ io.on("connection", (socket) => {
       return;
     }
 
+    const account = extractAccountFromRealtimeToken(payload.accountToken, serverEnv.collabSessionSecret);
+    const permission = resolveWorkspacePermission(document, account);
+    if (document.ownerId && !canReadWorkspace(permission)) {
+      socket.emit("error", { message: "작업 공간 접근 권한이 없습니다." });
+      return;
+    }
+
     leaveDocument(socket.id);
 
     const session = resolveSessionFromSocketPayload(payload.sessionId, payload.sessionToken);
-    const requestedRole = sanitizeRole(payload.role);
+    const requestedRole = permission === "viewer" ? "viewer" : sanitizeRole(payload.role);
     const requiredEditorAccessKey =
-      store.getDocumentEditorAccessKey(document.id) ?? serverEnv.editorAccessKey;
-    const role = await resolveLockedRole(
-      "document",
-      document.id,
-      session.sessionId,
-      requestedRole,
-      payload.editorAccessKey,
-      requiredEditorAccessKey
-    );
+      permission === "legacy"
+        ? (store.getDocumentEditorAccessKey(document.id) ?? serverEnv.editorAccessKey)
+        : undefined;
+    const role =
+      permission === "owner" || permission === "editor"
+        ? requestedRole
+        : await resolveLockedRole(
+            "document",
+            document.id,
+            session.sessionId,
+            requestedRole,
+            payload.editorAccessKey,
+            requiredEditorAccessKey
+          );
     const participant: Participant = {
       socketId: socket.id,
       sessionId: session.sessionId,
@@ -584,7 +740,11 @@ io.on("connection", (socket) => {
     documentBySocket.set(socket.id, document.id);
     socket.data.documentParticipant = participant;
 
-    if (typeof payload.clientYjsState === "string" && payload.clientYjsState.length > 0) {
+    if (
+      role === "editor" &&
+      typeof payload.clientYjsState === "string" &&
+      payload.clientYjsState.length > 0
+    ) {
       if (payload.clientYjsState.length > serverEnv.maxYjsUpdateBase64Chars) {
         socket.emit("error", { message: "문서 동기화 데이터가 허용 크기를 초과했습니다." });
       } else {
@@ -986,19 +1146,32 @@ io.on("connection", (socket) => {
       return;
     }
 
+    const account = extractAccountFromRealtimeToken(payload.accountToken, serverEnv.collabSessionSecret);
+    const permission = resolveWorkspacePermission(board, account);
+    if (board.ownerId && !canReadWorkspace(permission)) {
+      socket.emit("error", { message: "작업 공간 접근 권한이 없습니다." });
+      return;
+    }
+
     leaveBoard(socket.id);
 
     const session = resolveSessionFromSocketPayload(payload.sessionId, payload.sessionToken);
-    const requestedRole = sanitizeRole(payload.role);
-    const requiredEditorAccessKey = store.getBoardEditorAccessKey(board.id) ?? serverEnv.editorAccessKey;
-    const role = await resolveLockedRole(
-      "board",
-      board.id,
-      session.sessionId,
-      requestedRole,
-      payload.editorAccessKey,
-      requiredEditorAccessKey
-    );
+    const requestedRole = permission === "viewer" ? "viewer" : sanitizeRole(payload.role);
+    const requiredEditorAccessKey =
+      permission === "legacy"
+        ? (store.getBoardEditorAccessKey(board.id) ?? serverEnv.editorAccessKey)
+        : undefined;
+    const role =
+      permission === "owner" || permission === "editor"
+        ? requestedRole
+        : await resolveLockedRole(
+            "board",
+            board.id,
+            session.sessionId,
+            requestedRole,
+            payload.editorAccessKey,
+            requiredEditorAccessKey
+          );
     const participant: Participant = {
       socketId: socket.id,
       sessionId: session.sessionId,

@@ -1,4 +1,5 @@
 import { WhiteboardRecord, WhiteboardSummary } from "@/features/whiteboard/collaboration/model";
+import type { WorkspaceMember } from "@repo/utils/collab";
 import { whiteboardClientEnv } from "@/lib/config";
 import { getCollabText } from "@/lib/i18n/runtime";
 import { createQueryKeys, createResourceClient } from "@repo/react-query";
@@ -55,6 +56,37 @@ export const deleteBoardById = async (input: {
   );
 };
 
-export const getBoard = async (boardId: string): Promise<{ board: WhiteboardRecord }> => {
+export const getBoard = async (
+  boardId: string
+): Promise<{
+  board: WhiteboardRecord;
+  permission?: "owner" | "viewer" | "editor" | "legacy";
+}> => {
   return boardsResource.getById(boardId);
 };
+
+export const listBoardMembers = async (boardId: string): Promise<{ members: WorkspaceMember[] }> =>
+  fetch(`/api/workspace/boards/${boardId}/members`, { credentials: "include" }).then((response) =>
+    response.json()
+  );
+
+export const upsertBoardMember = async (input: {
+  boardId: string;
+  email: string;
+  role: "viewer" | "editor";
+}): Promise<{ member: WorkspaceMember }> =>
+  fetch(`/api/workspace/boards/${input.boardId}/members`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: input.email, role: input.role })
+  }).then((response) => response.json());
+
+export const removeBoardMember = async (input: {
+  boardId: string;
+  email: string;
+}): Promise<{ member: WorkspaceMember }> =>
+  fetch(`/api/workspace/boards/${input.boardId}/members?email=${encodeURIComponent(input.email)}`, {
+    method: "DELETE",
+    credentials: "include"
+  }).then((response) => response.json());

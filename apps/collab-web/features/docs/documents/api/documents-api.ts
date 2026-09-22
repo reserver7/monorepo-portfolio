@@ -6,6 +6,7 @@ import {
   DocumentSummary,
   HistoryEntry
 } from "@/features/docs/collaboration/model";
+import type { WorkspaceMember } from "@repo/utils/collab";
 import { createQueryKeys, createResourceClient, requestJson } from "@repo/react-query";
 
 export const API_BASE_URL = docsClientEnv.apiBaseUrl;
@@ -62,7 +63,12 @@ export const deleteDocumentById = async (input: {
   );
 };
 
-export const getDocument = async (documentId: string): Promise<{ document: DocumentRecord }> => {
+export const getDocument = async (
+  documentId: string
+): Promise<{
+  document: DocumentRecord;
+  permission?: "owner" | "viewer" | "editor" | "legacy";
+}> => {
   return documentsResource.getById(documentId);
 };
 
@@ -73,8 +79,8 @@ export const getDocumentHistory = async (
   history: HistoryEntry[];
 }> => {
   return requestJson<{ documentId: string; history: HistoryEntry[] }>(
-    API_BASE_URL,
-    `/api/documents/${documentId}/history`,
+    "",
+    `/api/workspace/documents/${documentId}/history`,
     {
       method: "GET"
     }
@@ -88,8 +94,8 @@ export const getDocumentComments = async (
   comments: DocumentComment[];
 }> => {
   return requestJson<{ documentId: string; comments: DocumentComment[] }>(
-    API_BASE_URL,
-    `/api/documents/${documentId}/comments`,
+    "",
+    `/api/workspace/documents/${documentId}/comments`,
     {
       method: "GET"
     }
@@ -112,7 +118,7 @@ export const createDocumentComment = async (input: {
     documentId: string;
     comment: DocumentComment;
     session?: { id: string; token: string; trusted: boolean };
-  }>(API_BASE_URL, `/api/documents/${input.documentId}/comments`, {
+  }>("", `/api/workspace/documents/${input.documentId}/comments`, {
     method: "POST",
     headers: {
       ...(input.sessionId ? { "x-collab-session-id": input.sessionId } : {}),
@@ -126,3 +132,28 @@ export const createDocumentComment = async (input: {
     successMessage: getCollabText("collab.api.documents.commentCreateSuccess")
   });
 };
+
+export const listDocumentMembers = async (documentId: string): Promise<{ members: WorkspaceMember[] }> =>
+  requestJson("", `/api/workspace/documents/${documentId}/members`, { method: "GET" });
+
+export const upsertDocumentMember = async (input: {
+  documentId: string;
+  email: string;
+  role: "viewer" | "editor";
+}): Promise<{ member: WorkspaceMember }> =>
+  requestJson("", `/api/workspace/documents/${input.documentId}/members`, {
+    method: "POST",
+    body: JSON.stringify({ email: input.email, role: input.role })
+  });
+
+export const removeDocumentMember = async (input: {
+  documentId: string;
+  email: string;
+}): Promise<{ member: WorkspaceMember }> =>
+  requestJson(
+    "",
+    `/api/workspace/documents/${input.documentId}/members?email=${encodeURIComponent(input.email)}`,
+    {
+      method: "DELETE"
+    }
+  );

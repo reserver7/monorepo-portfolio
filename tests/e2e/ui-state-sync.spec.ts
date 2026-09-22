@@ -1,8 +1,8 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 
-const serverUrl = "http://127.0.0.1:4010";
-const docsUrl = "http://127.0.0.1:3010";
-const whiteboardUrl = "http://127.0.0.1:3010/whiteboard";
+const serverUrl = `http://127.0.0.1:${process.env.PLAYWRIGHT_SERVER_PORT ?? "4010"}`;
+const docsUrl = `http://127.0.0.1:${process.env.PLAYWRIGHT_WEB_PORT ?? "3010"}`;
+const whiteboardUrl = `${docsUrl}/whiteboard`;
 
 const uniqueName = (prefix: string): string => {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

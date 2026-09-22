@@ -37,6 +37,7 @@ import {
 } from "@/features/whiteboard/collaboration/model";
 import { useWhiteboardStore } from "@/features/whiteboard/canvas/stores/use-whiteboard-store";
 import { createLocaleGuestName, normalizeGuestDisplayName } from "@/lib/i18n/display-name";
+import { fetchRealtimeAccountToken } from "@/lib/auth/realtime-token";
 
 interface UseWhiteboardRealtimeOptions {
   boardId: string;
@@ -94,6 +95,7 @@ export const useWhiteboardRealtime = ({
   const socketRef = useRef<Socket | null>(null);
   const sessionIdRef = useRef<string>("");
   const sessionTokenRef = useRef<string>("");
+  const accountTokenRef = useRef<string | undefined>(undefined);
   const onEditorRequestDeniedRef = useRef<((resolvedRole: AccessRole) => void) | undefined>(
     onEditorRequestDenied
   );
@@ -139,6 +141,7 @@ export const useWhiteboardRealtime = ({
 
       const payload: BoardJoinPayload = {
         boardId,
+        accountToken: accountTokenRef.current,
         sessionId: sessionIdRef.current,
         sessionToken: sessionTokenRef.current || undefined,
         displayName: normalizeGuestDisplayName(
@@ -193,7 +196,10 @@ export const useWhiteboardRealtime = ({
       setConnection("online");
       setConflictMessage(null);
       pushEvent(t("connection.connected"), locale);
-      emitBoardJoin(socket);
+      void fetchRealtimeAccountToken().then((token) => {
+        accountTokenRef.current = token;
+        emitBoardJoin(socket);
+      });
     });
 
     socket.on("disconnect", () => {

@@ -39,6 +39,7 @@ import {
 import { AccessRole, DocumentRecord, Participant } from "@/features/docs/collaboration/model";
 import { useCollabStore } from "@/features/docs/collaboration/stores/use-collab-store";
 import { createLocaleGuestName, normalizeGuestDisplayName } from "@/lib/i18n/display-name";
+import { fetchRealtimeAccountToken } from "@/lib/auth/realtime-token";
 
 interface UseCollaborationOptions {
   documentId: string;
@@ -159,6 +160,7 @@ export const useCollaboration = ({
   const socketRef = useRef<Socket | null>(null);
   const sessionIdRef = useRef<string>("");
   const sessionTokenRef = useRef<string>("");
+  const accountTokenRef = useRef<string | undefined>(undefined);
   const onEditorRequestDeniedRef = useRef<((resolvedRole: AccessRole) => void) | undefined>(
     onEditorRequestDenied
   );
@@ -208,6 +210,7 @@ export const useCollaboration = ({
 
       const payload: DocumentJoinPayload = {
         documentId,
+        accountToken: accountTokenRef.current,
         sessionId: sessionIdRef.current,
         sessionToken: sessionTokenRef.current || undefined,
         displayName: normalizeGuestDisplayName(
@@ -343,7 +346,10 @@ export const useCollaboration = ({
       setConnection("online");
       setConflictMessage(null);
       pushEvent(t("connection.connected"), locale);
-      emitDocumentJoin(socket);
+      void fetchRealtimeAccountToken().then((token) => {
+        accountTokenRef.current = token;
+        emitDocumentJoin(socket);
+      });
     });
 
     socket.on("disconnect", () => {
