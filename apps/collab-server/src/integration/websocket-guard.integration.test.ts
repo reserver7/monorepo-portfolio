@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import type { Socket } from "socket.io-client";
 import { io as createSocketClient } from "socket.io-client";
 import { startTestServerProcess, type TestServerProcess } from "../test/server-process";
@@ -43,11 +44,25 @@ const connectSocket = async (baseUrl: string): Promise<Socket> => {
   return socket;
 };
 
+const accountToken = (id: string): string => {
+  const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const unsigned = `${encode({ alg: "HS256", typ: "OPS-BRIDGE" })}.${encode({
+    id,
+    email: `${id}@example.com`,
+    name: id,
+    role: "viewer",
+    type: "session",
+    exp: Math.floor(Date.now() / 1000) + 3600
+  })}`;
+  return `${unsigned}.${createHmac("sha256", "activity-integration-secret").update(unsigned).digest("base64url")}`;
+};
+
 const fetchJson = async (url: string): Promise<{ status: number; data: JsonRecord }> => {
   const response = await fetch(url, {
     method: "GET",
     headers: {
-      "content-type": "application/json"
+      "content-type": "application/json",
+      Authorization: `Bearer ${accountToken("socket-guard")}`
     }
   });
 
@@ -87,7 +102,7 @@ describe("WebSocket payload/rate 보호", () => {
   let runtime: TestServerProcess | null = null;
 
   beforeAll(async () => {
-    runtime = await startTestServerProcess();
+    runtime = await startTestServerProcess({ env: { AUTH_BRIDGE_SECRET: "activity-integration-secret" } });
   });
 
   afterAll(async () => {
@@ -164,6 +179,52 @@ describe("WebSocket payload/rate 보호", () => {
 
       const error = await errorPromise;
       expect(error.message).toContain("요청이 너무 많습니다");
+    } finally {
+      socket.disconnect();
+    }
+  });
+
+  it("멤버십 변경은 현재 workspace room에 활동 갱신 이벤트를 보낸다", async () => {
+    if (!runtime) {
+      throw new Error("테스트 서버가 시작되지 않았습니다.");
+    }
+
+    const owner = accountToken("activity-owner");
+    const created = await fetch(`${runtime.baseUrl}/api/documents`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${owner}`, "content-type": "application/json" },
+      body: JSON.stringify({ title: "실시간 활동 문서" })
+    });
+    const createdPayload = (await created.json()) as { document?: { id: string } };
+    const documentId = createdPayload.document?.id;
+    if (!documentId) throw new Error("문서가 생성되지 않았습니다.");
+    const realtimeTokenResponse = await fetch(`${runtime.baseUrl}/api/session/realtime-token`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${owner}` }
+    });
+    const realtimeToken = ((await realtimeTokenResponse.json()) as { token?: string }).token;
+    if (!realtimeToken) throw new Error("realtime token이 발급되지 않았습니다.");
+
+    const socket = await connectSocket(runtime.baseUrl);
+    try {
+      socket.emit("activity:subscribe", {
+        scope: "document",
+        entityId: documentId,
+        accountToken: realtimeToken
+      });
+
+      const activityPromise = waitForSocketEvent<{ scope: string; entityId: string }>(
+        socket,
+        "activity:update"
+      );
+      const invited = await fetch(`${runtime.baseUrl}/api/documents/${documentId}/members`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${owner}`, "content-type": "application/json" },
+        body: JSON.stringify({ email: "activity-member@example.com", role: "viewer" })
+      });
+      expect(invited.status).toBe(201);
+
+      await expect(activityPromise).resolves.toEqual({ scope: "document", entityId: documentId });
     } finally {
       socket.disconnect();
     }

@@ -68,12 +68,319 @@ describe("계정별 작업 공간 API", () => {
     });
     expect(invited.status).toBe(201);
 
+    const pending = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}`, { headers: bob });
+    expect(pending.status).toBe(403);
+
+    const accepted = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members/respond`, {
+      method: "POST",
+      headers: { ...bob, "content-type": "application/json" },
+      body: JSON.stringify({ status: "accepted" })
+    });
+    expect(accepted.status).toBe(200);
+
     const allowed = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}`, { headers: bob });
     expect(allowed.status).toBe(200);
 
     const bobList = await fetch(`${runtime.baseUrl}/api/documents`, { headers: bob });
     const bobPayload = (await bobList.json()) as { documents: Array<{ id: string }> };
     expect(bobPayload.documents.some((document) => document.id === created.document.id)).toBe(true);
+  });
+
+  it("소유자는 승인된 멤버의 역할을 변경할 수 있다", async () => {
+    const alice = { Authorization: `Bearer ${accountToken("account-a")}` };
+    const bob = { Authorization: `Bearer ${accountToken("account-b")}` };
+    const createdResponse = await fetch(`${runtime.baseUrl}/api/documents`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ title: "역할 변경 문서" })
+    });
+    const created = (await createdResponse.json()) as { document: { id: string } };
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ email: "account-b@example.com", role: "viewer" })
+    });
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members/respond`, {
+      method: "POST",
+      headers: { ...bob, "content-type": "application/json" },
+      body: JSON.stringify({ status: "accepted" })
+    });
+    const changed = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members`, {
+      method: "PATCH",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ email: "account-b@example.com", role: "editor" })
+    });
+    expect(changed.status).toBe(200);
+    expect((await changed.json()).member).toMatchObject({
+      email: "account-b@example.com",
+      role: "editor",
+      status: "accepted"
+    });
+
+    const denied = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members`, {
+      method: "PATCH",
+      headers: { ...bob, "content-type": "application/json" },
+      body: JSON.stringify({ email: "account-b@example.com", role: "viewer" })
+    });
+    expect(denied.status).toBe(403);
+  });
+
+  it("소유자만 멤버 활동 로그를 조회할 수 있다", async () => {
+    const alice = { Authorization: `Bearer ${accountToken("account-a")}` };
+    const bob = { Authorization: `Bearer ${accountToken("account-b")}` };
+    const createdResponse = await fetch(`${runtime.baseUrl}/api/documents`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ title: "활동 로그 문서" })
+    });
+    const created = (await createdResponse.json()) as { document: { id: string } };
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ email: "account-b@example.com", role: "viewer" })
+    });
+
+    const activity = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/activity`, {
+      headers: alice
+    });
+    expect(activity.status).toBe(200);
+    expect((await activity.json()).activities).toMatchObject([
+      { action: "invited", memberEmail: "account-b@example.com", actorId: "account-a" }
+    ]);
+
+    const denied = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/activity`, {
+      headers: bob
+    });
+    expect(denied.status).toBe(403);
+  });
+
+  it("멤버 변경 알림은 대상 계정만 읽고 읽음 처리할 수 있다", async () => {
+    const alice = { Authorization: `Bearer ${accountToken("notify-owner")}` };
+    const bob = { Authorization: `Bearer ${accountToken("notify-member")}` };
+    const createdResponse = await fetch(`${runtime.baseUrl}/api/documents`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ title: "알림 문서" })
+    });
+    const created = (await createdResponse.json()) as { document: { id: string } };
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ email: "notify-member@example.com", role: "viewer" })
+    });
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members/respond`, {
+      method: "POST",
+      headers: { ...bob, "content-type": "application/json" },
+      body: JSON.stringify({ status: "accepted" })
+    });
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members`, {
+      method: "PATCH",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ email: "notify-member@example.com", role: "editor" })
+    });
+
+    const notifications = await fetch(`${runtime.baseUrl}/api/notifications`, { headers: bob });
+    expect(notifications.status).toBe(200);
+    const payload = (await notifications.json()) as {
+      unreadCount: number;
+      notifications: Array<{ id: string; action: string }>;
+    };
+    expect(payload.unreadCount).toBe(1);
+    expect(payload.notifications).toMatchObject([{ action: "role-changed" }]);
+
+    const marked = await fetch(`${runtime.baseUrl}/api/notifications/${payload.notifications[0]!.id}/read`, {
+      method: "PATCH",
+      headers: bob
+    });
+    expect(marked.status).toBe(200);
+    const after = await fetch(`${runtime.baseUrl}/api/notifications`, { headers: bob });
+    expect((await after.json()).unreadCount).toBe(0);
+
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members`, {
+      method: "PATCH",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ email: "notify-member@example.com", role: "viewer" })
+    });
+    const markedAll = await fetch(`${runtime.baseUrl}/api/notifications/read-all`, {
+      method: "PATCH",
+      headers: bob
+    });
+    expect(markedAll.status).toBe(200);
+    expect((await markedAll.json()).marked).toBe(1);
+  });
+
+  it("댓글 멘션은 멘션된 계정의 알림 센터에 표시된다", async () => {
+    const alice = { Authorization: `Bearer ${accountToken("mention-owner")}` };
+    const bob = { Authorization: `Bearer ${accountToken("mention-member")}` };
+    const createdResponse = await fetch(`${runtime.baseUrl}/api/documents`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ title: "멘션 문서" })
+    });
+    const created = (await createdResponse.json()) as { document: { id: string } };
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ email: "mention-member@example.com", role: "viewer" })
+    });
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members/respond`, {
+      method: "POST",
+      headers: { ...bob, "content-type": "application/json" },
+      body: JSON.stringify({ status: "accepted" })
+    });
+
+    const comment = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/comments`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ body: "@mention-member 확인 부탁드립니다", mentions: ["mention-member"] })
+    });
+    expect(comment.status).toBe(201);
+    const commentPayload = (await comment.json()) as { comment: { id: string } };
+
+    const notifications = await fetch(`${runtime.baseUrl}/api/notifications`, { headers: bob });
+    expect(notifications.status).toBe(200);
+    expect((await notifications.json()).notifications).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: "mentioned",
+          entityId: created.document.id,
+          commentId: commentPayload.comment.id
+        })
+      ])
+    );
+
+    const reply = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/comments`, {
+      method: "POST",
+      headers: { ...bob, "content-type": "application/json" },
+      body: JSON.stringify({
+        body: "원댓글에 답글입니다",
+        parentCommentId: commentPayload.comment.id
+      })
+    });
+    expect(reply.status).toBe(201);
+    const replyPayload = (await reply.json()) as { comment: { id: string } };
+    const ownerNotifications = await fetch(`${runtime.baseUrl}/api/notifications`, { headers: alice });
+    expect((await ownerNotifications.json()).notifications).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ action: "replied", commentId: replyPayload.comment.id })
+      ])
+    );
+  });
+
+  it("소유자는 승인된 멤버에게 소유권을 이전할 수 있다", async () => {
+    const alice = { Authorization: `Bearer ${accountToken("account-a")}` };
+    const bob = { Authorization: `Bearer ${accountToken("account-b")}` };
+    const createdResponse = await fetch(`${runtime.baseUrl}/api/documents`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ title: "소유권 이전 문서" })
+    });
+    const created = (await createdResponse.json()) as { document: { id: string } };
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ email: "account-b@example.com", role: "editor" })
+    });
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members/respond`, {
+      method: "POST",
+      headers: { ...bob, "content-type": "application/json" },
+      body: JSON.stringify({ status: "accepted" })
+    });
+
+    const transferred = await fetch(
+      `${runtime.baseUrl}/api/documents/${created.document.id}/members/transfer-ownership`,
+      {
+        method: "POST",
+        headers: { ...alice, "content-type": "application/json" },
+        body: JSON.stringify({ email: "account-b@example.com" })
+      }
+    );
+    expect(transferred.status).toBe(200);
+
+    const oldOwner = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}`, {
+      headers: alice
+    });
+    expect(oldOwner.status).toBe(200);
+    expect((await oldOwner.json()).permission).toBe("editor");
+    const newOwner = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}`, { headers: bob });
+    expect(newOwner.status).toBe(200);
+    expect((await newOwner.json()).permission).toBe("owner");
+  });
+
+  it("승인된 멤버는 스스로 나갈 수 있고 소유자는 나갈 수 없다", async () => {
+    const alice = { Authorization: `Bearer ${accountToken("account-a")}` };
+    const bob = { Authorization: `Bearer ${accountToken("account-b")}` };
+    const createdResponse = await fetch(`${runtime.baseUrl}/api/documents`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ title: "멤버 탈퇴 문서" })
+    });
+    const created = (await createdResponse.json()) as { document: { id: string } };
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ email: "account-b@example.com", role: "viewer" })
+    });
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members/respond`, {
+      method: "POST",
+      headers: { ...bob, "content-type": "application/json" },
+      body: JSON.stringify({ status: "accepted" })
+    });
+
+    const tokenResponse = await fetch(`${runtime.baseUrl}/api/session/realtime-token`, {
+      method: "POST",
+      headers: bob
+    });
+    const { token } = (await tokenResponse.json()) as { token: string };
+    const socket = createSocketClient(runtime.baseUrl, {
+      transports: ["websocket"],
+      forceNew: true,
+      reconnection: false
+    });
+    const statePromise = new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error("socket state timeout")), 5000);
+      socket.once("document:state", () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+    });
+    const revokedPromise = new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error("access revoke timeout")), 5000);
+      socket.once("workspace:access-revoked", (payload: { scope: string }) => {
+        clearTimeout(timeout);
+        expect(payload.scope).toBe("document");
+        resolve();
+      });
+    });
+    socket.once("connect", () => {
+      socket.emit("document:join", {
+        documentId: created.document.id,
+        accountToken: token,
+        role: "viewer"
+      });
+    });
+    await statePromise;
+
+    try {
+      const left = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members/self`, {
+        method: "DELETE",
+        headers: bob
+      });
+      expect(left.status).toBe(200);
+      expect((await left.json()).member).toMatchObject({ email: "account-b@example.com" });
+      await revokedPromise;
+    } finally {
+      socket.disconnect();
+    }
+
+    const denied = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}`, { headers: bob });
+    expect(denied.status).toBe(403);
+
+    const ownerLeave = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members/self`, {
+      method: "DELETE",
+      headers: alice
+    });
+    expect(ownerLeave.status).toBe(403);
   });
 
   it("viewer 멤버는 실시간 방에서 편집 권한을 얻지 못한다", async () => {
@@ -89,6 +396,11 @@ describe("계정별 작업 공간 API", () => {
       method: "POST",
       headers: { ...alice, "content-type": "application/json" },
       body: JSON.stringify({ email: "account-b@example.com", role: "viewer" })
+    });
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members/respond`, {
+      method: "POST",
+      headers: { ...bob, "content-type": "application/json" },
+      body: JSON.stringify({ status: "accepted" })
     });
 
     const tokenResponse = await fetch(`${runtime.baseUrl}/api/session/realtime-token`, {
@@ -119,6 +431,89 @@ describe("계정별 작업 공간 API", () => {
         });
         socket.once("connect_error", reject);
       });
+    } finally {
+      socket.disconnect();
+    }
+  });
+
+  it("역할을 낮추면 접속 중인 편집자도 즉시 읽기 전용이 된다", async () => {
+    const alice = { Authorization: `Bearer ${accountToken("account-a")}` };
+    const bob = { Authorization: `Bearer ${accountToken("account-b")}` };
+    const createdResponse = await fetch(`${runtime.baseUrl}/api/documents`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ title: "실시간 역할 변경 문서" })
+    });
+    const created = (await createdResponse.json()) as { document: { id: string } };
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ email: "account-b@example.com", role: "editor" })
+    });
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members/respond`, {
+      method: "POST",
+      headers: { ...bob, "content-type": "application/json" },
+      body: JSON.stringify({ status: "accepted" })
+    });
+
+    const tokenResponse = await fetch(`${runtime.baseUrl}/api/session/realtime-token`, {
+      method: "POST",
+      headers: bob
+    });
+    const { token } = (await tokenResponse.json()) as { token: string };
+
+    const socket = createSocketClient(runtime.baseUrl, {
+      transports: ["websocket"],
+      forceNew: true,
+      reconnection: false
+    });
+    const statePromise = new Promise<{ role: string }>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error("socket state timeout")), 5000);
+      socket.once("document:state", (payload: { role: string }) => {
+        clearTimeout(timeout);
+        resolve(payload);
+      });
+    });
+    const permissionPromise = new Promise<{ currentRole: string }>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error("permission update timeout")), 5000);
+      socket.once("permission:update", (payload: { currentRole: string }) => {
+        clearTimeout(timeout);
+        resolve(payload);
+      });
+    });
+
+    try {
+      socket.once("connect", () => {
+        socket.emit("document:join", {
+          documentId: created.document.id,
+          accountToken: token,
+          role: "editor"
+        });
+      });
+      await expect(statePromise).resolves.toMatchObject({ role: "editor" });
+
+      const changed = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members`, {
+        method: "PATCH",
+        headers: { ...alice, "content-type": "application/json" },
+        body: JSON.stringify({ email: "account-b@example.com", role: "viewer" })
+      });
+      expect(changed.status).toBe(200);
+      await expect(permissionPromise).resolves.toMatchObject({ currentRole: "viewer" });
+
+      const restoredPermission = new Promise<{ currentRole: string }>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("permission restore timeout")), 5000);
+        socket.once("permission:update", (payload: { currentRole: string }) => {
+          clearTimeout(timeout);
+          resolve(payload);
+        });
+      });
+      const restored = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/members`, {
+        method: "PATCH",
+        headers: { ...alice, "content-type": "application/json" },
+        body: JSON.stringify({ email: "account-b@example.com", role: "editor" })
+      });
+      expect(restored.status).toBe(200);
+      await expect(restoredPermission).resolves.toMatchObject({ currentRole: "editor" });
     } finally {
       socket.disconnect();
     }

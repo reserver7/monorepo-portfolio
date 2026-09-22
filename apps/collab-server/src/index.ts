@@ -3,7 +3,12 @@ import http from "node:http";
 import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import { Server, Socket } from "socket.io";
-import type { AccessRole, Participant } from "../../../packages/utils/src/collab";
+import type {
+  AccessRole,
+  ActivitySubscribePayload,
+  NotificationsSubscribePayload,
+  Participant
+} from "../../../packages/utils/src/collab";
 import { serverEnv } from "./config";
 import {
   createLogger,
@@ -240,11 +245,24 @@ const readWorkspaceMemberInput = (body: Record<string, unknown>) => ({
   role: body.role === "editor" ? ("editor" as const) : ("viewer" as const)
 });
 
+const readWorkspaceMemberRoleInput = (body: Record<string, unknown>) => ({
+  email: normalizeWorkspaceMemberEmail(typeof body.email === "string" ? body.email : ""),
+  role: body.role === "editor" || body.role === "viewer" ? (body.role as AccessRole) : null
+});
+
+const readInvitationResponse = (body: Record<string, unknown>) =>
+  body.status === "declined"
+    ? ("declined" as const)
+    : body.status === "accepted"
+      ? ("accepted" as const)
+      : null;
+
 const notifyWorkspaceMember = (
   kind: "document" | "board",
   entityId: string,
   email: string,
-  title: string
+  title: string,
+  role: AccessRole
 ): void => {
   const baseUrl = serverEnv.collabWebUrl ?? serverEnv.corsOrigins[0];
   if (!baseUrl) return;
@@ -252,7 +270,7 @@ const notifyWorkspaceMember = (
     {
       to: email,
       workspaceTitle: title,
-      inviteUrl: `${baseUrl}/${kind === "document" ? "docs" : "whiteboard"}/${entityId}`
+      inviteUrl: `${baseUrl}/invite?kind=${kind}&id=${encodeURIComponent(entityId)}&title=${encodeURIComponent(title)}&role=${role}`
     },
     {
       enabled: serverEnv.resendEnabled,
@@ -347,6 +365,71 @@ const broadcastBoardParticipants = async (boardId: string): Promise<void> => {
   });
 };
 
+const broadcastNotificationUpdate = (accountIds: Array<string | undefined>): void => {
+  for (const accountId of new Set(accountIds.filter((value): value is string => Boolean(value)))) {
+    io.to(`account:${accountId}`).emit(socketEventName.notificationsUpdate);
+  }
+};
+
+const broadcastWorkspaceActivity = (scope: "document" | "board", entityId: string): void => {
+  io.to(scope === "document" ? documentRoom(entityId) : boardRoom(entityId)).emit(
+    socketEventName.activityUpdate,
+    { scope, entityId }
+  );
+};
+
+const updateConnectedMemberRole = async (
+  scope: "document" | "board",
+  entityId: string,
+  email: string,
+  role: AccessRole,
+  accountId?: string
+): Promise<void> => {
+  const participants =
+    scope === "document" ? documentParticipants.get(entityId) : boardParticipants.get(entityId);
+  if (!participants) return;
+
+  for (const participant of participants.values()) {
+    const targetSocket = io.sockets.sockets.get(participant.socketId);
+    const connectedEmail = targetSocket?.data[`${scope}AccountEmail`];
+    const connectedAccountId = targetSocket?.data[`${scope}AccountId`];
+    if (connectedEmail !== email && (!accountId || connectedAccountId !== accountId)) continue;
+
+    participant.role = role;
+    if (targetSocket) {
+      targetSocket.data[`${scope}Participant`] = participant;
+      targetSocket.emit("permission:update", { scope, currentRole: role });
+    }
+    await roleLockStore.set(scope, entityId, participant.sessionId, role);
+  }
+
+  if (scope === "document") {
+    await broadcastDocumentParticipants(entityId);
+  } else {
+    await broadcastBoardParticipants(entityId);
+  }
+};
+
+const revokeConnectedMember = async (
+  scope: "document" | "board",
+  entityId: string,
+  email: string,
+  accountId: string
+): Promise<void> => {
+  const participants =
+    scope === "document" ? documentParticipants.get(entityId) : boardParticipants.get(entityId);
+  if (!participants) return;
+
+  for (const participant of [...participants.values()]) {
+    const targetSocket = io.sockets.sockets.get(participant.socketId);
+    const connectedEmail = targetSocket?.data[`${scope}AccountEmail`];
+    const connectedAccountId = targetSocket?.data[`${scope}AccountId`];
+    if (connectedEmail !== email && connectedAccountId !== accountId) continue;
+    targetSocket?.emit("workspace:access-revoked", { scope });
+    targetSocket?.disconnect(true);
+  }
+};
+
 const leaveDocument = (socketId: string): void => {
   const joinedDocumentId = documentBySocket.get(socketId);
   if (!joinedDocumentId) {
@@ -425,6 +508,32 @@ const teardownBoardAfterDelete = (boardId: string): void => {
 
 app.get(API_ROUTES.health, (_req, res) => {
   res.json({ ok: true, now: new Date().toISOString() });
+});
+
+app.get(API_ROUTES.notifications, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (!account) return;
+  const notifications = store.listWorkspaceNotifications(account.id);
+  res.json({
+    notifications,
+    unreadCount: notifications.filter((notification) => !notification.readAt).length
+  });
+});
+
+app.patch(API_ROUTES.notificationRead, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (!account) return;
+  if (!store.markWorkspaceNotificationRead(account.id, req.params.id)) {
+    res.status(404).json({ message: "알림을 찾을 수 없습니다." });
+    return;
+  }
+  res.json({ ok: true });
+});
+
+app.patch(API_ROUTES.notificationsReadAll, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (!account) return;
+  res.json({ marked: store.markWorkspaceNotificationsRead(account.id) });
 });
 
 app.post(API_ROUTES.realtimeToken, (req, res) => {
@@ -524,15 +633,21 @@ app.post(API_ROUTES.documentComments, (req, res) => {
   const comment = store.addDocumentComment({
     documentId: document.id,
     authorSessionId: session.sessionId,
+    authorAccountId: access.account?.id,
     authorName: sanitizeDisplayName(readOptionalString(bodyPayload, "authorName")),
     body,
-    mentions: mentions.length > 0 ? mentions : extractMentions(body)
+    mentions: mentions.length > 0 ? mentions : extractMentions(body),
+    parentCommentId: readOptionalString(bodyPayload, "parentCommentId")
   });
 
   if (!comment) {
     res.status(400).json({ message: "Comment body is required" });
     return;
   }
+  broadcastNotificationUpdate(
+    store.createMentionNotifications(document.id, comment.mentions, access.account?.id, comment.id)
+  );
+  broadcastNotificationUpdate([store.createReplyNotification(document.id, comment.id)]);
 
   res.status(201).json({
     documentId: document.id,
@@ -548,7 +663,83 @@ app.post(API_ROUTES.documentComments, (req, res) => {
 app.get(API_ROUTES.documentMembers, (req, res) => {
   const access = resolveWorkspaceRequest(req, res, "document", req.params.id);
   if (!access) return;
-  res.json({ members: store.listWorkspaceMembers("document", req.params.id) ?? [] });
+  res.json({
+    members: store.listWorkspaceMembers("document", req.params.id) ?? [],
+    canLeave: access.permission !== "owner" && Boolean(access.account)
+  });
+});
+
+app.get(API_ROUTES.documentActivity, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "document", req.params.id, "manage");
+  if (!access) return;
+  res.json({ activities: store.listWorkspaceActivity("document", req.params.id) ?? [] });
+});
+
+app.delete(API_ROUTES.documentMemberLeave, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (!account) return;
+  const document = store.getDocument(req.params.id);
+  const member = store.leaveWorkspaceMember({
+    kind: "document",
+    entityId: req.params.id,
+    accountId: account.id,
+    email: account.email
+  });
+  if (member === "not-found") {
+    res.status(404).json({ message: "Document not found" });
+    return;
+  }
+  if (member === "forbidden") {
+    res.status(403).json({ message: "소유자는 작업 공간을 나갈 수 없습니다." });
+    return;
+  }
+  if (member === "member-not-found") {
+    res.status(404).json({ message: "승인된 멤버가 아닙니다." });
+    return;
+  }
+  void revokeConnectedMember("document", req.params.id, member.email, account.id);
+  broadcastNotificationUpdate([document?.ownerId]);
+  broadcastWorkspaceActivity("document", req.params.id);
+  res.json({ member });
+});
+
+app.post(API_ROUTES.documentOwnershipTransfer, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "document", req.params.id, "manage");
+  if (!access?.account) return;
+  const targetEmail = normalizeWorkspaceMemberEmail(
+    readOptionalString(toJsonObject(req.body), "email") ?? ""
+  );
+  const target = (store.listWorkspaceMembers("document", req.params.id) ?? []).find(
+    (member) => member.email === targetEmail
+  );
+  const transferred = store.transferWorkspaceOwnership({
+    kind: "document",
+    entityId: req.params.id,
+    ownerId: access.account.id,
+    ownerEmail: access.account.email,
+    targetEmail
+  });
+  if (transferred === "not-found") {
+    res.status(404).json({ message: "Document not found" });
+    return;
+  }
+  if (transferred === "forbidden" || transferred === "member-not-found") {
+    res.status(403).json({ message: "승인된 멤버에게만 소유권을 이전할 수 있습니다." });
+    return;
+  }
+  void updateConnectedMemberRole(
+    "document",
+    req.params.id,
+    access.account.email,
+    "editor",
+    access.account.id
+  );
+  if (target?.accountId) {
+    void updateConnectedMemberRole("document", req.params.id, target.email, "editor", target.accountId);
+  }
+  broadcastNotificationUpdate([access.account.id, target?.accountId]);
+  broadcastWorkspaceActivity("document", req.params.id);
+  res.json({ document: transferred });
 });
 
 app.post(API_ROUTES.documentMembers, (req, res) => {
@@ -563,7 +754,8 @@ app.post(API_ROUTES.documentMembers, (req, res) => {
     kind: "document",
     entityId: req.params.id,
     ownerId: access.account.id,
-    ...input
+    email: input.email,
+    role: input.role
   });
   if (member === "invalid") {
     res.status(400).json({ message: "유효한 멤버 정보가 필요합니다." });
@@ -574,10 +766,46 @@ app.post(API_ROUTES.documentMembers, (req, res) => {
       "document",
       req.params.id,
       member.email,
-      store.getDocument(req.params.id)?.title ?? EMPTY_TITLE
+      store.getDocument(req.params.id)?.title ?? EMPTY_TITLE,
+      member.role
     );
+    broadcastWorkspaceActivity("document", req.params.id);
   }
   res.status(201).json({ member });
+});
+
+app.patch(API_ROUTES.documentMembers, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "document", req.params.id, "manage");
+  if (!access?.account) return;
+  const input = readWorkspaceMemberRoleInput(toJsonObject(req.body));
+  const role = input.role;
+  if (!input.email || !role) {
+    res.status(400).json({ message: "유효한 멤버 역할이 필요합니다." });
+    return;
+  }
+  const member = store.updateWorkspaceMemberRole({
+    kind: "document",
+    entityId: req.params.id,
+    ownerId: access.account.id,
+    email: input.email,
+    role
+  });
+  if (member === "forbidden" || member === "member-not-found") {
+    res.status(403).json({ message: "승인된 멤버의 역할만 변경할 수 있습니다." });
+    return;
+  }
+  if (member === "invalid") {
+    res.status(400).json({ message: "유효한 멤버 역할이 필요합니다." });
+    return;
+  }
+  if (member === "not-found") {
+    res.status(404).json({ message: "Document not found" });
+    return;
+  }
+  void updateConnectedMemberRole("document", req.params.id, member.email, member.role, member.accountId);
+  broadcastNotificationUpdate([member.accountId]);
+  broadcastWorkspaceActivity("document", req.params.id);
+  res.json({ member });
 });
 
 app.delete(API_ROUTES.documentMembers, (req, res) => {
@@ -594,6 +822,45 @@ app.delete(API_ROUTES.documentMembers, (req, res) => {
     res.status(404).json({ message: "멤버를 찾을 수 없습니다." });
     return;
   }
+  if (member === "forbidden") {
+    res.status(403).json({ message: "멤버를 제거할 수 없습니다." });
+    return;
+  }
+  if (member === "not-found") {
+    res.status(404).json({ message: "Document not found" });
+    return;
+  }
+  broadcastNotificationUpdate([member.accountId]);
+  broadcastWorkspaceActivity("document", req.params.id);
+  res.json({ member });
+});
+
+app.post(API_ROUTES.documentMemberResponse, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (!account) return;
+  const document = store.getDocument(req.params.id);
+  const status = readInvitationResponse(toJsonObject(req.body));
+  if (!status) {
+    res.status(400).json({ message: "초대 응답은 수락 또는 거절이어야 합니다." });
+    return;
+  }
+  const member = store.respondToWorkspaceInvitation({
+    kind: "document",
+    entityId: req.params.id,
+    email: account.email,
+    accountId: account.id,
+    status
+  });
+  if (member === "not-found") {
+    res.status(404).json({ message: "Document not found" });
+    return;
+  }
+  if (member === "forbidden" || member === "member-not-found") {
+    res.status(403).json({ message: "이 계정의 초대가 아닙니다." });
+    return;
+  }
+  broadcastNotificationUpdate([document?.ownerId]);
+  broadcastWorkspaceActivity("document", req.params.id);
   res.json({ member });
 });
 
@@ -651,7 +918,77 @@ app.get(API_ROUTES.boardById, (req, res) => {
 app.get(API_ROUTES.boardMembers, (req, res) => {
   const access = resolveWorkspaceRequest(req, res, "board", req.params.id);
   if (!access) return;
-  res.json({ members: store.listWorkspaceMembers("board", req.params.id) ?? [] });
+  res.json({
+    members: store.listWorkspaceMembers("board", req.params.id) ?? [],
+    canLeave: access.permission !== "owner" && Boolean(access.account)
+  });
+});
+
+app.get(API_ROUTES.boardActivity, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "board", req.params.id, "manage");
+  if (!access) return;
+  res.json({ activities: store.listWorkspaceActivity("board", req.params.id) ?? [] });
+});
+
+app.delete(API_ROUTES.boardMemberLeave, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (!account) return;
+  const board = store.getBoard(req.params.id);
+  const member = store.leaveWorkspaceMember({
+    kind: "board",
+    entityId: req.params.id,
+    accountId: account.id,
+    email: account.email
+  });
+  if (member === "not-found") {
+    res.status(404).json({ message: "Board not found" });
+    return;
+  }
+  if (member === "forbidden") {
+    res.status(403).json({ message: "소유자는 작업 공간을 나갈 수 없습니다." });
+    return;
+  }
+  if (member === "member-not-found") {
+    res.status(404).json({ message: "승인된 멤버가 아닙니다." });
+    return;
+  }
+  void revokeConnectedMember("board", req.params.id, member.email, account.id);
+  broadcastNotificationUpdate([board?.ownerId]);
+  broadcastWorkspaceActivity("board", req.params.id);
+  res.json({ member });
+});
+
+app.post(API_ROUTES.boardOwnershipTransfer, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "board", req.params.id, "manage");
+  if (!access?.account) return;
+  const targetEmail = normalizeWorkspaceMemberEmail(
+    readOptionalString(toJsonObject(req.body), "email") ?? ""
+  );
+  const target = (store.listWorkspaceMembers("board", req.params.id) ?? []).find(
+    (member) => member.email === targetEmail
+  );
+  const transferred = store.transferWorkspaceOwnership({
+    kind: "board",
+    entityId: req.params.id,
+    ownerId: access.account.id,
+    ownerEmail: access.account.email,
+    targetEmail
+  });
+  if (transferred === "not-found") {
+    res.status(404).json({ message: "Board not found" });
+    return;
+  }
+  if (transferred === "forbidden" || transferred === "member-not-found") {
+    res.status(403).json({ message: "승인된 멤버에게만 소유권을 이전할 수 있습니다." });
+    return;
+  }
+  void updateConnectedMemberRole("board", req.params.id, access.account.email, "editor", access.account.id);
+  if (target?.accountId) {
+    void updateConnectedMemberRole("board", req.params.id, target.email, "editor", target.accountId);
+  }
+  broadcastNotificationUpdate([access.account.id, target?.accountId]);
+  broadcastWorkspaceActivity("board", req.params.id);
+  res.json({ board: transferred });
 });
 
 app.post(API_ROUTES.boardMembers, (req, res) => {
@@ -666,7 +1003,8 @@ app.post(API_ROUTES.boardMembers, (req, res) => {
     kind: "board",
     entityId: req.params.id,
     ownerId: access.account.id,
-    ...input
+    email: input.email,
+    role: input.role
   });
   if (member === "invalid") {
     res.status(400).json({ message: "유효한 멤버 정보가 필요합니다." });
@@ -677,10 +1015,46 @@ app.post(API_ROUTES.boardMembers, (req, res) => {
       "board",
       req.params.id,
       member.email,
-      store.getBoard(req.params.id)?.title ?? EMPTY_TITLE
+      store.getBoard(req.params.id)?.title ?? EMPTY_TITLE,
+      member.role
     );
+    broadcastWorkspaceActivity("board", req.params.id);
   }
   res.status(201).json({ member });
+});
+
+app.patch(API_ROUTES.boardMembers, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "board", req.params.id, "manage");
+  if (!access?.account) return;
+  const input = readWorkspaceMemberRoleInput(toJsonObject(req.body));
+  const role = input.role;
+  if (!input.email || !role) {
+    res.status(400).json({ message: "유효한 멤버 역할이 필요합니다." });
+    return;
+  }
+  const member = store.updateWorkspaceMemberRole({
+    kind: "board",
+    entityId: req.params.id,
+    ownerId: access.account.id,
+    email: input.email,
+    role
+  });
+  if (member === "forbidden" || member === "member-not-found") {
+    res.status(403).json({ message: "승인된 멤버의 역할만 변경할 수 있습니다." });
+    return;
+  }
+  if (member === "invalid") {
+    res.status(400).json({ message: "유효한 멤버 역할이 필요합니다." });
+    return;
+  }
+  if (member === "not-found") {
+    res.status(404).json({ message: "Board not found" });
+    return;
+  }
+  void updateConnectedMemberRole("board", req.params.id, member.email, member.role, member.accountId);
+  broadcastNotificationUpdate([member.accountId]);
+  broadcastWorkspaceActivity("board", req.params.id);
+  res.json({ member });
 });
 
 app.delete(API_ROUTES.boardMembers, (req, res) => {
@@ -697,6 +1071,45 @@ app.delete(API_ROUTES.boardMembers, (req, res) => {
     res.status(404).json({ message: "멤버를 찾을 수 없습니다." });
     return;
   }
+  if (member === "forbidden") {
+    res.status(403).json({ message: "멤버를 제거할 수 없습니다." });
+    return;
+  }
+  if (member === "not-found") {
+    res.status(404).json({ message: "Board not found" });
+    return;
+  }
+  broadcastNotificationUpdate([member.accountId]);
+  broadcastWorkspaceActivity("board", req.params.id);
+  res.json({ member });
+});
+
+app.post(API_ROUTES.boardMemberResponse, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (!account) return;
+  const board = store.getBoard(req.params.id);
+  const status = readInvitationResponse(toJsonObject(req.body));
+  if (!status) {
+    res.status(400).json({ message: "초대 응답은 수락 또는 거절이어야 합니다." });
+    return;
+  }
+  const member = store.respondToWorkspaceInvitation({
+    kind: "board",
+    entityId: req.params.id,
+    email: account.email,
+    accountId: account.id,
+    status
+  });
+  if (member === "not-found") {
+    res.status(404).json({ message: "Board not found" });
+    return;
+  }
+  if (member === "forbidden" || member === "member-not-found") {
+    res.status(403).json({ message: "이 계정의 초대가 아닙니다." });
+    return;
+  }
+  broadcastNotificationUpdate([board?.ownerId]);
+  broadcastWorkspaceActivity("board", req.params.id);
   res.json({ member });
 });
 
@@ -719,6 +1132,35 @@ app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
 io.on("connection", (socket) => {
   socketLogger.info("socket.connected", {
     socketId: socket.id
+  });
+
+  socket.on(socketEventName.notificationsSubscribe, (payload: NotificationsSubscribePayload) => {
+    const account = extractAccountFromRealtimeToken(payload?.accountToken, serverEnv.collabSessionSecret);
+    if (!account) {
+      socket.emit("error", { message: "유효한 알림 세션이 필요합니다." });
+      return;
+    }
+    socket.join(`account:${account.id}`);
+  });
+
+  socket.on(socketEventName.activitySubscribe, (payload: ActivitySubscribePayload) => {
+    const account = extractAccountFromRealtimeToken(payload?.accountToken, serverEnv.collabSessionSecret);
+    const record =
+      payload?.scope === "document"
+        ? store.getDocument(payload.entityId)
+        : payload?.scope === "board"
+          ? store.getBoard(payload.entityId)
+          : undefined;
+    if (!account || !record) {
+      socket.emit("error", { message: "유효한 활동 로그 세션이 필요합니다." });
+      return;
+    }
+    const permission = resolveWorkspacePermission(record, account);
+    if (record.ownerId && !canReadWorkspace(permission)) {
+      socket.emit("error", { message: "작업 공간 접근 권한이 없습니다." });
+      return;
+    }
+    socket.join(payload.scope === "document" ? documentRoom(payload.entityId) : boardRoom(payload.entityId));
   });
 
   socket.on(socketEventName.documentJoin, async (payload: DocumentJoinPayload) => {
@@ -785,6 +1227,8 @@ io.on("connection", (socket) => {
     documentParticipants.get(document.id)?.set(socket.id, participant);
     documentBySocket.set(socket.id, document.id);
     socket.data.documentParticipant = participant;
+    socket.data.documentAccountEmail = account?.email.trim().toLowerCase();
+    socket.data.documentAccountId = account?.id;
 
     if (
       role === "editor" &&
@@ -963,18 +1407,29 @@ io.on("connection", (socket) => {
     const comment = store.addDocumentComment({
       documentId,
       authorSessionId: participant?.sessionId ?? randomUUID(),
+      authorAccountId: socket.data.documentAccountId,
       authorName: participant?.displayName ?? "Unknown",
       body: rawCommentBody,
       mentions:
         Array.isArray(payload.mentions) && payload.mentions.length > 0
           ? payload.mentions
-          : extractMentions(rawCommentBody)
+          : extractMentions(rawCommentBody),
+      parentCommentId: payload.parentCommentId
     });
 
     if (!comment) {
       socket.emit("error", { message: "댓글 내용이 비어 있습니다." });
       return;
     }
+    broadcastNotificationUpdate(
+      store.createMentionNotifications(
+        documentId,
+        comment.mentions,
+        socket.data.documentAccountId,
+        comment.id
+      )
+    );
+    broadcastNotificationUpdate([store.createReplyNotification(documentId, comment.id)]);
 
     io.to(documentRoom(documentId)).emit(socketEventName.documentCommentAdd, {
       documentId,
@@ -1010,16 +1465,20 @@ io.on("connection", (socket) => {
 
     const participant = documentParticipants.get(documentId)?.get(socket.id);
     const rawBody = typeof payload.body === "string" ? payload.body : "";
+    const previousComment = store
+      .listDocumentComments(documentId)
+      .find((comment) => comment.id === payload.commentId);
+    const nextMentions =
+      Array.isArray(payload.mentions) && payload.mentions.length > 0
+        ? payload.mentions
+        : extractMentions(rawBody);
 
     const updatedComment = store.updateDocumentComment({
       documentId,
       commentId: payload.commentId,
       authorSessionId: participant?.sessionId ?? "",
       body: rawBody,
-      mentions:
-        Array.isArray(payload.mentions) && payload.mentions.length > 0
-          ? payload.mentions
-          : extractMentions(rawBody)
+      mentions: nextMentions
     });
 
     if (updatedComment === "forbidden") {
@@ -1031,6 +1490,15 @@ io.on("connection", (socket) => {
       socket.emit("error", { message: "수정할 댓글을 찾지 못했거나 내용이 비어 있습니다." });
       return;
     }
+    broadcastNotificationUpdate(
+      store.createMentionNotifications(
+        documentId,
+        updatedComment.mentions,
+        socket.data.documentAccountId,
+        updatedComment.id,
+        previousComment?.mentions
+      )
+    );
 
     io.to(documentRoom(documentId)).emit(socketEventName.documentCommentUpdate, {
       documentId,
@@ -1239,6 +1707,8 @@ io.on("connection", (socket) => {
     boardParticipants.get(board.id)?.set(socket.id, participant);
     boardBySocket.set(socket.id, board.id);
     socket.data.boardParticipant = participant;
+    socket.data.boardAccountEmail = account?.email.trim().toLowerCase();
+    socket.data.boardAccountId = account?.id;
 
     socket.emit("board:state", {
       board,

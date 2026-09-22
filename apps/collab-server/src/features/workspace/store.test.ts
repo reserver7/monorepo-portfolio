@@ -49,6 +49,16 @@ describe("실시간 스토어", () => {
     expect(added.body).toBe("Hello team");
     expect(added.mentions).toEqual(["alice", "bob"]);
 
+    const reply = store.addDocumentComment({
+      documentId: seededDocument.id,
+      authorSessionId: "session-b",
+      authorName: "Bob",
+      body: "답글입니다",
+      mentions: [],
+      parentCommentId: added.id
+    });
+    expect(reply).toMatchObject({ parentCommentId: added.id });
+
     const forbiddenUpdate = store.updateDocumentComment({
       documentId: seededDocument.id,
       commentId: added.id,
@@ -88,6 +98,37 @@ describe("실시간 스토어", () => {
       authorSessionId: "session-a"
     });
     expect(allowedDelete).toBe(added.id);
+  });
+
+  it("답글 작성 시 원댓글 작성자에게 알림을 생성한다", () => {
+    const document = store.createDocument("Thread", "Owner", undefined, "owner");
+    const parent = store.addDocumentComment({
+      documentId: document.id,
+      authorSessionId: "session-owner",
+      authorAccountId: "owner",
+      authorName: "Owner",
+      body: "원댓글",
+      mentions: []
+    });
+    expect(parent).not.toBeNull();
+    if (!parent) return;
+
+    const reply = store.addDocumentComment({
+      documentId: document.id,
+      authorSessionId: "session-editor",
+      authorAccountId: "editor",
+      authorName: "Editor",
+      body: "답글",
+      mentions: [],
+      parentCommentId: parent.id
+    });
+    expect(reply).not.toBeNull();
+    if (!reply) return;
+
+    expect(store.createReplyNotification(document.id, reply.id)).toBe("owner");
+    expect(store.listWorkspaceNotifications("owner")).toMatchObject([
+      { action: "replied", commentId: reply.id, recipientId: "owner" }
+    ]);
   });
 
   it("계정별 문서와 보드 목록을 분리하고 소유자만 삭제한다", async () => {

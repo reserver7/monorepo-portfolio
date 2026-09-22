@@ -9,7 +9,13 @@ import type {
   WhiteboardShape,
   WhiteboardSummary
 } from "../../../../../packages/utils/src/collab/server";
-import type { AccessRole, WorkspaceMember } from "../../../../../packages/utils/src/collab/server";
+import type {
+  AccessRole,
+  WorkspaceActivity,
+  WorkspaceNotification,
+  WorkspaceInvitationStatus,
+  WorkspaceMember
+} from "../../../../../packages/utils/src/collab/server";
 import {
   createStoredEditorAccessKey,
   normalizeStoredEditorAccessKey,
@@ -49,9 +55,11 @@ interface MergeDocumentYjsUpdateInput {
 interface AddDocumentCommentInput {
   documentId: string;
   authorSessionId: string;
+  authorAccountId?: string;
   authorName: string;
   body: string;
   mentions: string[];
+  parentCommentId?: string;
 }
 
 interface UpdateDocumentCommentInput {
@@ -124,9 +132,46 @@ interface WorkspaceMemberRemoveInput {
   email: string;
 }
 
+interface WorkspaceMemberLeaveInput {
+  kind: "document" | "board";
+  entityId: string;
+  accountId: string;
+  email: string;
+}
+
+interface WorkspaceOwnershipTransferInput {
+  kind: "document" | "board";
+  entityId: string;
+  ownerId: string;
+  ownerEmail: string;
+  targetEmail: string;
+}
+
+interface WorkspaceMemberRoleUpdateInput {
+  kind: "document" | "board";
+  entityId: string;
+  ownerId: string;
+  email: string;
+  role: AccessRole;
+}
+
+interface WorkspaceInvitationResponseInput {
+  kind: "document" | "board";
+  entityId: string;
+  email: string;
+  accountId: string;
+  status: Exclude<WorkspaceInvitationStatus, "pending">;
+}
+
 const MAX_HISTORY = 160;
 const MAX_BOARD_STACK = 120;
 const MAX_COMMENT_COUNT = 240;
+const MAX_WORKSPACE_ACTIVITY = 50;
+const MAX_WORKSPACE_NOTIFICATIONS = 50;
+type WorkspaceRecord = DocumentRecord | WhiteboardRecord;
+const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+const invitationExpiresAt = (): string => new Date(Date.now() + INVITATION_TTL_MS).toISOString();
 
 export class RealtimeStore {
   private readonly documents = new Map<string, DocumentRecord>();
@@ -519,15 +564,21 @@ export class RealtimeStore {
     }
 
     const now = nowIso();
+    const parentCommentId =
+      input.parentCommentId && current.comments.some((comment) => comment.id === input.parentCommentId)
+        ? input.parentCommentId
+        : undefined;
     const comment: DocumentComment = {
       id: randomUUID(),
       documentId: input.documentId,
       authorSessionId: input.authorSessionId,
+      authorAccountId: input.authorAccountId,
       authorName: input.authorName.trim() || "Guest",
       body,
       mentions: Array.from(new Set(input.mentions.map(sanitizeMention))).filter(
         (mention: string) => mention.length > 0
       ),
+      parentCommentId,
       createdAt: now,
       updatedAt: now
     };
@@ -552,6 +603,30 @@ export class RealtimeStore {
 
     this.schedulePersist();
     return clone(comment);
+  }
+
+  createReplyNotification(documentId: string, replyCommentId: string): string | undefined {
+    const document = this.documents.get(documentId);
+    const reply = document?.comments.find((comment) => comment.id === replyCommentId);
+    const parent = reply?.parentCommentId
+      ? document?.comments.find((comment) => comment.id === reply.parentCommentId)
+      : undefined;
+    const recipientId = parent?.authorAccountId;
+    if (!document || !reply || !parent || !recipientId || recipientId === reply.authorAccountId) {
+      return undefined;
+    }
+
+    this.addWorkspaceNotification(document, {
+      recipientId,
+      action: "replied",
+      entityKind: "document",
+      entityId: document.id,
+      title: document.title,
+      memberEmail: parent.authorName,
+      commentId: reply.id
+    });
+    this.schedulePersist();
+    return recipientId;
   }
 
   updateDocumentComment(input: UpdateDocumentCommentInput): DocumentComment | "forbidden" | null {
@@ -698,6 +773,89 @@ export class RealtimeStore {
     return record ? clone(record.members ?? []) : null;
   }
 
+  listWorkspaceActivity(kind: "document" | "board", entityId: string): WorkspaceActivity[] | null {
+    const record = kind === "document" ? this.documents.get(entityId) : this.boards.get(entityId);
+    return record ? clone(record.activity ?? []) : null;
+  }
+
+  listWorkspaceNotifications(accountId: string): WorkspaceNotification[] {
+    const notifications = [...this.documents.values(), ...this.boards.values()]
+      .flatMap((record) => record.notifications ?? [])
+      .filter((notification) => notification.recipientId === accountId)
+      .sort((left, right) => Date.parse(right.at) - Date.parse(left.at));
+    return clone(notifications.slice(0, MAX_WORKSPACE_NOTIFICATIONS));
+  }
+
+  createMentionNotifications(
+    documentId: string,
+    mentions: string[],
+    authorAccountId?: string,
+    commentId?: string,
+    previousMentions: string[] = []
+  ): string[] {
+    const document = this.documents.get(documentId);
+    if (!document || mentions.length === 0) return [];
+
+    const previousTokens = new Set(
+      previousMentions.map(sanitizeMention).map((mention) => mention.toLowerCase())
+    );
+    const tokens = new Set(
+      mentions
+        .map(sanitizeMention)
+        .map((mention) => mention.toLowerCase())
+        .filter((mention) => !previousTokens.has(mention))
+    );
+    const recipients = (document.members ?? []).filter((member) => {
+      if (member.status !== "accepted" || !member.accountId || member.accountId === authorAccountId)
+        return false;
+      const email = member.email.toLowerCase();
+      const localPart = email.split("@", 1)[0] ?? email;
+      return tokens.has(member.accountId.toLowerCase()) || tokens.has(email) || tokens.has(localPart);
+    });
+
+    for (const member of recipients) {
+      this.addWorkspaceNotification(document, {
+        recipientId: member.accountId!,
+        action: "mentioned",
+        entityKind: "document",
+        entityId: document.id,
+        title: document.title,
+        memberEmail: member.email,
+        commentId
+      });
+    }
+    if (recipients.length > 0) this.schedulePersist();
+    return recipients.map((member) => member.accountId!);
+  }
+
+  markWorkspaceNotificationRead(accountId: string, notificationId: string): boolean {
+    for (const record of [...this.documents.values(), ...this.boards.values()]) {
+      const notification = (record.notifications ?? []).find(
+        (candidate) => candidate.id === notificationId && candidate.recipientId === accountId
+      );
+      if (!notification) continue;
+      notification.readAt = nowIso();
+      record.updatedAt = nowIso();
+      this.schedulePersist();
+      return true;
+    }
+    return false;
+  }
+
+  markWorkspaceNotificationsRead(accountId: string): number {
+    let count = 0;
+    for (const record of [...this.documents.values(), ...this.boards.values()]) {
+      for (const notification of record.notifications ?? []) {
+        if (notification.recipientId !== accountId || notification.readAt) continue;
+        notification.readAt = nowIso();
+        count += 1;
+      }
+      if (count > 0) record.updatedAt = nowIso();
+    }
+    if (count > 0) this.schedulePersist();
+    return count;
+  }
+
   upsertWorkspaceMember(
     input: WorkspaceMemberInput
   ): "not-found" | "forbidden" | "invalid" | WorkspaceMember {
@@ -711,11 +869,15 @@ export class RealtimeStore {
 
     const members = record.members ?? [];
     const existing = members.find((member) => member.email.toLowerCase() === email);
+    const status = existing?.status === "accepted" ? "accepted" : "pending";
     const member: WorkspaceMember = {
-      accountId: existing?.accountId,
+      accountId: status === "accepted" ? existing?.accountId : undefined,
       email,
       role: input.role,
-      invitedAt: existing?.invitedAt ?? nowIso()
+      invitedAt: existing?.invitedAt ?? nowIso(),
+      status,
+      respondedAt: status === "accepted" ? existing?.respondedAt : undefined,
+      expiresAt: status === "pending" ? invitationExpiresAt() : undefined
     };
     if (existing) {
       Object.assign(existing, member);
@@ -723,6 +885,87 @@ export class RealtimeStore {
       members.push(member);
     }
     record.members = members;
+    this.addWorkspaceActivity(record, {
+      actorId: input.ownerId,
+      action: existing?.status === "pending" ? "resent" : "invited",
+      memberEmail: member.email,
+      role: member.role
+    });
+    record.updatedAt = nowIso();
+    this.schedulePersist();
+    return clone(member);
+  }
+
+  updateWorkspaceMemberRole(
+    input: WorkspaceMemberRoleUpdateInput
+  ): "not-found" | "forbidden" | "member-not-found" | "invalid" | WorkspaceMember {
+    const record =
+      input.kind === "document" ? this.documents.get(input.entityId) : this.boards.get(input.entityId);
+    if (!record) return "not-found";
+    if (record.ownerId !== input.ownerId) return "forbidden";
+    if (input.role !== "viewer" && input.role !== "editor") return "invalid";
+
+    const member = (record.members ?? []).find(
+      (candidate) => candidate.email.toLowerCase() === input.email.trim().toLowerCase()
+    );
+    if (!member || member.status !== "accepted") return "forbidden";
+
+    member.role = input.role;
+    this.addWorkspaceActivity(record, {
+      actorId: input.ownerId,
+      action: "role-changed",
+      memberEmail: member.email,
+      role: member.role
+    });
+    if (member.accountId) {
+      this.addWorkspaceNotification(record, {
+        recipientId: member.accountId,
+        action: "role-changed",
+        entityKind: input.kind,
+        entityId: input.entityId,
+        title: record.title,
+        memberEmail: member.email
+      });
+    }
+    record.updatedAt = nowIso();
+    this.schedulePersist();
+    return clone(member);
+  }
+
+  respondToWorkspaceInvitation(
+    input: WorkspaceInvitationResponseInput
+  ): "not-found" | "forbidden" | "member-not-found" | WorkspaceMember {
+    const record =
+      input.kind === "document" ? this.documents.get(input.entityId) : this.boards.get(input.entityId);
+    if (!record) return "not-found";
+
+    const email = input.email.trim().toLowerCase();
+    const member = (record.members ?? []).find((candidate) => candidate.email.toLowerCase() === email);
+    if (!member) return "forbidden";
+    if (member.status === "accepted" || member.status === "declined") return "forbidden";
+    if (member.expiresAt && Date.parse(member.expiresAt) <= Date.now()) return "forbidden";
+
+    member.status = input.status;
+    member.respondedAt = nowIso();
+    if (input.status === "accepted") member.accountId = input.accountId;
+    member.expiresAt = undefined;
+    record.members = record.members ?? [];
+    this.addWorkspaceActivity(record, {
+      actorId: input.accountId,
+      action: input.status,
+      memberEmail: member.email,
+      role: member.role
+    });
+    if (record.ownerId && record.ownerId !== input.accountId) {
+      this.addWorkspaceNotification(record, {
+        recipientId: record.ownerId,
+        action: input.status,
+        entityKind: input.kind,
+        entityId: input.entityId,
+        title: record.title,
+        memberEmail: member.email
+      });
+    }
     record.updatedAt = nowIso();
     this.schedulePersist();
     return clone(member);
@@ -744,9 +987,141 @@ export class RealtimeStore {
     const [removed] = members.splice(index, 1);
     if (!removed) return "member-not-found";
     record.members = members;
+    this.addWorkspaceActivity(record, {
+      actorId: input.ownerId,
+      action: "removed",
+      memberEmail: removed.email,
+      role: removed.role
+    });
+    if (removed.accountId) {
+      this.addWorkspaceNotification(record, {
+        recipientId: removed.accountId,
+        action: "removed",
+        entityKind: input.kind,
+        entityId: input.entityId,
+        title: record.title,
+        memberEmail: removed.email
+      });
+    }
     record.updatedAt = nowIso();
     this.schedulePersist();
     return clone(removed);
+  }
+
+  leaveWorkspaceMember(
+    input: WorkspaceMemberLeaveInput
+  ): "not-found" | "forbidden" | "member-not-found" | WorkspaceMember {
+    const record =
+      input.kind === "document" ? this.documents.get(input.entityId) : this.boards.get(input.entityId);
+    if (!record) return "not-found";
+    if (record.ownerId === input.accountId) return "forbidden";
+
+    const members = record.members ?? [];
+    const normalizedEmail = input.email.trim().toLowerCase();
+    const index = members.findIndex(
+      (member) =>
+        member.status === "accepted" &&
+        ((member.accountId && member.accountId === input.accountId) || member.email === normalizedEmail)
+    );
+    if (index === -1) return "member-not-found";
+    const [left] = members.splice(index, 1);
+    if (!left) return "member-not-found";
+    record.members = members;
+    this.addWorkspaceActivity(record, {
+      actorId: input.accountId,
+      action: "left",
+      memberEmail: left.email,
+      role: left.role
+    });
+    if (record.ownerId) {
+      this.addWorkspaceNotification(record, {
+        recipientId: record.ownerId,
+        action: "left",
+        entityKind: input.kind,
+        entityId: input.entityId,
+        title: record.title,
+        memberEmail: left.email
+      });
+    }
+    record.updatedAt = nowIso();
+    this.schedulePersist();
+    return clone(left);
+  }
+
+  transferWorkspaceOwnership(
+    input: WorkspaceOwnershipTransferInput
+  ): "not-found" | "forbidden" | "member-not-found" | WorkspaceRecord {
+    const record =
+      input.kind === "document" ? this.documents.get(input.entityId) : this.boards.get(input.entityId);
+    if (!record) return "not-found";
+    if (record.ownerId !== input.ownerId) return "forbidden";
+
+    const members = record.members ?? [];
+    const targetIndex = members.findIndex(
+      (member) =>
+        member.email === input.targetEmail.trim().toLowerCase() &&
+        member.status === "accepted" &&
+        Boolean(member.accountId)
+    );
+    if (targetIndex === -1) return "member-not-found";
+    const [target] = members.splice(targetIndex, 1);
+    if (!target?.accountId) return "member-not-found";
+
+    record.ownerId = target.accountId;
+    members.push({
+      accountId: input.ownerId,
+      email: input.ownerEmail.trim().toLowerCase(),
+      role: "editor",
+      invitedAt: nowIso(),
+      status: "accepted",
+      respondedAt: nowIso()
+    });
+    record.members = members;
+    this.addWorkspaceActivity(record, {
+      actorId: input.ownerId,
+      action: "ownership-transferred",
+      memberEmail: target.email,
+      role: "editor"
+    });
+    this.addWorkspaceNotification(record, {
+      recipientId: input.ownerId,
+      action: "ownership-transferred",
+      entityKind: input.kind,
+      entityId: input.entityId,
+      title: record.title,
+      memberEmail: target.email
+    });
+    this.addWorkspaceNotification(record, {
+      recipientId: target.accountId,
+      action: "ownership-transferred",
+      entityKind: input.kind,
+      entityId: input.entityId,
+      title: record.title,
+      memberEmail: target.email
+    });
+    record.updatedAt = nowIso();
+    this.schedulePersist();
+    return clone(record);
+  }
+
+  private addWorkspaceActivity(
+    record: DocumentRecord | WhiteboardRecord,
+    activity: Omit<WorkspaceActivity, "id" | "at">
+  ): void {
+    record.activity = [{ id: randomUUID(), at: nowIso(), ...activity }, ...(record.activity ?? [])].slice(
+      0,
+      MAX_WORKSPACE_ACTIVITY
+    );
+  }
+
+  private addWorkspaceNotification(
+    record: DocumentRecord | WhiteboardRecord,
+    notification: Omit<WorkspaceNotification, "id" | "at">
+  ): void {
+    record.notifications = [
+      { id: randomUUID(), at: nowIso(), ...notification },
+      ...(record.notifications ?? [])
+    ].slice(0, MAX_WORKSPACE_NOTIFICATIONS);
   }
 
   listBoards(ownerId?: string, accountEmail?: string): WhiteboardSummary[] {

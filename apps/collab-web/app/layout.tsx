@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AppHead, appFont, createAppMetadata } from "@repo/theme";
 import { Providers } from "@/app/providers";
+import { NotificationCenter } from "@/features/common/components/notification-center";
 import { getAppMetadataText, getCollabMessages, resolveRequestLocale } from "@/lib/i18n/server";
 import "./globals.css";
 
@@ -30,6 +31,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         className={`${appFont.className} font-body text-foreground dark:text-foreground min-h-screen antialiased`}
       >
         <Providers initialLocale={locale} initialMessages={initialMessages}>
+          <NotificationCenter />
           {children}
         </Providers>
       </body>

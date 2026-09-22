@@ -11,6 +11,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return forwardCollabRequest(request, `/api/documents/${(await context.params).id}/members`);
 }
 
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  return forwardCollabRequest(request, `/api/documents/${(await context.params).id}/members`);
+}
+
 export async function DELETE(request: NextRequest, context: RouteContext) {
   const id = (await context.params).id;
   const email = request.nextUrl.searchParams.get("email");

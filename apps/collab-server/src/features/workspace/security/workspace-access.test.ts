@@ -35,6 +35,35 @@ describe("resolveWorkspacePermission", () => {
     ).toBe("editor");
   });
 
+  test("denies pending and declined invitations", () => {
+    expect(
+      resolveWorkspacePermission(
+        { ownerId: owner.id, members: [{ email: editor.email, role: "editor", status: "pending" }] },
+        editor
+      )
+    ).toBe("denied");
+    expect(
+      resolveWorkspacePermission(
+        { ownerId: owner.id, members: [{ email: editor.email, role: "editor", status: "declined" }] },
+        editor
+      )
+    ).toBe("denied");
+  });
+
+  test("denies expired invitations", () => {
+    expect(
+      resolveWorkspacePermission(
+        {
+          ownerId: owner.id,
+          members: [
+            { email: editor.email, role: "editor", status: "pending", expiresAt: "2020-01-01T00:00:00.000Z" }
+          ]
+        },
+        editor
+      )
+    ).toBe("denied");
+  });
+
   test("denies a mismatched account even when the email differs", () => {
     expect(
       resolveWorkspacePermission(

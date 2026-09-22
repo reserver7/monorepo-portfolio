@@ -1,12 +1,23 @@
 export const API_ROUTES = {
   health: "/health",
   realtimeToken: "/api/session/realtime-token",
+  notifications: "/api/notifications",
+  notificationRead: "/api/notifications/:id/read",
+  notificationsReadAll: "/api/notifications/read-all",
   documents: "/api/documents",
   documentById: "/api/documents/:id",
   documentHistory: "/api/documents/:id/history",
   documentComments: "/api/documents/:id/comments",
   documentMembers: "/api/documents/:id/members",
+  documentActivity: "/api/documents/:id/activity",
+  documentMemberLeave: "/api/documents/:id/members/self",
+  documentOwnershipTransfer: "/api/documents/:id/members/transfer-ownership",
+  documentMemberResponse: "/api/documents/:id/members/respond",
   boards: "/api/boards",
   boardById: "/api/boards/:id",
-  boardMembers: "/api/boards/:id/members"
+  boardMembers: "/api/boards/:id/members",
+  boardActivity: "/api/boards/:id/activity",
+  boardMemberLeave: "/api/boards/:id/members/self",
+  boardOwnershipTransfer: "/api/boards/:id/members/transfer-ownership",
+  boardMemberResponse: "/api/boards/:id/members/respond"
 } as const;

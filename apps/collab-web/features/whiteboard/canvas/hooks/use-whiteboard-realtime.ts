@@ -296,6 +296,18 @@ export const useWhiteboardRealtime = ({
       }
     );
 
+    socket.on(socketEventName.permissionUpdate, ({ scope, currentRole }: PermissionDeniedPayload) => {
+      if (scope !== "board") return;
+      roleRef.current = currentRole;
+      setRole(currentRole);
+    });
+
+    socket.on(socketEventName.workspaceAccessRevoked, ({ scope }: { scope: string }) => {
+      if (scope !== "board") return;
+      setRole("viewer");
+      socket.disconnect();
+    });
+
     socket.on(socketEventName.socketError, ({ message }: SocketErrorPayload) => {
       if (message) {
         pushEvent(message, locale);
