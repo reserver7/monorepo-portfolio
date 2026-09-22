@@ -12,6 +12,8 @@ describe("서버 환경 변수 파싱", () => {
     expect(env.allowAllCors).toBe(true);
     expect(env.corsOrigins).toEqual([]);
     expect(env.collabSessionSecret).toBe("dev-collab-session-secret");
+    expect(env.resendEnabled).toBe(false);
+    expect(env.resendMonthlyLimit).toBe(3_000);
   });
 
   it("운영 환경에서 CORS 설정이 없으면 즉시 실패한다", () => {
@@ -186,5 +188,16 @@ describe("서버 환경 변수 파싱", () => {
 
     expect(env.port).toBe(4500);
     expect(env.editorAccessKey).toBe("editor-key");
+  });
+
+  it("Resend 월 한도는 무료 한도 이상으로 설정되지 않는다", () => {
+    const env = createServerEnv({
+      RESEND_ENABLED: "true",
+      RESEND_API_KEY: "key",
+      RESEND_FROM_EMAIL: "Workspace <noreply@example.com>",
+      RESEND_MONTHLY_LIMIT: "5000"
+    });
+    expect(env.resendEnabled).toBe(true);
+    expect(env.resendMonthlyLimit).toBe(3_000);
   });
 });

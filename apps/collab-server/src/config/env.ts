@@ -111,6 +111,11 @@ export interface ServerEnv {
   redisUrl: string | undefined;
   collabSessionSecret: string;
   authBridgeSecret: string | undefined;
+  collabWebUrl: string | undefined;
+  resendEnabled: boolean;
+  resendApiKey: string | undefined;
+  resendFromEmail: string | undefined;
+  resendMonthlyLimit: number;
   editorAccessKey: string | undefined;
   socketRateLimitWindowMs: number;
   socketWriteEventsPerWindow: number;
@@ -148,6 +153,13 @@ export const createServerEnv = (rawEnv: NodeJS.ProcessEnv = process.env): Server
     throw new Error("AUTH_BRIDGE_SECRET must be configured in production.");
   }
 
+  const resendEnabled = toBool(rawEnv.RESEND_ENABLED, false);
+  const resendApiKey = rawEnv.RESEND_API_KEY?.trim() || undefined;
+  const resendFromEmail = rawEnv.RESEND_FROM_EMAIL?.trim() || undefined;
+  if (isProduction && resendEnabled && (!resendApiKey || !resendFromEmail)) {
+    throw new Error("RESEND_API_KEY and RESEND_FROM_EMAIL are required when RESEND_ENABLED=true.");
+  }
+
   const stateFilePath = rawEnv.STATE_FILE_PATH?.trim() || undefined;
   const stateBackend = rawEnv.STATE_BACKEND?.trim().toLowerCase() === "postgres" ? "postgres" : "file";
   const collabDatabaseUrl = rawEnv.COLLAB_DATABASE_URL?.trim() || undefined;
@@ -172,6 +184,11 @@ export const createServerEnv = (rawEnv: NodeJS.ProcessEnv = process.env): Server
     redisUrl: rawEnv.REDIS_URL?.trim() || undefined,
     collabSessionSecret,
     authBridgeSecret,
+    collabWebUrl: rawEnv.COLLAB_WEB_URL?.trim().replace(/\/$/, "") || undefined,
+    resendEnabled,
+    resendApiKey,
+    resendFromEmail,
+    resendMonthlyLimit: Math.min(toPositiveInt(rawEnv.RESEND_MONTHLY_LIMIT, 3_000), 3_000),
     editorAccessKey: rawEnv.EDITOR_ACCESS_KEY?.trim() || undefined,
     socketRateLimitWindowMs: toPositiveInt(rawEnv.SOCKET_RATE_LIMIT_WINDOW_MS, 10_000),
     socketWriteEventsPerWindow: toPositiveInt(rawEnv.SOCKET_WRITE_EVENTS_PER_WINDOW, 120),
