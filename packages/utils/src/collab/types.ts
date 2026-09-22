@@ -8,21 +8,60 @@ export interface HistoryEntry {
 }
 
 export type AccessRole = "viewer" | "editor";
+export type WorkspaceInvitationStatus = "pending" | "accepted" | "declined";
+export type WorkspaceActivityAction =
+  | "invited"
+  | "resent"
+  | "accepted"
+  | "declined"
+  | "role-changed"
+  | "removed"
+  | "left"
+  | "ownership-transferred"
+  | "mentioned"
+  | "replied";
 
 export interface WorkspaceMember {
   accountId?: string;
   email: string;
   role: AccessRole;
   invitedAt: string;
+  status?: WorkspaceInvitationStatus;
+  respondedAt?: string;
+  expiresAt?: string;
+}
+
+export interface WorkspaceActivity {
+  id: string;
+  at: string;
+  actorId: string;
+  action: WorkspaceActivityAction;
+  memberEmail: string;
+  role?: AccessRole;
+}
+
+export interface WorkspaceNotification {
+  id: string;
+  recipientId: string;
+  at: string;
+  action: WorkspaceActivityAction;
+  entityKind: "document" | "board";
+  entityId: string;
+  title: string;
+  memberEmail: string;
+  commentId?: string;
+  readAt?: string;
 }
 
 export interface DocumentComment {
   id: string;
   documentId: string;
   authorSessionId: string;
+  authorAccountId?: string;
   authorName: string;
   body: string;
   mentions: string[];
+  parentCommentId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -44,6 +83,8 @@ export interface DocumentRecord {
   id: string;
   ownerId?: string;
   members?: WorkspaceMember[];
+  activity?: WorkspaceActivity[];
+  notifications?: WorkspaceNotification[];
   title: string;
   content: string;
   yjsState: string;
@@ -80,6 +121,8 @@ export interface WhiteboardRecord {
   id: string;
   ownerId?: string;
   members?: WorkspaceMember[];
+  activity?: WorkspaceActivity[];
+  notifications?: WorkspaceNotification[];
   title: string;
   shapes: WhiteboardShape[];
   createdAt: string;
@@ -140,6 +183,12 @@ export const socketEventName = {
   boardRedo: "board:redo",
   documentState: "document:state",
   participantsUpdate: "participants:update",
+  permissionUpdate: "permission:update",
+  workspaceAccessRevoked: "workspace:access-revoked",
+  notificationsSubscribe: "notifications:subscribe",
+  notificationsUpdate: "notifications:update",
+  activitySubscribe: "activity:subscribe",
+  activityUpdate: "activity:update",
   cursorUpdate: "cursor:update",
   documentSaved: "document:saved",
   permissionDenied: "permission:denied",
@@ -164,6 +213,16 @@ export interface DocumentJoinPayload {
   clientYjsState?: string;
 }
 
+export interface NotificationsSubscribePayload {
+  accountToken?: string;
+}
+
+export interface ActivitySubscribePayload {
+  scope: "document" | "board";
+  entityId: string;
+  accountToken?: string;
+}
+
 export interface DocumentLegacyUpdatePayload {
   documentId: string;
   title?: string;
@@ -180,6 +239,7 @@ export interface DocumentCommentPayload {
   documentId: string;
   body: string;
   mentions?: string[];
+  parentCommentId?: string;
 }
 
 export interface DocumentCommentUpdatePayload {

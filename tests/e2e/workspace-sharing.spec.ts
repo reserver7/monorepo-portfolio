@@ -33,6 +33,15 @@ test("소유자는 공유 패널을 보고 viewer는 편집 권한을 받지 못
   });
   expect(inviteResponse.status()).toBe(201);
 
+  const acceptResponse = await request.post(
+    `${serverUrl}/api/documents/${created.document.id}/members/respond`,
+    {
+      headers: { Authorization: `Bearer ${viewerToken}` },
+      data: { status: "accepted" }
+    }
+  );
+  expect(acceptResponse.status()).toBe(200);
+
   const ownerContext = await browser.newContext();
   await ownerContext.addCookies([{ name: "collab.auth", value: ownerToken, domain: "127.0.0.1", path: "/" }]);
   const ownerPage = await ownerContext.newPage();

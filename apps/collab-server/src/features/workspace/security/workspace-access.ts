@@ -20,8 +20,11 @@ export const resolveWorkspacePermission = (
 
   const member = (record.members ?? []).find(
     (candidate) =>
-      (candidate.accountId && candidate.accountId === account.id) ||
-      normalizeEmail(candidate.email) === normalizeEmail(account.email)
+      candidate.status !== "pending" &&
+      candidate.status !== "declined" &&
+      !(candidate.expiresAt && Date.parse(candidate.expiresAt) <= Date.now()) &&
+      ((candidate.accountId && candidate.accountId === account.id) ||
+        normalizeEmail(candidate.email) === normalizeEmail(account.email))
   );
   return member?.role ?? "denied";
 };
