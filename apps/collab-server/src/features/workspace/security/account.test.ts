@@ -1,5 +1,9 @@
 import { createHmac } from "node:crypto";
-import { extractAccountFromAuthorization } from "./account";
+import {
+  extractAccountFromAuthorization,
+  extractAccountFromRealtimeToken,
+  issueAccountRealtimeToken
+} from "./account";
 
 const tokenFor = (payload: Record<string, unknown>, secret: string): string => {
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -37,5 +41,19 @@ describe("계정 세션 검증", () => {
 
     expect(extractAccountFromAuthorization(`Bearer ${token}`, "bridge-secret")).toBeNull();
     expect(extractAccountFromAuthorization("Bearer forged", "bridge-secret")).toBeNull();
+  });
+});
+
+describe("실시간 계정 토큰", () => {
+  it("짧은 수명의 계정 토큰을 발급하고 검증한다", () => {
+    const account = { id: "a", email: "a@example.com", name: "A", role: "viewer" as const };
+    const token = issueAccountRealtimeToken(account, "secret", 1_700_000_000_000, 60_000);
+    expect(extractAccountFromRealtimeToken(token, "secret", 1_700_000_030)).toEqual(account);
+  });
+
+  it("만료된 실시간 계정 토큰을 거부한다", () => {
+    const account = { id: "a", email: "a@example.com", name: "A", role: "viewer" as const };
+    const token = issueAccountRealtimeToken(account, "secret", 1_700_000_000_000, 60_000);
+    expect(extractAccountFromRealtimeToken(token, "secret", 1_700_000_061)).toBeNull();
   });
 });

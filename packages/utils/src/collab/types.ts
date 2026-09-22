@@ -9,6 +9,13 @@ export interface HistoryEntry {
 
 export type AccessRole = "viewer" | "editor";
 
+export interface WorkspaceMember {
+  accountId?: string;
+  email: string;
+  role: AccessRole;
+  invitedAt: string;
+}
+
 export interface DocumentComment {
   id: string;
   documentId: string;
@@ -23,6 +30,7 @@ export interface DocumentComment {
 export interface DocumentSummary {
   id: string;
   ownerId?: string;
+  members?: WorkspaceMember[];
   title: string;
   isProtected: boolean;
   snippet: string;
@@ -35,6 +43,7 @@ export interface DocumentSummary {
 export interface DocumentRecord {
   id: string;
   ownerId?: string;
+  members?: WorkspaceMember[];
   title: string;
   content: string;
   yjsState: string;
@@ -70,6 +79,7 @@ export interface WhiteboardShape {
 export interface WhiteboardRecord {
   id: string;
   ownerId?: string;
+  members?: WorkspaceMember[];
   title: string;
   shapes: WhiteboardShape[];
   createdAt: string;
@@ -80,6 +90,7 @@ export interface WhiteboardRecord {
 export interface WhiteboardSummary {
   id: string;
   ownerId?: string;
+  members?: WorkspaceMember[];
   title: string;
   isProtected: boolean;
   shapeCount: number;
@@ -144,6 +155,7 @@ export type SocketEventName = (typeof socketEventName)[keyof typeof socketEventN
 
 export interface DocumentJoinPayload {
   documentId: string;
+  accountToken?: string;
   sessionId?: string;
   sessionToken?: string;
   displayName?: string;
@@ -193,6 +205,7 @@ export interface DocumentSavePayload {
 
 export interface BoardJoinPayload {
   boardId: string;
+  accountToken?: string;
   sessionId?: string;
   sessionToken?: string;
   displayName?: string;

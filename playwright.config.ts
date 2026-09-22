@@ -1,8 +1,10 @@
 import { defineConfig } from "@playwright/test";
 
 const editorAccessKey = "integration-editor-key";
-const serverUrl = "http://127.0.0.1:4010";
-const collabWebUrl = "http://127.0.0.1:3010";
+const serverPort = process.env.PLAYWRIGHT_SERVER_PORT ?? "4010";
+const collabWebPort = process.env.PLAYWRIGHT_WEB_PORT ?? "3010";
+const serverUrl = `http://127.0.0.1:${serverPort}`;
+const collabWebUrl = `http://127.0.0.1:${collabWebPort}`;
 const viewport = process.env.PLAYWRIGHT_VIEWPORT === "390" ? { width: 390, height: 844 } : undefined;
 
 export default defineConfig({
@@ -29,16 +31,18 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: "pnpm --filter @repo/collab-server exec tsx src/index.ts",
+      command: `pnpm --filter @repo/collab-server exec tsx src/index.ts`,
       url: `${serverUrl}/health`,
       timeout: 120_000,
       reuseExistingServer: false,
       env: {
-        PORT: "4010",
+        PORT: serverPort,
         STATE_BACKEND: "file",
         STATE_FILE_PATH: "/tmp/monorepo-portfolio-e2e-state.json",
-        CORS_ORIGINS: "http://127.0.0.1:3010,http://localhost:3010",
+        CORS_ORIGINS: `${collabWebUrl},http://localhost:${collabWebPort}`,
         COLLAB_SESSION_SECRET: "e2e-collab-session-secret",
+        AUTH_BRIDGE_SECRET: "e2e-bridge-secret",
+        COLLAB_E2E_AUTH_BYPASS: "true",
         EDITOR_ACCESS_KEY: editorAccessKey,
         SOCKET_RATE_LIMIT_WINDOW_MS: "10000",
         SOCKET_WRITE_EVENTS_PER_WINDOW: "120",
@@ -48,12 +52,12 @@ export default defineConfig({
       }
     },
     {
-      command: "pnpm --filter @repo/collab-web exec next dev -p 3010",
+      command: `pnpm --filter @repo/collab-web exec next dev -p ${collabWebPort}`,
       url: `${collabWebUrl}/docs`,
       timeout: 120_000,
       reuseExistingServer: false,
       env: {
-        PORT: "3010",
+        PORT: collabWebPort,
         NEXT_PUBLIC_API_URL: serverUrl,
         NEXT_PUBLIC_APP_URL: collabWebUrl,
         COLLAB_E2E_AUTH_BYPASS: "true",

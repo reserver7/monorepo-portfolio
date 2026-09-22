@@ -35,6 +35,7 @@ import {
 import { formatExactTime, formatRelativeTime } from "@/features/docs/collaboration/model";
 import { useCollabStore } from "@/features/docs/collaboration/stores/use-collab-store";
 import { createLocaleGuestName, normalizeGuestDisplayName } from "@/lib/i18n/display-name";
+import { WorkspaceSharePanel } from "@/features/common/components/workspace-share-panel";
 
 export default function DocumentRoomPage() {
   const t = useTranslations("collab.docsRoom");
@@ -313,6 +314,10 @@ export default function DocumentRoomPage() {
             </div>
           </header>
         </MarketingSection>
+
+        {documentQuery.data?.permission === "owner" ? (
+          <WorkspaceSharePanel kind="documents" entityId={documentId} />
+        ) : null}
 
         <MarketingSection tone="light" className="bg-surface">
           <SplitWorkspaceLayout

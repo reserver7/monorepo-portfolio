@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+const webPort = process.env.PLAYWRIGHT_WEB_PORT ?? "3010";
+
 test.describe("앱 간 이동", () => {
   test("문서 홈에서 화이트보드로 이동할 수 있다", async ({ page }) => {
     await page.goto("/docs");
@@ -7,7 +9,7 @@ test.describe("앱 간 이동", () => {
 
     await page.getByRole("button", { name: "화이트보드로 이동" }).click();
 
-    await expect(page).toHaveURL(/127\.0\.0\.1:3010\/whiteboard\/?(?:\?.*)?$/);
+    await expect(page).toHaveURL(new RegExp(`127\\.0\\.0\\.1:${webPort}\\/whiteboard\\/?(?:\\?.*)?$`));
     await expect(page.getByRole("heading", { name: "실시간 화이트보드 협업" })).toBeVisible();
   });
 
@@ -17,7 +19,7 @@ test.describe("앱 간 이동", () => {
 
     await page.getByRole("button", { name: "문서로 이동" }).click();
 
-    await expect(page).toHaveURL(/127\.0\.0\.1:3010\/docs\/?(?:\?.*)?$/);
+    await expect(page).toHaveURL(new RegExp(`127\\.0\\.0\\.1:${webPort}\\/docs\\/?(?:\\?.*)?$`));
     await expect(page.getByRole("heading", { name: "실시간 협업 문서 서비스" })).toBeVisible();
   });
 });

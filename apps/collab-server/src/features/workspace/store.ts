@@ -9,6 +9,7 @@ import type {
   WhiteboardShape,
   WhiteboardSummary
 } from "../../../../../packages/utils/src/collab/server";
+import type { AccessRole, WorkspaceMember } from "../../../../../packages/utils/src/collab/server";
 import {
   createStoredEditorAccessKey,
   normalizeStoredEditorAccessKey,
@@ -106,6 +107,21 @@ interface DeleteBoardInput {
   boardId: string;
   editorAccessKey?: string;
   ownerId?: string;
+}
+
+interface WorkspaceMemberInput {
+  kind: "document" | "board";
+  entityId: string;
+  ownerId: string;
+  email: string;
+  role: AccessRole;
+}
+
+interface WorkspaceMemberRemoveInput {
+  kind: "document" | "board";
+  entityId: string;
+  ownerId: string;
+  email: string;
 }
 
 const MAX_HISTORY = 160;
@@ -276,9 +292,18 @@ export class RealtimeStore {
     this.schedulePersist(10);
   }
 
-  listDocuments(ownerId?: string): DocumentSummary[] {
+  listDocuments(ownerId?: string, accountEmail?: string): DocumentSummary[] {
+    const normalizedEmail = accountEmail?.trim().toLowerCase();
     return [...this.documents.values()]
-      .filter((document) => !ownerId || !document.ownerId || document.ownerId === ownerId)
+      .filter(
+        (document) =>
+          !ownerId ||
+          !document.ownerId ||
+          document.ownerId === ownerId ||
+          document.members?.some(
+            (member) => member.accountId === ownerId || member.email.toLowerCase() === normalizedEmail
+          )
+      )
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .map((document) => ({
         id: document.id,
@@ -324,6 +349,7 @@ export class RealtimeStore {
     const created: DocumentRecord = {
       id: randomUUID(),
       ownerId,
+      members: [],
       title,
       content: "",
       yjsState: encodeBinary(Y.encodeStateAsUpdate(ydoc)),
@@ -667,9 +693,74 @@ export class RealtimeStore {
     return { documentId: input.documentId };
   }
 
-  listBoards(ownerId?: string): WhiteboardSummary[] {
+  listWorkspaceMembers(kind: "document" | "board", entityId: string): WorkspaceMember[] | null {
+    const record = kind === "document" ? this.documents.get(entityId) : this.boards.get(entityId);
+    return record ? clone(record.members ?? []) : null;
+  }
+
+  upsertWorkspaceMember(
+    input: WorkspaceMemberInput
+  ): "not-found" | "forbidden" | "invalid" | WorkspaceMember {
+    const record =
+      input.kind === "document" ? this.documents.get(input.entityId) : this.boards.get(input.entityId);
+    if (!record) return "not-found";
+    if (record.ownerId !== input.ownerId) return "forbidden";
+
+    const email = input.email.trim().toLowerCase();
+    if (!email || email.length > 320 || input.role === undefined) return "invalid";
+
+    const members = record.members ?? [];
+    const existing = members.find((member) => member.email.toLowerCase() === email);
+    const member: WorkspaceMember = {
+      accountId: existing?.accountId,
+      email,
+      role: input.role,
+      invitedAt: existing?.invitedAt ?? nowIso()
+    };
+    if (existing) {
+      Object.assign(existing, member);
+    } else {
+      members.push(member);
+    }
+    record.members = members;
+    record.updatedAt = nowIso();
+    this.schedulePersist();
+    return clone(member);
+  }
+
+  removeWorkspaceMember(
+    input: WorkspaceMemberRemoveInput
+  ): "not-found" | "forbidden" | "member-not-found" | WorkspaceMember {
+    const record =
+      input.kind === "document" ? this.documents.get(input.entityId) : this.boards.get(input.entityId);
+    if (!record) return "not-found";
+    if (record.ownerId !== input.ownerId) return "forbidden";
+
+    const members = record.members ?? [];
+    const index = members.findIndex(
+      (member) => member.email.toLowerCase() === input.email.trim().toLowerCase()
+    );
+    if (index === -1) return "member-not-found";
+    const [removed] = members.splice(index, 1);
+    if (!removed) return "member-not-found";
+    record.members = members;
+    record.updatedAt = nowIso();
+    this.schedulePersist();
+    return clone(removed);
+  }
+
+  listBoards(ownerId?: string, accountEmail?: string): WhiteboardSummary[] {
+    const normalizedEmail = accountEmail?.trim().toLowerCase();
     return [...this.boards.values()]
-      .filter((board) => !ownerId || !board.ownerId || board.ownerId === ownerId)
+      .filter(
+        (board) =>
+          !ownerId ||
+          !board.ownerId ||
+          board.ownerId === ownerId ||
+          board.members?.some(
+            (member) => member.accountId === ownerId || member.email.toLowerCase() === normalizedEmail
+          )
+      )
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .map((board) => ({
         id: board.id,
@@ -699,6 +790,7 @@ export class RealtimeStore {
     const board: WhiteboardRecord = {
       id: randomUUID(),
       ownerId,
+      members: [],
       title,
       shapes: [],
       createdAt: now,

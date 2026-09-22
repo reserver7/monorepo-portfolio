@@ -43,6 +43,7 @@ import {
 } from "@/features/whiteboard/collaboration/model";
 import { formatExactTime, formatRelativeTime } from "@/features/whiteboard/collaboration/model";
 import { createLocaleGuestName, normalizeGuestDisplayName } from "@/lib/i18n/display-name";
+import { WorkspaceSharePanel } from "@/features/common/components/workspace-share-panel";
 import {
   ConnectorHandle,
   findNearestNodeCenter,
@@ -560,6 +561,10 @@ export default function WhiteboardRoomPage() {
             </div>
           </header>
         </MarketingSection>
+
+        {boardQuery.data?.permission === "owner" ? (
+          <WorkspaceSharePanel kind="boards" entityId={boardId} />
+        ) : null}
 
         <MarketingSection tone="light" className="bg-surface">
           <section className="border-default bg-surface mb-4 rounded-2xl border p-5 shadow-[var(--shadow-card)]">

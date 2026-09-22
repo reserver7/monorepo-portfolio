@@ -1,0 +1,50 @@
+import { describe, expect, test } from "@jest/globals";
+import type { AccountIdentity } from "./account";
+import { resolveWorkspacePermission } from "./workspace-access";
+
+const owner: AccountIdentity = {
+  id: "account-owner",
+  email: "owner@example.com",
+  name: "Owner",
+  role: "operator"
+};
+
+const editor: AccountIdentity = {
+  id: "account-editor",
+  email: "editor@example.com",
+  name: "Editor",
+  role: "operator"
+};
+
+describe("resolveWorkspacePermission", () => {
+  test("returns owner for the record owner", () => {
+    expect(
+      resolveWorkspacePermission(
+        { ownerId: owner.id, members: [{ accountId: editor.id, email: editor.email, role: "viewer" }] },
+        owner
+      )
+    ).toBe("owner");
+  });
+
+  test("returns the matching member role", () => {
+    expect(
+      resolveWorkspacePermission(
+        { ownerId: owner.id, members: [{ accountId: editor.id, email: editor.email, role: "editor" }] },
+        editor
+      )
+    ).toBe("editor");
+  });
+
+  test("denies a mismatched account even when the email differs", () => {
+    expect(
+      resolveWorkspacePermission(
+        { ownerId: owner.id, members: [{ accountId: editor.id, email: editor.email, role: "editor" }] },
+        { ...editor, id: "other-account", email: "other@example.com" }
+      )
+    ).toBe("denied");
+  });
+
+  test("keeps legacy ownerless records compatible", () => {
+    expect(resolveWorkspacePermission({}, editor)).toBe("legacy");
+  });
+});
