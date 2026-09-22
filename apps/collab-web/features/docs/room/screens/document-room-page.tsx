@@ -4,7 +4,7 @@ import { FeedbackState } from "@/features/common/components/feedback-state";
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useAppForm } from "@repo/forms";
 import { useQuery } from "@repo/react-query";
@@ -23,7 +23,12 @@ import {
 } from "@repo/ui";
 import { CollabLocaleFilter } from "@/features/common/components/collab-locale-filter";
 import { useCollaboration } from "@/features/docs/collaboration/hooks/use-collaboration";
-import { docsQueryKeys, getDocument, getDocumentHistory } from "@/features/docs/documents/api";
+import {
+  docsQueryKeys,
+  getDocument,
+  getDocumentHistory,
+  listDocumentMembers
+} from "@/features/docs/documents/api";
 import {
   getStoredDisplayName,
   getStoredEditorAccessKey,
@@ -111,8 +116,10 @@ export default function DocumentRoomPage() {
     [panelLoadingState]
   );
   const router = useRouter();
+  const searchParams = useSearchParams();
   const params = useParams<{ id: string }>();
   const documentId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const highlightedCommentId = searchParams.get("comment") ?? undefined;
 
   const sessionForm = useAppForm<{
     displayName: string;
@@ -163,6 +170,13 @@ export default function DocumentRoomPage() {
     enabled: Boolean(documentId),
     staleTime: 10 * 1000,
     refetchInterval: 6000
+  });
+
+  const membersQuery = useQuery({
+    queryKey: docsQueryKeys.members(documentId),
+    queryFn: () => listDocumentMembers(documentId),
+    enabled: Boolean(documentId),
+    staleTime: 10 * 1000
   });
 
   const {
@@ -392,8 +406,14 @@ export default function DocumentRoomPage() {
                 <CommentsPanel
                   comments={comments}
                   participants={participants}
+                  mentionCandidates={(membersQuery.data?.members ?? [])
+                    .filter((member) => member.status === "accepted")
+                    .map((member) => member.email.split("@", 1)[0] ?? member.email)}
                   mySessionId={sessionId}
-                  onSubmitComment={(body, mentions) => addComment(body, mentions)}
+                  highlightedCommentId={highlightedCommentId}
+                  onSubmitComment={(body, mentions, parentCommentId) =>
+                    addComment(body, mentions, parentCommentId)
+                  }
                   onUpdateComment={(commentId, body, mentions) => updateComment(commentId, body, mentions)}
                   onDeleteComment={(commentId) => deleteComment(commentId)}
                 />

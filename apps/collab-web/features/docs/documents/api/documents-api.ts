@@ -16,6 +16,7 @@ export const docsQueryKeys = {
   all: docsKeysBase.all,
   documents: () => docsKeysBase.lists(),
   document: (documentId: string) => docsKeysBase.detail(documentId),
+  members: (documentId: string) => docsKeysBase.custom("members", documentId),
   history: (documentId: string) => docsKeysBase.custom("history", documentId),
   comments: (documentId: string) => docsKeysBase.custom("comments", documentId)
 };

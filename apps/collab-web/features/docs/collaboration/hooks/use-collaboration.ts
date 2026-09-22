@@ -134,7 +134,7 @@ export const useCollaboration = ({
   updateContent: (nextContent: string) => void;
   sendCursor: (cursorIndex: number) => void;
   forceSave: () => void;
-  addComment: (commentBody: string, mentions?: string[]) => void;
+  addComment: (commentBody: string, mentions?: string[], parentCommentId?: string) => void;
   updateComment: (commentId: string, commentBody: string, mentions?: string[]) => void;
   deleteComment: (commentId: string) => void;
 } => {
@@ -526,6 +526,19 @@ export const useCollaboration = ({
       }
     });
 
+    socket.on(socketEventName.permissionUpdate, ({ scope, currentRole }: PermissionDeniedPayload) => {
+      if (scope !== "document") return;
+      roleRef.current = currentRole;
+      setRole(currentRole);
+      setSaveState("idle");
+    });
+
+    socket.on(socketEventName.workspaceAccessRevoked, ({ scope }: { scope: string }) => {
+      if (scope !== "document") return;
+      setRole("viewer");
+      socket.disconnect();
+    });
+
     socket.on(
       socketEventName.documentConflict,
       ({ documentId: incomingDocumentId, serverVersion }: DocumentConflictPayload) => {
@@ -661,7 +674,7 @@ export const useCollaboration = ({
   }, [documentId]);
 
   const addComment = useCallback(
-    (commentBody: string, mentions: string[] = []) => {
+    (commentBody: string, mentions: string[] = [], parentCommentId?: string) => {
       const socket = socketRef.current;
       if (!socket || !socket.connected) {
         pushEvent(t("comment.offlineAdd"), locale);
@@ -671,7 +684,8 @@ export const useCollaboration = ({
       const payload: DocumentCommentAddPayload = {
         documentId,
         body: commentBody,
-        mentions
+        mentions,
+        parentCommentId
       };
       socket.emit(socketEventName.documentCommentAdd, payload);
     },
