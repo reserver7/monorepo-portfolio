@@ -69,6 +69,7 @@ import {
   resolveWorkspacePermission,
   normalizeWorkspaceMemberEmail
 } from "./features/workspace";
+import { sendWorkspaceInvitationEmail } from "./features/workspace/notifications/invitation-email";
 
 const app = express();
 const store = new RealtimeStore(
@@ -109,6 +110,7 @@ const { boardBySocket, boardParticipants, documentBySocket, documentParticipants
 const socketLimiter = new EventRateLimiter();
 let roleLockStore: RoleLockStore = new MemoryRoleLockStore();
 const EMPTY_TITLE = "(제목 없음)";
+const invitationEmailUsage = { month: "", count: 0 };
 
 const enforceRateLimit = (
   socket: Socket,
@@ -237,6 +239,34 @@ const readWorkspaceMemberInput = (body: Record<string, unknown>) => ({
   email: normalizeWorkspaceMemberEmail(typeof body.email === "string" ? body.email : ""),
   role: body.role === "editor" ? ("editor" as const) : ("viewer" as const)
 });
+
+const notifyWorkspaceMember = (
+  kind: "document" | "board",
+  entityId: string,
+  email: string,
+  title: string
+): void => {
+  const baseUrl = serverEnv.collabWebUrl ?? serverEnv.corsOrigins[0];
+  if (!baseUrl) return;
+  void sendWorkspaceInvitationEmail(
+    {
+      to: email,
+      workspaceTitle: title,
+      inviteUrl: `${baseUrl}/${kind === "document" ? "docs" : "whiteboard"}/${entityId}`
+    },
+    {
+      enabled: serverEnv.resendEnabled,
+      apiKey: serverEnv.resendApiKey,
+      from: serverEnv.resendFromEmail,
+      monthlyLimit: serverEnv.resendMonthlyLimit,
+      usage: invitationEmailUsage
+    }
+  ).then((result) => {
+    if (!result.sent && result.reason !== "disabled") {
+      httpLogger.warn("workspace.invitation_email_skipped", { reason: result.reason });
+    }
+  });
+};
 
 const resolveLockedRole = async (
   scope: "document" | "board",
@@ -539,6 +569,14 @@ app.post(API_ROUTES.documentMembers, (req, res) => {
     res.status(400).json({ message: "유효한 멤버 정보가 필요합니다." });
     return;
   }
+  if (typeof member === "object") {
+    notifyWorkspaceMember(
+      "document",
+      req.params.id,
+      member.email,
+      store.getDocument(req.params.id)?.title ?? EMPTY_TITLE
+    );
+  }
   res.status(201).json({ member });
 });
 
@@ -633,6 +671,14 @@ app.post(API_ROUTES.boardMembers, (req, res) => {
   if (member === "invalid") {
     res.status(400).json({ message: "유효한 멤버 정보가 필요합니다." });
     return;
+  }
+  if (typeof member === "object") {
+    notifyWorkspaceMember(
+      "board",
+      req.params.id,
+      member.email,
+      store.getBoard(req.params.id)?.title ?? EMPTY_TITLE
+    );
   }
   res.status(201).json({ member });
 });
