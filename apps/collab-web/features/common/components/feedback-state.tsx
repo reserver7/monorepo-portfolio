@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@repo/ui";
+import { cn, Flex } from "@repo/ui";
 
 type FeedbackStateProps = {
   variant?: "info" | "warning" | "error" | "empty" | "loading";
@@ -38,7 +38,7 @@ export function FeedbackState({
         className
       )}
     >
-      <div
+      <Flex
         className={cn(
           "flex gap-3",
           align === "center" ? "items-center justify-center text-center" : "items-start text-left"
@@ -54,12 +54,12 @@ export function FeedbackState({
         >
           {icon}
         </span>
-        <div className="min-w-0 flex-1">
+        <Flex className="min-w-0 flex-1">
           <p className="text-foreground break-words font-semibold">{title}</p>
           {description ? <p className="text-muted mt-1 break-words text-sm">{description}</p> : null}
           {action ? <div className="mt-2">{action}</div> : null}
-        </div>
-      </div>
+        </Flex>
+      </Flex>
     </div>
   );
 }

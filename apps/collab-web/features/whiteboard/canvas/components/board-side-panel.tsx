@@ -1,6 +1,6 @@
 import type { Participant } from "@repo/utils/collab";
 import { useLocale, useTranslations } from "next-intl";
-import { Badge, Card, Typography } from "@repo/ui";
+import { Badge, Card, Typography, Flex } from "@repo/ui";
 import type { WhiteboardShape } from "@/features/whiteboard/collaboration/model";
 import type { WhiteboardTool } from "./shape-utils";
 import { normalizeGuestDisplayName } from "@/lib/i18n/display-name";
@@ -45,14 +45,14 @@ export const BoardSidePanel = ({
   return (
     <div className="space-y-4">
       <Card className="border-default/80 bg-surface border p-5">
-        <div className="mb-4 flex items-center justify-between gap-2">
+        <Flex className="mb-4 flex items-center justify-between gap-2">
           <Typography as="h3" variant="title" className="text-body-md font-semibold">
             {t("participants.title")}
           </Typography>
           <Badge variant="info" size="sm">
             {t("participants.count", { count: participants.length })}
           </Badge>
-        </div>
+        </Flex>
         <div className="space-y-3">
           {participants.length === 0 ? (
             <Typography variant="bodySm" color="subtle">
@@ -66,8 +66,8 @@ export const BoardSidePanel = ({
 
               return (
                 <div key={`${participant.socketId}-${participant.sessionId}`} className={panelItemClass}>
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2">
+                  <Flex className="flex items-center justify-between gap-2">
+                    <Flex className="flex min-w-0 items-center gap-2">
                       <span
                         className="h-2.5 w-2.5 rounded-full"
                         style={{ backgroundColor: participant.color }}
@@ -76,7 +76,7 @@ export const BoardSidePanel = ({
                         {normalizeGuestDisplayName(participant.displayName, locale)}
                         {isMe ? t("participants.meSuffix") : ""}
                       </Typography>
-                    </div>
+                    </Flex>
                     <Badge
                       variant={participant.role === "editor" ? "success" : "outline"}
                       size="sm"
@@ -84,13 +84,13 @@ export const BoardSidePanel = ({
                     >
                       {participant.role}
                     </Badge>
-                  </div>
+                  </Flex>
 
-                  <div className="mt-1.5 flex items-center justify-end">
+                  <Flex className="mt-1.5 flex items-center justify-end">
                     <Typography as="span" variant="caption" color="subtle" className="tabular-nums">
                       {t("participants.cursor", { x: cursorX, y: cursorY })}
                     </Typography>
-                  </div>
+                  </Flex>
                 </div>
               );
             })
@@ -131,14 +131,14 @@ export const BoardSidePanel = ({
       </Card>
 
       <Card className="border-default/80 bg-surface border p-5">
-        <div className="mb-4 flex items-center justify-between gap-2">
+        <Flex className="mb-4 flex items-center justify-between gap-2">
           <Typography as="h3" variant="title" className="text-body-md font-semibold">
             {t("history.title")}
           </Typography>
           <Typography as="span" variant="caption" color="subtle">
             {t("history.recentCount", { count: historyEntries.length })}
           </Typography>
-        </div>
+        </Flex>
         <div className="max-h-[20rem] space-y-3 overflow-y-auto overscroll-contain">
           {historyEntries.length === 0 ? (
             <Typography variant="bodySm" color="subtle">
@@ -147,14 +147,14 @@ export const BoardSidePanel = ({
           ) : (
             historyEntries.map((entry) => (
               <div key={entry.id} className={panelItemClass}>
-                <div className="flex items-center justify-between gap-2">
+                <Flex className="flex items-center justify-between gap-2">
                   <Typography as="span" variant="bodySm" className="font-medium">
                     {entry.shapeType}
                   </Typography>
                   <Typography as="span" variant="caption" color="subtle">
                     {new Date(entry.updatedAt).toLocaleString(locale)}
                   </Typography>
-                </div>
+                </Flex>
                 <Typography variant="caption" color="subtle" className="mt-1">
                   {t("history.by")} {normalizeGuestDisplayName(entry.actor, locale)}
                 </Typography>
@@ -165,14 +165,14 @@ export const BoardSidePanel = ({
       </Card>
 
       <Card className="border-default/80 bg-surface border p-5">
-        <div className="mb-4 flex items-center justify-between gap-2">
+        <Flex className="mb-4 flex items-center justify-between gap-2">
           <Typography as="h3" variant="title" className="text-body-md font-semibold">
             {t("events.title")}
           </Typography>
           <Typography as="span" variant="caption" color="subtle">
             {t("events.recentCount", { count: eventLog.length })}
           </Typography>
-        </div>
+        </Flex>
         <div className="max-h-80 space-y-3 overflow-auto">
           {eventLog.length === 0 ? (
             <Typography variant="bodySm" color="subtle">

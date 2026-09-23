@@ -26,7 +26,9 @@ import {
   Select,
   PRIMITIVE_COLOR_PALETTE,
   confirm,
-  useDisclosure
+  useDisclosure,
+  Flex,
+  Grid
 } from "@repo/ui";
 import { CollabLocaleFilter } from "@/features/common/components/collab-locale-filter";
 import { getBoard, whiteboardQueryKeys } from "@/features/whiteboard/boards/api";
@@ -490,17 +492,17 @@ export default function WhiteboardRoomPage() {
       <main className="mx-auto min-h-screen w-full max-w-[1360px] px-4 pb-10 pt-3 md:px-8 md:pb-12 md:pt-4">
         <MarketingSection tone="light" className="bg-surface mb-5">
           <header className="border-default bg-surface mb-0 rounded-2xl border p-5 shadow-[var(--shadow-card)]">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-3">
+            <Flex className="flex flex-wrap items-center justify-between gap-3">
+              <Flex className="flex flex-wrap items-center gap-3">
                 <Button variant="outline" size="sm" className="rounded-xl" onClick={goHome}>
                   {t("actions.backToList")}
                 </Button>
                 <Badge variant="outline" size="md">
                   {t("status.boardId")}: {boardId.slice(0, 8)}...
                 </Badge>
-              </div>
+              </Flex>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <Flex className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" size="md">
                   {t("status.connection.label")}: {connectionLabel[connection]}
                 </Badge>
@@ -514,10 +516,10 @@ export default function WhiteboardRoomPage() {
                 >
                   {t("status.role")}: {currentRole}
                 </Badge>
-              </div>
-            </div>
+              </Flex>
+            </Flex>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px]">
+            <Grid className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px]">
               <Input
                 label={tFields("displayName.label")}
                 control={sessionForm.control}
@@ -528,7 +530,7 @@ export default function WhiteboardRoomPage() {
                 placeholder={tFields("displayName.placeholder")}
                 size="md"
               />
-              <div className="grid gap-1" data-testid="board-requested-role-select">
+              <Grid className="grid gap-1" data-testid="board-requested-role-select">
                 <Label size="sm">{tFields("requestRole.label")}</Label>
                 <Select
                   options={[
@@ -545,7 +547,7 @@ export default function WhiteboardRoomPage() {
                   size="md"
                   className="w-full"
                 />
-              </div>
+              </Grid>
               <Input
                 label={tFields("editorAccessKey.label")}
                 type="password"
@@ -558,7 +560,7 @@ export default function WhiteboardRoomPage() {
                 placeholder={tFields("editorAccessKey.placeholder")}
                 size="md"
               />
-            </div>
+            </Grid>
           </header>
         </MarketingSection>
 
@@ -568,7 +570,7 @@ export default function WhiteboardRoomPage() {
 
         <MarketingSection tone="light" className="bg-surface">
           <section className="border-default bg-surface mb-4 rounded-2xl border p-5 shadow-[var(--shadow-card)]">
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <Grid className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
               <Input
                 label={t("content.titleLabel")}
                 value={title}
@@ -578,7 +580,7 @@ export default function WhiteboardRoomPage() {
                 className="text-base font-semibold"
                 placeholder={t("content.titlePlaceholder")}
               />
-              <div className="flex flex-wrap items-center gap-2">
+              <Flex className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="outline"
                   size="md"
@@ -607,10 +609,10 @@ export default function WhiteboardRoomPage() {
                 <Button variant="outline" size="md" onClick={redo} disabled={isReadOnly}>
                   {t("actions.redo")}
                 </Button>
-              </div>
-            </div>
+              </Flex>
+            </Grid>
 
-            <div className="mt-3 grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
+            <Grid className="mt-3 grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
               <Select
                 options={[
                   { label: t("tool.select"), value: "select" },
@@ -629,7 +631,7 @@ export default function WhiteboardRoomPage() {
                 size="md"
               />
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <Grid className="grid gap-3 sm:grid-cols-2">
                 <Card className="text-body-sm text-muted px-3 py-2">
                   {t("content.version")} {version}
                 </Card>
@@ -638,8 +640,8 @@ export default function WhiteboardRoomPage() {
                     ? `${t("content.lastUpdated")}: ${formatRelativeTime(updatedAt, locale)} (${formatExactTime(updatedAt, locale)})`
                     : `${t("content.lastUpdated")} -`}
                 </Card>
-              </div>
-            </div>
+              </Grid>
+            </Grid>
           </section>
 
           {activeTool === "connector" && !isReadOnly ? (
@@ -766,7 +768,7 @@ export default function WhiteboardRoomPage() {
           <SplitWorkspaceLayout
             sidebarWidthClassName="lg:grid-cols-[1fr_384px]"
             main={
-              <div
+              <Grid
                 ref={boardRef}
                 className="board-grid border-default bg-surface/90 relative h-[72vh] min-h-[520px] rounded-2xl border"
                 onMouseDown={(event) => {
@@ -1125,13 +1127,13 @@ export default function WhiteboardRoomPage() {
                       ) : null}
 
                       {shape.type === "text" ? (
-                        <div className="text-foreground text-caption flex h-full items-center justify-center px-2 text-center font-medium">
+                        <Flex className="text-foreground text-caption flex h-full items-center justify-center px-2 text-center font-medium">
                           {shape.text || t("tool.text")}
-                        </div>
+                        </Flex>
                       ) : (
-                        <div className="text-muted-foreground text-caption pointer-events-none flex h-full items-center justify-center font-semibold uppercase tracking-wide">
+                        <Flex className="text-muted-foreground text-caption pointer-events-none flex h-full items-center justify-center font-semibold uppercase tracking-wide">
                           {shape.type}
-                        </div>
+                        </Flex>
                       )}
                     </div>
                   );
@@ -1149,7 +1151,7 @@ export default function WhiteboardRoomPage() {
                     </div>
                   </div>
                 ))}
-              </div>
+              </Grid>
             }
             sidebar={
               <BoardSidePanel

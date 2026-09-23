@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAppForm } from "@repo/forms";
 import { useLocale, useTranslations } from "next-intl";
-import { Badge, Button, Card, Textarea, confirm, Typography } from "@repo/ui";
+import { Badge, Button, Card, Textarea, confirm, Typography, Flex } from "@repo/ui";
 import { formatExactTime } from "@/features/docs/collaboration/model";
 import { DocumentComment, Participant } from "@/features/docs/collaboration/model";
 import { normalizeGuestDisplayName } from "@/lib/i18n/display-name";
@@ -133,7 +133,7 @@ export const CommentsPanel = ({
 
   return (
     <Card className="border-default/80 bg-surface border p-5">
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <Flex className="mb-4 flex items-center justify-between gap-3">
         <Typography as="h3" variant="title" className="text-body-md font-semibold">
           {t("title")}
         </Typography>
@@ -141,7 +141,7 @@ export const CommentsPanel = ({
           {comments.length}
           {t("countSuffix")}
         </Badge>
-      </div>
+      </Flex>
 
       <div className={`mb-4 ${composerItemClass}`}>
         <Textarea
@@ -155,21 +155,22 @@ export const CommentsPanel = ({
         {mentionSuggestions.length > 0 ? (
           <div className="border-default bg-surface mt-2 rounded-lg border p-1" role="listbox">
             {mentionSuggestions.map((candidate, index) => (
-              <button
+              <Button
+                variant="text"
+                fullWidth
                 key={candidate}
-                type="button"
                 role="option"
                 aria-selected={index === activeMentionIndex}
                 className={`block w-full rounded-md px-2 py-1.5 text-left text-sm ${index === activeMentionIndex ? "bg-surface-elevated" : "hover:bg-surface-elevated"}`}
                 onClick={() => insertMention(candidate)}
               >
                 @{candidate}
-              </button>
+              </Button>
             ))}
           </div>
         ) : null}
 
-        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        <Flex className="mt-3 flex flex-wrap items-center gap-1.5">
           <Typography variant="caption" color="subtle" className="mr-1">
             {t("mentionLabel")}
           </Typography>
@@ -184,8 +185,8 @@ export const CommentsPanel = ({
               {t("none")}
             </Typography>
           )}
-        </div>
-        <div className="mt-3 flex justify-end">
+        </Flex>
+        <Flex className="mt-3 flex justify-end">
           <Button
             size="sm"
             onClick={() => {
@@ -200,7 +201,7 @@ export const CommentsPanel = ({
           >
             {t("submit")}
           </Button>
-        </div>
+        </Flex>
       </div>
 
       <div className="max-h-[32rem] space-y-3 overflow-auto">
@@ -219,7 +220,7 @@ export const CommentsPanel = ({
                 key={comment.id}
                 className={`${panelItemClass} ${comment.parentCommentId ? "ml-4 border-l-2" : ""} ${comment.id === highlightedCommentId ? "ring-primary ring-2" : ""}`}
               >
-                <div className="mb-2 flex items-start justify-between gap-2">
+                <Flex className="mb-2 flex items-start justify-between gap-2">
                   <Typography as="p" variant="bodySm" className="text-foreground font-semibold">
                     {normalizeGuestDisplayName(comment.authorName, locale)}
                     {isMine ? t("meSuffix") : ""}
@@ -227,7 +228,7 @@ export const CommentsPanel = ({
                   <Typography as="p" variant="caption" color="subtle">
                     {formatExactTime(comment.updatedAt, locale)}
                   </Typography>
-                </div>
+                </Flex>
 
                 {isEditing ? (
                   <div className="space-y-2">
@@ -236,7 +237,7 @@ export const CommentsPanel = ({
                       name="editingDraft"
                       className="border-default bg-surface text-body-sm min-h-20 leading-6"
                     />
-                    <div className="flex items-center justify-end gap-2">
+                    <Flex className="flex items-center justify-end gap-2">
                       <Button
                         size="sm"
                         variant="outline"
@@ -262,7 +263,7 @@ export const CommentsPanel = ({
                       >
                         {t("commonSave")}
                       </Button>
-                    </div>
+                    </Flex>
                   </div>
                 ) : (
                   <>
@@ -271,7 +272,7 @@ export const CommentsPanel = ({
                     </Typography>
 
                     {comment.mentions.length > 0 ? (
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <Flex className="mt-2 flex flex-wrap items-center gap-1.5">
                         {comment.mentions.map((mention) => (
                           <Badge
                             key={`${comment.id}-${mention}`}
@@ -282,11 +283,11 @@ export const CommentsPanel = ({
                             @{mention}
                           </Badge>
                         ))}
-                      </div>
+                      </Flex>
                     ) : null}
 
                     {isMine ? (
-                      <div className="mt-2 flex items-center justify-end gap-2">
+                      <Flex className="mt-2 flex items-center justify-end gap-2">
                         <Button
                           size="sm"
                           variant="outline"
@@ -318,11 +319,11 @@ export const CommentsPanel = ({
                         >
                           {t("delete")}
                         </Button>
-                      </div>
+                      </Flex>
                     ) : null}
 
                     {!comment.parentCommentId ? (
-                      <div className="mt-2 flex items-center justify-end">
+                      <Flex className="mt-2 flex items-center justify-end">
                         <Button
                           size="sm"
                           variant="outline"
@@ -333,7 +334,7 @@ export const CommentsPanel = ({
                         >
                           답글
                         </Button>
-                      </div>
+                      </Flex>
                     ) : null}
 
                     {replyingToCommentId === comment.id ? (
@@ -344,14 +345,14 @@ export const CommentsPanel = ({
                           className="border-default bg-surface text-body-sm min-h-16 leading-6"
                           placeholder="답글을 입력하세요"
                         />
-                        <div className="flex justify-end gap-2">
+                        <Flex className="flex justify-end gap-2">
                           <Button size="sm" variant="outline" onClick={() => setReplyingToCommentId(null)}>
                             취소
                           </Button>
                           <Button size="sm" onClick={submitReply}>
                             답글 등록
                           </Button>
-                        </div>
+                        </Flex>
                       </div>
                     ) : null}
                   </>

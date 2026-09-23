@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { Card, Typography } from "@repo/ui";
+import { Card, Typography, Flex } from "@repo/ui";
 
 interface ActivityLogPanelProps {
   logs: string[];
@@ -12,7 +12,7 @@ export const ActivityLogPanel = ({ logs }: ActivityLogPanelProps) => {
 
   return (
     <Card className="border-default/80 bg-surface border p-5">
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <Flex className="mb-4 flex items-center justify-between gap-3">
         <Typography as="h3" variant="title" className="text-body-md font-semibold">
           {t("title")}
         </Typography>
@@ -20,7 +20,7 @@ export const ActivityLogPanel = ({ logs }: ActivityLogPanelProps) => {
           {t("recent")} {logs.length}
           {t("countSuffix")}
         </Typography>
-      </div>
+      </Flex>
       <div className="max-h-72 space-y-3 overflow-auto">
         {logs.length === 0 ? (
           <Typography variant="bodySm" color="subtle">
