@@ -64,6 +64,27 @@ export const deleteDocumentById = async (input: {
   );
 };
 
+export const renameDocument = async (input: {
+  documentId: string;
+  title: string;
+}): Promise<{ document: DocumentRecord; changed: boolean; conflict: boolean }> =>
+  requestJson("", `/api/workspace/documents/${input.documentId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ title: input.title })
+  });
+
+export const duplicateDocument = async (documentId: string): Promise<{ document: DocumentRecord }> =>
+  requestJson("", `/api/workspace/documents/${documentId}/duplicate`, { method: "POST" });
+
+export const restoreDocumentVersion = async (input: {
+  documentId: string;
+  historyId: string;
+}): Promise<{ document: DocumentRecord; changed: boolean; conflict: boolean }> =>
+  requestJson("", `/api/workspace/documents/${input.documentId}/restore`, {
+    method: "POST",
+    body: JSON.stringify({ historyId: input.historyId })
+  });
+
 export const getDocument = async (
   documentId: string
 ): Promise<{

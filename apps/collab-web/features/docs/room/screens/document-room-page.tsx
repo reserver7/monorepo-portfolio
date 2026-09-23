@@ -3,11 +3,12 @@
 import { FeedbackState } from "@/features/common/components/feedback-state";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import type { HistoryEntry } from "@repo/utils/collab";
 import { useAppForm } from "@repo/forms";
-import { useQuery } from "@repo/react-query";
+import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import {
   MarketingGlassNav,
   MarketingSection,
@@ -19,7 +20,9 @@ import {
   Select,
   SplitWorkspaceLayout,
   Textarea,
-  Typography
+  Typography,
+  Flex,
+  Grid
 } from "@repo/ui";
 import { CollabLocaleFilter } from "@/features/common/components/collab-locale-filter";
 import { useCollaboration } from "@/features/docs/collaboration/hooks/use-collaboration";
@@ -27,7 +30,8 @@ import {
   docsQueryKeys,
   getDocument,
   getDocumentHistory,
-  listDocumentMembers
+  listDocumentMembers,
+  restoreDocumentVersion
 } from "@/features/docs/documents/api";
 import {
   getStoredDisplayName,
@@ -46,6 +50,7 @@ export default function DocumentRoomPage() {
   const t = useTranslations("collab.docsRoom");
   const tFields = useTranslations("collab.fields");
   const locale = useLocale();
+  const queryClient = useQueryClient();
   const resolveGuestName = useCallback(() => createLocaleGuestName(locale), [locale]);
   const panelLoadingState = useCallback(
     () => (
@@ -171,6 +176,7 @@ export default function DocumentRoomPage() {
     staleTime: 10 * 1000,
     refetchInterval: 6000
   });
+  const restoreMutation = useMutation({ mutationFn: restoreDocumentVersion });
 
   const membersQuery = useQuery({
     queryKey: docsQueryKeys.members(documentId),
@@ -210,6 +216,23 @@ export default function DocumentRoomPage() {
   const eventLog = useCollabStore.use.eventLog();
 
   const historyEntries = historyQuery.data?.history ?? [];
+  const canRestore =
+    documentQuery.data?.permission === "owner" || documentQuery.data?.permission === "editor";
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const [restoringId, setRestoringId] = useState<string | undefined>();
+
+  const restoreVersion = async (entry: HistoryEntry) => {
+    setRestoreError(null);
+    setRestoringId(entry.id);
+    try {
+      await restoreMutation.mutateAsync({ documentId, historyId: entry.id });
+      await queryClient.invalidateQueries({ queryKey: docsQueryKeys.history(documentId) });
+    } catch (error) {
+      setRestoreError(error instanceof Error ? error.message : "문서 버전을 복원하지 못했습니다.");
+    } finally {
+      setRestoringId(undefined);
+    }
+  };
 
   const connectionLabel = {
     connecting: t("status.connection.connecting"),
@@ -257,17 +280,17 @@ export default function DocumentRoomPage() {
       <main className="mx-auto min-h-screen w-full max-w-[1360px] px-4 pb-10 pt-3 md:px-8 md:pb-12 md:pt-4">
         <MarketingSection tone="light" className="bg-surface mb-5">
           <header className="border-default bg-surface mb-0 rounded-2xl border p-5 shadow-[var(--shadow-card)]">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-3">
+            <Flex className="flex flex-wrap items-center justify-between gap-3">
+              <Flex className="flex flex-wrap items-center gap-3">
                 <Button variant="outline" size="sm" className="rounded-xl" onClick={goHome}>
                   {t("actions.backToList")}
                 </Button>
                 <Badge variant="outline" size="md">
                   {t("status.documentId")}: {documentId.slice(0, 8)}...
                 </Badge>
-              </div>
+              </Flex>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <Flex className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline" size="md">
                   {t("status.connection.label")}: {connectionLabel[connection]}
                 </Badge>
@@ -281,10 +304,10 @@ export default function DocumentRoomPage() {
                 >
                   {t("status.role")}: {currentRole}
                 </Badge>
-              </div>
-            </div>
+              </Flex>
+            </Flex>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px]">
+            <Grid className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px]">
               <Input
                 label={tFields("displayName.label")}
                 control={sessionForm.control}
@@ -295,7 +318,7 @@ export default function DocumentRoomPage() {
                 placeholder={tFields("displayName.placeholder")}
                 size="md"
               />
-              <div className="grid gap-1" data-testid="document-requested-role-select">
+              <Grid className="grid gap-1" data-testid="document-requested-role-select">
                 <Label size="sm">{tFields("requestRole.label")}</Label>
                 <Select
                   options={[
@@ -312,7 +335,7 @@ export default function DocumentRoomPage() {
                   size="md"
                   className="w-full"
                 />
-              </div>
+              </Grid>
               <Input
                 label={tFields("editorAccessKey.label")}
                 type="password"
@@ -325,7 +348,7 @@ export default function DocumentRoomPage() {
                 placeholder={tFields("editorAccessKey.placeholder")}
                 size="md"
               />
-            </div>
+            </Grid>
           </header>
         </MarketingSection>
 
@@ -338,7 +361,7 @@ export default function DocumentRoomPage() {
             sidebarWidthClassName="lg:grid-cols-[minmax(0,1fr)_392px]"
             main={
               <Card className="border-default/80 border p-5 shadow-[var(--shadow-card)] md:p-6">
-                <div className="mb-4 grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
+                <Grid className="mb-4 grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
                   <Input
                     value={title}
                     onChange={(event) => updateTitle(event.target.value)}
@@ -347,12 +370,12 @@ export default function DocumentRoomPage() {
                     className="text-[1.05rem] font-semibold"
                     placeholder={t("content.titlePlaceholder")}
                   />
-                  <div className="flex items-center justify-end gap-2">
+                  <Flex className="flex items-center justify-end gap-2">
                     <Badge variant="outline" size="md" className="rounded-xl px-3 py-2">
                       {t("content.version")} {version}
                     </Badge>
-                  </div>
-                </div>
+                  </Flex>
+                </Grid>
 
                 {conflictMessage ? (
                   <FeedbackState
@@ -386,7 +409,7 @@ export default function DocumentRoomPage() {
                   placeholder={t("content.editorPlaceholder")}
                 />
 
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+                <Flex className="mt-4 flex flex-wrap items-center justify-between gap-2">
                   <Typography as="span" variant="bodySm" color="subtle">
                     {t("content.lastUpdated")}:{" "}
                     {updatedAt
@@ -397,7 +420,7 @@ export default function DocumentRoomPage() {
                     {t("content.activeParticipants")}: {participants.length}
                     {t("content.peopleSuffix")}
                   </Typography>
-                </div>
+                </Flex>
               </Card>
             }
             sidebar={
@@ -417,7 +440,19 @@ export default function DocumentRoomPage() {
                   onUpdateComment={(commentId, body, mentions) => updateComment(commentId, body, mentions)}
                   onDeleteComment={(commentId) => deleteComment(commentId)}
                 />
-                <HistoryPanel entries={historyEntries} />
+                {restoreError ? (
+                  <Typography variant="bodySm" color="danger">
+                    {restoreError}
+                  </Typography>
+                ) : null}
+                <HistoryPanel
+                  entries={historyEntries}
+                  currentTitle={title}
+                  currentContent={content}
+                  canRestore={canRestore}
+                  restoringId={restoringId}
+                  onRestore={(entry) => void restoreVersion(entry)}
+                />
                 <ActivityLogPanel logs={eventLog} />
               </>
             }
