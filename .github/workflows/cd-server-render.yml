@@ -107,7 +107,9 @@ jobs:
 
       - name: Trigger Render deployment
         id: deploy
-        if: ${{ steps.hook.outputs.has_hook == 'true' || steps.render-api.outputs.enabled == 'true' }}
+        # Render auto-deploys pushes to main. A release tag therefore verifies
+        # that deployment instead of starting a duplicate deploy for the same commit.
+        if: ${{ github.event_name == 'workflow_dispatch' && (steps.hook.outputs.has_hook == 'true' || steps.render-api.outputs.enabled == 'true') }}
         env:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
@@ -132,7 +134,7 @@ jobs:
 
       - name: Validate health check URL
         id: health
-        if: ${{ steps.hook.outputs.has_hook == 'true' || steps.render-api.outputs.enabled == 'true' }}
+        if: ${{ steps.hook.outputs.has_hook == 'true' || steps.render-api.outputs.enabled == 'true' || github.event_name == 'push' }}
         env:
           SERVER_HEALTHCHECK_URL: ${{ secrets.SERVER_HEALTHCHECK_URL }}
         run: |
@@ -146,7 +148,7 @@ jobs:
           echo "has_health=true" >> "${GITHUB_OUTPUT}"
 
       - name: Verify Render deployment status (optional)
-        if: ${{ steps.render-api.outputs.enabled == 'true' && steps.deploy.outputs.deploy_id != '' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && steps.render-api.outputs.enabled == 'true' && steps.deploy.outputs.deploy_id != '' }}
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
@@ -178,7 +180,7 @@ jobs:
           exit 1
 
       - name: Verify public endpoint reachability (optional)
-        if: ${{ (steps.hook.outputs.has_hook == 'true' || steps.render-api.outputs.enabled == 'true') && steps.health.outputs.has_health == 'true' }}
+        if: ${{ steps.health.outputs.has_health == 'true' }}
         env:
           SERVER_HEALTHCHECK_URL: ${{ secrets.SERVER_HEALTHCHECK_URL }}
         run: |
@@ -188,5 +190,9 @@ jobs:
           echo "Collab public endpoint is reachable."
 
       - name: Skip notice (missing deploy hook)
-        if: ${{ steps.hook.outputs.has_hook != 'true' && steps.render-api.outputs.enabled != 'true' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && steps.hook.outputs.has_hook != 'true' && steps.render-api.outputs.enabled != 'true' }}
         run: echo "Deployment skipped because neither a Render deploy hook nor API credentials are configured."
+
+      - name: Use Render auto-deploy for tag release
+        if: ${{ github.event_name == 'push' }}
+        run: echo "Tag release verified against main; Render auto-deploy is responsible for the deployment."
