@@ -99,6 +99,7 @@ jobs:
               - 'apps/**/lib/i18n/**'
               - 'compose.infrastructure.yml'
               - 'scripts/audit-workspace.mjs'
+              - 'scripts/check-ui-native-controls.mjs'
               - 'pnpm-workspace.yaml'
             format:
               - '**/*.{cjs,css,json,js,mjs,ts,tsx,yml,yaml}'
@@ -128,6 +129,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-workspace
+      - run: pnpm ui:usage:check
       - run: pnpm turbo run lint typecheck --filter=@repo/opslens-server --filter=@repo/opslens-web
       - run: pnpm test:opslens-server
 
@@ -181,6 +183,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-workspace
+      - run: pnpm ui:usage:check
       - run: pnpm turbo run lint typecheck --filter=@repo/collab-server --filter=@repo/collab-web
       - run: pnpm test:collab-server
 
@@ -217,6 +220,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-workspace
+      - run: pnpm ui:usage:check
       - run: pnpm i18n:check && pnpm i18n:extract:check && pnpm i18n:sync:check && pnpm i18n:draft:check
       - run: pnpm audit:workspace && pnpm infra:check
       - if: ${{ needs.changes.outputs.ui == 'true' || github.event_name == 'schedule' || inputs.full_validation }}

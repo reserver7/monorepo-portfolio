@@ -9,14 +9,14 @@
       "deleteDialog": {
         "confirmDeleteDocument": "Delete Document",
         "default": {
-          "description": "Deleted documents cannot be restored.",
-          "title": "Delete this document?"
+          "description": "The document will move to Trash and can be restored from there.",
+          "title": "Move this document to Trash?"
         },
         "passwordLabel": "Delete password",
         "passwordPlaceholder": "Delete password",
         "protected": {
           "description": "This document is protected by an editor key. Enter the delete password.",
-          "title": "Delete this document?"
+          "title": "Move this document to Trash?"
         }
       },
       "emptyTitle": "(Untitled)",
@@ -107,6 +107,13 @@
         "by": "By",
         "countSuffix": "items",
         "empty": "No history to display.",
+        "preview": "Preview",
+        "closePreview": "Close",
+        "currentVersion": "Current version",
+        "selectedVersion": "Selected version",
+        "changedLines": "Changed lines: {count}",
+        "restore": "Restore this version",
+        "restoreConfirm": "Restore the document to this version?",
         "title": "Change History"
       },
       "presence": {
@@ -196,14 +203,14 @@
       "deleteDialog": {
         "confirmDeleteBoard": "Delete Whiteboard",
         "default": {
-          "description": "Deleted whiteboards cannot be restored.",
-          "title": "Delete this whiteboard?"
+          "description": "The whiteboard will move to Trash and can be restored from there.",
+          "title": "Move this whiteboard to Trash?"
         },
         "passwordLabel": "Delete password",
         "passwordPlaceholder": "Delete password",
         "protected": {
           "description": "This whiteboard is protected by an editor key. Enter the delete password.",
-          "title": "Delete this whiteboard?"
+          "title": "Move this whiteboard to Trash?"
         }
       },
       "emptyTitle": "(Untitled)",
@@ -365,11 +372,11 @@
       "documents": {
         "commentCreateSuccess": "Comment posted.",
         "createSuccess": "Document created.",
-        "deleteSuccess": "Document deleted."
+        "deleteSuccess": "Document moved to Trash."
       },
       "whiteboard": {
         "createSuccess": "Whiteboard created.",
-        "deleteSuccess": "Whiteboard deleted."
+        "deleteSuccess": "Whiteboard moved to Trash."
       }
     },
     "realtime": {

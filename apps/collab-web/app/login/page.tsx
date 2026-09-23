@@ -6,8 +6,8 @@ interface LoginPageProps {
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { next = "/docs" } = await searchParams;
-  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/docs";
+  const { next = "/workspace" } = await searchParams;
+  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/workspace";
   const callback = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/auth/callback?next=${encodeURIComponent(safeNext)}`;
   const opsLogin = new URL("/login", requiredAuthEnv("OPSLENS_WEB_URL"));
   opsLogin.searchParams.set("next", `/api/opslens-auth/bridge?returnTo=${encodeURIComponent(callback)}`);

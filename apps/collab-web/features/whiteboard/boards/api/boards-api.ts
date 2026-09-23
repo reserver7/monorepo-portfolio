@@ -56,6 +56,37 @@ export const deleteBoardById = async (input: {
   );
 };
 
+export const renameBoard = async (input: {
+  boardId: string;
+  title: string;
+}): Promise<{ board: WhiteboardRecord; changed: boolean; conflict: boolean }> =>
+  fetch(`/api/workspace/boards/${input.boardId}`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ title: input.title })
+  }).then(async (response) => {
+    const body = (await response.json()) as {
+      message?: string;
+      board?: WhiteboardRecord;
+      changed?: boolean;
+      conflict?: boolean;
+    };
+    if (!response.ok || !body.board)
+      throw new Error(body.message ?? "화이트보드 이름을 변경하지 못했습니다.");
+    return body as { board: WhiteboardRecord; changed: boolean; conflict: boolean };
+  });
+
+export const duplicateBoard = async (boardId: string): Promise<{ board: WhiteboardRecord }> =>
+  fetch(`/api/workspace/boards/${boardId}/duplicate`, {
+    method: "POST",
+    credentials: "include"
+  }).then(async (response) => {
+    const body = (await response.json()) as { message?: string; board?: WhiteboardRecord };
+    if (!response.ok || !body.board) throw new Error(body.message ?? "화이트보드를 복제하지 못했습니다.");
+    return { board: body.board };
+  });
+
 export const getBoard = async (
   boardId: string
 ): Promise<{

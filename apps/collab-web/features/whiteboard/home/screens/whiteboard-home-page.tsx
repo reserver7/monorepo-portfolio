@@ -21,7 +21,9 @@ import {
   Spin,
   confirm,
   promptConfirm,
-  Typography
+  Typography,
+  Flex,
+  Grid
 } from "@repo/ui";
 import { CollabLocaleFilter } from "@/features/common/components/collab-locale-filter";
 import {
@@ -43,6 +45,7 @@ import { formatExactTime, formatRelativeTime } from "@/features/whiteboard/colla
 import { coerceAccessRole } from "@repo/utils/collab";
 import { createLocaleGuestName, normalizeGuestDisplayName } from "@/lib/i18n/display-name";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
+import { PendingInvitations } from "@/features/common/components/pending-invitations";
 
 export default function WhiteboardHomePage() {
   const t = useTranslations("collab.whiteboardHome");
@@ -209,10 +212,10 @@ export default function WhiteboardHomePage() {
         product="Realtime Whiteboard"
         subtitle="Collaborative visual workspace"
         rightSlot={
-          <div className="flex items-center gap-2">
+          <Flex className="flex items-center gap-2">
             <CollabLocaleFilter />
             <SignOutButton />
-          </div>
+          </Flex>
         }
         actions={[
           {
@@ -225,17 +228,18 @@ export default function WhiteboardHomePage() {
         ]}
       />
       <main className="mx-auto min-h-screen w-full max-w-[1360px] px-4 pb-10 pt-3 md:px-8 md:pb-12 md:pt-4">
+        <PendingInvitations />
         <MarketingSection tone="light" className="bg-surface-elevated/45 mb-6">
           <section className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
             <Card
               className="border-default/80 bg-surface border p-6 shadow-[var(--shadow-card)] md:p-8"
               radius="lg"
             >
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <Flex className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <Badge variant="success" size="lg" className="font-semibold uppercase tracking-wide">
                   Realtime Whiteboard
                 </Badge>
-              </div>
+              </Flex>
               <Typography as="h1" variant="h2">
                 {t("hero.title")}
               </Typography>
@@ -254,7 +258,7 @@ export default function WhiteboardHomePage() {
                 primaryLoading={createBoardMutation.isPending}
               />
 
-              <div className="mt-8 grid gap-4 md:grid-cols-2">
+              <Grid className="mt-8 grid gap-4 md:grid-cols-2">
                 <Input
                   control={createForm.control}
                   name="displayName"
@@ -301,7 +305,7 @@ export default function WhiteboardHomePage() {
                   placeholder={tFields("editorAccessKey.placeholder")}
                   size="md"
                 />
-              </div>
+              </Grid>
             </Card>
 
             <Card
@@ -314,7 +318,7 @@ export default function WhiteboardHomePage() {
               <Typography as="p" variant="bodySm" color="muted" className="mt-2">
                 {t("overview.description")}
               </Typography>
-              <div className="mt-5 grid grid-cols-3 gap-2">
+              <Grid className="mt-5 grid grid-cols-3 gap-2">
                 <Card className="border-default/70 bg-surface-elevated border p-3 text-center" radius="md">
                   <Typography as="p" variant="caption" color="subtle">
                     {t("overview.stats.boards")}
@@ -339,7 +343,7 @@ export default function WhiteboardHomePage() {
                     {totalShapeCount}
                   </Typography>
                 </Card>
-              </div>
+              </Grid>
               <div className="border-default/70 bg-surface-elevated mt-5 space-y-2 rounded-xl border p-3.5">
                 <Typography as="p" variant="label">
                   {t("overview.guide.title")}
@@ -360,23 +364,23 @@ export default function WhiteboardHomePage() {
 
         <MarketingSection id="whiteboard-list-section" tone="light" className="bg-surface">
           <section>
-            <div className="mb-4 flex items-center justify-between">
+            <Flex className="mb-4 flex items-center justify-between">
               <Typography as="h2" variant="headingMd" className="font-semibold">
                 {t("list.title")}
               </Typography>
               <Typography as="span" variant="bodySm" color="subtle">
                 {t("list.autoRefresh")}
               </Typography>
-            </div>
+            </Flex>
             {boardsQuery.isLoading ? (
-              <div className="grid gap-4 md:grid-cols-2">
+              <Grid className="grid gap-4 md:grid-cols-2">
                 {Array.from({ length: 4 }).map((_, index) => (
                   <Card key={`board-loading-skeleton-${index}`} className="p-5">
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between gap-3">
+                      <Flex className="flex items-center justify-between gap-3">
                         <Skeleton className="h-6 w-2/5" />
                         <Skeleton className="h-5 w-16 rounded-full" />
-                      </div>
+                      </Flex>
                       <Skeleton className="h-4 w-full" />
                       <Skeleton className="h-4 w-11/12" />
                       <div className="space-y-2 pt-2">
@@ -387,7 +391,7 @@ export default function WhiteboardHomePage() {
                     </div>
                   </Card>
                 ))}
-              </div>
+              </Grid>
             ) : boardsQuery.isError ? (
               <FeedbackState
                 variant="error"
@@ -403,7 +407,7 @@ export default function WhiteboardHomePage() {
                 description={t("list.emptyDescription")}
               />
             ) : (
-              <div className="grid items-stretch gap-4 md:grid-cols-2">
+              <Grid className="grid items-stretch gap-4 md:grid-cols-2">
                 {boards.map((board) => (
                   <Card
                     key={board.id}
@@ -412,7 +416,7 @@ export default function WhiteboardHomePage() {
                     data-testid={`board-card-${board.id}`}
                     onClick={() => openBoard(board.id)}
                   >
-                    <div className="mb-3 flex min-h-[3rem] items-start justify-between gap-3">
+                    <Flex className="mb-3 flex min-h-[3rem] items-start justify-between gap-3">
                       <Typography
                         as="h3"
                         variant="title"
@@ -420,7 +424,7 @@ export default function WhiteboardHomePage() {
                       >
                         {board.title.trim() || emptyTitle}
                       </Typography>
-                      <div className="flex items-center gap-1.5">
+                      <Flex className="flex items-center gap-1.5">
                         <Badge variant="outline" size="sm">
                           v{board.version}
                         </Badge>
@@ -429,8 +433,8 @@ export default function WhiteboardHomePage() {
                             {t("list.card.badges.protected")}
                           </Badge>
                         ) : null}
-                      </div>
-                    </div>
+                      </Flex>
+                    </Flex>
 
                     <div className="border-default/70 bg-surface-elevated/60 mt-2 min-h-[3.2rem] space-y-1 rounded-xl border p-3">
                       <Typography as="p" variant="bodySm" color="subtle">
@@ -441,7 +445,7 @@ export default function WhiteboardHomePage() {
                       </Typography>
                     </div>
 
-                    <div className="mt-auto flex justify-end gap-2 pt-4">
+                    <Flex className="mt-auto flex justify-end gap-2 pt-4">
                       <Button
                         variant="danger"
                         size="sm"
@@ -517,10 +521,10 @@ export default function WhiteboardHomePage() {
                       >
                         {t("list.card.enter")}
                       </Button>
-                    </div>
+                    </Flex>
                   </Card>
                 ))}
-              </div>
+              </Grid>
             )}
           </section>
         </MarketingSection>

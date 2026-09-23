@@ -111,9 +111,19 @@ interface DeleteDocumentInput {
   ownerId?: string;
 }
 
+interface RestoreDocumentInput {
+  documentId: string;
+  ownerId?: string;
+}
+
 interface DeleteBoardInput {
   boardId: string;
   editorAccessKey?: string;
+  ownerId?: string;
+}
+
+interface RestoreBoardInput {
+  boardId: string;
   ownerId?: string;
 }
 
@@ -168,6 +178,7 @@ const MAX_BOARD_STACK = 120;
 const MAX_COMMENT_COUNT = 240;
 const MAX_WORKSPACE_ACTIVITY = 50;
 const MAX_WORKSPACE_NOTIFICATIONS = 50;
+const MAX_FAVORITE_WORKSPACE_KEYS = 500;
 type WorkspaceRecord = DocumentRecord | WhiteboardRecord;
 const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -179,6 +190,7 @@ export class RealtimeStore {
   private readonly documentAccessKeys = new Map<string, string>();
   private readonly boards = new Map<string, WhiteboardRecord>();
   private readonly boardAccessKeys = new Map<string, string>();
+  private readonly favoriteWorkspaceKeys = new Map<string, string[]>();
   private readonly boardPast = new Map<string, WhiteboardShape[][]>();
   private readonly boardFuture = new Map<string, WhiteboardShape[][]>();
   private persistTimer: NodeJS.Timeout | null = null;
@@ -253,6 +265,20 @@ export class RealtimeStore {
           }
         }
       }
+
+      if (parsed.favoriteWorkspaceKeys) {
+        for (const [accountId, keys] of Object.entries(parsed.favoriteWorkspaceKeys)) {
+          if (Array.isArray(keys)) {
+            this.favoriteWorkspaceKeys.set(
+              accountId,
+              [...new Set(keys.filter((key): key is string => typeof key === "string"))].slice(
+                0,
+                MAX_FAVORITE_WORKSPACE_KEYS
+              )
+            );
+          }
+        }
+      }
     }
 
     if (this.documents.size === 0) {
@@ -277,7 +303,9 @@ export class RealtimeStore {
             at: now,
             actor: "system",
             action: "create",
-            summary: "Seed document created"
+            summary: "Seed document created",
+            title: seedTitle,
+            content: seedContent
           }
         ]
       };
@@ -342,14 +370,48 @@ export class RealtimeStore {
     return [...this.documents.values()]
       .filter(
         (document) =>
-          !ownerId ||
-          !document.ownerId ||
-          document.ownerId === ownerId ||
-          document.members?.some(
-            (member) => member.accountId === ownerId || member.email.toLowerCase() === normalizedEmail
-          )
+          !document.deletedAt &&
+          (!ownerId ||
+            !document.ownerId ||
+            document.ownerId === ownerId ||
+            document.members?.some(
+              (member) => member.accountId === ownerId || member.email.toLowerCase() === normalizedEmail
+            ))
       )
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .map((document) => ({
+        id: document.id,
+        ownerId: document.ownerId,
+        members: document.members,
+        title: document.title.trim() || EMPTY_TITLE,
+        isProtected: this.documentAccessKeys.has(document.id),
+        snippet: summarize(document.content),
+        commentCount: document.comments.length,
+        createdAt: document.createdAt,
+        updatedAt: document.updatedAt,
+        version: document.version,
+        deletedAt: document.deletedAt
+      }));
+  }
+
+  getFavoriteWorkspaceKeys(accountId: string): string[] {
+    return [...(this.favoriteWorkspaceKeys.get(accountId) ?? [])];
+  }
+
+  setFavoriteWorkspaceKeys(accountId: string, keys: string[]): string[] {
+    const normalized = [...new Set(keys.filter((key) => typeof key === "string" && key.length > 0))].slice(
+      0,
+      MAX_FAVORITE_WORKSPACE_KEYS
+    );
+    this.favoriteWorkspaceKeys.set(accountId, normalized);
+    this.schedulePersist();
+    return [...normalized];
+  }
+
+  listDeletedDocuments(ownerId: string): { documents: DocumentSummary[]; boards: WhiteboardSummary[] } {
+    const documents = [...this.documents.values()]
+      .filter((document) => document.deletedAt && document.ownerId === ownerId)
+      .sort((a, b) => new Date(b.deletedAt ?? 0).getTime() - new Date(a.deletedAt ?? 0).getTime())
       .map((document) => ({
         id: document.id,
         ownerId: document.ownerId,
@@ -359,8 +421,25 @@ export class RealtimeStore {
         commentCount: document.comments.length,
         createdAt: document.createdAt,
         updatedAt: document.updatedAt,
-        version: document.version
+        version: document.version,
+        deletedAt: document.deletedAt
       }));
+    const boards = [...this.boards.values()]
+      .filter((board) => board.deletedAt && board.ownerId === ownerId)
+      .sort((a, b) => new Date(b.deletedAt ?? 0).getTime() - new Date(a.deletedAt ?? 0).getTime())
+      .map((board) => ({
+        id: board.id,
+        ownerId: board.ownerId,
+        members: board.members,
+        title: board.title.trim() || EMPTY_TITLE,
+        isProtected: this.boardAccessKeys.has(board.id),
+        shapeCount: board.shapes.length,
+        createdAt: board.createdAt,
+        updatedAt: board.updatedAt,
+        version: board.version,
+        deletedAt: board.deletedAt
+      }));
+    return { documents, boards };
   }
 
   getDocument(documentId: string): DocumentRecord | null {
@@ -408,7 +487,9 @@ export class RealtimeStore {
           at: now,
           actor,
           action: "create",
-          summary: `Created "${title}"`
+          summary: `Created "${title}"`,
+          title,
+          content: ""
         }
       ]
     };
@@ -421,6 +502,23 @@ export class RealtimeStore {
     }
     this.schedulePersist();
     return clone(created);
+  }
+
+  duplicateDocument(input: { documentId: string; actor: string; ownerId?: string }): DocumentRecord | null {
+    const current = this.documents.get(input.documentId);
+    if (!current) return null;
+    const duplicate = this.createDocument(
+      `${current.title.trim() || EMPTY_TITLE} 복사본`,
+      input.actor,
+      undefined,
+      input.ownerId
+    );
+    const updated = this.updateDocument({
+      documentId: duplicate.id,
+      content: current.content,
+      actor: input.actor
+    });
+    return updated?.document ?? duplicate;
   }
 
   updateDocument(
@@ -471,6 +569,8 @@ export class RealtimeStore {
       actor: input.actor,
       action: "update",
       summary: `${titleChanged ? "Title" : "Content"} updated${titleChanged && contentChanged ? " + content synced" : ""}`,
+      title: current.title,
+      content: current.content,
       conflictResolvedBy: conflict ? "last-write-wins" : undefined
     });
 
@@ -481,6 +581,25 @@ export class RealtimeStore {
       changed: true,
       conflict
     };
+  }
+
+  restoreDocumentVersion(input: {
+    documentId: string;
+    historyId: string;
+    actor: string;
+  }): "not-found" | "version-not-found" | { document: DocumentRecord; changed: boolean; conflict: boolean } {
+    const current = this.documents.get(input.documentId);
+    if (!current) return "not-found";
+    const entry = current.history.find((candidate) => candidate.id === input.historyId);
+    if (!entry || entry.content === undefined) return "version-not-found";
+    return (
+      this.updateDocument({
+        documentId: input.documentId,
+        title: entry.title ?? current.title,
+        content: entry.content,
+        actor: input.actor
+      }) ?? "not-found"
+    );
   }
 
   mergeDocumentYjsUpdate(
@@ -540,6 +659,8 @@ export class RealtimeStore {
         changedFields.length > 0
           ? `${changedFields.join(" + ")} synchronized by CRDT`
           : "CRDT state synchronized",
+      title: current.title,
+      content: current.content,
       conflictResolvedBy: "yjs-crdt"
     });
 
@@ -736,14 +857,18 @@ export class RealtimeStore {
       at: now,
       actor,
       action: "save",
-      summary: "Auto-saved checkpoint"
+      summary: "Auto-saved checkpoint",
+      title: current.title,
+      content: current.content
     });
 
     this.schedulePersist();
     return clone(current);
   }
 
-  deleteDocument(input: DeleteDocumentInput): "not-found" | "forbidden" | { documentId: string } {
+  deleteDocument(
+    input: DeleteDocumentInput
+  ): "not-found" | "forbidden" | { documentId: string; deletedAt: string } {
     const current = this.documents.get(input.documentId);
     if (!current) {
       return "not-found";
@@ -760,11 +885,31 @@ export class RealtimeStore {
       }
     }
 
+    const deletedAt = nowIso();
+    current.deletedAt = deletedAt;
+    this.schedulePersist();
+
+    return { documentId: input.documentId, deletedAt };
+  }
+
+  restoreDocument(input: RestoreDocumentInput): "not-found" | "forbidden" | { documentId: string } {
+    const current = this.documents.get(input.documentId);
+    if (!current || !current.deletedAt) return "not-found";
+    if (current.ownerId !== input.ownerId) return "forbidden";
+    delete current.deletedAt;
+    this.ensureDocumentYDoc(current.id);
+    this.schedulePersist();
+    return { documentId: input.documentId };
+  }
+
+  permanentlyDeleteDocument(input: RestoreDocumentInput): "not-found" | "forbidden" | { documentId: string } {
+    const current = this.documents.get(input.documentId);
+    if (!current || !current.deletedAt) return "not-found";
+    if (current.ownerId !== input.ownerId) return "forbidden";
     this.documents.delete(input.documentId);
     this.documentYDocs.delete(input.documentId);
     this.documentAccessKeys.delete(input.documentId);
     this.schedulePersist();
-
     return { documentId: input.documentId };
   }
 
@@ -1129,12 +1274,13 @@ export class RealtimeStore {
     return [...this.boards.values()]
       .filter(
         (board) =>
-          !ownerId ||
-          !board.ownerId ||
-          board.ownerId === ownerId ||
-          board.members?.some(
-            (member) => member.accountId === ownerId || member.email.toLowerCase() === normalizedEmail
-          )
+          !board.deletedAt &&
+          (!ownerId ||
+            !board.ownerId ||
+            board.ownerId === ownerId ||
+            board.members?.some(
+              (member) => member.accountId === ownerId || member.email.toLowerCase() === normalizedEmail
+            ))
       )
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .map((board) => ({
@@ -1145,7 +1291,8 @@ export class RealtimeStore {
         shapeCount: board.shapes.length,
         createdAt: board.createdAt,
         updatedAt: board.updatedAt,
-        version: board.version
+        version: board.version,
+        deletedAt: board.deletedAt
       }));
   }
 
@@ -1186,6 +1333,27 @@ export class RealtimeStore {
 
     this.schedulePersist();
     return clone(board);
+  }
+
+  duplicateBoard(input: { boardId: string; actor: string; ownerId?: string }): WhiteboardRecord | null {
+    const current = this.boards.get(input.boardId);
+    if (!current) return null;
+    const duplicate = this.createBoard(
+      `${current.title.trim() || EMPTY_TITLE} 복사본`,
+      input.actor,
+      undefined,
+      input.ownerId
+    );
+    const target = this.boards.get(duplicate.id);
+    if (!target) return duplicate;
+    target.shapes = current.shapes.map((shape) => ({
+      ...clone(shape),
+      id: randomUUID(),
+      createdBy: input.actor,
+      updatedAt: nowIso()
+    }));
+    this.schedulePersist();
+    return clone(target);
   }
 
   updateBoardTitle(
@@ -1384,7 +1552,7 @@ export class RealtimeStore {
     return clone(board);
   }
 
-  deleteBoard(input: DeleteBoardInput): "not-found" | "forbidden" | { boardId: string } {
+  deleteBoard(input: DeleteBoardInput): "not-found" | "forbidden" | { boardId: string; deletedAt: string } {
     const board = this.boards.get(input.boardId);
     if (!board) {
       return "not-found";
@@ -1401,12 +1569,32 @@ export class RealtimeStore {
       }
     }
 
+    const deletedAt = nowIso();
+    board.deletedAt = deletedAt;
+    this.schedulePersist();
+
+    return { boardId: input.boardId, deletedAt };
+  }
+
+  restoreBoard(input: RestoreBoardInput): "not-found" | "forbidden" | { boardId: string } {
+    const current = this.boards.get(input.boardId);
+    if (!current || !current.deletedAt) return "not-found";
+    if (current.ownerId !== input.ownerId) return "forbidden";
+    delete current.deletedAt;
+    this.ensureBoardStack(current.id);
+    this.schedulePersist();
+    return { boardId: input.boardId };
+  }
+
+  permanentlyDeleteBoard(input: RestoreBoardInput): "not-found" | "forbidden" | { boardId: string } {
+    const current = this.boards.get(input.boardId);
+    if (!current || !current.deletedAt) return "not-found";
+    if (current.ownerId !== input.ownerId) return "forbidden";
     this.boards.delete(input.boardId);
     this.boardPast.delete(input.boardId);
     this.boardFuture.delete(input.boardId);
     this.boardAccessKeys.delete(input.boardId);
     this.schedulePersist();
-
     return { boardId: input.boardId };
   }
 
@@ -1420,7 +1608,8 @@ export class RealtimeStore {
       documents: [...this.documents.values()],
       boards: [...this.boards.values()],
       documentAccessKeys: Object.fromEntries(this.documentAccessKeys.entries()),
-      boardAccessKeys: Object.fromEntries(this.boardAccessKeys.entries())
+      boardAccessKeys: Object.fromEntries(this.boardAccessKeys.entries()),
+      favoriteWorkspaceKeys: Object.fromEntries(this.favoriteWorkspaceKeys.entries())
     };
 
     await this.persistence.save(payload);

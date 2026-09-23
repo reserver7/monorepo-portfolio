@@ -1,6 +1,6 @@
 import { Participant } from "@/features/docs/collaboration/model";
 import { useLocale, useTranslations } from "next-intl";
-import { Badge, Card, Typography } from "@repo/ui";
+import { Badge, Card, Typography, Flex } from "@repo/ui";
 import { normalizeGuestDisplayName } from "@/lib/i18n/display-name";
 
 interface PresencePanelProps {
@@ -15,7 +15,7 @@ export const PresencePanel = ({ participants, mySessionId }: PresencePanelProps)
 
   return (
     <Card className="border-default/80 bg-surface border p-5">
-      <div className="mb-4 flex items-center justify-between">
+      <Flex className="mb-4 flex items-center justify-between">
         <Typography as="h3" variant="title" className="text-body-md font-semibold">
           {t("title")}
         </Typography>
@@ -23,7 +23,7 @@ export const PresencePanel = ({ participants, mySessionId }: PresencePanelProps)
           {participants.length}
           {t("countSuffix")}
         </Badge>
-      </div>
+      </Flex>
 
       <div className="space-y-3">
         {participants.length === 0 ? (
@@ -36,8 +36,8 @@ export const PresencePanel = ({ participants, mySessionId }: PresencePanelProps)
 
             return (
               <div key={`${participant.socketId}-${participant.sessionId}`} className={panelItemClass}>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
+                <Flex className="flex items-center justify-between gap-2">
+                  <Flex className="flex min-w-0 items-center gap-2">
                     <span
                       className="inline-block h-2.5 w-2.5 rounded-full"
                       style={{ backgroundColor: participant.color }}
@@ -47,7 +47,7 @@ export const PresencePanel = ({ participants, mySessionId }: PresencePanelProps)
                       {normalizeGuestDisplayName(participant.displayName, locale)}
                       {isMe ? t("meSuffix") : ""}
                     </Typography>
-                  </div>
+                  </Flex>
                   <Badge
                     variant={participant.role === "editor" ? "success" : "outline"}
                     size="sm"
@@ -55,13 +55,13 @@ export const PresencePanel = ({ participants, mySessionId }: PresencePanelProps)
                   >
                     {participant.role}
                   </Badge>
-                </div>
+                </Flex>
 
-                <div className="mt-1.5 flex items-center justify-end">
+                <Flex className="mt-1.5 flex items-center justify-end">
                   <Typography as="span" variant="caption" color="subtle" className="tabular-nums">
                     cursor {participant.cursorIndex}
                   </Typography>
-                </div>
+                </Flex>
               </div>
             );
           })

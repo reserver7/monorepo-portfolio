@@ -219,7 +219,7 @@ const resolveWorkspaceRequest = (
   const account = resolveAccountFromRequest(req, res);
   if (account === undefined) return undefined;
   const record = kind === "document" ? store.getDocument(entityId) : store.getBoard(entityId);
-  if (!record) {
+  if (!record || record.deletedAt) {
     res.status(404).json({ message: kind === "document" ? "Document not found" : "Board not found" });
     return undefined;
   }
@@ -371,11 +371,28 @@ const broadcastNotificationUpdate = (accountIds: Array<string | undefined>): voi
   }
 };
 
+const broadcastWorkspaceListUpdate = (
+  scope: "document" | "board",
+  entityId: string,
+  extraAccountIds: Array<string | undefined> = []
+): void => {
+  const record = scope === "document" ? store.getDocument(entityId) : store.getBoard(entityId);
+  const accountIds = [
+    ...extraAccountIds,
+    record?.ownerId,
+    ...(record?.members ?? []).map((member) => member.accountId)
+  ];
+  for (const accountId of new Set(accountIds.filter((value): value is string => Boolean(value)))) {
+    io.to(`account:${accountId}`).emit(socketEventName.workspaceUpdate, { scope, entityId });
+  }
+};
+
 const broadcastWorkspaceActivity = (scope: "document" | "board", entityId: string): void => {
   io.to(scope === "document" ? documentRoom(entityId) : boardRoom(entityId)).emit(
     socketEventName.activityUpdate,
     { scope, entityId }
   );
+  broadcastWorkspaceListUpdate(scope, entityId);
 };
 
 const updateConnectedMemberRole = async (
@@ -536,6 +553,23 @@ app.patch(API_ROUTES.notificationsReadAll, (req, res) => {
   res.json({ marked: store.markWorkspaceNotificationsRead(account.id) });
 });
 
+app.get(API_ROUTES.workspaceFavorites, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (!account) return;
+  res.json({ favoriteKeys: store.getFavoriteWorkspaceKeys(account.id) });
+});
+
+app.patch(API_ROUTES.workspaceFavorites, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (!account) return;
+  const body = toJsonObject(req.body);
+  if (!Array.isArray(body.favoriteKeys) || !body.favoriteKeys.every((key) => typeof key === "string")) {
+    res.status(400).json({ message: "즐겨찾기 목록 형식이 올바르지 않습니다." });
+    return;
+  }
+  res.json({ favoriteKeys: store.setFavoriteWorkspaceKeys(account.id, body.favoriteKeys) });
+});
+
 app.post(API_ROUTES.realtimeToken, (req, res) => {
   const account = resolveAccountFromRequest(req, res);
   if (!account) return;
@@ -545,7 +579,78 @@ app.post(API_ROUTES.realtimeToken, (req, res) => {
 app.get(API_ROUTES.documents, (req, res) => {
   const account = resolveAccountFromRequest(req, res);
   if (account === undefined) return;
-  res.json({ documents: store.listDocuments(account?.id, account?.email) });
+  const documents = store.listDocuments(account?.id, account?.email).map((document) => {
+    const record = store.getDocument(document.id);
+    return {
+      ...document,
+      permission: record ? resolveWorkspacePermission(record, account) : undefined
+    };
+  });
+  res.json({ documents });
+});
+
+app.get(API_ROUTES.workspaceTrash, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (account === undefined) return;
+  if (!account) {
+    res.status(401).json({ message: "유효한 계정 세션이 필요합니다." });
+    return;
+  }
+  res.json(store.listDeletedDocuments(account.id));
+});
+
+app.post(API_ROUTES.workspaceTrashRestore, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (account === undefined) return;
+  if (!account) {
+    res.status(401).json({ message: "유효한 계정 세션이 필요합니다." });
+    return;
+  }
+  const restored =
+    req.params.kind === "document"
+      ? store.restoreDocument({ documentId: req.params.id, ownerId: account.id })
+      : req.params.kind === "board"
+        ? store.restoreBoard({ boardId: req.params.id, ownerId: account.id })
+        : "not-found";
+  if (restored === "not-found") {
+    res.status(404).json({ message: "휴지통 항목을 찾을 수 없습니다." });
+    return;
+  }
+  if (restored === "forbidden") {
+    res.status(403).json({ message: "휴지통 항목을 관리할 권한이 없습니다." });
+    return;
+  }
+  const entityId = "documentId" in restored ? restored.documentId : restored.boardId;
+  broadcastWorkspaceListUpdate(req.params.kind as "document" | "board", entityId, [account.id]);
+  res.json({ ok: true, ...restored });
+});
+
+app.delete(API_ROUTES.workspaceTrashItem, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (account === undefined) return;
+  if (!account) {
+    res.status(401).json({ message: "유효한 계정 세션이 필요합니다." });
+    return;
+  }
+  const deleted =
+    req.params.kind === "document"
+      ? store.permanentlyDeleteDocument({ documentId: req.params.id, ownerId: account.id })
+      : req.params.kind === "board"
+        ? store.permanentlyDeleteBoard({ boardId: req.params.id, ownerId: account.id })
+        : "not-found";
+  if (deleted === "not-found") {
+    res.status(404).json({ message: "휴지통 항목을 찾을 수 없습니다." });
+    return;
+  }
+  if (deleted === "forbidden") {
+    res.status(403).json({ message: "휴지통 항목을 관리할 권한이 없습니다." });
+    return;
+  }
+  const entityId = "documentId" in deleted ? deleted.documentId : deleted.boardId;
+  if (req.params.kind === "document") teardownDocumentAfterDelete(entityId);
+  else teardownBoardAfterDelete(entityId);
+  broadcastWorkspaceListUpdate(req.params.kind as "document" | "board", entityId, [account.id]);
+  res.json({ ok: true, ...deleted });
 });
 
 app.post(API_ROUTES.documents, (req, res) => {
@@ -556,12 +661,15 @@ app.post(API_ROUTES.documents, (req, res) => {
   const title = readOptionalString(body, "title") ?? EMPTY_TITLE;
   const editorAccessKey = readOptionalString(body, "editorAccessKey");
   const created = store.createDocument(title, actor, editorAccessKey, account?.id);
+  broadcastWorkspaceListUpdate("document", created.id, [account?.id]);
   res.status(201).json({ document: created });
 });
 
 app.delete(API_ROUTES.documentById, (req, res) => {
   const account = resolveAccountFromRequest(req, res);
   if (account === undefined) return;
+  const documentBeforeDelete = store.getDocument(req.params.id);
+  const documentMemberAccountIds = (documentBeforeDelete?.members ?? []).map((member) => member.accountId);
   const body = toJsonObject(req.body);
   const editorAccessKey = readOptionalString(body, "editorAccessKey");
   const deleted = store.deleteDocument({
@@ -581,7 +689,85 @@ app.delete(API_ROUTES.documentById, (req, res) => {
   }
 
   teardownDocumentAfterDelete(deleted.documentId);
+  broadcastWorkspaceListUpdate("document", deleted.documentId, [
+    account?.id,
+    documentBeforeDelete?.ownerId,
+    ...documentMemberAccountIds
+  ]);
   res.json({ ok: true, documentId: deleted.documentId });
+});
+
+app.patch(API_ROUTES.documentById, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "document", req.params.id, "edit");
+  if (!access) return;
+  const title = readOptionalString(toJsonObject(req.body), "title")?.trim();
+  if (!title) {
+    res.status(400).json({ message: "문서 제목을 입력하세요." });
+    return;
+  }
+
+  const updated = store.updateDocument({
+    documentId: req.params.id,
+    title,
+    actor: access.account?.name ?? "대시보드 사용자"
+  });
+  if (!updated) {
+    res.status(404).json({ message: "Document not found" });
+    return;
+  }
+  broadcastWorkspaceListUpdate("document", req.params.id, [access.account?.id]);
+  res.json(updated);
+});
+
+app.post(API_ROUTES.documentDuplicate, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "document", req.params.id, "edit");
+  if (!access) return;
+  const duplicate = store.duplicateDocument({
+    documentId: req.params.id,
+    actor: access.account?.name ?? "대시보드 사용자",
+    ownerId: access.account?.id
+  });
+  if (!duplicate) {
+    res.status(404).json({ message: "Document not found" });
+    return;
+  }
+  broadcastWorkspaceListUpdate("document", duplicate.id, [access.account?.id]);
+  res.status(201).json({ document: duplicate });
+});
+
+app.post(API_ROUTES.documentRestore, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "document", req.params.id, "edit");
+  if (!access) return;
+  const historyId = readOptionalString(toJsonObject(req.body), "historyId");
+  if (!historyId) {
+    res.status(400).json({ message: "복원할 이력 ID가 필요합니다." });
+    return;
+  }
+
+  const restored = store.restoreDocumentVersion({
+    documentId: req.params.id,
+    historyId,
+    actor: access.account?.name ?? "문서 편집자"
+  });
+  if (restored === "not-found") {
+    res.status(404).json({ message: "Document not found" });
+    return;
+  }
+  if (restored === "version-not-found") {
+    res.status(404).json({ message: "복원할 수 있는 문서 이력을 찾을 수 없습니다." });
+    return;
+  }
+
+  io.to(documentRoom(req.params.id)).emit(socketEventName.documentUpdate, {
+    documentId: restored.document.id,
+    title: restored.document.title,
+    content: restored.document.content,
+    version: restored.document.version,
+    updatedAt: restored.document.updatedAt,
+    editor: null
+  });
+  broadcastWorkspaceListUpdate("document", req.params.id, [access.account?.id]);
+  res.json(restored);
 });
 
 app.get(API_ROUTES.documentById, (req, res) => {
@@ -867,7 +1053,14 @@ app.post(API_ROUTES.documentMemberResponse, (req, res) => {
 app.get(API_ROUTES.boards, (req, res) => {
   const account = resolveAccountFromRequest(req, res);
   if (account === undefined) return;
-  res.json({ boards: store.listBoards(account?.id, account?.email) });
+  const boards = store.listBoards(account?.id, account?.email).map((board) => {
+    const record = store.getBoard(board.id);
+    return {
+      ...board,
+      permission: record ? resolveWorkspacePermission(record, account) : undefined
+    };
+  });
+  res.json({ boards });
 });
 
 app.post(API_ROUTES.boards, (req, res) => {
@@ -878,12 +1071,15 @@ app.post(API_ROUTES.boards, (req, res) => {
   const title = readOptionalString(body, "title") ?? EMPTY_TITLE;
   const editorAccessKey = readOptionalString(body, "editorAccessKey");
   const board = store.createBoard(title, actor, editorAccessKey, account?.id);
+  broadcastWorkspaceListUpdate("board", board.id, [account?.id]);
   res.status(201).json({ board });
 });
 
 app.delete(API_ROUTES.boardById, (req, res) => {
   const account = resolveAccountFromRequest(req, res);
   if (account === undefined) return;
+  const boardBeforeDelete = store.getBoard(req.params.id);
+  const boardMemberAccountIds = (boardBeforeDelete?.members ?? []).map((member) => member.accountId);
   const body = toJsonObject(req.body);
   const editorAccessKey = readOptionalString(body, "editorAccessKey");
   const deleted = store.deleteBoard({
@@ -903,7 +1099,50 @@ app.delete(API_ROUTES.boardById, (req, res) => {
   }
 
   teardownBoardAfterDelete(deleted.boardId);
+  broadcastWorkspaceListUpdate("board", deleted.boardId, [
+    account?.id,
+    boardBeforeDelete?.ownerId,
+    ...boardMemberAccountIds
+  ]);
   res.json({ ok: true, boardId: deleted.boardId });
+});
+
+app.patch(API_ROUTES.boardById, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "board", req.params.id, "edit");
+  if (!access) return;
+  const title = readOptionalString(toJsonObject(req.body), "title")?.trim();
+  if (!title) {
+    res.status(400).json({ message: "화이트보드 제목을 입력하세요." });
+    return;
+  }
+
+  const updated = store.updateBoardTitle({
+    boardId: req.params.id,
+    title,
+    actor: access.account?.name ?? "대시보드 사용자"
+  });
+  if (!updated) {
+    res.status(404).json({ message: "Board not found" });
+    return;
+  }
+  broadcastWorkspaceListUpdate("board", req.params.id, [access.account?.id]);
+  res.json(updated);
+});
+
+app.post(API_ROUTES.boardDuplicate, (req, res) => {
+  const access = resolveWorkspaceRequest(req, res, "board", req.params.id, "edit");
+  if (!access) return;
+  const duplicate = store.duplicateBoard({
+    boardId: req.params.id,
+    actor: access.account?.name ?? "대시보드 사용자",
+    ownerId: access.account?.id
+  });
+  if (!duplicate) {
+    res.status(404).json({ message: "Board not found" });
+    return;
+  }
+  broadcastWorkspaceListUpdate("board", duplicate.id, [access.account?.id]);
+  res.status(201).json({ board: duplicate });
 });
 
 app.get(API_ROUTES.boardById, (req, res) => {
@@ -1151,7 +1390,7 @@ io.on("connection", (socket) => {
         : payload?.scope === "board"
           ? store.getBoard(payload.entityId)
           : undefined;
-    if (!account || !record) {
+    if (!account || !record || record.deletedAt) {
       socket.emit("error", { message: "유효한 활동 로그 세션이 필요합니다." });
       return;
     }
@@ -1176,7 +1415,7 @@ io.on("connection", (socket) => {
     }
 
     const document = store.getDocument(payload.documentId);
-    if (!document) {
+    if (!document || document.deletedAt) {
       socket.emit("error", { message: "Document not found" });
       return;
     }
@@ -1368,6 +1607,7 @@ io.on("connection", (socket) => {
       updatedAt: result.document.updatedAt,
       editor: editorFromParticipant(participant)
     });
+    broadcastWorkspaceListUpdate("document", documentId);
 
     if (result.conflict) {
       socket.emit("document:conflict", {
@@ -1640,6 +1880,7 @@ io.on("connection", (socket) => {
       updatedAt: saved.updatedAt,
       version: saved.version
     });
+    broadcastWorkspaceListUpdate("document", documentId);
   });
 
   socket.on(socketEventName.boardJoin, async (payload: BoardJoinPayload) => {
@@ -1655,7 +1896,7 @@ io.on("connection", (socket) => {
     }
 
     const board = store.getBoard(payload.boardId);
-    if (!board) {
+    if (!board || board.deletedAt) {
       socket.emit("error", { message: "Board not found" });
       return;
     }
@@ -1771,6 +2012,7 @@ io.on("connection", (socket) => {
       board: result.board,
       editor: editorFromParticipant(participant)
     });
+    broadcastWorkspaceListUpdate("board", boardId);
 
     if (result.conflict) {
       socket.emit("board:conflict", {
@@ -1832,6 +2074,7 @@ io.on("connection", (socket) => {
       board: result.board,
       editor: editorFromParticipant(participant)
     });
+    broadcastWorkspaceListUpdate("board", boardId);
 
     if (result.conflict) {
       socket.emit("board:conflict", {
@@ -1894,6 +2137,7 @@ io.on("connection", (socket) => {
       board: result.board,
       editor: editorFromParticipant(participant)
     });
+    broadcastWorkspaceListUpdate("board", boardId);
 
     if (result.conflict) {
       socket.emit("board:conflict", {
@@ -1950,6 +2194,7 @@ io.on("connection", (socket) => {
       board: result.board,
       editor: editorFromParticipant(participant)
     });
+    broadcastWorkspaceListUpdate("board", boardId);
 
     if (result.conflict) {
       socket.emit("board:conflict", {
@@ -2044,6 +2289,7 @@ io.on("connection", (socket) => {
       board,
       editor: editorFromParticipant(participant)
     });
+    broadcastWorkspaceListUpdate("board", boardId);
   });
 
   socket.on(socketEventName.boardRedo, (payload: BoardRedoPayload) => {
@@ -2086,6 +2332,7 @@ io.on("connection", (socket) => {
       board,
       editor: editorFromParticipant(participant)
     });
+    broadcastWorkspaceListUpdate("board", boardId);
   });
 
   socket.on("disconnect", () => {
