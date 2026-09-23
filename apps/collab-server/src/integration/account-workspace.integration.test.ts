@@ -31,6 +31,81 @@ describe("계정별 작업 공간 API", () => {
     expect(response.status).toBe(401);
   });
 
+  it("즐겨찾기는 계정별로 저장하고 서로 격리한다", async () => {
+    const alice = { Authorization: `Bearer ${accountToken("favorite-account-a")}` };
+    const bob = { Authorization: `Bearer ${accountToken("favorite-account-b")}` };
+    const saved = await fetch(`${runtime.baseUrl}/api/workspace/favorites`, {
+      method: "PATCH",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ favoriteKeys: ["document:one", "document:one", "board:two"] })
+    });
+    expect(saved.status).toBe(200);
+    expect((await saved.json()).favoriteKeys).toEqual(["document:one", "board:two"]);
+
+    const aliceFavorites = await fetch(`${runtime.baseUrl}/api/workspace/favorites`, { headers: alice });
+    expect((await aliceFavorites.json()).favoriteKeys).toEqual(["document:one", "board:two"]);
+    const bobFavorites = await fetch(`${runtime.baseUrl}/api/workspace/favorites`, { headers: bob });
+    expect((await bobFavorites.json()).favoriteKeys).toEqual([]);
+  });
+
+  it("편집자는 작업 공간을 복제할 수 있고 뷰어는 복제할 수 없다", async () => {
+    const alice = { Authorization: `Bearer ${accountToken("duplicate-owner")}` };
+    const bob = { Authorization: `Bearer ${accountToken("duplicate-viewer")}` };
+    const createdResponse = await fetch(`${runtime.baseUrl}/api/documents`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ title: "복제 원본" })
+    });
+    const created = (await createdResponse.json()) as { document: { id: string } };
+
+    const duplicate = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/duplicate`, {
+      method: "POST",
+      headers: alice
+    });
+    expect(duplicate.status).toBe(201);
+    expect((await duplicate.json()).document).toMatchObject({
+      title: "복제 원본 복사본",
+      ownerId: "duplicate-owner"
+    });
+
+    const denied = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/duplicate`, {
+      method: "POST",
+      headers: bob
+    });
+    expect(denied.status).toBe(403);
+  });
+
+  it("편집자는 문서 이력을 복원할 수 있다", async () => {
+    const alice = { Authorization: `Bearer ${accountToken("restore-owner")}` };
+    const bob = { Authorization: `Bearer ${accountToken("restore-viewer")}` };
+    const createdResponse = await fetch(`${runtime.baseUrl}/api/documents`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ title: "복원 문서" })
+    });
+    const created = (await createdResponse.json()) as { document: { id: string } };
+    const historyResponse = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/history`, {
+      headers: alice
+    });
+    const history = (await historyResponse.json()) as { history: Array<{ id: string; content?: string }> };
+    const snapshot = history.history.find((entry) => entry.content !== undefined);
+    expect(snapshot).toBeDefined();
+
+    const restored = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/restore`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ historyId: snapshot?.id })
+    });
+    expect(restored.status).toBe(200);
+
+    const denied = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}/restore`, {
+      method: "POST",
+      headers: { ...bob, "content-type": "application/json" },
+      body: JSON.stringify({ historyId: snapshot?.id })
+    });
+    expect(denied.status).toBe(403);
+  });
+
   it("생성한 문서는 해당 계정 목록에만 나타난다", async () => {
     const alice = { Authorization: `Bearer ${accountToken("account-a")}` };
     const bob = { Authorization: `Bearer ${accountToken("account-b")}` };
@@ -46,6 +121,54 @@ describe("계정별 작업 공간 API", () => {
     const bobList = await fetch(`${runtime.baseUrl}/api/documents`, { headers: bob });
     const bobPayload = (await bobList.json()) as { documents: Array<{ id: string }> };
     expect(bobPayload.documents.some((document) => document.id === created.document.id)).toBe(false);
+  });
+
+  it("소유자는 문서와 화이트보드 이름을 변경하고 빈 이름은 거부한다", async () => {
+    const alice = { Authorization: `Bearer ${accountToken("rename-owner")}` };
+    const bob = { Authorization: `Bearer ${accountToken("rename-other")}` };
+    const jsonHeaders = { ...alice, "content-type": "application/json" };
+    const documentResponse = await fetch(`${runtime.baseUrl}/api/documents`, {
+      method: "POST",
+      headers: jsonHeaders,
+      body: JSON.stringify({ title: "기존 문서" })
+    });
+    const document = (await documentResponse.json()) as { document: { id: string } };
+    const boardResponse = await fetch(`${runtime.baseUrl}/api/boards`, {
+      method: "POST",
+      headers: jsonHeaders,
+      body: JSON.stringify({ title: "기존 보드" })
+    });
+    const board = (await boardResponse.json()) as { board: { id: string } };
+
+    const renamedDocument = await fetch(`${runtime.baseUrl}/api/documents/${document.document.id}`, {
+      method: "PATCH",
+      headers: jsonHeaders,
+      body: JSON.stringify({ title: "새 문서" })
+    });
+    expect(renamedDocument.status).toBe(200);
+    expect((await renamedDocument.json()).document.title).toBe("새 문서");
+
+    const renamedBoard = await fetch(`${runtime.baseUrl}/api/boards/${board.board.id}`, {
+      method: "PATCH",
+      headers: jsonHeaders,
+      body: JSON.stringify({ title: "새 보드" })
+    });
+    expect(renamedBoard.status).toBe(200);
+    expect((await renamedBoard.json()).board.title).toBe("새 보드");
+
+    const blank = await fetch(`${runtime.baseUrl}/api/documents/${document.document.id}`, {
+      method: "PATCH",
+      headers: jsonHeaders,
+      body: JSON.stringify({ title: "  " })
+    });
+    expect(blank.status).toBe(400);
+
+    const denied = await fetch(`${runtime.baseUrl}/api/boards/${board.board.id}`, {
+      method: "PATCH",
+      headers: { ...bob, "content-type": "application/json" },
+      body: JSON.stringify({ title: "권한 없음" })
+    });
+    expect(denied.status).toBe(403);
   });
 
   it("개인 문서 상세 접근은 멤버 초대 후에만 허용한다", async () => {
@@ -517,5 +640,49 @@ describe("계정별 작업 공간 API", () => {
     } finally {
       socket.disconnect();
     }
+  });
+
+  it("소유자는 삭제한 작업 공간을 휴지통에서 복구하고 영구 삭제한다", async () => {
+    const alice = { Authorization: `Bearer ${accountToken("account-trash")}` };
+    const createdResponse = await fetch(`${runtime.baseUrl}/api/documents`, {
+      method: "POST",
+      headers: { ...alice, "content-type": "application/json" },
+      body: JSON.stringify({ title: "휴지통 문서" })
+    });
+    const created = (await createdResponse.json()) as { document: { id: string } };
+    expect(createdResponse.status).toBe(201);
+
+    const deleted = await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}`, {
+      method: "DELETE",
+      headers: alice
+    });
+    expect(deleted.status).toBe(200);
+
+    const trash = await fetch(`${runtime.baseUrl}/api/workspace/trash`, { headers: alice });
+    const trashPayload = (await trash.json()) as { documents: Array<{ id: string }> };
+    expect(trash.status).toBe(200);
+    expect(trashPayload.documents.map((item) => item.id)).toContain(created.document.id);
+
+    const restored = await fetch(
+      `${runtime.baseUrl}/api/workspace/trash/document/${created.document.id}/restore`,
+      { method: "POST", headers: alice }
+    );
+    expect(restored.status).toBe(200);
+    expect(
+      (await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}`, { headers: alice })).status
+    ).toBe(200);
+
+    await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}`, {
+      method: "DELETE",
+      headers: alice
+    });
+    const permanentlyDeleted = await fetch(
+      `${runtime.baseUrl}/api/workspace/trash/document/${created.document.id}`,
+      { method: "DELETE", headers: alice }
+    );
+    expect(permanentlyDeleted.status).toBe(200);
+    expect(
+      (await fetch(`${runtime.baseUrl}/api/documents/${created.document.id}`, { headers: alice })).status
+    ).toBe(404);
   });
 });

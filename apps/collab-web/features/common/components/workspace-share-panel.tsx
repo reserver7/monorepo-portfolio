@@ -5,12 +5,14 @@ import { socketEventName } from "@repo/utils/collab";
 import { useRouter } from "next/navigation";
 import { io } from "socket.io-client";
 import { useEffect, useState } from "react";
+import { Button, Input, Select, Flex } from "@repo/ui";
 import { API_BASE_URL } from "@/features/docs/documents/api";
 import { fetchRealtimeAccountToken } from "@/lib/auth/realtime-token";
 
 type WorkspaceSharePanelProps = {
   kind: "documents" | "boards";
   entityId: string;
+  onClose?: () => void;
 };
 
 const activityLabels: Record<WorkspaceActivity["action"], string> = {
@@ -26,7 +28,7 @@ const activityLabels: Record<WorkspaceActivity["action"], string> = {
   replied: "댓글 답글"
 };
 
-export function WorkspaceSharePanel({ kind, entityId }: WorkspaceSharePanelProps) {
+export function WorkspaceSharePanel({ kind, entityId, onClose }: WorkspaceSharePanelProps) {
   const router = useRouter();
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [canLeave, setCanLeave] = useState(false);
@@ -153,47 +155,49 @@ export function WorkspaceSharePanel({ kind, entityId }: WorkspaceSharePanelProps
 
   return (
     <section className="border-default bg-surface mb-5 rounded-2xl border p-5 shadow-[var(--shadow-card)]">
-      <div className="mb-3">
-        <h2 className="text-base font-semibold">공유 및 권한</h2>
-        <p className="text-body-sm text-muted mt-1">초대된 계정만 이 작업 공간에 접근할 수 있습니다.</p>
-      </div>
+      <Flex className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold">공유 및 권한</h2>
+          <p className="text-body-sm text-muted mt-1">초대된 계정만 이 작업 공간에 접근할 수 있습니다.</p>
+        </div>
+        {onClose ? (
+          <Button type="button" variant="text" size="sm" onClick={onClose} aria-label="공유 관리 닫기">
+            닫기
+          </Button>
+        ) : null}
+      </Flex>
       <form className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_140px_auto]" onSubmit={invite}>
-        <label className="sr-only" htmlFor={`${kind}-member-email`}>
-          초대 이메일
-        </label>
-        <input
+        <Input
+          label="초대 이메일"
+          labelClassName="sr-only"
           id={`${kind}-member-email`}
           type="email"
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="이메일 주소"
-          className="border-default bg-surface rounded-xl border px-3 py-2 text-sm"
+          className="text-sm"
         />
-        <label className="sr-only" htmlFor={`${kind}-member-role`}>
-          권한
-        </label>
-        <select
-          id={`${kind}-member-role`}
+        <Select
+          label="권한"
+          labelClassName="sr-only"
           value={role}
-          onChange={(event) => setRole(event.target.value === "editor" ? "editor" : "viewer")}
-          className="border-default bg-surface rounded-xl border px-3 py-2 text-sm"
-        >
-          <option value="viewer">보기</option>
-          <option value="editor">편집</option>
-        </select>
-        <button
-          className="bg-primary text-primary-foreground rounded-xl px-4 py-2 text-sm font-medium"
-          type="submit"
-        >
+          options={[
+            { value: "viewer", label: "보기" },
+            { value: "editor", label: "편집" }
+          ]}
+          onChange={(value) => setRole(value === "editor" ? "editor" : "viewer")}
+          className="text-sm"
+        />
+        <Button type="submit" size="sm">
           초대
-        </button>
+        </Button>
       </form>
       {message ? <p className="text-body-sm text-muted mt-2">{message}</p> : null}
       {canLeave ? (
-        <button className="text-danger mt-3 text-xs" type="button" onClick={() => void leave()}>
+        <Button variant="text" size="sm" className="text-danger mt-3 text-xs" onClick={() => void leave()}>
           이 작업 공간에서 나가기
-        </button>
+        </Button>
       ) : null}
       {members.length > 0 ? (
         <ul className="mt-4 grid gap-2">
@@ -219,40 +223,41 @@ export function WorkspaceSharePanel({ kind, entityId }: WorkspaceSharePanelProps
                   </label>
                 ) : null}
                 {member.status !== "pending" && member.status !== "declined" ? (
-                  <select
-                    id={`${kind}-member-role-${member.email}`}
-                    aria-label={`${member.email} 권한`}
-                    className="border-default bg-surface rounded-lg border px-2 py-1 text-xs"
+                  <Select
+                    label={`${member.email} 권한`}
+                    labelClassName="sr-only"
                     value={member.role}
-                    onChange={(event) =>
-                      void updateRole(member, event.target.value === "editor" ? "editor" : "viewer")
-                    }
-                  >
-                    <option value="viewer">보기</option>
-                    <option value="editor">편집</option>
-                  </select>
+                    options={[
+                      { value: "viewer", label: "보기" },
+                      { value: "editor", label: "편집" }
+                    ]}
+                    onChange={(value) => void updateRole(member, value === "editor" ? "editor" : "viewer")}
+                    className="text-xs"
+                  />
                 ) : null}
                 {member.status === "pending" ? (
-                  <button className="text-primary text-xs" type="button" onClick={() => void resend(member)}>
+                  <Button variant="text" size="sm" className="text-xs" onClick={() => void resend(member)}>
                     재전송
-                  </button>
+                  </Button>
                 ) : null}
                 {member.status !== "pending" && member.status !== "declined" ? (
-                  <button
-                    className="text-primary text-xs"
-                    type="button"
+                  <Button
+                    variant="text"
+                    size="sm"
+                    className="text-xs"
                     onClick={() => void transferOwnership(member)}
                   >
                     소유권 이전
-                  </button>
+                  </Button>
                 ) : null}
-                <button
+                <Button
+                  variant="text"
+                  size="sm"
                   className="text-danger text-xs"
-                  type="button"
                   onClick={() => void remove(member.email)}
                 >
                   {member.status === "pending" ? "취소" : "제거"}
-                </button>
+                </Button>
               </span>
             </li>
           ))}

@@ -4,6 +4,8 @@ export interface HistoryEntry {
   actor: string;
   action: "create" | "update" | "save" | "comment";
   summary: string;
+  title?: string;
+  content?: string;
   conflictResolvedBy?: "last-write-wins" | "yjs-crdt";
 }
 
@@ -70,6 +72,7 @@ export interface DocumentSummary {
   id: string;
   ownerId?: string;
   members?: WorkspaceMember[];
+  permission?: "owner" | "viewer" | "editor" | "legacy";
   title: string;
   isProtected: boolean;
   snippet: string;
@@ -77,6 +80,7 @@ export interface DocumentSummary {
   createdAt: string;
   updatedAt: string;
   version: number;
+  deletedAt?: string;
 }
 
 export interface DocumentRecord {
@@ -93,6 +97,7 @@ export interface DocumentRecord {
   updatedAt: string;
   version: number;
   history: HistoryEntry[];
+  deletedAt?: string;
 }
 
 export type ShapeType = "rect" | "ellipse" | "diamond" | "text" | "connector";
@@ -128,18 +133,21 @@ export interface WhiteboardRecord {
   createdAt: string;
   updatedAt: string;
   version: number;
+  deletedAt?: string;
 }
 
 export interface WhiteboardSummary {
   id: string;
   ownerId?: string;
   members?: WorkspaceMember[];
+  permission?: "owner" | "viewer" | "editor" | "legacy";
   title: string;
   isProtected: boolean;
   shapeCount: number;
   createdAt: string;
   updatedAt: string;
   version: number;
+  deletedAt?: string;
 }
 
 export interface Participant {
@@ -187,6 +195,7 @@ export const socketEventName = {
   workspaceAccessRevoked: "workspace:access-revoked",
   notificationsSubscribe: "notifications:subscribe",
   notificationsUpdate: "notifications:update",
+  workspaceUpdate: "workspace:update",
   activitySubscribe: "activity:subscribe",
   activityUpdate: "activity:update",
   cursorUpdate: "cursor:update",

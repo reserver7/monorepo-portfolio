@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { COLLAB_AUTH_COOKIE, requiredAuthEnv } from "@/lib/auth/config";
 
 const safeNext = (value: string | null): string =>
-  value?.startsWith("/") && !value.startsWith("//") ? value : "/docs";
+  value?.startsWith("/") && !value.startsWith("//") ? value : "/workspace";
 
 export async function GET(request: NextRequest) {
   const next = safeNext(request.nextUrl.searchParams.get("next"));

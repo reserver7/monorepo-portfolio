@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button, Flex } from "@repo/ui";
+import { buildInvitationLoginPath } from "@/lib/auth/invitation-next";
 
 type Invitation = {
   kind: "document" | "board";
@@ -14,6 +16,7 @@ export default function InvitationPage() {
   const router = useRouter();
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [message, setMessage] = useState("초대 정보를 확인하고 있습니다.");
+  const [loginPath, setLoginPath] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -44,6 +47,7 @@ export default function InvitationPage() {
           ? "로그인 후 초대를 처리할 수 있습니다."
           : "초대가 만료되었거나 이 계정의 초대가 아닙니다."
       );
+      if (response.status === 401) setLoginPath(buildInvitationLoginPath(window.location.search));
       setBusy(false);
       return;
     }
@@ -68,27 +72,22 @@ export default function InvitationPage() {
               {invitation.role === "editor" ? "편집" : "보기"} 권한으로 초대되었습니다. 초대를
               수락하시겠습니까?
             </p>
-            <div className="mt-6 flex gap-2">
-              <button
-                className="bg-primary text-primary-foreground rounded-xl px-4 py-2 text-sm font-medium"
-                type="button"
-                disabled={busy}
-                onClick={() => void respond("accepted")}
-              >
+            <Flex className="mt-6 flex gap-2">
+              <Button disabled={busy} onClick={() => void respond("accepted")}>
                 수락
-              </button>
-              <button
-                className="border-default rounded-xl border px-4 py-2 text-sm"
-                type="button"
-                disabled={busy}
-                onClick={() => void respond("declined")}
-              >
+              </Button>
+              <Button variant="secondary" disabled={busy} onClick={() => void respond("declined")}>
                 거절
-              </button>
-            </div>
+              </Button>
+            </Flex>
           </>
         ) : null}
         <p className="text-body-sm text-muted mt-4">{message}</p>
+        {loginPath ? (
+          <Button asChild variant="link" size="sm" className="mt-3 px-0">
+            <a href={loginPath}>로그인 후 초대 계속하기</a>
+          </Button>
+        ) : null}
       </section>
     </main>
   );

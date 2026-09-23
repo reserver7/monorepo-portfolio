@@ -8,6 +8,7 @@ export interface PersistedWorkspaceState {
   boards: WhiteboardRecord[];
   documentAccessKeys?: Record<string, string>;
   boardAccessKeys?: Record<string, string>;
+  favoriteWorkspaceKeys?: Record<string, string[]>;
 }
 
 export interface StatePersistence {

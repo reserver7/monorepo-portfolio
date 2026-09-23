@@ -46,7 +46,17 @@
 - **WHEN** 인증된 사용자가 유효한 초대 링크를 연다
 - **THEN** 초대 작업 공간 이름과 역할 및 수락·거절 버튼이 표시된다
 
+#### Scenario: Unauthenticated invitee can continue after login
+
+- **WHEN** 비로그인 사용자가 초대 수락을 시도한다
+- **THEN** 시스템은 현재 초대 링크를 보존한 로그인 경로를 제공하고 로그인 후 같은 초대 화면으로 돌아오게 한다
+
 #### Scenario: Accepted invitation redirects
 
 - **WHEN** 사용자가 초대를 수락한다
 - **THEN** 성공 메시지 후 해당 문서 또는 화이트보드로 이동한다
+
+#### Scenario: Pending invitations are listed on workspace home
+
+- **WHEN** 인증된 초대 대상자가 문서 또는 화이트보드 홈을 연다
+- **THEN** 대기 중인 초대가 표시되고 대상자는 홈에서 수락하거나 거절할 수 있다

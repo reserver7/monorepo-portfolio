@@ -10,3 +10,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 export async function DELETE(request: NextRequest, context: RouteContext) {
   return forwardCollabRequest(request, `/api/boards/${(await context.params).id}`);
 }
+
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  return forwardCollabRequest(request, `/api/boards/${(await context.params).id}`);
+}

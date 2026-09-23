@@ -143,15 +143,77 @@ describe("실시간 스토어", () => {
     expect(store.listBoards("account-a").map((item) => item.id)).toContain(aliceBoard.id);
 
     expect(store.deleteDocument({ documentId: bobDocument.id, ownerId: "account-a" })).toBe("forbidden");
-    expect(store.deleteDocument({ documentId: aliceDocument.id, ownerId: "account-a" })).toEqual({
+    const deleted = store.deleteDocument({ documentId: aliceDocument.id, ownerId: "account-a" });
+    expect(deleted).toMatchObject({ documentId: aliceDocument.id, deletedAt: expect.any(String) });
+    expect(store.listDocuments("account-a").map((item) => item.id)).not.toContain(aliceDocument.id);
+    expect(store.listDeletedDocuments("account-a").documents.map((item) => item.id)).toContain(
+      aliceDocument.id
+    );
+
+    expect(store.restoreDocument({ documentId: aliceDocument.id, ownerId: "account-a" })).toEqual({
       documentId: aliceDocument.id
     });
+    expect(store.listDocuments("account-a").map((item) => item.id)).toContain(aliceDocument.id);
+
+    const deletedAgain = store.deleteDocument({ documentId: aliceDocument.id, ownerId: "account-a" });
+    expect(deletedAgain).toMatchObject({ documentId: aliceDocument.id });
+    expect(store.permanentlyDeleteDocument({ documentId: aliceDocument.id, ownerId: "account-a" })).toEqual({
+      documentId: aliceDocument.id
+    });
+    expect(store.getDocument(aliceDocument.id)).toBeNull();
 
     await store.persistNow();
     const restored = new RealtimeStore(stateFilePath);
     await restored.init();
     store = restored;
     expect(restored.listDocuments("account-b").map((item) => item.id)).toContain(bobDocument.id);
+  });
+
+  it("문서와 보드를 멤버 없이 복제한다", () => {
+    const document = store.createDocument("원본 문서", "owner", undefined, "account-a");
+    const updated = store.updateDocument({
+      documentId: document.id,
+      content: "복제할 본문",
+      actor: "owner"
+    });
+    expect(updated?.document.content).toBe("복제할 본문");
+
+    const duplicateDocument = store.duplicateDocument({
+      documentId: document.id,
+      actor: "owner",
+      ownerId: "account-a"
+    });
+    expect(duplicateDocument).toMatchObject({
+      title: "원본 문서 복사본",
+      content: "복제할 본문",
+      ownerId: "account-a"
+    });
+    expect(duplicateDocument?.members ?? []).toEqual([]);
+
+    const board = store.createBoard("원본 보드", "owner", undefined, "account-a");
+    const duplicateBoard = store.duplicateBoard({ boardId: board.id, actor: "owner", ownerId: "account-a" });
+    expect(duplicateBoard).toMatchObject({ title: "원본 보드 복사본", ownerId: "account-a" });
+    expect(duplicateBoard?.members ?? []).toEqual([]);
+  });
+
+  it("문서 이력을 이전 본문으로 복원한다", () => {
+    const document = store.createDocument("버전 문서", "owner", undefined, "account-a");
+    store.updateDocument({ documentId: document.id, content: "첫 번째 내용", actor: "owner" });
+    const firstVersion = store
+      .getDocument(document.id)
+      ?.history.find((entry) => entry.content === "첫 번째 내용");
+    store.updateDocument({ documentId: document.id, content: "두 번째 내용", actor: "owner" });
+
+    const restored = store.restoreDocumentVersion({
+      documentId: document.id,
+      historyId: firstVersion?.id ?? "missing",
+      actor: "owner"
+    });
+    expect(restored).not.toBe("not-found");
+    expect(restored).not.toBe("version-not-found");
+    if (typeof restored === "object") {
+      expect(restored.document.content).toBe("첫 번째 내용");
+    }
   });
 
   it("참조 도형 삭제 시 연결선도 함께 제거한다", () => {
@@ -364,14 +426,17 @@ describe("실시간 스토어", () => {
       documentId: protectedDocument.id,
       editorAccessKey: "1234"
     });
-    expect(allowedDelete).toEqual({ documentId: protectedDocument.id });
-    expect(store.getDocument(protectedDocument.id)).toBeNull();
+    expect(allowedDelete).toMatchObject({ documentId: protectedDocument.id, deletedAt: expect.any(String) });
+    expect(store.getDocument(protectedDocument.id)).toMatchObject({ deletedAt: expect.any(String) });
 
     const unprotectedDelete = store.deleteDocument({
       documentId: unprotectedDocument.id
     });
-    expect(unprotectedDelete).toEqual({ documentId: unprotectedDocument.id });
-    expect(store.getDocument(unprotectedDocument.id)).toBeNull();
+    expect(unprotectedDelete).toMatchObject({
+      documentId: unprotectedDocument.id,
+      deletedAt: expect.any(String)
+    });
+    expect(store.getDocument(unprotectedDocument.id)).toMatchObject({ deletedAt: expect.any(String) });
   });
 
   it("화이트보드 삭제는 보드별 편집 키를 검증한다", () => {
@@ -388,14 +453,14 @@ describe("실시간 스토어", () => {
       boardId: protectedBoard.id,
       editorAccessKey: "abcd"
     });
-    expect(allowedDelete).toEqual({ boardId: protectedBoard.id });
-    expect(store.getBoard(protectedBoard.id)).toBeNull();
+    expect(allowedDelete).toMatchObject({ boardId: protectedBoard.id, deletedAt: expect.any(String) });
+    expect(store.getBoard(protectedBoard.id)).toMatchObject({ deletedAt: expect.any(String) });
 
     const unprotectedDelete = store.deleteBoard({
       boardId: unprotectedBoard.id
     });
-    expect(unprotectedDelete).toEqual({ boardId: unprotectedBoard.id });
-    expect(store.getBoard(unprotectedBoard.id)).toBeNull();
+    expect(unprotectedDelete).toMatchObject({ boardId: unprotectedBoard.id, deletedAt: expect.any(String) });
+    expect(store.getBoard(unprotectedBoard.id)).toMatchObject({ deletedAt: expect.any(String) });
   });
 
   it("상태 파일에는 편집 키를 평문으로 저장하지 않는다", async () => {

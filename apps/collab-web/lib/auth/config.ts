@@ -11,6 +11,7 @@ export function isProtectedPath(pathname: string): boolean {
     pathname === "/docs" ||
     pathname.startsWith("/docs/") ||
     pathname === "/whiteboard" ||
-    pathname.startsWith("/whiteboard/")
+    pathname.startsWith("/whiteboard/") ||
+    pathname === "/workspace"
   );
 }

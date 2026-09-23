@@ -9,14 +9,14 @@
       "deleteDialog": {
         "confirmDeleteDocument": "문서 삭제",
         "default": {
-          "description": "삭제된 문서는 복구할 수 없습니다.",
-          "title": "문서를 삭제할까요?"
+          "description": "문서는 휴지통으로 이동하며, 작업 공간에서 복구할 수 있습니다.",
+          "title": "문서를 휴지통으로 이동할까요?"
         },
         "passwordLabel": "삭제 비밀번호",
         "passwordPlaceholder": "삭제 비밀번호",
         "protected": {
           "description": "이 문서는 편집 키로 보호되어 있습니다. 삭제 비밀번호를 입력해 주세요.",
-          "title": "문서를 삭제할까요?"
+          "title": "문서를 휴지통으로 이동할까요?"
         }
       },
       "emptyTitle": "(제목 없음)",
@@ -107,6 +107,13 @@
         "by": "작성자",
         "countSuffix": "건",
         "empty": "표시할 이력이 없습니다.",
+        "preview": "미리보기",
+        "closePreview": "닫기",
+        "currentVersion": "현재 버전",
+        "selectedVersion": "선택한 버전",
+        "changedLines": "변경된 줄: {count}개",
+        "restore": "이 버전 복원",
+        "restoreConfirm": "이 버전으로 문서를 복원할까요?",
         "title": "변경 이력"
       },
       "presence": {
@@ -196,14 +203,14 @@
       "deleteDialog": {
         "confirmDeleteBoard": "화이트보드 삭제",
         "default": {
-          "description": "삭제된 화이트보드는 복구할 수 없습니다.",
-          "title": "화이트보드를 삭제할까요?"
+          "description": "화이트보드는 휴지통으로 이동하며, 작업 공간에서 복구할 수 있습니다.",
+          "title": "화이트보드를 휴지통으로 이동할까요?"
         },
         "passwordLabel": "삭제 비밀번호",
         "passwordPlaceholder": "삭제 비밀번호",
         "protected": {
           "description": "이 화이트보드는 편집 키로 보호되어 있습니다. 삭제 비밀번호를 입력해 주세요.",
-          "title": "화이트보드를 삭제할까요?"
+          "title": "화이트보드를 휴지통으로 이동할까요?"
         }
       },
       "emptyTitle": "(제목 없음)",
@@ -365,11 +372,11 @@
       "documents": {
         "commentCreateSuccess": "댓글이 등록되었습니다.",
         "createSuccess": "문서가 생성되었습니다.",
-        "deleteSuccess": "문서가 삭제되었습니다."
+        "deleteSuccess": "문서가 휴지통으로 이동되었습니다."
       },
       "whiteboard": {
         "createSuccess": "화이트보드가 생성되었습니다.",
-        "deleteSuccess": "화이트보드가 삭제되었습니다."
+        "deleteSuccess": "화이트보드가 휴지통으로 이동되었습니다."
       }
     },
     "realtime": {

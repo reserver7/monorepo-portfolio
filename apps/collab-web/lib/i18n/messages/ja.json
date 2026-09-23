@@ -9,14 +9,14 @@
       "deleteDialog": {
         "confirmDeleteDocument": "ドキュメント削除",
         "default": {
-          "description": "削除したドキュメントは復元できません。",
-          "title": "このドキュメントを削除しますか？"
+          "description": "ドキュメントはゴミ箱に移動され、そこから復元できます。",
+          "title": "このドキュメントをゴミ箱に移動しますか？"
         },
         "passwordLabel": "削除パスワード",
         "passwordPlaceholder": "削除パスワード",
         "protected": {
           "description": "このドキュメントは編集キーで保護されています。削除パスワードを入力してください。",
-          "title": "このドキュメントを削除しますか？"
+          "title": "このドキュメントをゴミ箱に移動しますか？"
         }
       },
       "emptyTitle": "（無題）",
@@ -107,6 +107,13 @@
         "by": "作成者",
         "countSuffix": "件",
         "empty": "表示する履歴がありません。",
+        "preview": "プレビュー",
+        "closePreview": "閉じる",
+        "currentVersion": "現在のバージョン",
+        "selectedVersion": "選択したバージョン",
+        "changedLines": "変更された行: {count}行",
+        "restore": "このバージョンを復元",
+        "restoreConfirm": "このバージョンにドキュメントを復元しますか？",
         "title": "変更履歴"
       },
       "presence": {
@@ -196,14 +203,14 @@
       "deleteDialog": {
         "confirmDeleteBoard": "ホワイトボード削除",
         "default": {
-          "description": "削除したホワイトボードは復元できません。",
-          "title": "このホワイトボードを削除しますか？"
+          "description": "ホワイトボードはゴミ箱に移動され、そこから復元できます。",
+          "title": "このホワイトボードをゴミ箱に移動しますか？"
         },
         "passwordLabel": "削除パスワード",
         "passwordPlaceholder": "削除パスワード",
         "protected": {
           "description": "このホワイトボードは編集キーで保護されています。削除パスワードを入力してください。",
-          "title": "このホワイトボードを削除しますか？"
+          "title": "このホワイトボードをゴミ箱に移動しますか？"
         }
       },
       "emptyTitle": "（無題）",
@@ -365,11 +372,11 @@
       "documents": {
         "commentCreateSuccess": "コメントが登録されました。",
         "createSuccess": "ドキュメントが作成されました。",
-        "deleteSuccess": "ドキュメントが削除されました。"
+        "deleteSuccess": "ドキュメントをゴミ箱に移動しました。"
       },
       "whiteboard": {
         "createSuccess": "ホワイトボードが作成されました。",
-        "deleteSuccess": "ホワイトボードが削除されました。"
+        "deleteSuccess": "ホワイトボードをゴミ箱に移動しました。"
       }
     },
     "realtime": {
