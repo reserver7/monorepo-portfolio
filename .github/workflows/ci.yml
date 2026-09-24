@@ -38,9 +38,9 @@ jobs:
       checks: ${{ steps.filter.outputs.checks }}
       format: ${{ steps.filter.outputs.format }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             opslens:
@@ -116,7 +116,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
       - run: pnpm format:check
 
@@ -127,7 +127,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 18
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
       - run: pnpm ui:usage:check
       - run: pnpm turbo run lint typecheck --filter=@repo/opslens-server --filter=@repo/opslens-web
@@ -140,11 +140,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
         with:
           fetch-depth: "1"
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
@@ -167,7 +167,7 @@ jobs:
       - run: pnpm test:e2e:opslens --project=desktop-chromium --workers=1 --retries=0 --reporter=line
       - name: Upload Playwright failure report
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: opslens-playwright-report-${{ github.run_id }}
           path: playwright-report-opslens
@@ -181,7 +181,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 18
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
       - run: pnpm ui:usage:check
       - run: pnpm turbo run lint typecheck --filter=@repo/collab-server --filter=@repo/collab-web
@@ -194,9 +194,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
@@ -204,7 +204,7 @@ jobs:
       - run: pnpm test:e2e --workers=1 --reporter=line
       - name: Upload Playwright failure report
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: collab-playwright-report-${{ github.run_id }}
           path: playwright-report
@@ -218,7 +218,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
       - run: pnpm ui:usage:check
       - run: pnpm i18n:check && pnpm i18n:extract:check && pnpm i18n:sync:check && pnpm i18n:draft:check
@@ -233,11 +233,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
         with:
           fetch-depth: "0"
-      - uses: chromaui/action@v13
+      - uses: chromaui/action@v17
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           buildScriptName: build:storybook
