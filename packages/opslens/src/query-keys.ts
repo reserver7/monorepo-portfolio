@@ -86,5 +86,7 @@ export const opslensQueryKeys = {
   settings: () => opslensKeysBase.custom("settings"),
   auditLogs: () => opslensKeysBase.custom("audit-logs"),
   users: () => opslensKeysBase.custom("users"),
+  sessions: () => opslensKeysBase.custom("sessions"),
+  securityActivity: () => opslensKeysBase.custom("security-activity"),
   notificationDeliveries: () => opslensKeysBase.custom("notification-deliveries")
 };

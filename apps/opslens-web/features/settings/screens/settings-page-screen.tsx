@@ -20,11 +20,20 @@ import { OpsPageShell, OpsSectionCard } from "@/features";
 import {
   changeCurrentPassword,
   clearAuthSession,
+  listCurrentSessions,
+  listSecurityActivity,
   fetchNotificationPolicy,
   logoutCurrentSession,
+  revokeAllSessions,
+  revokeSession,
   readNotificationPolicy,
   readAuthAvatarColor,
   readAuthSession,
+  requestEmailChange,
+  confirmTwoFactor,
+  disableTwoFactor,
+  getTwoFactorStatus,
+  setupTwoFactor,
   updateNotificationPolicy,
   type OpsNotificationPolicy,
   setAuthAvatarColor,
@@ -34,6 +43,10 @@ import { SETTINGS_DEFAULT_AVATAR_COLOR } from "../constants";
 import { resolveLocalizedError } from "@/lib/i18n/errors";
 import {
   AccountSummaryCard,
+  ActiveSessionsPanel,
+  EmailChangeForm,
+  TwoFactorPanel,
+  SecurityActivityPanel,
   AuditLogPanel,
   NotificationPolicyPanel,
   OpsSettingsPanel,
@@ -59,6 +72,11 @@ export default function SettingsPage() {
   const auditSectionRef = useRef<HTMLDivElement | null>(null);
   const [profileName, setProfileName] = useState("User");
   const [profileEmail, setProfileEmail] = useState("-");
+  const [emailDraft, setEmailDraft] = useState("");
+  const [twoFactorSetup, setTwoFactorSetup] = useState<Awaited<ReturnType<typeof setupTwoFactor>> | null>(
+    null
+  );
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
   const [profileRole, setProfileRole] = useState("-");
   const [profileProvider, setProfileProvider] = useState<"local" | "google" | "github">("local");
   const [avatarColor, setAvatarColor] = useState<string>(SETTINGS_DEFAULT_AVATAR_COLOR);
@@ -103,6 +121,24 @@ export default function SettingsPage() {
     staleTime: 30_000
   });
   const authSession = readAuthSession();
+  const sessionsQuery = useQuery({
+    queryKey: opslensQueryKeys.sessions(),
+    queryFn: listCurrentSessions,
+    enabled: Boolean(authSession),
+    staleTime: 15_000
+  });
+  const securityActivityQuery = useQuery({
+    queryKey: opslensQueryKeys.securityActivity(),
+    queryFn: listSecurityActivity,
+    enabled: Boolean(authSession),
+    staleTime: 15_000
+  });
+  const twoFactorQuery = useQuery({
+    queryKey: ["opslens", "two-factor"],
+    queryFn: getTwoFactorStatus,
+    enabled: Boolean(authSession),
+    staleTime: 30_000
+  });
   const usersQuery = useQuery({
     queryKey: opslensQueryKeys.users(),
     queryFn: () => getOpslensUsers(authSession!.accessToken),
@@ -231,6 +267,7 @@ export default function SettingsPage() {
     setProfileName(session.user.name);
     profileForm.setValue("name", session.user.name);
     setProfileEmail(session.user.email);
+    setEmailDraft(session.user.email);
     setProfileRole(session.user.role);
     setProfileProvider(session.user.authProvider ?? "local");
     const savedAvatarColor = readAuthAvatarColor();
@@ -335,6 +372,39 @@ export default function SettingsPage() {
       toast.error(resolveLocalizedError(error, tError as never, t("profileSaveFailed")));
     }
   });
+  const emailChangeMutation = useMutation({
+    mutationFn: (email: string) => requestEmailChange(email),
+    onSuccess: (result) => {
+      toast.success(result.sent ? t("emailChangeRequested") : t("emailChangeUnavailable"));
+      void queryClient.invalidateQueries({ queryKey: opslensQueryKeys.securityActivity() });
+    },
+    onError: (error) => toast.error(resolveLocalizedError(error, tError as never, t("emailChangeFailed")))
+  });
+  const twoFactorSetupMutation = useMutation({
+    mutationFn: setupTwoFactor,
+    onSuccess: (result) => setTwoFactorSetup(result),
+    onError: (error) => toast.error(resolveLocalizedError(error, tError as never, t("twoFactorFailed")))
+  });
+  const twoFactorConfirmMutation = useMutation({
+    mutationFn: confirmTwoFactor,
+    onSuccess: async (result) => {
+      setTwoFactorSetup(null);
+      setRecoveryCodes(result.recoveryCodes);
+      await queryClient.invalidateQueries({ queryKey: ["opslens", "two-factor"] });
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.securityActivity() });
+      toast.success(t("twoFactorEnabledToast"));
+    },
+    onError: (error) => toast.error(resolveLocalizedError(error, tError as never, t("twoFactorFailed")))
+  });
+  const twoFactorDisableMutation = useMutation({
+    mutationFn: disableTwoFactor,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["opslens", "two-factor"] });
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.securityActivity() });
+      toast.success(t("twoFactorDisabledToast"));
+    },
+    onError: (error) => toast.error(resolveLocalizedError(error, tError as never, t("twoFactorFailed")))
+  });
 
   const submitProfile = profileForm.handleSubmit((values) => {
     profileMutation.mutate({ name: values.name.trim(), avatarColor });
@@ -344,6 +414,7 @@ export default function SettingsPage() {
     mutationFn: (values: { currentPassword: string; newPassword: string }) => changeCurrentPassword(values),
     onSuccess: () => {
       passwordForm.reset();
+      void queryClient.invalidateQueries({ queryKey: opslensQueryKeys.securityActivity() });
     },
     onError: (error) => {
       toast.error(resolveLocalizedError(error, tError as never, t("passwordSaveFailed")));
@@ -490,6 +561,24 @@ export default function SettingsPage() {
     }
   });
 
+  const revokeSessionMutation = useMutation({
+    mutationFn: (session: { id: string }) => revokeSession(session.id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.sessions() });
+      toast.success(t("sessionRevoked"));
+    },
+    onError: () => toast.error(t("sessionRevokeFailed"))
+  });
+
+  const revokeAllSessionsMutation = useMutation({
+    mutationFn: revokeAllSessions,
+    onSuccess: () => {
+      clearAuthSession();
+      router.replace("/login");
+    },
+    onError: () => toast.error(t("sessionRevokeFailed"))
+  });
+
   const isProfileDirty =
     profileForm.getValues("name").trim() !== profileName || avatarColor !== initialAvatarColor;
   const isPasswordDirty =
@@ -552,10 +641,64 @@ export default function SettingsPage() {
             onLogoutCurrentSession={() => logoutAllMutation.mutate()}
           />
         </OpsSectionCard>
+        <OpsSectionCard title={t("sessionsTitle")} description={t("sessionsDescription")}>
+          <ActiveSessionsPanel
+            sessions={sessionsQuery.data ?? []}
+            loading={sessionsQuery.isLoading}
+            pendingSessionId={revokeSessionMutation.variables?.id}
+            revokingAll={revokeAllSessionsMutation.isPending}
+            onRevoke={(session) => {
+              void confirm({
+                title: t("revokeSessionConfirmTitle"),
+                description: t("revokeSessionConfirmDescription"),
+                confirmText: t("logoutSession"),
+                cancelText: t("cancel"),
+                confirmVariant: "danger"
+              }).then((confirmed) => {
+                if (confirmed) revokeSessionMutation.mutate({ id: session.id });
+              });
+            }}
+            onRevokeAll={() => {
+              void confirm({
+                title: t("logoutAllConfirmTitle"),
+                description: t("logoutAllConfirmDescription"),
+                confirmText: t("logoutAllSessions"),
+                cancelText: t("cancel"),
+                confirmVariant: "danger"
+              }).then((confirmed) => {
+                if (confirmed) revokeAllSessionsMutation.mutate();
+              });
+            }}
+          />
+        </OpsSectionCard>
+        <OpsSectionCard title={t("securityActivityTitle")} description={t("securityActivityDescription")}>
+          <SecurityActivityPanel
+            activities={securityActivityQuery.data ?? []}
+            loading={securityActivityQuery.isLoading}
+          />
+        </OpsSectionCard>
       </Box>
 
       <Box ref={profileSectionRef}>
         <OpsSectionCard title={t("profileTitle")} description={t("profileDescription")}>
+          <EmailChangeForm
+            email={emailDraft}
+            pending={emailChangeMutation.isPending}
+            onEmailChange={setEmailDraft}
+            onSubmit={() => emailChangeMutation.mutate(emailDraft)}
+          />
+          {profileProvider === "local" ? (
+            <TwoFactorPanel
+              enabled={twoFactorQuery.data?.enabled === true}
+              setup={twoFactorSetup}
+              recoveryCodes={recoveryCodes}
+              setupPending={twoFactorSetupMutation.isPending}
+              actionPending={twoFactorConfirmMutation.isPending || twoFactorDisableMutation.isPending}
+              onSetup={() => twoFactorSetupMutation.mutate()}
+              onConfirm={(code) => twoFactorConfirmMutation.mutate(code)}
+              onDisable={(code) => twoFactorDisableMutation.mutate(code)}
+            />
+          ) : null}
           <ProfileSecurityForm
             profileProvider={profileProvider}
             avatarColor={avatarColor}

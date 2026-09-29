@@ -5,11 +5,14 @@ import {
   getOpslensNotificationPolicy,
   getOpslensMe,
   requestPasswordResetOpslens,
+  resetPasswordOpslens,
+  resendOpslensVerification,
   updateOpslensNotificationPolicy,
   updateOpslensProfile,
   type OpsAuthUser,
   type OpsLoginResponse
 } from "@repo/opslens";
+import type { OpsSignupResponse } from "@repo/opslens";
 import { setHttpAccessToken } from "@repo/react-query";
 
 const LEGACY_ROLE_KEY = "opslens.role";
@@ -34,6 +37,30 @@ export type OpsNotificationPolicy = {
   quietHoursEnabled: boolean;
   quietFrom: string;
   quietTo: string;
+};
+
+export type OpsAuthSessionSummary = {
+  id: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  expiresAt: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  isCurrent: boolean;
+};
+
+export type OpsSecurityActivity = {
+  id: string;
+  actor: string;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  severity: string;
+  summary: string;
+  beforeValue: string | null;
+  afterValue: string | null;
+  metadata: string;
+  createdAt: string;
 };
 
 const DEFAULT_NOTIFICATION_POLICY: OpsNotificationPolicy = {
@@ -152,10 +179,10 @@ export const updateNotificationPolicy = async (
   return saveNotificationPolicy(saved);
 };
 
-const requestSession = async (
+const requestSession = async <Response = OpsLoginResponse>(
   action: "login" | "signup" | "refresh",
   input: object
-): Promise<OpsLoginResponse> => {
+): Promise<Response> => {
   const response = await fetch(`/api/opslens-auth/${action}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -164,7 +191,7 @@ const requestSession = async (
   if (!response.ok) {
     throw new Error(await parseOAuthBridgeError(response));
   }
-  return (await response.json()) as OpsLoginResponse;
+  return (await response.json()) as Response;
 };
 
 export const saveAuthSession = (
@@ -186,6 +213,7 @@ export const saveAuthSession = (
 export const loginWithPassword = async (input: {
   email: string;
   password: string;
+  otp?: string;
   rememberMe?: boolean;
 }): Promise<OpsAuthSession> => {
   const response = await requestSession("login", input);
@@ -196,10 +224,12 @@ export const signupWithPassword = async (input: {
   email: string;
   name: string;
   password: string;
-}): Promise<OpsAuthSession> => {
-  const response = await requestSession("signup", input);
-  return saveAuthSession(response);
+  next?: string;
+}): Promise<OpsSignupResponse> => {
+  return requestSession<OpsSignupResponse>("signup", input);
 };
+
+export const resendEmailVerification = resendOpslensVerification;
 
 const parseOAuthBridgeError = async (response: Response): Promise<string> => {
   try {
@@ -237,6 +267,8 @@ export const loginWithOAuth = async (): Promise<OpsAuthSession> => {
 export const requestPasswordReset = async (input: { email: string }): Promise<void> => {
   await requestPasswordResetOpslens({ email: input.email.trim() });
 };
+
+export const resetPassword = resetPasswordOpslens;
 
 export const logoutCurrentSession = async (): Promise<void> => {
   const session = readAuthSession();
@@ -299,3 +331,84 @@ export const changeCurrentPassword = async (input: {
   }
   await changeOpslensPassword(session.accessToken, input);
 };
+
+const requestSessionManagement = async <Response>(input: {
+  method: "GET" | "POST" | "DELETE";
+  path?: string;
+}): Promise<Response> => {
+  const session = readAuthSession();
+  if (!session) throw new Error("로그인이 필요합니다.");
+  const response = await fetch(`/api/opslens-auth/sessions${input.path ?? ""}`, {
+    method: input.method,
+    headers: { Accept: "application/json", Authorization: `Bearer ${session.accessToken}` }
+  });
+  if (!response.ok) throw new Error(await parseOAuthBridgeError(response));
+  return (await response.json()) as Response;
+};
+
+export const listCurrentSessions = (): Promise<OpsAuthSessionSummary[]> =>
+  requestSessionManagement<OpsAuthSessionSummary[]>({ method: "GET" });
+
+export const revokeSession = (sessionId: string): Promise<{ success: true }> =>
+  requestSessionManagement<{ success: true }>({
+    method: "DELETE",
+    path: `/${encodeURIComponent(sessionId)}`
+  });
+
+export const revokeAllSessions = (): Promise<{ success: true }> =>
+  requestSessionManagement<{ success: true }>({ method: "POST" });
+
+export const listSecurityActivity = async (): Promise<OpsSecurityActivity[]> => {
+  const session = readAuthSession();
+  if (!session) throw new Error("로그인이 필요합니다.");
+  const response = await fetch("/api/opslens-auth/security-activity", {
+    headers: { Accept: "application/json", Authorization: `Bearer ${session.accessToken}` },
+    cache: "no-store"
+  });
+  if (!response.ok) throw new Error(await parseOAuthBridgeError(response));
+  return (await response.json()) as OpsSecurityActivity[];
+};
+
+export const requestEmailChange = async (newEmail: string): Promise<{ sent: boolean; email: string }> => {
+  const session = readAuthSession();
+  if (!session) throw new Error("로그인이 필요합니다.");
+  const response = await fetch("/api/opslens-auth/change-email", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.accessToken}`
+    },
+    body: JSON.stringify({ newEmail: newEmail.trim() })
+  });
+  if (!response.ok) throw new Error(await parseOAuthBridgeError(response));
+  return (await response.json()) as { sent: boolean; email: string };
+};
+
+export type TwoFactorSetup = { enabled: boolean; secret?: string; otpauthUri?: string };
+
+const requestTwoFactor = async <Response>(
+  method: "GET" | "POST" | "DELETE",
+  body?: object
+): Promise<Response> => {
+  const session = readAuthSession();
+  if (!session) throw new Error("로그인이 필요합니다.");
+  const response = await fetch("/api/opslens-auth/two-factor", {
+    method,
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${session.accessToken}`,
+      ...(body ? { "Content-Type": "application/json" } : {})
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!response.ok) throw new Error(await parseOAuthBridgeError(response));
+  return (await response.json()) as Response;
+};
+
+export const getTwoFactorStatus = (): Promise<{ enabled: boolean }> => requestTwoFactor("GET");
+export const setupTwoFactor = (): Promise<TwoFactorSetup> => requestTwoFactor("POST");
+export const confirmTwoFactor = (code: string): Promise<{ enabled: true; recoveryCodes: string[] }> =>
+  requestTwoFactor("POST", { code });
+export const disableTwoFactor = (code: string): Promise<{ enabled: false }> =>
+  requestTwoFactor("DELETE", { code });

@@ -7,3 +7,7 @@ export { ProfileSecurityForm } from "./profile-security-form";
 export { IntegrationCatalogPanel } from "./integration-catalog-panel";
 export { ServiceCatalogPanel } from "./service-catalog-panel";
 export { EscalationPolicyPanel, parseEscalationPolicy } from "./escalation-policy-panel";
+export { ActiveSessionsPanel } from "./active-sessions-panel";
+export { SecurityActivityPanel } from "./security-activity-panel";
+export { EmailChangeForm } from "./email-change-form";
+export { TwoFactorPanel } from "./two-factor-panel";

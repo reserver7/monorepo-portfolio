@@ -9,7 +9,13 @@ import {
   type BackendLoginResponse
 } from "@/lib/auth/server-session";
 
-const LOGIN_ACTIONS = new Set(["login", "signup"]);
+const LOGIN_ACTIONS = new Set([
+  "login",
+  "signup",
+  "resend-verification",
+  "forgot-password",
+  "reset-password"
+]);
 
 export async function POST(request: NextRequest, context: { params: Promise<{ action: string }> }) {
   const { action } = await context.params;
@@ -58,6 +64,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ac
     );
     if (action === "refresh") clearSessionCookie(response);
     return response;
+  }
+
+  if (["signup", "resend-verification", "forgot-password", "reset-password"].includes(action)) {
+    return NextResponse.json(await upstream.json());
   }
 
   const payload = (await upstream.json()) as BackendLoginResponse;

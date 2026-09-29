@@ -20,6 +20,26 @@ import {
   verifyAccessToken,
   verifyPassword
 } from "./auth.token.js";
+import {
+  consumeEmailVerificationToken,
+  createEmailVerificationToken,
+  sendEmailVerificationEmail,
+  type EmailVerificationDelivery
+} from "./email-verification.js";
+import { consumeEmailChangeToken, createEmailChangeToken, sendEmailChangeEmail } from "./email-change.js";
+import {
+  consumePasswordResetToken,
+  createPasswordResetToken,
+  sendPasswordResetEmail
+} from "./password-reset.js";
+import {
+  createTwoFactorSecret,
+  createTwoFactorUri,
+  decryptTwoFactorSecret,
+  encryptTwoFactorSecret,
+  verifyTotpCode
+} from "./two-factor.js";
+import { consumeRecoveryCode, createRecoveryCodes, serializeRecoveryCodes } from "./recovery-codes.js";
 
 type AuthUserResponse = {
   id: string;
@@ -37,6 +57,12 @@ export type AuthLoginResponse = {
   tokenType: "Bearer";
   expiresIn: number;
   user: AuthUserResponse;
+};
+
+export type AuthSignupResponse = {
+  requiresEmailVerification: true;
+  email: string;
+  emailDelivery: EmailVerificationDelivery;
 };
 
 export type AuthNotificationPolicy = {
@@ -69,7 +95,12 @@ export class AuthService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async signup(input: { email: string; name: string; password: string }): Promise<AuthLoginResponse> {
+  async signup(input: {
+    email: string;
+    name: string;
+    password: string;
+    next?: string;
+  }): Promise<AuthSignupResponse> {
     const normalizedEmail = input.email.trim().toLowerCase();
     const normalizedName = input.name.trim();
     const normalizedPassword = input.password.trim();
@@ -97,7 +128,67 @@ export class AuthService {
       }
     });
 
-    return this.buildLoginResponse(createdUser, createdUser.name);
+    const token = await createEmailVerificationToken(this.prisma, createdUser.id, input.next);
+    const emailDelivery = await sendEmailVerificationEmail({ to: createdUser.email, token });
+    return { requiresEmailVerification: true, email: createdUser.email, emailDelivery };
+  }
+
+  async resendEmailVerification(input: { email: string; next?: string }): Promise<EmailVerificationDelivery> {
+    const normalizedEmail = input.email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (!user || user.emailVerifiedAt) return { sent: false, reason: "already-verified" };
+    const token = await createEmailVerificationToken(this.prisma, user.id, input.next);
+    await this.writeAuthAudit(user.email, "auth.verification_resent", user.id, "인증 이메일 재발송");
+    return sendEmailVerificationEmail({ to: user.email, token });
+  }
+
+  async requestEmailChange(authUser: AuthUserPayload, newEmail: string) {
+    const normalizedEmail = newEmail.trim().toLowerCase();
+    if (normalizedEmail === authUser.email.toLowerCase()) {
+      throw new ConflictException("새 이메일 주소가 현재 주소와 같습니다.");
+    }
+    const existing = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (existing) throw new ConflictException("이미 사용 중인 이메일입니다.");
+    const token = await createEmailChangeToken(this.prisma, authUser.sub, normalizedEmail);
+    const delivery = await sendEmailChangeEmail({ to: normalizedEmail, token });
+    await this.writeAuthAudit(
+      authUser.email,
+      "auth.email_change_requested",
+      authUser.sub,
+      "이메일 주소 변경 요청",
+      "info",
+      {
+        newEmail: normalizedEmail,
+        delivery
+      }
+    );
+    return { sent: delivery === "sent", email: normalizedEmail };
+  }
+
+  async confirmEmailChange(token: string) {
+    const result = await consumeEmailChangeToken(this.prisma, token);
+    if (!result) throw new UnauthorizedException("이메일 변경 링크가 만료되었거나 유효하지 않습니다.");
+    const existing = await this.prisma.user.findUnique({ where: { email: result.newEmail } });
+    if (existing && existing.id !== result.userId) {
+      throw new ConflictException("이미 사용 중인 이메일입니다.");
+    }
+    const user = await this.prisma.user.update({
+      where: { id: result.userId },
+      data: { email: result.newEmail }
+    });
+    await this.prisma.refreshToken.updateMany({
+      where: { userId: result.userId, revokedAt: null },
+      data: { revokedAt: new Date() }
+    });
+    await this.writeAuthAudit(user.email, "auth.email_changed", user.id, "이메일 주소 변경 완료");
+    return { changed: true as const, email: user.email };
+  }
+
+  async verifyEmail(token: string) {
+    const result = await consumeEmailVerificationToken(this.prisma, token);
+    if (!result) throw new UnauthorizedException("인증 링크가 만료되었거나 유효하지 않습니다.");
+    await this.writeAuthAudit(result.email, "auth.email_verified", result.userId, "이메일 인증 완료");
+    return { verified: true as const, email: result.email, next: result.returnTo };
   }
 
   async listUsers(actor: AuthUserPayload): Promise<AuthUserResponse[]> {
@@ -157,13 +248,30 @@ export class AuthService {
     };
   }
 
-  async login(email: string, password: string, ip?: string): Promise<AuthLoginResponse> {
+  async login(
+    email: string,
+    password: string,
+    ip?: string,
+    userAgent?: string,
+    otp?: string
+  ): Promise<AuthLoginResponse> {
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedPassword = password.trim();
     const attemptKey = this.buildAttemptKey(normalizedEmail, ip);
     this.assertLoginAllowed(attemptKey);
     if (!normalizedEmail || normalizedPassword.length < 8) {
       this.markLoginFailure(attemptKey);
+      await this.writeAuthAudit(
+        normalizedEmail || "unknown",
+        "auth.login_failed",
+        null,
+        "로그인 입력값 검증 실패",
+        "warning",
+        {
+          ipAddress: ip,
+          userAgent
+        }
+      );
       throw new UnauthorizedException("이메일 또는 비밀번호가 올바르지 않습니다.");
     }
 
@@ -173,15 +281,91 @@ export class AuthService {
 
     if (!user || !user.isActive) {
       this.markLoginFailure(attemptKey);
+      await this.writeAuthAudit(
+        normalizedEmail,
+        "auth.login_failed",
+        null,
+        "존재하지 않거나 비활성화된 계정의 로그인 실패",
+        "warning",
+        {
+          ipAddress: ip,
+          userAgent
+        }
+      );
       throw new UnauthorizedException("이메일 또는 비밀번호가 올바르지 않습니다.");
+    }
+    if (!user.emailVerifiedAt) {
+      await this.writeAuthAudit(
+        user.email,
+        "auth.login_failed",
+        user.id,
+        "미인증 계정의 로그인 시도",
+        "warning",
+        {
+          ipAddress: ip,
+          userAgent
+        }
+      );
+      throw new ForbiddenException("이메일 인증이 필요합니다.");
     }
     if (!verifyPassword(normalizedPassword, user.passwordHash)) {
       this.markLoginFailure(attemptKey);
+      await this.writeAuthAudit(
+        user.email,
+        "auth.login_failed",
+        user.id,
+        "비밀번호 불일치로 로그인 실패",
+        "warning",
+        {
+          ipAddress: ip,
+          userAgent
+        }
+      );
       throw new UnauthorizedException("이메일 또는 비밀번호가 올바르지 않습니다.");
     }
 
+    if (user.twoFactorEnabled) {
+      const validTotp = Boolean(
+        otp && user.twoFactorSecret && verifyTotpCode(decryptTwoFactorSecret(user.twoFactorSecret), otp)
+      );
+      const remainingRecoveryCodes =
+        !validTotp && otp ? consumeRecoveryCode(user.twoFactorRecoveryCodes, otp) : null;
+      if (!validTotp && !remainingRecoveryCodes) {
+        await this.writeAuthAudit(
+          user.email,
+          "auth.two_factor_failed",
+          user.id,
+          "2FA 코드 불일치",
+          "warning",
+          {
+            ipAddress: ip,
+            userAgent
+          }
+        );
+        throw new UnauthorizedException("2FA 인증 코드가 필요하거나 올바르지 않습니다.");
+      }
+      if (remainingRecoveryCodes) {
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { twoFactorRecoveryCodes: remainingRecoveryCodes }
+        });
+        await this.writeAuthAudit(
+          user.email,
+          "auth.two_factor_recovery_used",
+          user.id,
+          "2FA 복구 코드 사용",
+          "warning"
+        );
+      }
+    }
+
     this.clearLoginFailure(attemptKey);
-    return this.buildLoginResponse(user, user.name);
+    const response = await this.buildLoginResponse(user, user.name, undefined, { ipAddress: ip, userAgent });
+    await this.writeAuthAudit(user.email, "auth.login", user.id, "로그인 성공", "info", {
+      ipAddress: ip,
+      userAgent
+    });
+    return response;
   }
 
   async forgotPassword(email: string): Promise<{ success: true }> {
@@ -190,11 +374,36 @@ export class AuthService {
       throw new UnauthorizedException("이메일이 올바르지 않습니다.");
     }
 
-    await this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
-      select: { id: true }
+      select: { id: true, email: true, authProvider: true, emailVerifiedAt: true }
     });
 
+    if (user?.authProvider === "local" && user.emailVerifiedAt) {
+      const token = await createPasswordResetToken(this.prisma, user.id);
+      await sendPasswordResetEmail({ to: user.email, token });
+      await this.writeAuthAudit(user.email, "auth.password_reset_requested", user.id, "비밀번호 재설정 요청");
+    }
+
+    return { success: true };
+  }
+
+  async resetPassword(input: { token: string; password: string }): Promise<{ success: true }> {
+    const password = input.password.trim();
+    if (password.length < 8) throw new UnauthorizedException("비밀번호는 8자 이상이어야 합니다.");
+
+    const result = await consumePasswordResetToken(this.prisma, input.token);
+    if (!result) throw new UnauthorizedException("비밀번호 재설정 링크가 만료되었거나 유효하지 않습니다.");
+
+    await this.prisma.user.update({
+      where: { id: result.userId },
+      data: { passwordHash: hashPassword(password) }
+    });
+    await this.prisma.refreshToken.updateMany({
+      where: { userId: result.userId, revokedAt: null },
+      data: { revokedAt: new Date() }
+    });
+    await this.writeAuthAudit(result.email, "auth.password_reset", result.userId, "비밀번호 재설정 완료");
     return { success: true };
   }
 
@@ -278,7 +487,66 @@ export class AuthService {
       where: { userId: user.id, revokedAt: null },
       data: { revokedAt: new Date() }
     });
+    await this.writeAuthAudit(user.email, "auth.password_changed", user.id, "비밀번호 변경");
     return { success: true };
+  }
+
+  async getTwoFactorStatus(authUser: AuthUserPayload) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: authUser.sub },
+      select: { twoFactorEnabled: true }
+    });
+    if (!user) throw new UnauthorizedException("유효하지 않은 사용자입니다.");
+    return { enabled: user.twoFactorEnabled };
+  }
+
+  async setupTwoFactor(authUser: AuthUserPayload) {
+    const user = await this.prisma.user.findUnique({ where: { id: authUser.sub } });
+    if (!user || user.authProvider !== "local") {
+      throw new UnauthorizedException("소셜 로그인 계정은 2FA를 설정할 수 없습니다.");
+    }
+    if (user.twoFactorEnabled) throw new ConflictException("2FA가 이미 활성화되어 있습니다.");
+    const secret = createTwoFactorSecret();
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { twoFactorSecret: encryptTwoFactorSecret(secret) }
+    });
+    return { enabled: false as const, secret, otpauthUri: createTwoFactorUri(secret, user.email) };
+  }
+
+  async confirmTwoFactor(authUser: AuthUserPayload, code: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: authUser.sub } });
+    if (!user?.twoFactorSecret || user.twoFactorEnabled)
+      throw new ConflictException("2FA 설정을 시작해 주세요.");
+    if (!verifyTotpCode(decryptTwoFactorSecret(user.twoFactorSecret), code)) {
+      throw new UnauthorizedException("2FA 코드가 올바르지 않습니다.");
+    }
+    const recoveryCodes = createRecoveryCodes();
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { twoFactorEnabled: true, twoFactorRecoveryCodes: serializeRecoveryCodes(recoveryCodes) }
+    });
+    await this.writeAuthAudit(user.email, "auth.two_factor_enabled", user.id, "2FA 활성화");
+    return { enabled: true as const, recoveryCodes };
+  }
+
+  async disableTwoFactor(authUser: AuthUserPayload, code: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: authUser.sub } });
+    if (!user?.twoFactorEnabled || !user.twoFactorSecret)
+      throw new ConflictException("2FA가 활성화되어 있지 않습니다.");
+    if (!verifyTotpCode(decryptTwoFactorSecret(user.twoFactorSecret), code)) {
+      throw new UnauthorizedException("2FA 코드가 올바르지 않습니다.");
+    }
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { twoFactorEnabled: false, twoFactorSecret: null, twoFactorRecoveryCodes: null }
+    });
+    await this.prisma.refreshToken.updateMany({
+      where: { userId: user.id, revokedAt: null },
+      data: { revokedAt: new Date() }
+    });
+    await this.writeAuthAudit(user.email, "auth.two_factor_disabled", user.id, "2FA 비활성화", "warning");
+    return { enabled: false as const };
   }
 
   async refresh(refreshToken: string): Promise<AuthLoginResponse> {
@@ -292,7 +560,10 @@ export class AuthService {
       throw new UnauthorizedException("세션이 만료되었습니다. 다시 로그인해 주세요.");
     }
 
-    const response = await this.buildLoginResponse(stored.user, stored.user.name);
+    const response = await this.buildLoginResponse(stored.user, stored.user.name, undefined, {
+      ipAddress: stored.ipAddress ?? undefined,
+      userAgent: stored.userAgent ?? undefined
+    });
     await this.prisma.refreshToken.update({
       where: { id: stored.id },
       data: { revokedAt: now, replacedById: this.hashRefreshToken(response.refreshToken), lastUsedAt: now }
@@ -326,7 +597,8 @@ export class AuthService {
           passwordHash: hashPassword(randomBytes(24).toString("base64url")),
           authProvider: provider === "github" || provider === "google" ? provider : "local",
           role: "operator",
-          isActive: true
+          isActive: true,
+          emailVerifiedAt: new Date()
         }
       }));
 
@@ -344,7 +616,8 @@ export class AuthService {
     const refreshedUser = await this.prisma.user.update({
       where: { id: user.id },
       data: {
-        authProvider: provider === "github" || provider === "google" ? provider : "local"
+        authProvider: provider === "github" || provider === "google" ? provider : "local",
+        emailVerifiedAt: user.emailVerifiedAt ?? new Date()
       }
     });
 
@@ -361,7 +634,80 @@ export class AuthService {
         : { userId: authUser.sub, revokedAt: null },
       data: { revokedAt: new Date() }
     });
+    await this.writeAuthAudit(authUser.email, "auth.logout", authUser.sub, "로그아웃");
     return { success: true };
+  }
+
+  async listSessions(authUser: AuthUserPayload, currentRefreshToken?: string) {
+    const sessions = await this.prisma.refreshToken.findMany({
+      where: { userId: authUser.sub, revokedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { lastUsedAt: "desc" },
+      select: {
+        id: true,
+        tokenHash: true,
+        createdAt: true,
+        lastUsedAt: true,
+        expiresAt: true,
+        ipAddress: true,
+        userAgent: true
+      }
+    });
+    const currentHash = currentRefreshToken ? this.hashRefreshToken(currentRefreshToken) : null;
+    return sessions.map(({ tokenHash, ...session }) => ({
+      ...session,
+      isCurrent: tokenHash === currentHash
+    }));
+  }
+
+  async revokeSession(authUser: AuthUserPayload, sessionId: string): Promise<{ success: true }> {
+    const result = await this.prisma.refreshToken.updateMany({
+      where: { id: sessionId, userId: authUser.sub, revokedAt: null },
+      data: { revokedAt: new Date() }
+    });
+    if (result.count === 0) throw new NotFoundException("세션을 찾을 수 없습니다.");
+    await this.writeAuthAudit(authUser.email, "auth.session_revoked", sessionId, "활성 세션 해제", "info", {
+      sessionId
+    });
+    return { success: true };
+  }
+
+  async revokeAllSessions(authUser: AuthUserPayload): Promise<{ success: true }> {
+    const result = await this.prisma.refreshToken.updateMany({
+      where: { userId: authUser.sub, revokedAt: null },
+      data: { revokedAt: new Date() }
+    });
+    await this.writeAuthAudit(
+      authUser.email,
+      "auth.sessions_revoked",
+      authUser.sub,
+      "모든 세션 해제",
+      "warning",
+      {
+        count: result.count
+      }
+    );
+    return { success: true };
+  }
+
+  async listSecurityActivity(authUser: AuthUserPayload) {
+    const logs = await this.prisma.opsAuditLog.findMany({
+      where: { actor: authUser.email, action: { startsWith: "auth." } },
+      orderBy: { createdAt: "desc" },
+      take: 50
+    });
+    return logs.map((log) => ({
+      id: log.id,
+      actor: log.actor,
+      action: log.action,
+      targetType: log.targetType,
+      targetId: log.targetId,
+      severity: log.severity,
+      summary: log.summary,
+      beforeValue: log.beforeValue == null ? null : JSON.stringify(log.beforeValue),
+      afterValue: log.afterValue == null ? null : JSON.stringify(log.afterValue),
+      metadata: JSON.stringify(log.metadata),
+      createdAt: log.createdAt
+    }));
   }
 
   isValidAuthBridgeSecret(secret: string | undefined): boolean {
@@ -416,7 +762,8 @@ export class AuthService {
   private async buildLoginResponse(
     user: User,
     displayName: string,
-    refreshToken = this.createRefreshToken()
+    refreshToken = this.createRefreshToken(),
+    metadata?: { ipAddress?: string; userAgent?: string }
   ): Promise<AuthLoginResponse> {
     const userPayload: AuthUserPayload = {
       sub: user.id,
@@ -431,7 +778,9 @@ export class AuthService {
       data: {
         userId: user.id,
         tokenHash: refreshTokenHash,
-        expiresAt: refreshExpiresAt
+        expiresAt: refreshExpiresAt,
+        ipAddress: metadata?.ipAddress,
+        userAgent: metadata?.userAgent
       }
     });
 
@@ -518,5 +867,24 @@ export class AuthService {
           ? policy.quietTo
           : DEFAULT_NOTIFICATION_POLICY.quietTo
     };
+  }
+
+  private async writeAuthAudit(
+    actor: string,
+    action: string,
+    targetId: string | null,
+    summary: string,
+    severity: string = "info",
+    metadata?: Record<string, string | number | undefined>
+  ): Promise<void> {
+    await writeOpsAuditLog(this.prisma, this.logger, {
+      actor,
+      action,
+      targetType: "Auth",
+      targetId,
+      severity,
+      summary,
+      metadata: Object.fromEntries(Object.entries(metadata ?? {}).filter(([, value]) => value !== undefined))
+    });
   }
 }

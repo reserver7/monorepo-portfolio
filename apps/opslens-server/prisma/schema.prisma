@@ -58,9 +58,54 @@ model User {
   avatarColor  String @default("#3B82F6")
   notificationPolicy Json?
   isActive     Boolean  @default(true)
+  emailVerifiedAt DateTime?
+  twoFactorEnabled Boolean  @default(false)
+  twoFactorSecret  String?
+  twoFactorRecoveryCodes String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   refreshTokens RefreshToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  emailChangeTokens EmailChangeToken[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  returnTo  String   @default("/")
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, expiresAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, expiresAt])
+}
+
+model EmailChangeToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  newEmail  String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, expiresAt])
 }
 
 model RefreshToken {
@@ -73,6 +118,8 @@ model RefreshToken {
   replacedById String?
   createdAt    DateTime @default(now())
   lastUsedAt   DateTime?
+  ipAddress    String?
+  userAgent    String?
 
   @@index([userId, expiresAt])
 }
