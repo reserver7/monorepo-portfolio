@@ -12,6 +12,46 @@ export type WorkspaceItem = {
 
 export type WorkspaceItemKind = "all" | WorkspaceItem["kind"];
 export type WorkspaceItemSort = "recent" | "name";
+export type WorkspaceFilterState = {
+  query: string;
+  kind: WorkspaceItemKind;
+  sharedOnly: boolean;
+  sort: WorkspaceItemSort;
+};
+
+export type WorkspaceItemCapabilities = {
+  canEdit: boolean;
+  canManage: boolean;
+  canDelete: boolean;
+  canViewSharing: boolean;
+};
+
+export const getWorkspaceItemCapabilities = (item: WorkspaceItem): WorkspaceItemCapabilities => {
+  if (item.permission === "viewer") {
+    return { canEdit: false, canManage: false, canDelete: false, canViewSharing: true };
+  }
+  if (item.permission === "editor") {
+    return { canEdit: true, canManage: false, canDelete: false, canViewSharing: true };
+  }
+  return { canEdit: true, canManage: true, canDelete: true, canViewSharing: false };
+};
+
+export const getWorkspaceNavigationIndex = (
+  currentIndex: number,
+  direction: "next" | "previous",
+  itemCount: number
+): number => {
+  if (itemCount <= 0) return -1;
+  const offset = direction === "next" ? 1 : -1;
+  return (currentIndex + offset + itemCount) % itemCount;
+};
+
+export const getWorkspaceFilterReset = (): WorkspaceFilterState => ({
+  query: "",
+  kind: "all",
+  sharedOnly: false,
+  sort: "recent"
+});
 
 export const getWorkspaceItemKey = (item: WorkspaceItem): string => `${item.kind}:${item.id}`;
 
@@ -84,3 +124,6 @@ export const filterWorkspaceItems = (
       return right.updatedAt.localeCompare(left.updatedAt);
     });
 };
+
+export const getWorkspaceCommandResults = (items: WorkspaceItem[], query: string): WorkspaceItem[] =>
+  filterWorkspaceItems(items, { query, sort: "name" });

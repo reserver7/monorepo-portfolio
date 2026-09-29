@@ -55,6 +55,15 @@ export interface WorkspaceNotification {
   readAt?: string;
 }
 
+export interface WorkspaceInvitation {
+  kind: "document" | "board";
+  id: string;
+  title: string;
+  email: string;
+  role: AccessRole;
+  expiresAt?: string;
+}
+
 export interface DocumentComment {
   id: string;
   documentId: string;
@@ -195,6 +204,7 @@ export const socketEventName = {
   workspaceAccessRevoked: "workspace:access-revoked",
   notificationsSubscribe: "notifications:subscribe",
   notificationsUpdate: "notifications:update",
+  invitationsUpdate: "invitations:update",
   workspaceUpdate: "workspace:update",
   activitySubscribe: "activity:subscribe",
   activityUpdate: "activity:update",

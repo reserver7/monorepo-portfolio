@@ -134,6 +134,7 @@ export const useCollaboration = ({
   updateContent: (nextContent: string) => void;
   sendCursor: (cursorIndex: number) => void;
   forceSave: () => void;
+  retryConnection: () => void;
   addComment: (commentBody: string, mentions?: string[], parentCommentId?: string) => void;
   updateComment: (commentId: string, commentBody: string, mentions?: string[]) => void;
   deleteComment: (commentId: string) => void;
@@ -673,6 +674,22 @@ export const useCollaboration = ({
     socket.emit(socketEventName.documentSave, payload);
   }, [documentId]);
 
+  const retryConnection = useCallback(() => {
+    if (roleRef.current !== "editor") return;
+    const socket = socketRef.current;
+    if (!socket) return;
+    if (socket.connected) {
+      forceSave();
+      return;
+    }
+    socket.once("connect", () => {
+      if (dirtyRef.current) {
+        socket.emit(socketEventName.documentSave, { documentId } satisfies DocumentSavePayload);
+      }
+    });
+    socket.connect();
+  }, [documentId, forceSave]);
+
   const addComment = useCallback(
     (commentBody: string, mentions: string[] = [], parentCommentId?: string) => {
       const socket = socketRef.current;
@@ -759,6 +776,7 @@ export const useCollaboration = ({
     updateContent,
     sendCursor,
     forceSave,
+    retryConnection,
     addComment,
     updateComment,
     deleteComment

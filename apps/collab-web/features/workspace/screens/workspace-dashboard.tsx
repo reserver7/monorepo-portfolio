@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { socketEventName } from "@repo/utils/collab";
 import { io } from "socket.io-client";
@@ -10,13 +10,19 @@ import {
   Badge,
   Button,
   Card,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   Input,
   MarketingGlassNav,
   MarketingSection,
   Select,
   Skeleton,
   Typography,
+  confirm,
   promptConfirm,
+  toast,
   Flex,
   Grid
 } from "@repo/ui";
@@ -26,6 +32,7 @@ import { PendingInvitations } from "@/features/common/components/pending-invitat
 import { RecentWorkspaceActivity } from "@/features/common/components/recent-workspace-activity";
 import { WorkspaceSharePanel } from "@/features/common/components/workspace-share-panel";
 import { WorkspaceTrash } from "@/features/workspace/components/workspace-trash";
+import { WorkspaceCommandPalette } from "@/features/workspace/components/workspace-command-palette";
 import {
   getWorkspaceFavorites,
   setWorkspaceFavorites,
@@ -35,6 +42,7 @@ import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import {
   API_BASE_URL,
   createDocument,
+  deleteDocumentById,
   duplicateDocument,
   listDocuments,
   docsQueryKeys,
@@ -42,6 +50,7 @@ import {
 } from "@/features/docs/documents/api";
 import {
   createBoard,
+  deleteBoardById,
   duplicateBoard,
   listBoards,
   renameBoard,
@@ -50,11 +59,22 @@ import {
 import { fetchRealtimeAccountToken } from "@/lib/auth/realtime-token";
 import {
   filterWorkspaceItems,
+  getWorkspaceFilterReset,
+  getWorkspaceItemCapabilities,
   getWorkspaceItemKey,
+  getWorkspaceNavigationIndex,
   mergeWorkspaceItems,
+  type WorkspaceFilterState,
+  type WorkspaceItem,
   type WorkspaceItemKind,
   type WorkspaceItemSort
 } from "@/features/workspace/model/workspace-items";
+import { isWorkspaceSearchShortcut } from "@/features/workspace/model/workspace-shortcuts";
+import {
+  createWorkspaceFilterSearch,
+  parseWorkspaceFilterSearch
+} from "@/features/workspace/model/workspace-filter-url";
+import { restoreTrashItem, workspaceTrashQueryKey } from "@/features/workspace/api/trash-api";
 
 const favoritesStorageKey = "collab.workspace.favorite-keys";
 const favoritesMigrationKey = "collab.workspace.favorite-keys.synced";
@@ -73,7 +93,19 @@ export default function WorkspaceDashboard() {
   const [creationError, setCreationError] = useState<string | null>(null);
   const [renameError, setRenameError] = useState<string | null>(null);
   const [duplicateError, setDuplicateError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [undoItem, setUndoItem] = useState<WorkspaceItem | null>(null);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
+  const [urlHydrated, setUrlHydrated] = useState(false);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const workspaceLinkRefs = useRef(new Map<string, HTMLAnchorElement>());
+  const previousUrlFiltersRef = useRef<WorkspaceFilterState | null>(null);
   const [shareKey, setShareKey] = useState<string | null>(null);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const createDocumentMutation = useMutation({
     mutationFn: (title: string) => createDocument({ title, actor: "대시보드 사용자" })
   });
@@ -81,6 +113,7 @@ export default function WorkspaceDashboard() {
     mutationFn: (title: string) => createBoard({ title, actor: "대시보드 사용자" })
   });
   const { mutate: syncFavorites } = useMutation({ mutationFn: setWorkspaceFavorites });
+  const restoreMutation = useMutation({ mutationFn: restoreTrashItem });
   const renameMutation = useMutation({
     mutationFn: async (input: { item: (typeof workspaceItems)[number]; title: string }): Promise<unknown> => {
       if (input.item.kind === "document") {
@@ -93,6 +126,12 @@ export default function WorkspaceDashboard() {
     mutationFn: async (item: (typeof workspaceItems)[number]): Promise<unknown> => {
       if (item.kind === "document") return duplicateDocument(item.id);
       return duplicateBoard(item.id);
+    }
+  });
+  const deleteMutation = useMutation({
+    mutationFn: async (item: (typeof workspaceItems)[number]): Promise<unknown> => {
+      if (item.kind === "document") return deleteDocumentById({ documentId: item.id, notifyOnError: false });
+      return deleteBoardById({ boardId: item.id, notifyOnError: false });
     }
   });
   const documentsQuery = useQuery({
@@ -118,7 +157,81 @@ export default function WorkspaceDashboard() {
   const items = filterWorkspaceItems(workspaceItems, { query, kind, sort, favoriteKeys, sharedOnly });
   const isLoading = documentsQuery.isLoading || boardsQuery.isLoading;
   const isError = documentsQuery.isError || boardsQuery.isError;
+  const hasLoadedData = documentsQuery.data !== undefined && boardsQuery.data !== undefined;
+  const isBlockingError = isError && !hasLoadedData;
   const isCreating = createDocumentMutation.isPending || createBoardMutation.isPending;
+
+  const refreshWorkspaceItems = useCallback(async () => {
+    setIsRefreshing(true);
+    setSyncError(null);
+    try {
+      const [documentsResult, boardsResult] = await Promise.all([
+        documentsQuery.refetch(),
+        boardsQuery.refetch()
+      ]);
+      if (documentsResult.error || boardsResult.error) {
+        throw documentsResult.error ?? boardsResult.error;
+      }
+      setLastSyncedAt(new Date());
+    } catch {
+      setSyncError("최신 작업 공간 목록을 불러오지 못했습니다.");
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [boardsQuery.refetch, documentsQuery.refetch]);
+
+  useEffect(() => {
+    if (hasLoadedData && !lastSyncedAt) setLastSyncedAt(new Date());
+  }, [hasLoadedData, lastSyncedAt]);
+
+  useEffect(() => {
+    const handleSearchShortcut = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+      ) {
+        return;
+      }
+      if (!isWorkspaceSearchShortcut(event.key, event.metaKey, event.ctrlKey)) return;
+      event.preventDefault();
+      setCommandPaletteOpen(true);
+    };
+
+    window.addEventListener("keydown", handleSearchShortcut);
+    return () => window.removeEventListener("keydown", handleSearchShortcut);
+  }, []);
+
+  useEffect(() => {
+    const applyUrlFilters = () => {
+      const filters = parseWorkspaceFilterSearch(window.location.search);
+      setQuery(filters.query);
+      setKind(filters.kind);
+      setSharedOnly(filters.sharedOnly);
+      setSort(filters.sort);
+    };
+
+    applyUrlFilters();
+    setUrlHydrated(true);
+    window.addEventListener("popstate", applyUrlFilters);
+    return () => window.removeEventListener("popstate", applyUrlFilters);
+  }, []);
+
+  useEffect(() => {
+    if (!urlHydrated) return;
+    const nextFilters = { query, kind, sharedOnly, sort };
+    const previousFilters = previousUrlFiltersRef.current;
+    previousUrlFiltersRef.current = nextFilters;
+    const search = createWorkspaceFilterSearch(nextFilters);
+    const nextUrl = `${window.location.pathname}${search}${window.location.hash}`;
+    if (`${window.location.pathname}${window.location.search}${window.location.hash}` === nextUrl) return;
+    const onlyQueryChanged =
+      previousFilters &&
+      previousFilters.kind === kind &&
+      previousFilters.sharedOnly === sharedOnly &&
+      previousFilters.sort === sort;
+    window.history[onlyQueryChanged ? "replaceState" : "pushState"](null, "", nextUrl);
+  }, [kind, query, sharedOnly, sort, urlHydrated]);
 
   useEffect(() => {
     try {
@@ -232,49 +345,108 @@ export default function WorkspaceDashboard() {
     if (title === null) return;
 
     setRenameError(null);
+    setPendingAction(getWorkspaceItemKey(item));
     try {
       await renameMutation.mutateAsync({ item, title });
       await queryClient.invalidateQueries({ queryKey: docsQueryKeys.documents() });
       await queryClient.invalidateQueries({ queryKey: whiteboardQueryKeys.boards() });
+      toast.success("이름을 변경했습니다.");
     } catch (error) {
       setRenameError(error instanceof Error ? error.message : "이름을 변경하지 못했습니다.");
+    } finally {
+      setPendingAction(null);
     }
   };
 
   const duplicateItem = async (item: (typeof workspaceItems)[number]) => {
     setDuplicateError(null);
+    setPendingAction(getWorkspaceItemKey(item));
     try {
       await duplicateMutation.mutateAsync(item);
       await queryClient.invalidateQueries({ queryKey: docsQueryKeys.documents() });
       await queryClient.invalidateQueries({ queryKey: whiteboardQueryKeys.boards() });
+      toast.success("작업 공간을 복제했습니다.");
     } catch (error) {
       setDuplicateError(error instanceof Error ? error.message : "작업 공간을 복제하지 못했습니다.");
+    } finally {
+      setPendingAction(null);
     }
   };
 
+  const deleteItem = async (item: (typeof workspaceItems)[number]) => {
+    const confirmed = await confirm({
+      title: `${item.kind === "document" ? "문서" : "화이트보드"}를 휴지통으로 이동할까요?`,
+      description: "휴지통에서 복구할 수 있습니다.",
+      confirmText: "휴지통으로 이동",
+      confirmVariant: "danger",
+      cancelText: "취소"
+    });
+    if (!confirmed) return;
+
+    setDeleteError(null);
+    setPendingAction(getWorkspaceItemKey(item));
+    try {
+      await deleteMutation.mutateAsync(item);
+      await queryClient.invalidateQueries({ queryKey: docsQueryKeys.documents() });
+      await queryClient.invalidateQueries({ queryKey: whiteboardQueryKeys.boards() });
+      await queryClient.invalidateQueries({ queryKey: workspaceTrashQueryKey });
+      if (shareKey === getWorkspaceItemKey(item)) setShareKey(null);
+      setUndoItem(item);
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = setTimeout(() => setUndoItem(null), 8000);
+      toast.success("휴지통으로 이동했습니다.");
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "작업 공간을 삭제하지 못했습니다.");
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
+  const undoDelete = async () => {
+    if (!undoItem) return;
+    const item = undoItem;
+    setPendingAction(getWorkspaceItemKey(item));
+    try {
+      await restoreMutation.mutateAsync({ kind: item.kind, id: item.id });
+      await queryClient.invalidateQueries({ queryKey: docsQueryKeys.documents() });
+      await queryClient.invalidateQueries({ queryKey: whiteboardQueryKeys.boards() });
+      await queryClient.invalidateQueries({ queryKey: workspaceTrashQueryKey });
+      setUndoItem(null);
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+      toast.success("작업 공간을 복구했습니다.");
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "작업 공간을 복구하지 못했습니다.");
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
+  useEffect(
+    () => () => {
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    },
+    []
+  );
+
   useEffect(() => {
-    const refresh = () => {
-      void documentsQuery.refetch();
-      void boardsQuery.refetch();
-    };
     const socket = io(API_BASE_URL, { transports: ["websocket"], reconnection: true });
     const subscribe = async () => {
       const accountToken = await fetchRealtimeAccountToken();
       if (accountToken) {
         socket.emit(socketEventName.notificationsSubscribe, { accountToken });
       }
-      refresh();
+      void refreshWorkspaceItems();
     };
 
-    socket.on(socketEventName.workspaceUpdate, refresh);
+    socket.on(socketEventName.workspaceUpdate, refreshWorkspaceItems);
     socket.on("connect", () => void subscribe());
     if (socket.connected) void subscribe();
 
     return () => {
-      socket.off(socketEventName.workspaceUpdate, refresh);
+      socket.off(socketEventName.workspaceUpdate, refreshWorkspaceItems);
       socket.disconnect();
     };
-  }, [boardsQuery.refetch, documentsQuery.refetch]);
+  }, [refreshWorkspaceItems]);
 
   return (
     <>
@@ -288,6 +460,7 @@ export default function WorkspaceDashboard() {
           </Flex>
         }
         actions={[
+          { label: "빠른 검색", onClick: () => setCommandPaletteOpen(true) },
           { label: "문서", onClick: () => router.push("/docs") },
           { label: "화이트보드", onClick: () => router.push("/whiteboard") }
         ]}
@@ -296,6 +469,21 @@ export default function WorkspaceDashboard() {
         <PendingInvitations />
         <RecentWorkspaceActivity />
         <WorkspaceTrash />
+        {undoItem ? (
+          <Flex className="border-default bg-surface mb-6 items-center justify-between gap-3 rounded-xl border px-4 py-3">
+            <Typography as="p" variant="bodySm">
+              “{undoItem.title || "제목 없음"}”을(를) 휴지통으로 이동했습니다.
+            </Typography>
+            <Button
+              size="sm"
+              variant="outline"
+              loading={pendingAction === getWorkspaceItemKey(undoItem)}
+              onClick={() => void undoDelete()}
+            >
+              실행 취소
+            </Button>
+          </Flex>
+        ) : null}
         <MarketingSection tone="light" className="bg-surface-elevated/45">
           <div className="mb-5">
             <Typography as="h1" variant="h2">
@@ -312,6 +500,7 @@ export default function WorkspaceDashboard() {
               onSubmit={(event) => void createDocumentFromDashboard(event)}
             >
               <Input
+                id="workspace-create-document"
                 label="새 문서"
                 labelClassName="text-body-sm text-muted"
                 className="mt-1"
@@ -334,6 +523,7 @@ export default function WorkspaceDashboard() {
               onSubmit={(event) => void createBoardFromDashboard(event)}
             >
               <Input
+                id="workspace-create-whiteboard"
                 label="새 화이트보드"
                 labelClassName="text-body-sm text-muted"
                 className="mt-1"
@@ -367,9 +557,16 @@ export default function WorkspaceDashboard() {
               {duplicateError}
             </Typography>
           ) : null}
+          {deleteError ? (
+            <Typography as="p" variant="bodySm" color="danger" className="mb-5">
+              {deleteError}
+            </Typography>
+          ) : null}
 
           <Grid className="mb-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px_200px]">
             <Input
+              ref={searchInputRef}
+              id="workspace-search"
               label="작업 공간 검색"
               labelClassName="text-body-sm text-muted"
               className="mt-1"
@@ -377,6 +574,8 @@ export default function WorkspaceDashboard() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="이름으로 검색"
+              clearable
+              onClear={() => setQuery("")}
             />
             <Select
               label="유형"
@@ -414,6 +613,39 @@ export default function WorkspaceDashboard() {
             />
           </Grid>
 
+          <Flex className="mb-5 flex-wrap items-center justify-between gap-2">
+            <Typography as="p" variant="caption" color="muted">
+              {isRefreshing
+                ? "최신 목록을 동기화하는 중…"
+                : lastSyncedAt
+                  ? `마지막 동기화: ${lastSyncedAt.toLocaleTimeString("ko-KR")}`
+                  : "목록 동기화 대기 중"}
+            </Typography>
+            <Button
+              size="sm"
+              variant="text"
+              loading={isRefreshing}
+              onClick={() => void refreshWorkspaceItems()}
+            >
+              새로고침
+            </Button>
+          </Flex>
+          {syncError && !isBlockingError ? (
+            <FeedbackState
+              variant="warning"
+              size="sm"
+              align="left"
+              className="mb-5"
+              title="목록이 최신 상태가 아닐 수 있습니다."
+              description={syncError}
+              action={
+                <Button size="sm" variant="outline" onClick={() => void refreshWorkspaceItems()}>
+                  다시 시도
+                </Button>
+              }
+            />
+          ) : null}
+
           {isLoading ? (
             <Grid className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, index) => (
@@ -424,12 +656,17 @@ export default function WorkspaceDashboard() {
                 </Card>
               ))}
             </Grid>
-          ) : isError ? (
+          ) : isBlockingError ? (
             <FeedbackState
               variant="error"
               size="lg"
               title="작업 공간을 불러오지 못했습니다."
               description="잠시 후 다시 시도하세요."
+              action={
+                <Button size="sm" variant="outline" onClick={() => void refreshWorkspaceItems()}>
+                  다시 시도
+                </Button>
+              }
             />
           ) : items.length === 0 ? (
             <FeedbackState
@@ -445,11 +682,45 @@ export default function WorkspaceDashboard() {
                   ? "문서 또는 화이트보드 홈에서 첫 작업 공간을 만들어 보세요."
                   : "검색어 또는 필터를 바꿔 다시 시도하세요."
               }
+              action={
+                workspaceItems.length === 0 ? (
+                  <Flex className="flex flex-wrap justify-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => document.getElementById("workspace-create-document")?.focus()}
+                    >
+                      문서 만들기
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => document.getElementById("workspace-create-whiteboard")?.focus()}
+                    >
+                      화이트보드 만들기
+                    </Button>
+                  </Flex>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const reset = getWorkspaceFilterReset();
+                      setQuery(reset.query);
+                      setKind(reset.kind);
+                      setSharedOnly(reset.sharedOnly);
+                      setSort(reset.sort);
+                    }}
+                  >
+                    필터 초기화
+                  </Button>
+                )
+              }
             />
           ) : (
             <Grid className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {items.map((item) => {
                 const isFavorite = favoriteKeys.has(getWorkspaceItemKey(item));
+                const capabilities = getWorkspaceItemCapabilities(item);
                 const pendingInvite = item.members.some((member) => member.status === "pending");
                 const permissionLabel =
                   item.permission === "owner"
@@ -461,7 +732,40 @@ export default function WorkspaceDashboard() {
                         : "기존 권한";
                 return (
                   <div key={`${item.kind}:${item.id}`} className="relative">
-                    <Link href={item.path} className="group block">
+                    <Link
+                      ref={(node) => {
+                        const key = getWorkspaceItemKey(item);
+                        if (node) workspaceLinkRefs.current.set(key, node);
+                        else workspaceLinkRefs.current.delete(key);
+                      }}
+                      href={item.path}
+                      aria-label={`${item.kind === "document" ? "문서" : "화이트보드"}: ${item.title || "제목 없음"}`}
+                      className="focus-visible:ring-primary group block rounded-[var(--radius-lg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                      onKeyDown={(event) => {
+                        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                          event.preventDefault();
+                          const currentIndex = items.findIndex(
+                            (candidate) => getWorkspaceItemKey(candidate) === getWorkspaceItemKey(item)
+                          );
+                          const targetIndex = getWorkspaceNavigationIndex(
+                            currentIndex,
+                            event.key === "ArrowDown" ? "next" : "previous",
+                            items.length
+                          );
+                          const target = items[targetIndex];
+                          if (target) workspaceLinkRefs.current.get(getWorkspaceItemKey(target))?.focus();
+                        }
+                        if (
+                          event.key.toLowerCase() === "f" &&
+                          !event.metaKey &&
+                          !event.ctrlKey &&
+                          !event.altKey
+                        ) {
+                          event.preventDefault();
+                          toggleFavorite(item);
+                        }
+                      }}
+                    >
                       <Card
                         className="border-default/80 bg-surface h-full border p-5 pb-14 shadow-[var(--shadow-card)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgb(15_23_42/0.13)]"
                         radius="lg"
@@ -488,42 +792,74 @@ export default function WorkspaceDashboard() {
                         </Flex>
                       </Card>
                     </Link>
+                    {capabilities.canEdit ||
+                    capabilities.canManage ||
+                    capabilities.canDelete ||
+                    capabilities.canViewSharing ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            shape="square"
+                            iconOnly
+                            className="absolute right-4 top-4 z-10"
+                            aria-label={`${item.title || "작업 공간"} 작업 메뉴`}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                            }}
+                          >
+                            ⋯
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" sideOffset={6}>
+                          {capabilities.canEdit ? (
+                            <>
+                              <DropdownMenuItem
+                                disabled={pendingAction === getWorkspaceItemKey(item)}
+                                onSelect={() => void renameItem(item)}
+                              >
+                                이름 변경
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={pendingAction === getWorkspaceItemKey(item)}
+                                onSelect={() => void duplicateItem(item)}
+                              >
+                                복제
+                              </DropdownMenuItem>
+                            </>
+                          ) : null}
+                          {capabilities.canManage || capabilities.canViewSharing ? (
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                const key = getWorkspaceItemKey(item);
+                                setShareKey((current) => (current === key ? null : key));
+                              }}
+                            >
+                              {shareKey === getWorkspaceItemKey(item)
+                                ? "공유 닫기"
+                                : capabilities.canManage
+                                  ? "공유 관리"
+                                  : "공유 정보"}
+                            </DropdownMenuItem>
+                          ) : null}
+                          {capabilities.canDelete ? (
+                            <DropdownMenuItem
+                              color="danger"
+                              disabled={pendingAction === getWorkspaceItemKey(item)}
+                              onSelect={() => void deleteItem(item)}
+                            >
+                              삭제
+                            </DropdownMenuItem>
+                          ) : null}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : null}
                     <Button
                       variant="text"
                       size="sm"
-                      className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 px-0 text-xs"
-                      disabled={duplicateMutation.isPending}
-                      onClick={() => void duplicateItem(item)}
-                    >
-                      복제
-                    </Button>
-                    <Button
-                      variant="text"
-                      size="sm"
-                      className="absolute bottom-4 left-5 z-10 px-0 text-xs"
-                      disabled={renameMutation.isPending}
-                      onClick={() => void renameItem(item)}
-                    >
-                      이름 변경
-                    </Button>
-                    <Button
-                      variant="text"
-                      size="sm"
-                      className="absolute bottom-4 right-5 z-10 px-0 text-xs"
-                      aria-pressed={shareKey === getWorkspaceItemKey(item)}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        const key = getWorkspaceItemKey(item);
-                        setShareKey((current) => (current === key ? null : key));
-                      }}
-                    >
-                      {shareKey === getWorkspaceItemKey(item) ? "공유 닫기" : "공유"}
-                    </Button>
-                    <Button
-                      variant="text"
-                      size="sm"
-                      className="text-warning absolute right-4 top-4 z-10 text-xl leading-none"
+                      className="text-warning absolute right-14 top-4 z-10 text-xl leading-none"
                       aria-label={isFavorite ? "고정 해제" : "작업 공간 고정"}
                       aria-pressed={isFavorite}
                       onClick={() => toggleFavorite(item)}
@@ -543,6 +879,13 @@ export default function WorkspaceDashboard() {
                   <WorkspaceSharePanel
                     kind={sharedItem.kind === "document" ? "documents" : "boards"}
                     entityId={sharedItem.id}
+                    workspaceTitle={sharedItem.title}
+                    canManage={getWorkspaceItemCapabilities(sharedItem).canManage}
+                    onLeave={() => {
+                      setShareKey(null);
+                      void queryClient.invalidateQueries({ queryKey: docsQueryKeys.documents() });
+                      void queryClient.invalidateQueries({ queryKey: whiteboardQueryKeys.boards() });
+                    }}
                     onClose={() => setShareKey(null)}
                   />
                 );
@@ -550,6 +893,12 @@ export default function WorkspaceDashboard() {
             : null}
         </MarketingSection>
       </main>
+      <WorkspaceCommandPalette
+        items={workspaceItems}
+        open={commandPaletteOpen}
+        onOpenChange={setCommandPaletteOpen}
+        onSelect={(item) => router.push(item.path)}
+      />
     </>
   );
 }
