@@ -1,23 +1,29 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UnauthorizedException,
   UseGuards
 } from "@nestjs/common";
 import {
   AuthChangePasswordDto,
+  AuthChangeEmailDto,
   AuthAdminUpdateUserDto,
   AuthForgotPasswordDto,
   AuthLoginDto,
   AuthOAuthLoginDto,
   AuthRefreshDto,
+  AuthResendVerificationDto,
+  AuthResetPasswordDto,
   AuthSignupDto,
+  AuthTwoFactorDto,
   AuthUpdateNotificationPolicyDto,
   AuthUpdateProfileDto
 } from "./auth.dto.js";
@@ -29,8 +35,18 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post("login")
-  login(@Body() input: AuthLoginDto, @Req() request: { ip?: string }) {
-    return this.authService.login(input.email, input.password, request?.ip);
+  login(
+    @Body() input: AuthLoginDto,
+    @Req() request: { ip?: string; headers?: Record<string, string | string[] | undefined> }
+  ) {
+    const userAgent = request.headers?.["user-agent"];
+    return this.authService.login(
+      input.email,
+      input.password,
+      request?.ip,
+      Array.isArray(userAgent) ? userAgent[0] : userAgent,
+      input.otp
+    );
   }
 
   @Post("signup")
@@ -38,9 +54,24 @@ export class AuthController {
     return this.authService.signup(input);
   }
 
+  @Post("resend-verification")
+  resendVerification(@Body() input: AuthResendVerificationDto) {
+    return this.authService.resendEmailVerification(input);
+  }
+
+  @Get("verify-email")
+  verifyEmail(@Query("token") token: string) {
+    return this.authService.verifyEmail(token);
+  }
+
   @Post("forgot-password")
   forgotPassword(@Body() input: AuthForgotPasswordDto) {
     return this.authService.forgotPassword(input.email);
+  }
+
+  @Post("reset-password")
+  resetPassword(@Body() input: AuthResetPasswordDto) {
+    return this.authService.resetPassword(input);
   }
 
   @Post("oauth-login")
@@ -94,9 +125,64 @@ export class AuthController {
   }
 
   @UseGuards(OpsAuthGuard)
+  @Post("change-email")
+  changeEmail(@Req() request: AuthenticatedRequest, @Body() input: AuthChangeEmailDto) {
+    return this.authService.requestEmailChange(request.authUser!, input.newEmail);
+  }
+
+  @Get("confirm-email-change")
+  confirmEmailChange(@Query("token") token: string) {
+    return this.authService.confirmEmailChange(token);
+  }
+
+  @UseGuards(OpsAuthGuard)
+  @Get("two-factor")
+  twoFactor(@Req() request: AuthenticatedRequest) {
+    return this.authService.getTwoFactorStatus(request.authUser!);
+  }
+
+  @UseGuards(OpsAuthGuard)
+  @Post("two-factor")
+  setupTwoFactor(@Req() request: AuthenticatedRequest, @Body() input?: AuthTwoFactorDto) {
+    return input?.code
+      ? this.authService.confirmTwoFactor(request.authUser!, input.code)
+      : this.authService.setupTwoFactor(request.authUser!);
+  }
+
+  @UseGuards(OpsAuthGuard)
+  @Delete("two-factor")
+  disableTwoFactor(@Req() request: AuthenticatedRequest, @Body() input: AuthTwoFactorDto) {
+    return this.authService.disableTwoFactor(request.authUser!, input.code);
+  }
+
+  @UseGuards(OpsAuthGuard)
   @Post("logout")
   logout(@Req() request: AuthenticatedRequest, @Body() input?: Partial<AuthRefreshDto>) {
     return this.authService.logout(request.authUser!, input?.refreshToken);
+  }
+
+  @UseGuards(OpsAuthGuard)
+  @Get("sessions")
+  sessions(@Req() request: AuthenticatedRequest & { headers?: Record<string, string | undefined> }) {
+    return this.authService.listSessions(request.authUser!, request.headers?.["x-opslens-refresh-token"]);
+  }
+
+  @UseGuards(OpsAuthGuard)
+  @Get("security-activity")
+  securityActivity(@Req() request: AuthenticatedRequest) {
+    return this.authService.listSecurityActivity(request.authUser!);
+  }
+
+  @UseGuards(OpsAuthGuard)
+  @Delete("sessions/:sessionId")
+  revokeSession(@Req() request: AuthenticatedRequest, @Param("sessionId") sessionId: string) {
+    return this.authService.revokeSession(request.authUser!, sessionId);
+  }
+
+  @UseGuards(OpsAuthGuard)
+  @Post("sessions/logout-all")
+  revokeAllSessions(@Req() request: AuthenticatedRequest) {
+    return this.authService.revokeAllSessions(request.authUser!);
   }
 
   @UseGuards(OpsAuthGuard)

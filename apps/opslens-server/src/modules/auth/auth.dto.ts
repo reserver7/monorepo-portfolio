@@ -16,6 +16,15 @@ export class AuthLoginDto {
   @IsString()
   @MinLength(8)
   password!: string;
+
+  @IsOptional()
+  @Matches(/^(?:\d{6}|[A-Za-z0-9]{10})$/)
+  otp?: string;
+}
+
+export class AuthTwoFactorDto {
+  @Matches(/^\d{6}$/)
+  code!: string;
 }
 
 export class AuthRefreshDto {
@@ -35,6 +44,19 @@ export class AuthSignupDto {
   @IsString()
   @MinLength(8)
   password!: string;
+
+  @IsOptional()
+  @IsString()
+  next?: string;
+}
+
+export class AuthResendVerificationDto {
+  @IsEmail()
+  email!: string;
+
+  @IsOptional()
+  @IsString()
+  next?: string;
 }
 
 export class AuthOAuthLoginDto {
@@ -57,6 +79,21 @@ export class AuthOAuthLoginDto {
 export class AuthForgotPasswordDto {
   @IsEmail()
   email!: string;
+}
+
+export class AuthResetPasswordDto {
+  @IsString()
+  @MinLength(32)
+  token!: string;
+
+  @IsString()
+  @MinLength(8)
+  password!: string;
+}
+
+export class AuthChangeEmailDto {
+  @IsEmail()
+  newEmail!: string;
 }
 
 export class AuthUpdateProfileDto {

@@ -12,6 +12,7 @@ import type {
 import type {
   AccessRole,
   WorkspaceActivity,
+  WorkspaceInvitation,
   WorkspaceNotification,
   WorkspaceInvitationStatus,
   WorkspaceMember
@@ -146,6 +147,12 @@ interface WorkspaceMemberLeaveInput {
   kind: "document" | "board";
   entityId: string;
   accountId: string;
+  email: string;
+}
+
+interface WorkspaceInvitationDismissInput {
+  kind: "document" | "board";
+  entityId: string;
   email: string;
 }
 
@@ -918,6 +925,48 @@ export class RealtimeStore {
     return record ? clone(record.members ?? []) : null;
   }
 
+  listPendingWorkspaceInvitations(email: string): WorkspaceInvitation[] {
+    const normalizedEmail = email.trim().toLowerCase();
+    return [...this.documents.values(), ...this.boards.values()]
+      .flatMap((record) => {
+        const kind: WorkspaceInvitation["kind"] = "shapes" in record ? "board" : "document";
+        return (record.members ?? [])
+          .filter((member) => member.email.toLowerCase() === normalizedEmail && member.status === "pending")
+          .map((member) => ({
+            kind,
+            id: record.id,
+            title: record.title,
+            email: member.email,
+            role: member.role,
+            expiresAt: member.expiresAt
+          }));
+      })
+      .sort((left, right) => (right.expiresAt ?? "").localeCompare(left.expiresAt ?? ""));
+  }
+
+  dismissExpiredWorkspaceInvitation(
+    input: WorkspaceInvitationDismissInput
+  ): "not-found" | "forbidden" | "member-not-found" | WorkspaceMember {
+    const record =
+      input.kind === "document" ? this.documents.get(input.entityId) : this.boards.get(input.entityId);
+    if (!record) return "not-found";
+
+    const email = input.email.trim().toLowerCase();
+    const members = record.members ?? [];
+    const index = members.findIndex((member) => member.email.toLowerCase() === email);
+    if (index < 0) return "member-not-found";
+    const member = members[index]!;
+    if (member.status !== "pending" || !member.expiresAt || Date.parse(member.expiresAt) > Date.now()) {
+      return "forbidden";
+    }
+
+    members.splice(index, 1);
+    record.members = members;
+    record.updatedAt = nowIso();
+    this.schedulePersist();
+    return clone(member);
+  }
+
   listWorkspaceActivity(kind: "document" | "board", entityId: string): WorkspaceActivity[] | null {
     const record = kind === "document" ? this.documents.get(entityId) : this.boards.get(entityId);
     return record ? clone(record.activity ?? []) : null;
@@ -1003,7 +1052,7 @@ export class RealtimeStore {
 
   upsertWorkspaceMember(
     input: WorkspaceMemberInput
-  ): "not-found" | "forbidden" | "invalid" | WorkspaceMember {
+  ): "not-found" | "forbidden" | "invalid" | "already-member" | WorkspaceMember {
     const record =
       input.kind === "document" ? this.documents.get(input.entityId) : this.boards.get(input.entityId);
     if (!record) return "not-found";
@@ -1014,15 +1063,15 @@ export class RealtimeStore {
 
     const members = record.members ?? [];
     const existing = members.find((member) => member.email.toLowerCase() === email);
-    const status = existing?.status === "accepted" ? "accepted" : "pending";
+    if (existing?.status === "accepted") return "already-member";
     const member: WorkspaceMember = {
-      accountId: status === "accepted" ? existing?.accountId : undefined,
+      accountId: undefined,
       email,
       role: input.role,
       invitedAt: existing?.invitedAt ?? nowIso(),
-      status,
-      respondedAt: status === "accepted" ? existing?.respondedAt : undefined,
-      expiresAt: status === "pending" ? invitationExpiresAt() : undefined
+      status: "pending",
+      respondedAt: undefined,
+      expiresAt: invitationExpiresAt()
     };
     if (existing) {
       Object.assign(existing, member);

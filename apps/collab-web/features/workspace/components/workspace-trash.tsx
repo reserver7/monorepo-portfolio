@@ -5,18 +5,21 @@ import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import { Badge, Button, Card, Typography, confirm, Flex, Grid } from "@repo/ui";
 import { docsQueryKeys } from "@/features/docs/documents/api";
 import { whiteboardQueryKeys } from "@/features/whiteboard/boards/api";
-import { listTrash, permanentlyDeleteTrashItem, restoreTrashItem } from "../api/trash-api";
-
-const trashQueryKey = ["collab", "workspace-trash"];
+import {
+  listTrash,
+  permanentlyDeleteTrashItem,
+  restoreTrashItem,
+  workspaceTrashQueryKey
+} from "../api/trash-api";
 
 export function WorkspaceTrash() {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
-  const trashQuery = useQuery({ queryKey: trashQueryKey, queryFn: listTrash });
+  const trashQuery = useQuery({ queryKey: workspaceTrashQueryKey, queryFn: listTrash });
   const restoreMutation = useMutation({
     mutationFn: restoreTrashItem,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: trashQueryKey });
+      await queryClient.invalidateQueries({ queryKey: workspaceTrashQueryKey });
       await queryClient.invalidateQueries({ queryKey: docsQueryKeys.documents() });
       await queryClient.invalidateQueries({ queryKey: whiteboardQueryKeys.boards() });
     }
@@ -24,7 +27,7 @@ export function WorkspaceTrash() {
   const permanentDeleteMutation = useMutation({
     mutationFn: permanentlyDeleteTrashItem,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: trashQueryKey });
+      await queryClient.invalidateQueries({ queryKey: workspaceTrashQueryKey });
     }
   });
 

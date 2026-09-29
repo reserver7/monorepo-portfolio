@@ -2,6 +2,8 @@ export const API_ROUTES = {
   health: "/health",
   realtimeToken: "/api/session/realtime-token",
   notifications: "/api/notifications",
+  invitations: "/api/invitations",
+  invitationById: "/api/invitations/:kind/:id",
   notificationRead: "/api/notifications/:id/read",
   notificationsReadAll: "/api/notifications/read-all",
   workspaceFavorites: "/api/workspace/favorites",

@@ -12,6 +12,7 @@ import { Box, Button, Card, CardContent, Checkbox, FormField, Input, Typography,
 import {
   loginWithPassword,
   requestPasswordReset,
+  resendEmailVerification,
   signupWithPassword,
   validateCurrentSession
 } from "@/lib/auth";
@@ -20,6 +21,7 @@ import { resolveLocalizedError } from "@/lib/i18n/errors";
 type LoginFormValues = {
   email: string;
   password: string;
+  otp: string;
   confirmPassword: string;
 };
 
@@ -50,9 +52,14 @@ export default function LoginPage() {
   const heroContentRef = useRef<HTMLDivElement | null>(null);
   const formHeaderRef = useRef<HTMLDivElement | null>(null);
   const formBodyRef = useRef<HTMLDivElement | null>(null);
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [authMode, setAuthMode] = useState<"login" | "signup">(
+    searchParams.get("mode") === "signup" ? "signup" : "login"
+  );
   const [rememberMe, setRememberMe] = useState(true);
   const [entered, setEntered] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
+  const [verificationLoginEmail, setVerificationLoginEmail] = useState<string | null>(null);
+  const [verificationCooldown, setVerificationCooldown] = useState(0);
 
   const form = useAppForm<LoginFormValues>({
     mode: "onSubmit",
@@ -60,6 +67,7 @@ export default function LoginPage() {
     defaultValues: {
       email: "",
       password: "",
+      otp: "",
       confirmPassword: ""
     }
   });
@@ -67,22 +75,38 @@ export default function LoginPage() {
   const loginMutation = useMutation({
     mutationFn: loginWithPassword,
     onSuccess: () => {
+      setVerificationLoginEmail(null);
       toast.success(t("loginSuccess"));
       router.replace(nextPath);
     },
     onError: (error) => {
+      const message = error instanceof Error ? error.message : "";
+      if (/이메일 인증|email verification/i.test(message)) {
+        setVerificationLoginEmail(form.getValues("email")?.trim() || null);
+      }
       toast.error(resolveLocalizedError(error, tError as never, t("loginErrorFallback")));
     }
   });
 
   const signupMutation = useMutation({
     mutationFn: signupWithPassword,
-    onSuccess: () => {
-      toast.success(t("signupSuccess"));
-      router.replace(nextPath);
+    onSuccess: (result) => {
+      setVerificationEmail(result.email);
+      toast.success(t("verificationRequired"));
     },
     onError: (error) => {
       toast.error(resolveLocalizedError(error, tError as never, t("signupErrorFallback")));
+    }
+  });
+
+  const resendVerificationMutation = useMutation({
+    mutationFn: resendEmailVerification,
+    onSuccess: (result) => {
+      if (result.sent) setVerificationCooldown(60);
+      toast.success(result.sent ? t("verificationResent") : t("verificationUnavailable"));
+    },
+    onError: (error) => {
+      toast.error(resolveLocalizedError(error, tError as never, t("verificationResendFailed")));
     }
   });
 
@@ -101,6 +125,7 @@ export default function LoginPage() {
     setAuthMode(nextMode);
     form.setValue("email", "");
     form.setValue("password", "");
+    form.setValue("otp", "");
     form.setValue("confirmPassword", "");
     form.clearErrors();
   };
@@ -115,7 +140,8 @@ export default function LoginPage() {
       signupMutation.mutate({
         email: values.email.trim(),
         name: deriveNameFromEmail(values.email.trim()),
-        password: values.password
+        password: values.password,
+        next: nextPath
       });
       return;
     }
@@ -123,6 +149,7 @@ export default function LoginPage() {
     loginMutation.mutate({
       email: values.email.trim(),
       password: values.password,
+      otp: values.otp || undefined,
       rememberMe
     });
   });
@@ -147,6 +174,14 @@ export default function LoginPage() {
   useEffect(() => {
     setEntered(true);
   }, []);
+
+  useEffect(() => {
+    if (verificationCooldown <= 0) return;
+    const timer = window.setInterval(() => {
+      setVerificationCooldown((current) => Math.max(0, current - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [verificationCooldown]);
 
   useEffect(() => {
     let active = true;
@@ -244,6 +279,28 @@ export default function LoginPage() {
               </Box>
 
               <CardContent className="mt-[var(--space-1)] px-0 pb-0">
+                {verificationEmail ? (
+                  <Box className="bg-surface-elevated mb-[var(--space-4)] grid gap-2 rounded-[var(--radius-md)] p-4">
+                    <Typography as="p" variant="bodyMd" className="font-semibold">
+                      {t("verificationRequired")}
+                    </Typography>
+                    <Typography as="p" variant="bodySm" color="muted">
+                      {t("verificationDescription", { email: verificationEmail })}
+                    </Typography>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="justify-self-start px-0"
+                      loading={resendVerificationMutation.isPending}
+                      onClick={() =>
+                        resendVerificationMutation.mutate({ email: verificationEmail, next: nextPath })
+                      }
+                    >
+                      {t("resendVerification")}
+                    </Button>
+                  </Box>
+                ) : null}
                 <Box ref={formBodyRef} className="grid gap-[var(--space-3)]">
                   <Box className="flex justify-center gap-[var(--space-3)]">
                     <Button
@@ -313,6 +370,27 @@ export default function LoginPage() {
                     />
                   </FormField>
 
+                  {authMode === "login" ? (
+                    <FormField label={t("twoFactorCode")} htmlFor="opslens-login-otp">
+                      <Input
+                        id="opslens-login-otp"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        control={form.control}
+                        name="otp"
+                        rules={{
+                          pattern: {
+                            value: /^(?:\d{6}|[A-Za-z0-9]{10})$/,
+                            message: t("twoFactorCodeInvalid")
+                          }
+                        }}
+                        errorMessage={form.formState.errors.otp?.message}
+                        onEnter={() => submitAuth()}
+                        className="bg-surface-elevated h-[56px]"
+                      />
+                    </FormField>
+                  ) : null}
+
                   <Box className="min-h-[96px]">
                     {authMode === "signup" ? (
                       <FormField label={t("confirmPassword")} htmlFor="opslens-signup-confirm-password">
@@ -335,23 +413,50 @@ export default function LoginPage() {
                         />
                       </FormField>
                     ) : (
-                      <Box className="flex h-[96px] items-center justify-between">
-                        <Checkbox
-                          checked={rememberMe}
-                          onCheckedChange={(next) => setRememberMe(Boolean(next))}
-                          label={t("keepLoggedIn")}
-                          size="sm"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted hover:bg-surface-elevated hover:text-foreground h-8 rounded-[var(--radius-sm)] px-2 text-[13px] font-medium"
-                          onClick={handleForgotPassword}
-                          loading={forgotPasswordMutation.isPending}
-                        >
-                          {t("forgotPassword")}
-                        </Button>
+                      <Box className="grid min-h-[96px] gap-2 py-2">
+                        <Box className="flex items-center justify-between">
+                          <Checkbox
+                            checked={rememberMe}
+                            onCheckedChange={(next) => setRememberMe(Boolean(next))}
+                            label={t("keepLoggedIn")}
+                            size="sm"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted hover:bg-surface-elevated hover:text-foreground h-8 rounded-[var(--radius-sm)] px-2 text-[13px] font-medium"
+                            onClick={handleForgotPassword}
+                            loading={forgotPasswordMutation.isPending}
+                          >
+                            {t("forgotPassword")}
+                          </Button>
+                        </Box>
+                        {verificationLoginEmail ? (
+                          <Box className="flex items-center justify-between gap-2">
+                            <Typography as="p" variant="bodySm" color="muted">
+                              {t("verificationLoginRequired")}
+                            </Typography>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="shrink-0 px-1"
+                              disabled={verificationCooldown > 0}
+                              loading={resendVerificationMutation.isPending}
+                              onClick={() =>
+                                resendVerificationMutation.mutate({
+                                  email: verificationLoginEmail,
+                                  next: nextPath
+                                })
+                              }
+                            >
+                              {verificationCooldown > 0
+                                ? t("verificationResendCooldown", { seconds: verificationCooldown })
+                                : t("resendVerificationFromLogin")}
+                            </Button>
+                          </Box>
+                        ) : null}
                       </Box>
                     )}
                   </Box>

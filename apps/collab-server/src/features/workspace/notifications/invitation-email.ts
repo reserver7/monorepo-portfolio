@@ -30,6 +30,15 @@ export type InvitationEmailResult =
   | { sent: true }
   | { sent: false; reason: "disabled" | "missing-config" | "monthly-limit" | "provider-error" };
 
+export const buildWorkspaceInvitationUrl = (
+  baseUrl: string,
+  kind: "document" | "board",
+  entityId: string,
+  title: string,
+  role: "viewer" | "editor"
+): string =>
+  `${baseUrl.replace(/\/+$/, "")}/invite?kind=${kind}&id=${encodeURIComponent(entityId)}&title=${encodeURIComponent(title)}&role=${role}`;
+
 const currentMonth = (date: Date): string => date.toISOString().slice(0, 7);
 
 const escapeHtml = (value: string): string =>
@@ -56,20 +65,25 @@ export const sendWorkspaceInvitationEmail = async (
   const title = escapeHtml(invitation.workspaceTitle);
   const inviteUrl = escapeHtml(invitation.inviteUrl);
   const fetcher = options.fetcher ?? fetch;
-  const response = await fetcher(RESEND_ENDPOINT, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${options.apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      from: options.from,
-      to: [invitation.to],
-      subject: `${invitation.workspaceTitle} 작업 공간 초대`,
-      text: `${invitation.workspaceTitle} 작업 공간에 초대되었습니다. ${invitation.inviteUrl}`,
-      html: `<p><strong>${title}</strong> 작업 공간에 초대되었습니다.</p><p><a href="${inviteUrl}">작업 공간 열기</a></p>`
-    })
-  });
+  let response: EmailResponse;
+  try {
+    response = await fetcher(RESEND_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${options.apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: options.from,
+        to: [invitation.to],
+        subject: `${invitation.workspaceTitle} 작업 공간 초대`,
+        text: `${invitation.workspaceTitle} 작업 공간에 초대되었습니다. ${invitation.inviteUrl}`,
+        html: `<p><strong>${title}</strong> 작업 공간에 초대되었습니다.</p><p><a href="${inviteUrl}">작업 공간 열기</a></p>`
+      })
+    });
+  } catch {
+    return { sent: false, reason: "provider-error" };
+  }
 
   if (!response.ok) return { sent: false, reason: "provider-error" };
   usage.count += 1;

@@ -7,6 +7,8 @@ export type WorkspaceTrash = {
   boards: WhiteboardSummary[];
 };
 
+export const workspaceTrashQueryKey = ["collab", "workspace-trash"] as const;
+
 const parseResponse = async <T>(response: Response): Promise<T> => {
   const payload = (await response.json().catch(() => ({}))) as T & { message?: string };
   if (!response.ok) throw new Error(payload.message ?? "휴지통 요청에 실패했습니다.");

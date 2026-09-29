@@ -45,6 +45,7 @@ import { formatExactTime, formatRelativeTime } from "@/features/docs/collaborati
 import { useCollabStore } from "@/features/docs/collaboration/stores/use-collab-store";
 import { createLocaleGuestName, normalizeGuestDisplayName } from "@/lib/i18n/display-name";
 import { WorkspaceSharePanel } from "@/features/common/components/workspace-share-panel";
+import { shouldOfferSaveRetry } from "@/features/docs/collaboration/model/save-recovery";
 
 export default function DocumentRoomPage() {
   const t = useTranslations("collab.docsRoom");
@@ -191,6 +192,7 @@ export default function DocumentRoomPage() {
     isReadOnly,
     updateTitle,
     updateContent,
+    retryConnection,
     sendCursor,
     addComment,
     updateComment,
@@ -304,6 +306,16 @@ export default function DocumentRoomPage() {
                 >
                   {t("status.role")}: {currentRole}
                 </Badge>
+                {shouldOfferSaveRetry(currentRole, connection) ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    aria-label={t("status.save.retryAriaLabel")}
+                    onClick={retryConnection}
+                  >
+                    {t("status.save.retry")}
+                  </Button>
+                ) : null}
               </Flex>
             </Flex>
 

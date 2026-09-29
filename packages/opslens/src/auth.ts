@@ -26,6 +26,15 @@ export type OpsLoginResponse = {
   user: OpsAuthUser;
 };
 
+export type OpsSignupResponse = {
+  requiresEmailVerification: true;
+  email: string;
+  emailDelivery: {
+    sent: boolean;
+    reason?: "disabled" | "missing-config" | "monthly-limit" | "provider-error" | "already-verified";
+  };
+};
+
 export type OpsNotificationPolicy = {
   inAppEnabled: boolean;
   emailEnabled: boolean;
@@ -56,7 +65,8 @@ export async function signupOpslens(input: {
   email: string;
   name: string;
   password: string;
-}): Promise<OpsLoginResponse> {
+  next?: string;
+}): Promise<OpsSignupResponse> {
   const response = await fetch(`${resolveAuthApiUrl()}/auth/signup`, {
     method: "POST",
     headers: {
@@ -69,7 +79,20 @@ export async function signupOpslens(input: {
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response));
   }
-  return (await response.json()) as OpsLoginResponse;
+  return (await response.json()) as OpsSignupResponse;
+}
+
+export async function resendOpslensVerification(input: {
+  email: string;
+  next?: string;
+}): Promise<OpsSignupResponse["emailDelivery"]> {
+  const response = await fetch(`${resolveAuthApiUrl()}/auth/resend-verification`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) throw new Error(await parseErrorMessage(response));
+  return (await response.json()) as OpsSignupResponse["emailDelivery"];
 }
 
 export async function requestPasswordResetOpslens(input: { email: string }): Promise<{ success: true }> {
@@ -86,6 +109,22 @@ export async function requestPasswordResetOpslens(input: { email: string }): Pro
     throw new Error(await parseErrorMessage(response));
   }
 
+  return (await response.json()) as { success: true };
+}
+
+export async function resetPasswordOpslens(input: {
+  token: string;
+  password: string;
+}): Promise<{ success: true }> {
+  const response = await fetch(`${resolveAuthApiUrl()}/auth/reset-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) throw new Error(await parseErrorMessage(response));
   return (await response.json()) as { success: true };
 }
 

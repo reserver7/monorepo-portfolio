@@ -92,6 +92,104 @@ describe("workspace membership", () => {
     await store.close();
   });
 
+  test("does not reinvite a member who already accepted access", async () => {
+    const store = new RealtimeStore(persistence({ value: null }));
+    const document = store.createDocument("Private", "Owner", undefined, "owner");
+    store.upsertWorkspaceMember({
+      kind: "document",
+      entityId: document.id,
+      ownerId: "owner",
+      email: "editor@example.com",
+      role: "editor"
+    });
+    expect(
+      store.respondToWorkspaceInvitation({
+        kind: "document",
+        entityId: document.id,
+        email: "editor@example.com",
+        accountId: "editor",
+        status: "accepted"
+      })
+    ).toMatchObject({ status: "accepted" });
+
+    expect(
+      store.upsertWorkspaceMember({
+        kind: "document",
+        entityId: document.id,
+        ownerId: "owner",
+        email: "editor@example.com",
+        role: "viewer"
+      })
+    ).toBe("already-member");
+    expect(store.listWorkspaceMembers("document", document.id)).toMatchObject([
+      { email: "editor@example.com", role: "editor", status: "accepted" }
+    ]);
+    await store.close();
+  });
+
+  test("lists pending invitations by the authenticated account email", async () => {
+    const store = new RealtimeStore(persistence({ value: null }));
+    const document = store.createDocument("Roadmap", "Owner", undefined, "owner");
+    const board = store.createBoard("Planning", "Owner", undefined, "owner");
+    store.upsertWorkspaceMember({
+      kind: "document",
+      entityId: document.id,
+      ownerId: "owner",
+      email: "MEMBER@example.com",
+      role: "editor"
+    });
+    store.upsertWorkspaceMember({
+      kind: "board",
+      entityId: board.id,
+      ownerId: "owner",
+      email: "member@example.com",
+      role: "viewer"
+    });
+
+    expect(store.listPendingWorkspaceInvitations("member@example.com")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: "board", id: board.id, title: "Planning", role: "viewer" }),
+        expect.objectContaining({ kind: "document", id: document.id, title: "Roadmap", role: "editor" })
+      ])
+    );
+    await store.close();
+  });
+
+  test("only dismisses expired invitations for the invited account", async () => {
+    const state: { value: PersistedWorkspaceState | null } = { value: null };
+    const store = new RealtimeStore(persistence(state));
+    const document = store.createDocument("Roadmap", "Owner", undefined, "owner");
+    store.upsertWorkspaceMember({
+      kind: "document",
+      entityId: document.id,
+      ownerId: "owner",
+      email: "member@example.com",
+      role: "viewer"
+    });
+    await store.persistNow();
+    state.value!.documents[0]!.members![0]!.expiresAt = "2020-01-01T00:00:00.000Z";
+
+    const restored = new RealtimeStore(persistence(state));
+    await restored.init();
+    expect(
+      restored.dismissExpiredWorkspaceInvitation({
+        kind: "document",
+        entityId: document.id,
+        email: "other@example.com"
+      })
+    ).toBe("member-not-found");
+    expect(
+      restored.dismissExpiredWorkspaceInvitation({
+        kind: "document",
+        entityId: document.id,
+        email: "member@example.com"
+      })
+    ).toMatchObject({ email: "member@example.com", status: "pending" });
+    expect(restored.listPendingWorkspaceInvitations("member@example.com")).toEqual([]);
+    await store.close();
+    await restored.close();
+  });
+
   test("expired invitation cannot be accepted", async () => {
     const state: { value: PersistedWorkspaceState | null } = { value: null };
     const store = new RealtimeStore(persistence(state));

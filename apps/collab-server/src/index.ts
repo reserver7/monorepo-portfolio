@@ -74,7 +74,11 @@ import {
   resolveWorkspacePermission,
   normalizeWorkspaceMemberEmail
 } from "./features/workspace";
-import { sendWorkspaceInvitationEmail } from "./features/workspace/notifications/invitation-email";
+import {
+  buildWorkspaceInvitationUrl,
+  sendWorkspaceInvitationEmail,
+  type InvitationEmailResult
+} from "./features/workspace/notifications/invitation-email";
 
 const app = express();
 const store = new RealtimeStore(
@@ -257,20 +261,21 @@ const readInvitationResponse = (body: Record<string, unknown>) =>
       ? ("accepted" as const)
       : null;
 
-const notifyWorkspaceMember = (
+const notifyWorkspaceMember = async (
   kind: "document" | "board",
   entityId: string,
   email: string,
   title: string,
   role: AccessRole
-): void => {
+): Promise<{ emailDelivery: InvitationEmailResult; inviteUrl?: string }> => {
   const baseUrl = serverEnv.collabWebUrl ?? serverEnv.corsOrigins[0];
-  if (!baseUrl) return;
-  void sendWorkspaceInvitationEmail(
+  if (!baseUrl) return { emailDelivery: { sent: false, reason: "missing-config" } };
+  const inviteUrl = buildWorkspaceInvitationUrl(baseUrl, kind, entityId, title, role);
+  const result = await sendWorkspaceInvitationEmail(
     {
       to: email,
       workspaceTitle: title,
-      inviteUrl: `${baseUrl}/invite?kind=${kind}&id=${encodeURIComponent(entityId)}&title=${encodeURIComponent(title)}&role=${role}`
+      inviteUrl
     },
     {
       enabled: serverEnv.resendEnabled,
@@ -279,11 +284,11 @@ const notifyWorkspaceMember = (
       monthlyLimit: serverEnv.resendMonthlyLimit,
       usage: invitationEmailUsage
     }
-  ).then((result) => {
-    if (!result.sent && result.reason !== "disabled") {
-      httpLogger.warn("workspace.invitation_email_skipped", { reason: result.reason });
-    }
-  });
+  );
+  if (!result.sent && result.reason !== "disabled") {
+    httpLogger.warn("workspace.invitation_email_skipped", { reason: result.reason });
+  }
+  return { emailDelivery: result, inviteUrl };
 };
 
 const resolveLockedRole = async (
@@ -369,6 +374,11 @@ const broadcastNotificationUpdate = (accountIds: Array<string | undefined>): voi
   for (const accountId of new Set(accountIds.filter((value): value is string => Boolean(value)))) {
     io.to(`account:${accountId}`).emit(socketEventName.notificationsUpdate);
   }
+};
+
+// ponytail: global invalidation avoids an account directory; clients re-fetch through authenticated API filtering.
+const broadcastInvitationUpdate = (): void => {
+  io.emit(socketEventName.invitationsUpdate);
 };
 
 const broadcastWorkspaceListUpdate = (
@@ -535,6 +545,40 @@ app.get(API_ROUTES.notifications, (req, res) => {
     notifications,
     unreadCount: notifications.filter((notification) => !notification.readAt).length
   });
+});
+
+app.get(API_ROUTES.invitations, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (!account) return;
+  res.json({ invitations: store.listPendingWorkspaceInvitations(account.email) });
+});
+
+app.delete(API_ROUTES.invitationById, (req, res) => {
+  const account = resolveAccountFromRequest(req, res);
+  if (!account) return;
+  if (req.params.kind !== "document" && req.params.kind !== "board") {
+    res.status(400).json({ message: "유효하지 않은 작업 공간 유형입니다." });
+    return;
+  }
+  const invitation = store.dismissExpiredWorkspaceInvitation({
+    kind: req.params.kind,
+    entityId: req.params.id,
+    email: account.email
+  });
+  if (invitation === "not-found") {
+    res.status(404).json({ message: "작업 공간을 찾을 수 없습니다." });
+    return;
+  }
+  if (invitation === "member-not-found") {
+    res.status(404).json({ message: "초대를 찾을 수 없습니다." });
+    return;
+  }
+  if (invitation === "forbidden") {
+    res.status(403).json({ message: "만료된 초대만 닫을 수 있습니다." });
+    return;
+  }
+  broadcastInvitationUpdate();
+  res.json({ invitation });
 });
 
 app.patch(API_ROUTES.notificationRead, (req, res) => {
@@ -928,7 +972,7 @@ app.post(API_ROUTES.documentOwnershipTransfer, (req, res) => {
   res.json({ document: transferred });
 });
 
-app.post(API_ROUTES.documentMembers, (req, res) => {
+app.post(API_ROUTES.documentMembers, async (req, res) => {
   const access = resolveWorkspaceRequest(req, res, "document", req.params.id, "manage");
   if (!access?.account) return;
   const input = readWorkspaceMemberInput(toJsonObject(req.body));
@@ -947,17 +991,26 @@ app.post(API_ROUTES.documentMembers, (req, res) => {
     res.status(400).json({ message: "유효한 멤버 정보가 필요합니다." });
     return;
   }
+  if (member === "already-member") {
+    res.status(409).json({ message: "이미 승인된 멤버입니다." });
+    return;
+  }
+  let emailDelivery: InvitationEmailResult = { sent: false, reason: "missing-config" };
+  let inviteUrl: string | undefined;
   if (typeof member === "object") {
-    notifyWorkspaceMember(
+    const dispatch = await notifyWorkspaceMember(
       "document",
       req.params.id,
       member.email,
       store.getDocument(req.params.id)?.title ?? EMPTY_TITLE,
       member.role
     );
+    emailDelivery = dispatch.emailDelivery;
+    inviteUrl = dispatch.inviteUrl;
     broadcastWorkspaceActivity("document", req.params.id);
+    broadcastInvitationUpdate();
   }
-  res.status(201).json({ member });
+  res.status(201).json({ member, emailDelivery, inviteUrl });
 });
 
 app.patch(API_ROUTES.documentMembers, (req, res) => {
@@ -1018,6 +1071,7 @@ app.delete(API_ROUTES.documentMembers, (req, res) => {
   }
   broadcastNotificationUpdate([member.accountId]);
   broadcastWorkspaceActivity("document", req.params.id);
+  broadcastInvitationUpdate();
   res.json({ member });
 });
 
@@ -1047,6 +1101,7 @@ app.post(API_ROUTES.documentMemberResponse, (req, res) => {
   }
   broadcastNotificationUpdate([document?.ownerId]);
   broadcastWorkspaceActivity("document", req.params.id);
+  broadcastInvitationUpdate();
   res.json({ member });
 });
 
@@ -1230,7 +1285,7 @@ app.post(API_ROUTES.boardOwnershipTransfer, (req, res) => {
   res.json({ board: transferred });
 });
 
-app.post(API_ROUTES.boardMembers, (req, res) => {
+app.post(API_ROUTES.boardMembers, async (req, res) => {
   const access = resolveWorkspaceRequest(req, res, "board", req.params.id, "manage");
   if (!access?.account) return;
   const input = readWorkspaceMemberInput(toJsonObject(req.body));
@@ -1249,17 +1304,26 @@ app.post(API_ROUTES.boardMembers, (req, res) => {
     res.status(400).json({ message: "유효한 멤버 정보가 필요합니다." });
     return;
   }
+  if (member === "already-member") {
+    res.status(409).json({ message: "이미 승인된 멤버입니다." });
+    return;
+  }
+  let emailDelivery: InvitationEmailResult = { sent: false, reason: "missing-config" };
+  let inviteUrl: string | undefined;
   if (typeof member === "object") {
-    notifyWorkspaceMember(
+    const dispatch = await notifyWorkspaceMember(
       "board",
       req.params.id,
       member.email,
       store.getBoard(req.params.id)?.title ?? EMPTY_TITLE,
       member.role
     );
+    emailDelivery = dispatch.emailDelivery;
+    inviteUrl = dispatch.inviteUrl;
     broadcastWorkspaceActivity("board", req.params.id);
+    broadcastInvitationUpdate();
   }
-  res.status(201).json({ member });
+  res.status(201).json({ member, emailDelivery, inviteUrl });
 });
 
 app.patch(API_ROUTES.boardMembers, (req, res) => {
@@ -1320,6 +1384,7 @@ app.delete(API_ROUTES.boardMembers, (req, res) => {
   }
   broadcastNotificationUpdate([member.accountId]);
   broadcastWorkspaceActivity("board", req.params.id);
+  broadcastInvitationUpdate();
   res.json({ member });
 });
 
@@ -1349,6 +1414,7 @@ app.post(API_ROUTES.boardMemberResponse, (req, res) => {
   }
   broadcastNotificationUpdate([board?.ownerId]);
   broadcastWorkspaceActivity("board", req.params.id);
+  broadcastInvitationUpdate();
   res.json({ member });
 });
 

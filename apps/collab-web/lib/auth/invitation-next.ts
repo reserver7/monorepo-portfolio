@@ -1,2 +1,2 @@
 export const buildInvitationLoginPath = (search: string): string =>
-  `/login?next=${encodeURIComponent(`/invite${search.startsWith("?") ? search : ""}`)}`;
+  `/login?mode=signup&next=${encodeURIComponent(`/invite${search.startsWith("?") ? search : ""}`)}`;

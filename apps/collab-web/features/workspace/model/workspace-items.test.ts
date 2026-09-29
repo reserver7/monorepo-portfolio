@@ -2,7 +2,21 @@ import assert from "node:assert/strict";
 import type { DocumentSummary, WhiteboardSummary } from "@repo/utils/collab";
 
 // @ts-expect-error Node's strip-types runner requires the explicit extension.
-import { filterWorkspaceItems, getWorkspaceItemKey, mergeWorkspaceItems } from "./workspace-items.ts";
+import * as workspaceItems from "./workspace-items.ts";
+// @ts-expect-error Node's strip-types runner requires the explicit extension.
+import { isWorkspaceSearchShortcut } from "./workspace-shortcuts.ts";
+// @ts-expect-error Node's strip-types runner requires the explicit extension.
+import { createWorkspaceFilterSearch, parseWorkspaceFilterSearch } from "./workspace-filter-url.ts";
+
+const {
+  filterWorkspaceItems,
+  getWorkspaceCommandResults,
+  getWorkspaceItemCapabilities,
+  getWorkspaceItemKey,
+  getWorkspaceNavigationIndex,
+  getWorkspaceFilterReset,
+  mergeWorkspaceItems
+} = workspaceItems;
 
 const document: DocumentSummary = {
   id: "doc-1",
@@ -50,6 +64,7 @@ assert.deepEqual(mergeWorkspaceItems([document, { ...document, title: "Duplicate
 console.log("workspace items: ok");
 
 const items = mergeWorkspaceItems([document], [board]);
+const primaryItem = items[0]!;
 assert.deepEqual(
   filterWorkspaceItems(items, { query: "plan", kind: "board", sort: "name" }).map((item) => item.id),
   ["board-1"]
@@ -75,3 +90,67 @@ assert.deepEqual(
   ["doc-1", "board-1"]
 );
 console.log("workspace item favorites: ok");
+
+assert.deepEqual(getWorkspaceFilterReset(), {
+  query: "",
+  kind: "all",
+  sharedOnly: false,
+  sort: "recent"
+});
+console.log("workspace filter reset: ok");
+
+assert.equal(isWorkspaceSearchShortcut("/", false, false), true);
+assert.equal(isWorkspaceSearchShortcut("k", true, true), true);
+assert.equal(isWorkspaceSearchShortcut("/", true, false), false);
+assert.equal(isWorkspaceSearchShortcut("k", false, false), false);
+console.log("workspace search shortcut: ok");
+
+assert.deepEqual(
+  getWorkspaceCommandResults(items, "road").map((item) => `${item.kind}:${item.id}`),
+  ["document:doc-1"]
+);
+console.log("workspace command results: ok");
+
+assert.deepEqual(getWorkspaceItemCapabilities({ ...primaryItem, permission: "viewer" }), {
+  canEdit: false,
+  canManage: false,
+  canDelete: false,
+  canViewSharing: true
+});
+assert.deepEqual(getWorkspaceItemCapabilities({ ...primaryItem, permission: "editor" }), {
+  canEdit: true,
+  canManage: false,
+  canDelete: false,
+  canViewSharing: true
+});
+assert.deepEqual(getWorkspaceItemCapabilities({ ...primaryItem, permission: "owner" }), {
+  canEdit: true,
+  canManage: true,
+  canDelete: true,
+  canViewSharing: false
+});
+console.log("workspace item capabilities: ok");
+
+assert.deepEqual(parseWorkspaceFilterSearch("?q=road%20map&kind=document&sort=name&shared=1"), {
+  query: "road map",
+  kind: "document",
+  sort: "name",
+  sharedOnly: true
+});
+assert.equal(
+  createWorkspaceFilterSearch({ query: " road ", kind: "document", sort: "name", sharedOnly: true }),
+  "?q=road&kind=document&sort=name&shared=1"
+);
+assert.deepEqual(parseWorkspaceFilterSearch("?kind=invalid&sort=invalid"), {
+  query: "",
+  kind: "all",
+  sort: "recent",
+  sharedOnly: false
+});
+console.log("workspace filter URL: ok");
+
+assert.equal(getWorkspaceNavigationIndex(0, "next", 3), 1);
+assert.equal(getWorkspaceNavigationIndex(0, "previous", 3), 2);
+assert.equal(getWorkspaceNavigationIndex(2, "next", 3), 0);
+assert.equal(getWorkspaceNavigationIndex(0, "next", 0), -1);
+console.log("workspace keyboard navigation: ok");
