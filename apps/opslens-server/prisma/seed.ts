@@ -44,7 +44,8 @@ async function main(): Promise<void> {
         passwordHash: hashPassword("opslens1234!"),
         name: "OpsLens Admin",
         role: AuthRole.admin,
-        isActive: true
+        isActive: true,
+        emailVerifiedAt: new Date()
       },
       {
         id: "usr-operator-001",
@@ -52,7 +53,8 @@ async function main(): Promise<void> {
         passwordHash: hashPassword("opslens1234!"),
         name: "OpsLens Operator",
         role: AuthRole.operator,
-        isActive: true
+        isActive: true,
+        emailVerifiedAt: new Date()
       }
     ]
   });
