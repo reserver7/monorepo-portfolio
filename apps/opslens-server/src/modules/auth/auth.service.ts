@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  BadRequestException,
   ForbiddenException,
   HttpException,
   HttpStatus,
@@ -40,6 +41,12 @@ import {
   verifyTotpCode
 } from "./two-factor.js";
 import { consumeRecoveryCode, createRecoveryCodes, serializeRecoveryCodes } from "./recovery-codes.js";
+import {
+  consumeAdminInvitation,
+  createAdminInvitationToken,
+  buildAdminInvitationUrl,
+  sendAdminInvitationEmail
+} from "./admin-invitation.js";
 
 type AuthUserResponse = {
   id: string;
@@ -50,6 +57,86 @@ type AuthUserResponse = {
   avatarColor: User["avatarColor"];
   isActive: boolean;
 };
+
+type AuthUserListInput = {
+  query?: string;
+  role?: User["role"];
+  isActive?: boolean;
+  page?: number;
+  pageSize?: number;
+};
+
+type AuthUserListResponse = {
+  items: AuthUserResponse[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+};
+
+type SecurityEventListInput = {
+  reviewStatus?: "unreviewed" | "in_review" | "resolved";
+  severity?: string;
+  assignee?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+type SecurityEventReviewInput = {
+  reviewStatus: "unreviewed" | "in_review" | "resolved";
+  assignee?: string;
+  reviewNote?: string;
+};
+
+type AuthUserDetailsResponse = {
+  user: AuthUserResponse & { createdAt: Date; emailVerifiedAt: Date | null };
+  activeSessionCount: number;
+  lastLoginAt: Date | null;
+  lastPasswordChangedAt: Date | null;
+  recentActivity: Array<{
+    id: string;
+    action: string;
+    severity: string;
+    summary: string;
+    createdAt: Date;
+  }>;
+  sessions: Array<{
+    id: string;
+    createdAt: Date;
+    lastUsedAt: Date | null;
+    expiresAt: Date;
+    ipAddress: string | null;
+    userAgent: string | null;
+  }>;
+};
+
+type AuthUserActivityInput = {
+  action?: string;
+  from?: Date;
+  to?: Date;
+  page?: number;
+  pageSize?: number;
+};
+
+type AuthUserActivityResponse = {
+  items: Array<{
+    id: string;
+    actor: string;
+    targetType: string;
+    targetId: string | null;
+    action: string;
+    severity: string;
+    summary: string;
+    beforeValue: unknown;
+    afterValue: unknown;
+    metadata: unknown;
+    createdAt: Date;
+  }>;
+  totalCount: number;
+  page: number;
+  pageSize: number;
+};
+
+const csvCell = (value: unknown): string => `"${String(value ?? "").replaceAll('"', '""')}"`;
 
 export type AuthLoginResponse = {
   accessToken: string;
@@ -84,6 +171,7 @@ const DEFAULT_NOTIFICATION_POLICY: AuthNotificationPolicy = {
   quietFrom: "22:00",
   quietTo: "08:00"
 };
+const TWO_FACTOR_SETUP_TTL_MS = 10 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -142,6 +230,133 @@ export class AuthService {
     return sendEmailVerificationEmail({ to: user.email, token });
   }
 
+  async inviteUser(actor: AuthUserPayload, input: { email: string; role: User["role"] }) {
+    this.assertAdmin(actor);
+    const email = input.email.trim().toLowerCase();
+    const existing = await this.prisma.user.findUnique({ where: { email }, select: { id: true } });
+    if (existing) throw new ConflictException("이미 등록된 이메일입니다.");
+    await this.prisma.adminInvitation.updateMany({
+      where: { email, acceptedAt: null, revokedAt: null },
+      data: { revokedAt: new Date() }
+    });
+    const created = await createAdminInvitationToken(this.prisma, {
+      email,
+      role: input.role,
+      invitedBy: actor.email
+    });
+    const emailDelivery = await sendAdminInvitationEmail({ to: email, token: created.token });
+    const invitation = await this.prisma.adminInvitation.findUnique({ where: { id: created.invitationId } });
+    await this.writeAuthAudit(
+      actor.email,
+      "auth.invitation_created",
+      created.invitationId,
+      "관리자 초대 생성",
+      "info",
+      {
+        email,
+        role: input.role,
+        emailDelivery: emailDelivery.sent ? "sent" : emailDelivery.reason
+      }
+    );
+    return {
+      id: created.invitationId,
+      email,
+      role: input.role,
+      expiresAt: invitation?.expiresAt,
+      emailDelivery,
+      inviteUrl: buildAdminInvitationUrl(created.token)
+    };
+  }
+
+  async listInvitations(actor: AuthUserPayload) {
+    this.assertAdmin(actor);
+    return this.prisma.adminInvitation.findMany({
+      where: { acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, email: true, role: true, expiresAt: true, createdAt: true, invitedBy: true }
+    });
+  }
+
+  async resendInvitation(actor: AuthUserPayload, invitationId: string) {
+    this.assertAdmin(actor);
+    const invitation = await this.prisma.adminInvitation.findUnique({ where: { id: invitationId } });
+    if (!invitation || invitation.acceptedAt || invitation.revokedAt || invitation.expiresAt <= new Date()) {
+      throw new NotFoundException("유효한 초대를 찾을 수 없습니다.");
+    }
+    const rotated = await createAdminInvitationToken(this.prisma, {
+      email: invitation.email,
+      role: invitation.role,
+      invitedBy: actor.email
+    });
+    await this.prisma.adminInvitation.update({
+      where: { id: invitation.id },
+      data: { revokedAt: new Date() }
+    });
+    const emailDelivery = await sendAdminInvitationEmail({ to: invitation.email, token: rotated.token });
+    await this.writeAuthAudit(
+      actor.email,
+      "auth.invitation_resent",
+      invitation.id,
+      "관리자 초대 재발송",
+      "info",
+      {
+        email: invitation.email,
+        emailDelivery: emailDelivery.sent ? "sent" : emailDelivery.reason
+      }
+    );
+    return { success: true as const, emailDelivery, inviteUrl: buildAdminInvitationUrl(rotated.token) };
+  }
+
+  async revokeInvitation(actor: AuthUserPayload, invitationId: string) {
+    this.assertAdmin(actor);
+    const result = await this.prisma.adminInvitation.updateMany({
+      where: { id: invitationId, acceptedAt: null, revokedAt: null },
+      data: { revokedAt: new Date() }
+    });
+    if (result.count === 0) throw new NotFoundException("유효한 초대를 찾을 수 없습니다.");
+    await this.writeAuthAudit(
+      actor.email,
+      "auth.invitation_revoked",
+      invitationId,
+      "관리자 초대 취소",
+      "warning"
+    );
+    return { success: true as const };
+  }
+
+  async resolveInvitation(token: string) {
+    const invitation = await consumeAdminInvitation(this.prisma, token);
+    if (!invitation) throw new UnauthorizedException("초대 링크가 만료되었거나 유효하지 않습니다.");
+    return { email: invitation.email, role: invitation.role, expiresAt: invitation.expiresAt };
+  }
+
+  async acceptInvitation(input: { token: string; name: string; password: string }) {
+    const invitation = await consumeAdminInvitation(this.prisma, input.token);
+    if (!invitation) throw new UnauthorizedException("초대 링크가 만료되었거나 유효하지 않습니다.");
+    const existing = await this.prisma.user.findUnique({
+      where: { email: invitation.email },
+      select: { id: true }
+    });
+    if (existing) throw new ConflictException("이미 등록된 이메일입니다.");
+    const user = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          email: invitation.email,
+          name: input.name.trim(),
+          passwordHash: hashPassword(input.password.trim()),
+          role: invitation.role,
+          authProvider: "local",
+          isActive: true,
+          emailVerifiedAt: new Date()
+        }
+      });
+      await tx.adminInvitation.update({ where: { id: invitation.id }, data: { acceptedAt: new Date() } });
+      return created;
+    });
+    await this.writeAuthAudit(user.email, "auth.invitation_accepted", user.id, "관리자 초대 수락", "info");
+    return { accepted: true as const, email: user.email };
+  }
+
   async requestEmailChange(authUser: AuthUserPayload, newEmail: string) {
     const normalizedEmail = newEmail.trim().toLowerCase();
     if (normalizedEmail === authUser.email.toLowerCase()) {
@@ -191,18 +406,46 @@ export class AuthService {
     return { verified: true as const, email: result.email, next: result.returnTo };
   }
 
-  async listUsers(actor: AuthUserPayload): Promise<AuthUserResponse[]> {
+  async listUsers(actor: AuthUserPayload, input: AuthUserListInput = {}): Promise<AuthUserListResponse> {
     this.assertAdmin(actor);
-    const users = await this.prisma.user.findMany({ orderBy: { createdAt: "desc" } });
-    return users.map((user) => this.toAuthUserResponse(user));
+    const query = input.query?.trim();
+    const page =
+      Number.isFinite(input.page) && input.page && input.page > 0 ? Math.max(1, Math.floor(input.page)) : 1;
+    const pageSize =
+      Number.isFinite(input.pageSize) && input.pageSize && input.pageSize > 0
+        ? Math.max(1, Math.min(100, Math.floor(input.pageSize)))
+        : 20;
+    const where = {
+      ...(query
+        ? {
+            OR: [
+              { email: { contains: query, mode: "insensitive" as const } },
+              { name: { contains: query, mode: "insensitive" as const } }
+            ]
+          }
+        : {}),
+      ...(input.role ? { role: input.role } : {}),
+      ...(typeof input.isActive === "boolean" ? { isActive: input.isActive } : {})
+    };
+    const [users, totalCount] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize
+      }),
+      this.prisma.user.count({ where })
+    ]);
+    return { items: users.map((user) => this.toAuthUserResponse(user)), totalCount, page, pageSize };
   }
 
   async updateUser(
     actor: AuthUserPayload,
     userId: string,
-    input: { role?: User["role"]; isActive?: boolean }
+    input: { role?: User["role"]; isActive?: boolean; reason: string }
   ): Promise<AuthUserResponse> {
     this.assertAdmin(actor);
+    const reason = this.normalizeAdminReason(input.reason);
     if (actor.sub === userId && input.isActive === false) {
       throw new ConflictException("자신의 계정은 비활성화할 수 없습니다.");
     }
@@ -226,10 +469,198 @@ export class AuthService {
       targetId: updated.id,
       severity: input.isActive === false || input.role === "admin" ? "warning" : "info",
       summary: `${updated.email} 사용자 권한 또는 활성 상태 변경`,
+      metadata: { reason },
       beforeValue: { role: target.role, isActive: target.isActive },
       afterValue: { role: updated.role, isActive: updated.isActive }
     });
     return this.toAuthUserResponse(updated);
+  }
+
+  async getUserDetails(actor: AuthUserPayload, userId: string): Promise<AuthUserDetailsResponse> {
+    this.assertAdmin(actor);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        authProvider: true,
+        avatarColor: true,
+        isActive: true,
+        createdAt: true,
+        emailVerifiedAt: true
+      }
+    });
+    if (!user) throw new NotFoundException("사용자를 찾을 수 없습니다.");
+    const [activeSessionCount, sessions, activity] = await Promise.all([
+      this.prisma.refreshToken.count({
+        where: { userId, revokedAt: null, expiresAt: { gt: new Date() } }
+      }),
+      this.prisma.refreshToken.findMany({
+        where: { userId, revokedAt: null, expiresAt: { gt: new Date() } },
+        orderBy: { lastUsedAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          createdAt: true,
+          lastUsedAt: true,
+          expiresAt: true,
+          ipAddress: true,
+          userAgent: true
+        }
+      }),
+      this.prisma.opsAuditLog.findMany({
+        where: { targetType: "Auth", targetId: userId },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: { id: true, action: true, severity: true, summary: true, createdAt: true }
+      })
+    ]);
+    return {
+      user: {
+        ...this.toAuthUserResponse(user as User),
+        createdAt: user.createdAt,
+        emailVerifiedAt: user.emailVerifiedAt
+      },
+      activeSessionCount,
+      lastLoginAt: activity.find((item) => item.action === "auth.login")?.createdAt ?? null,
+      lastPasswordChangedAt:
+        activity.find(
+          (item) => item.action === "auth.password_changed" || item.action === "auth.password_reset"
+        )?.createdAt ?? null,
+      recentActivity: activity,
+      sessions
+    };
+  }
+
+  async bulkUpdateUsers(
+    actor: AuthUserPayload,
+    userIds: string[],
+    input: { isActive: boolean; reason: string }
+  ): Promise<{ success: true; updatedCount: number; skippedUserIds: string[] }> {
+    this.assertAdmin(actor);
+    const reason = this.normalizeAdminReason(input.reason);
+    const uniqueUserIds = [...new Set(userIds)].filter(Boolean);
+    const skippedUserIds = input.isActive === false && uniqueUserIds.includes(actor.sub) ? [actor.sub] : [];
+    const targetUserIds = uniqueUserIds.filter((userId) => !skippedUserIds.includes(userId));
+    if (targetUserIds.length === 0) {
+      return { success: true, updatedCount: 0, skippedUserIds };
+    }
+    const result = await this.prisma.user.updateMany({
+      where: { id: { in: targetUserIds } },
+      data: { isActive: input.isActive }
+    });
+    await writeOpsAuditLog(this.prisma, this.logger, {
+      actor: actor.email,
+      action: "users.bulk_status_updated",
+      targetType: "User",
+      severity: input.isActive ? "info" : "warning",
+      summary: `관리자가 ${result.count}명의 사용자 상태를 일괄 변경`,
+      metadata: { userIds: targetUserIds, isActive: input.isActive, count: result.count, reason }
+    });
+    return { success: true, updatedCount: result.count, skippedUserIds };
+  }
+
+  async listUserActivity(
+    actor: AuthUserPayload,
+    userId: string,
+    input: AuthUserActivityInput = {}
+  ): Promise<AuthUserActivityResponse> {
+    this.assertAdmin(actor);
+    const page =
+      Number.isFinite(input.page) && input.page && input.page > 0 ? Math.max(1, Math.floor(input.page)) : 1;
+    const pageSize =
+      Number.isFinite(input.pageSize) && input.pageSize && input.pageSize > 0
+        ? Math.max(1, Math.min(100, Math.floor(input.pageSize)))
+        : 20;
+    const where = {
+      targetType: "Auth",
+      targetId: userId,
+      ...(input.action ? { action: input.action } : {}),
+      ...(input.from || input.to
+        ? {
+            createdAt: { ...(input.from ? { gte: input.from } : {}), ...(input.to ? { lte: input.to } : {}) }
+          }
+        : {})
+    };
+    const [items, totalCount] = await Promise.all([
+      this.prisma.opsAuditLog.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        select: {
+          id: true,
+          actor: true,
+          targetType: true,
+          targetId: true,
+          action: true,
+          severity: true,
+          summary: true,
+          beforeValue: true,
+          afterValue: true,
+          metadata: true,
+          createdAt: true
+        }
+      }),
+      this.prisma.opsAuditLog.count({ where })
+    ]);
+    return { items, totalCount, page, pageSize };
+  }
+
+  async exportUserActivityCsv(
+    actor: AuthUserPayload,
+    userId: string,
+    input: Pick<AuthUserActivityInput, "action" | "from" | "to"> = {}
+  ): Promise<string> {
+    this.assertAdmin(actor);
+    const where = {
+      targetType: "Auth",
+      targetId: userId,
+      ...(input.action ? { action: input.action } : {}),
+      ...(input.from || input.to
+        ? {
+            createdAt: { ...(input.from ? { gte: input.from } : {}), ...(input.to ? { lte: input.to } : {}) }
+          }
+        : {})
+    };
+    const items = await this.prisma.opsAuditLog.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: 10_000,
+      select: {
+        actor: true,
+        targetType: true,
+        targetId: true,
+        action: true,
+        severity: true,
+        summary: true,
+        beforeValue: true,
+        afterValue: true,
+        metadata: true,
+        createdAt: true
+      }
+    });
+    const header =
+      "createdAt,actor,targetType,targetId,action,severity,summary,beforeValue,afterValue,metadata";
+    const rows = items.map((item) =>
+      [
+        item.createdAt.toISOString(),
+        item.actor,
+        item.targetType,
+        item.targetId,
+        item.action,
+        item.severity,
+        item.summary,
+        JSON.stringify(item.beforeValue ?? ""),
+        JSON.stringify(item.afterValue ?? ""),
+        JSON.stringify(item.metadata ?? "")
+      ]
+        .map(csvCell)
+        .join(",")
+    );
+    return `\uFEFF${[header, ...rows].join("\n")}`;
   }
 
   private assertAdmin(actor: AuthUserPayload): void {
@@ -453,7 +884,8 @@ export class AuthService {
 
   async changePassword(
     authUser: AuthUserPayload,
-    input: { currentPassword: string; newPassword: string }
+    input: { currentPassword: string; newPassword: string },
+    currentRefreshToken?: string
   ): Promise<{ success: true }> {
     const user = await this.prisma.user.findUnique({
       where: { id: authUser.sub }
@@ -477,17 +909,51 @@ export class AuthService {
       throw new UnauthorizedException("새 비밀번호는 기존 비밀번호와 달라야 합니다.");
     }
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash: hashPassword(newPassword)
+    const currentTokenHash = currentRefreshToken ? this.hashRefreshToken(currentRefreshToken) : null;
+    if (!currentTokenHash) {
+      throw new UnauthorizedException("현재 세션을 확인할 수 없습니다.");
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const currentSession = await tx.refreshToken.findFirst({
+        where: {
+          userId: user.id,
+          tokenHash: currentTokenHash,
+          revokedAt: null,
+          expiresAt: { gt: new Date() }
+        },
+        select: { id: true }
+      });
+      if (!currentSession) {
+        throw new UnauthorizedException("현재 세션을 확인할 수 없습니다.");
       }
+
+      const revokedSessions = await tx.refreshToken.updateMany({
+        where: {
+          userId: user.id,
+          revokedAt: null,
+          tokenHash: { not: currentTokenHash }
+        },
+        data: { revokedAt: new Date() }
+      });
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: hashPassword(newPassword)
+        }
+      });
+      await tx.opsAuditLog.create({
+        data: {
+          actor: user.email,
+          action: "auth.password_changed",
+          targetType: "Auth",
+          targetId: user.id,
+          severity: "info",
+          summary: "비밀번호 변경 및 다른 세션 해제",
+          metadata: { revokedSessionCount: revokedSessions.count }
+        }
+      });
     });
-    await this.prisma.refreshToken.updateMany({
-      where: { userId: user.id, revokedAt: null },
-      data: { revokedAt: new Date() }
-    });
-    await this.writeAuthAudit(user.email, "auth.password_changed", user.id, "비밀번호 변경");
     return { success: true };
   }
 
@@ -509,22 +975,41 @@ export class AuthService {
     const secret = createTwoFactorSecret();
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { twoFactorSecret: encryptTwoFactorSecret(secret) }
+      data: {
+        twoFactorSecret: encryptTwoFactorSecret(secret),
+        twoFactorSetupExpiresAt: new Date(Date.now() + TWO_FACTOR_SETUP_TTL_MS)
+      }
     });
-    return { enabled: false as const, secret, otpauthUri: createTwoFactorUri(secret, user.email) };
+    return {
+      enabled: false as const,
+      secret,
+      otpauthUri: createTwoFactorUri(secret, user.email),
+      expiresAt: new Date(Date.now() + TWO_FACTOR_SETUP_TTL_MS).toISOString()
+    };
   }
 
   async confirmTwoFactor(authUser: AuthUserPayload, code: string) {
     const user = await this.prisma.user.findUnique({ where: { id: authUser.sub } });
     if (!user?.twoFactorSecret || user.twoFactorEnabled)
       throw new ConflictException("2FA 설정을 시작해 주세요.");
+    if (user.twoFactorSetupExpiresAt && user.twoFactorSetupExpiresAt <= new Date()) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { twoFactorSecret: null, twoFactorSetupExpiresAt: null }
+      });
+      throw new ConflictException("2FA 설정이 만료되었습니다. 새로 시작해 주세요.");
+    }
     if (!verifyTotpCode(decryptTwoFactorSecret(user.twoFactorSecret), code)) {
       throw new UnauthorizedException("2FA 코드가 올바르지 않습니다.");
     }
     const recoveryCodes = createRecoveryCodes();
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { twoFactorEnabled: true, twoFactorRecoveryCodes: serializeRecoveryCodes(recoveryCodes) }
+      data: {
+        twoFactorEnabled: true,
+        twoFactorRecoveryCodes: serializeRecoveryCodes(recoveryCodes),
+        twoFactorSetupExpiresAt: null
+      }
     });
     await this.writeAuthAudit(user.email, "auth.two_factor_enabled", user.id, "2FA 활성화");
     return { enabled: true as const, recoveryCodes };
@@ -539,7 +1024,12 @@ export class AuthService {
     }
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { twoFactorEnabled: false, twoFactorSecret: null, twoFactorRecoveryCodes: null }
+      data: {
+        twoFactorEnabled: false,
+        twoFactorSecret: null,
+        twoFactorRecoveryCodes: null,
+        twoFactorSetupExpiresAt: null
+      }
     });
     await this.prisma.refreshToken.updateMany({
       where: { userId: user.id, revokedAt: null },
@@ -547,6 +1037,48 @@ export class AuthService {
     });
     await this.writeAuthAudit(user.email, "auth.two_factor_disabled", user.id, "2FA 비활성화", "warning");
     return { enabled: false as const };
+  }
+
+  async cancelTwoFactorSetup(authUser: AuthUserPayload) {
+    const user = await this.prisma.user.findUnique({ where: { id: authUser.sub } });
+    if (!user || user.twoFactorEnabled || !user.twoFactorSecret) {
+      throw new ConflictException("진행 중인 2FA 설정이 없습니다.");
+    }
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { twoFactorSecret: null, twoFactorSetupExpiresAt: null }
+    });
+    await this.writeAuthAudit(
+      user.email,
+      "auth.two_factor_setup_cancelled",
+      user.id,
+      "2FA 설정 취소",
+      "info"
+    );
+    return { cancelled: true as const };
+  }
+
+  async regenerateRecoveryCodes(authUser: AuthUserPayload, code: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: authUser.sub } });
+    if (!user?.twoFactorEnabled || !user.twoFactorSecret) {
+      throw new ConflictException("2FA가 활성화되어 있지 않습니다.");
+    }
+    if (!verifyTotpCode(decryptTwoFactorSecret(user.twoFactorSecret), code)) {
+      throw new UnauthorizedException("2FA 코드가 올바르지 않습니다.");
+    }
+    const recoveryCodes = createRecoveryCodes();
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { twoFactorRecoveryCodes: serializeRecoveryCodes(recoveryCodes) }
+    });
+    await this.writeAuthAudit(
+      user.email,
+      "auth.two_factor_recovery_regenerated",
+      user.id,
+      "2FA 복구 코드 재발급",
+      "warning"
+    );
+    return { recoveryCodes };
   }
 
   async refresh(refreshToken: string): Promise<AuthLoginResponse> {
@@ -638,6 +1170,32 @@ export class AuthService {
     return { success: true };
   }
 
+  async deleteAccount(authUser: AuthUserPayload, currentPassword: string): Promise<{ success: true }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: authUser.sub },
+      select: { id: true, email: true, passwordHash: true }
+    });
+    if (!user || !verifyPassword(currentPassword.trim(), user.passwordHash)) {
+      throw new UnauthorizedException("현재 비밀번호가 올바르지 않습니다.");
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.opsAuditLog.create({
+        data: {
+          actor: user.email,
+          action: "auth.account_deleted",
+          targetType: "User",
+          targetId: user.id,
+          severity: "warning",
+          summary: "사용자 계정 삭제"
+        }
+      });
+      await tx.user.delete({ where: { id: user.id } });
+    });
+
+    return { success: true };
+  }
+
   async listSessions(authUser: AuthUserPayload, currentRefreshToken?: string) {
     const sessions = await this.prisma.refreshToken.findMany({
       where: { userId: authUser.sub, revokedAt: null, expiresAt: { gt: new Date() } },
@@ -689,6 +1247,82 @@ export class AuthService {
     return { success: true };
   }
 
+  async revokeUserSessions(
+    actor: AuthUserPayload,
+    userId: string,
+    reasonInput: string
+  ): Promise<{ success: true }> {
+    this.assertAdmin(actor);
+    if (actor.sub === userId)
+      throw new ConflictException("자신의 세션은 관리자 화면에서 종료할 수 없습니다.");
+    const reason = this.normalizeAdminReason(reasonInput);
+    const result = await this.prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() }
+    });
+    await writeOpsAuditLog(this.prisma, this.logger, {
+      actor: actor.email,
+      action: "auth.user_sessions_revoked",
+      targetType: "User",
+      targetId: userId,
+      severity: "warning",
+      summary: "관리자가 사용자의 모든 세션 해제",
+      metadata: { count: result.count, reason }
+    });
+    return { success: true };
+  }
+
+  async revokeUserSession(
+    actor: AuthUserPayload,
+    userId: string,
+    sessionId: string,
+    reasonInput: string
+  ): Promise<{ success: true }> {
+    this.assertAdmin(actor);
+    const reason = this.normalizeAdminReason(reasonInput);
+    if (actor.sub === userId)
+      throw new ConflictException("자신의 세션은 관리자 화면에서 종료할 수 없습니다.");
+    const result = await this.prisma.refreshToken.updateMany({
+      where: { id: sessionId, userId, revokedAt: null },
+      data: { revokedAt: new Date() }
+    });
+    if (result.count === 0) throw new NotFoundException("활성 세션을 찾을 수 없습니다.");
+    await writeOpsAuditLog(this.prisma, this.logger, {
+      actor: actor.email,
+      action: "auth.user_session_revoked",
+      targetType: "User",
+      targetId: userId,
+      severity: "warning",
+      summary: "관리자가 사용자의 세션 하나를 해제",
+      metadata: { sessionId, reason }
+    });
+    return { success: true };
+  }
+
+  async bulkRevokeUserSessions(
+    actor: AuthUserPayload,
+    userIds: string[],
+    reasonInput: string
+  ): Promise<{ success: true; revokedCount: number }> {
+    this.assertAdmin(actor);
+    const reason = this.normalizeAdminReason(reasonInput);
+    const targetUserIds = [...new Set(userIds)].filter((userId) => userId && userId !== actor.sub);
+    if (targetUserIds.length === 0) return { success: true, revokedCount: 0 };
+    const result = await this.prisma.refreshToken.updateMany({
+      where: { userId: { in: targetUserIds, not: actor.sub }, revokedAt: null },
+      data: { revokedAt: new Date() }
+    });
+    await writeOpsAuditLog(this.prisma, this.logger, {
+      actor: actor.email,
+      action: "auth.users_sessions_revoked",
+      targetType: "User",
+      severity: "warning",
+      summary: `관리자가 ${targetUserIds.length}명의 모든 세션 해제`,
+      metadata: { userIds: targetUserIds, count: result.count, reason }
+    });
+    return { success: true, revokedCount: result.count };
+  }
+
   async listSecurityActivity(authUser: AuthUserPayload) {
     const logs = await this.prisma.opsAuditLog.findMany({
       where: { actor: authUser.email, action: { startsWith: "auth." } },
@@ -710,8 +1344,343 @@ export class AuthService {
     }));
   }
 
+  async listSecurityEvents(authUser: AuthUserPayload, input: SecurityEventListInput) {
+    this.assertAdmin(authUser);
+    const page = Number.isFinite(input.page) && (input.page ?? 0) > 0 ? Math.floor(input.page!) : 1;
+    const pageSize =
+      Number.isFinite(input.pageSize) && (input.pageSize ?? 0) > 0
+        ? Math.min(Math.floor(input.pageSize!), 100)
+        : 20;
+    const assignee = input.assignee?.trim();
+    const where = {
+      ...(input.reviewStatus ? { reviewStatus: input.reviewStatus } : {}),
+      ...(input.severity?.trim() ? { severity: input.severity.trim() } : {}),
+      ...(assignee ? { reviewedBy: assignee } : {})
+    };
+    const [items, totalCount] = await Promise.all([
+      this.prisma.opsAuditLog.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize
+      }),
+      this.prisma.opsAuditLog.count({ where })
+    ]);
+    return {
+      items: items.map((item) => ({
+        id: item.id,
+        actor: item.actor,
+        action: item.action,
+        targetType: item.targetType,
+        targetId: item.targetId,
+        severity: item.severity,
+        summary: item.summary,
+        reviewStatus: item.reviewStatus,
+        reviewedBy: item.reviewedBy,
+        reviewNote: item.reviewNote,
+        reviewedAt: item.reviewedAt,
+        createdAt: item.createdAt
+      })),
+      totalCount,
+      page,
+      pageSize
+    };
+  }
+
+  async getSecurityEventDetails(authUser: AuthUserPayload, eventId: string) {
+    this.assertAdmin(authUser);
+    const event = await this.prisma.opsAuditLog.findUnique({
+      where: { id: eventId },
+      select: {
+        id: true,
+        actor: true,
+        action: true,
+        targetType: true,
+        targetId: true,
+        severity: true,
+        summary: true,
+        beforeValue: true,
+        afterValue: true,
+        metadata: true,
+        reviewStatus: true,
+        reviewedBy: true,
+        reviewNote: true,
+        reviewedAt: true,
+        createdAt: true
+      }
+    });
+    if (!event) throw new NotFoundException("보안 이벤트를 찾을 수 없습니다.");
+    const relatedEvents = event.targetId
+      ? await this.prisma.opsAuditLog.findMany({
+          where: { targetType: event.targetType, targetId: event.targetId, id: { not: event.id } },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          select: { id: true, action: true, severity: true, summary: true, createdAt: true }
+        })
+      : [];
+    return { ...event, relatedEvents };
+  }
+
+  async listSecurityNotifications(authUser: AuthUserPayload) {
+    this.assertAdmin(authUser);
+    const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const events = await this.prisma.opsAuditLog.findMany({
+      where: {
+        reviewStatus: "unreviewed",
+        severity: { in: ["warning", "critical"] },
+        createdAt: { gte: since }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      select: { id: true }
+    });
+    if (events.length > 0) {
+      await this.prisma.opsSecurityNotification.createMany({
+        data: events.map((event) => ({ userId: authUser.sub, eventId: event.id })),
+        skipDuplicates: true
+      });
+    }
+    const [notifications, unreadCount] = await Promise.all([
+      this.prisma.opsSecurityNotification.findMany({
+        where: { userId: authUser.sub },
+        orderBy: { createdAt: "desc" },
+        take: 50
+      }),
+      this.prisma.opsSecurityNotification.count({ where: { userId: authUser.sub, readAt: null } })
+    ]);
+    const eventIds = notifications.map((notification) => notification.eventId);
+    const eventDetails =
+      eventIds.length > 0
+        ? await this.prisma.opsAuditLog.findMany({
+            where: { id: { in: eventIds } },
+            select: { id: true, action: true, severity: true, summary: true, createdAt: true }
+          })
+        : [];
+    const eventById = new Map(eventDetails.map((event) => [event.id, event]));
+    return {
+      unreadCount,
+      items: notifications.flatMap((notification) => {
+        const event = eventById.get(notification.eventId);
+        return event
+          ? [
+              {
+                id: notification.id,
+                eventId: notification.eventId,
+                readAt: notification.readAt,
+                createdAt: notification.createdAt,
+                event
+              }
+            ]
+          : [];
+      })
+    };
+  }
+
+  async markSecurityNotificationRead(authUser: AuthUserPayload, notificationId: string) {
+    this.assertAdmin(authUser);
+    const result = await this.prisma.opsSecurityNotification.updateMany({
+      where: { id: notificationId, userId: authUser.sub },
+      data: { readAt: new Date() }
+    });
+    if (result.count === 0) throw new NotFoundException("보안 알림을 찾을 수 없습니다.");
+    return { success: true as const };
+  }
+
+  async reviewSecurityEvent(authUser: AuthUserPayload, eventId: string, input: SecurityEventReviewInput) {
+    this.assertAdmin(authUser);
+    const reviewNote = this.normalizeSecurityReviewNote(input.reviewNote);
+    const existing = await this.prisma.opsAuditLog.findUnique({
+      where: { id: eventId },
+      select: { id: true, reviewStatus: true, reviewedBy: true, reviewNote: true, reviewedAt: true }
+    });
+    if (!existing) throw new NotFoundException("보안 이벤트를 찾을 수 없습니다.");
+    const reviewedBy = input.assignee?.trim() || null;
+    await this.validateSecurityEventAssignee(reviewedBy);
+    const reviewedAt = input.reviewStatus === "unreviewed" ? null : new Date();
+    const updated = await this.prisma.opsAuditLog.update({
+      where: { id: eventId },
+      data: {
+        reviewStatus: input.reviewStatus,
+        reviewedBy,
+        reviewNote: reviewNote ?? null,
+        reviewedAt
+      }
+    });
+    await writeOpsAuditLog(this.prisma, this.logger, {
+      actor: authUser.email,
+      action: "security.event_reviewed",
+      targetType: "OpsAuditLog",
+      targetId: eventId,
+      severity: "info",
+      summary: "관리자가 보안 이벤트 검토 상태를 변경",
+      beforeValue: {
+        reviewStatus: existing.reviewStatus,
+        reviewedBy: existing.reviewedBy,
+        reviewNote: existing.reviewNote,
+        reviewedAt: existing.reviewedAt?.toISOString() ?? null
+      },
+      afterValue: {
+        reviewStatus: input.reviewStatus,
+        reviewedBy,
+        reviewNote: reviewNote ?? null,
+        reviewedAt: reviewedAt?.toISOString() ?? null
+      }
+    });
+    return {
+      id: updated.id,
+      reviewStatus: updated.reviewStatus,
+      reviewedBy: updated.reviewedBy,
+      reviewNote: updated.reviewNote,
+      reviewedAt: updated.reviewedAt
+    };
+  }
+
+  async bulkReviewSecurityEvents(
+    authUser: AuthUserPayload,
+    eventIds: string[],
+    input: SecurityEventReviewInput
+  ): Promise<{ success: true; updatedCount: number }> {
+    this.assertAdmin(authUser);
+    const normalizedIds = [...new Set(eventIds.map((eventId) => eventId.trim()).filter(Boolean))];
+    if (normalizedIds.length === 0) {
+      throw new BadRequestException("검토할 보안 이벤트를 하나 이상 선택해야 합니다.");
+    }
+    const reviewNote = this.normalizeSecurityReviewNote(input.reviewNote);
+    const reviewedBy = input.assignee?.trim() || null;
+    await this.validateSecurityEventAssignee(reviewedBy);
+    const events = await this.prisma.opsAuditLog.findMany({
+      where: { id: { in: normalizedIds } },
+      select: { id: true, reviewStatus: true, reviewedBy: true, reviewNote: true, reviewedAt: true }
+    });
+    if (events.length !== normalizedIds.length) {
+      throw new NotFoundException("보안 이벤트를 찾을 수 없습니다.");
+    }
+    const reviewedAt = input.reviewStatus === "unreviewed" ? null : new Date();
+
+    await this.prisma.$transaction(async (tx) => {
+      await Promise.all(
+        events.map(async (event) => {
+          await tx.opsAuditLog.update({
+            where: { id: event.id },
+            data: { reviewStatus: input.reviewStatus, reviewedBy, reviewNote, reviewedAt }
+          });
+          await tx.opsAuditLog.create({
+            data: {
+              actor: authUser.email,
+              action: "security.event_reviewed",
+              targetType: "OpsAuditLog",
+              targetId: event.id,
+              severity: "info",
+              summary: "관리자가 보안 이벤트 검토 상태를 일괄 변경",
+              beforeValue: {
+                reviewStatus: event.reviewStatus,
+                reviewedBy: event.reviewedBy,
+                reviewNote: event.reviewNote,
+                reviewedAt: event.reviewedAt?.toISOString() ?? null
+              },
+              afterValue: {
+                reviewStatus: input.reviewStatus,
+                reviewedBy,
+                reviewNote,
+                reviewedAt: reviewedAt?.toISOString() ?? null
+              },
+              metadata: { bulk: true }
+            }
+          });
+        })
+      );
+    });
+    return { success: true, updatedCount: events.length };
+  }
+
+  async getAdminSecuritySummary(authUser: AuthUserPayload) {
+    this.assertAdmin(authUser);
+    const now = Date.now();
+    const recentSince = new Date(now - 24 * 60 * 60 * 1000);
+    const adminActionsSince = new Date(now - 7 * 24 * 60 * 60 * 1000);
+    const adminActions = [
+      "user.updated",
+      "users.bulk_status_updated",
+      "auth.user_sessions_revoked",
+      "auth.users_sessions_revoked",
+      "auth.user_session_revoked"
+    ];
+    const [
+      totalUsers,
+      activeUsers,
+      activeSessions,
+      pendingInvitations,
+      recentAdminActions,
+      highRiskEvents,
+      unreviewedHighRiskEvents,
+      recentEvents
+    ] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { isActive: true } }),
+      this.prisma.refreshToken.count({ where: { revokedAt: null, expiresAt: { gt: new Date() } } }),
+      this.prisma.adminInvitation.count({
+        where: { acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } }
+      }),
+      this.prisma.opsAuditLog.count({
+        where: { action: { in: adminActions }, createdAt: { gte: adminActionsSince } }
+      }),
+      this.prisma.opsAuditLog.count({
+        where: { severity: { in: ["warning", "critical"] }, createdAt: { gte: recentSince } }
+      }),
+      this.prisma.opsAuditLog.count({
+        where: { reviewStatus: "unreviewed", severity: { in: ["warning", "critical"] } }
+      }),
+      this.prisma.opsAuditLog.findMany({
+        where: { severity: { in: ["warning", "critical"] }, createdAt: { gte: recentSince } },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: { id: true, actor: true, action: true, severity: true, summary: true, createdAt: true }
+      })
+    ]);
+    return {
+      metrics: {
+        totalUsers,
+        activeUsers,
+        activeSessions,
+        pendingInvitations,
+        recentAdminActions,
+        highRiskEvents,
+        unreviewedHighRiskEvents
+      },
+      recentEvents
+    };
+  }
+
   isValidAuthBridgeSecret(secret: string | undefined): boolean {
     return typeof secret === "string" && secret.length > 0 && secret === env.AUTH_BRIDGE_SECRET;
+  }
+
+  private normalizeAdminReason(reason: string): string {
+    const normalized = reason.trim();
+    if (normalized.length < 2 || normalized.length > 200) {
+      throw new BadRequestException("관리자 작업 사유는 2자 이상 200자 이하로 입력해야 합니다.");
+    }
+    return normalized;
+  }
+
+  private normalizeSecurityReviewNote(note?: string): string | null {
+    if (note === undefined) return null;
+    const normalized = note.trim();
+    if (normalized.length < 2 || normalized.length > 500) {
+      throw new BadRequestException("검토 메모는 2자 이상 500자 이하로 입력해야 합니다.");
+    }
+    return normalized;
+  }
+
+  private async validateSecurityEventAssignee(assignee: string | null): Promise<void> {
+    if (!assignee) return;
+    const user = await this.prisma.user.findUnique({
+      where: { email: assignee },
+      select: { role: true, isActive: true }
+    });
+    if (!user || user.role !== "admin" || !user.isActive) {
+      throw new BadRequestException("활성 상태의 관리자만 담당자로 지정할 수 있습니다.");
+    }
   }
 
   async getNotificationPolicy(authUser: AuthUserPayload): Promise<AuthNotificationPolicy> {

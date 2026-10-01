@@ -15,9 +15,9 @@ export type EmailVerificationDelivery =
       reason: "disabled" | "missing-config" | "monthly-limit" | "provider-error" | "already-verified";
     };
 
-const hashToken = (token: string): string => createHash("sha256").update(token).digest("hex");
+export const hashToken = (token: string): string => createHash("sha256").update(token).digest("hex");
 
-const escapeHtml = (value: string): string =>
+export const escapeHtml = (value: string): string =>
   value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 
 const safeReturnTo = (value: string | undefined): string => {
