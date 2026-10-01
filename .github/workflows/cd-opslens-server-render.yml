@@ -9,6 +9,11 @@ on:
         description: "배포 확인용 OpsLens 릴리스 태그 (예: opslens-v0.2.0)"
         required: true
         type: string
+      clear_cache:
+        description: "Render 빌드 캐시를 비우고 배포"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: cd-opslens-server-${{ github.event.inputs.release_tag || github.ref_name }}
@@ -114,6 +119,7 @@ jobs:
           RENDER_SERVICE_ID: ${{ secrets.OPSLENS_RENDER_SERVICE_ID }}
           RELEASE_SHA: ${{ needs.verify-tag-on-main.outputs.release_sha }}
           USE_RENDER_API: ${{ steps.render-api.outputs.enabled }}
+          CLEAR_CACHE: ${{ github.event.inputs.clear_cache == 'true' }}
         run: |
           set -euo pipefail
           if [ "${USE_RENDER_API}" = "true" ]; then
@@ -121,7 +127,7 @@ jobs:
               -H "accept: application/json" \
               -H "authorization: Bearer ${RENDER_API_KEY}" \
               -H "content-type: application/json" \
-              --data "{\"commitId\":\"${RELEASE_SHA}\"}")"
+              --data "{\"commitId\":\"${RELEASE_SHA}\",\"clearCache\":${CLEAR_CACHE}}")"
           else
             response="$(curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}")"
           fi
@@ -176,6 +182,37 @@ jobs:
           done
           echo "Timed out waiting for Render deployment status: service=${RENDER_SERVICE_ID} deploy=${RENDER_DEPLOY_ID}"
           exit 1
+
+      - name: Capture Render build logs on failure
+        if: ${{ failure() && steps.render-api.outputs.enabled == 'true' && steps.deploy.outputs.deploy_id != '' }}
+        env:
+          RENDER_API_KEY: ${{ secrets.OPSLENS_RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.OPSLENS_RENDER_SERVICE_ID }}
+          RENDER_DEPLOY_ID: ${{ steps.deploy.outputs.deploy_id }}
+        run: |
+          set -euo pipefail
+          owner_id="$(curl --fail-with-body -sS \
+            -H "accept: application/json" \
+            -H "authorization: Bearer ${RENDER_API_KEY}" \
+            "https://api.render.com/v1/services/${RENDER_SERVICE_ID}" | jq -r '.ownerId // empty')"
+          if [ -z "${owner_id}" ]; then
+            echo "Render owner ID was not available; build logs could not be collected." >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+          response="$(curl --fail-with-body -sS -G \
+            -H "accept: application/json" \
+            -H "authorization: Bearer ${RENDER_API_KEY}" \
+            --data-urlencode "ownerId=${owner_id}" \
+            --data-urlencode "resource=${RENDER_SERVICE_ID}" \
+            --data-urlencode "type=build" \
+            --data-urlencode "text=${RENDER_DEPLOY_ID}" \
+            "https://api.render.com/v1/logs")"
+          {
+            echo "### Render build logs (${RENDER_DEPLOY_ID})"
+            echo '```text'
+            printf '%s' "${response}" | jq -r '.. | objects | .message? // empty' | tail -n 200
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Verify public endpoint reachability (optional)
         if: ${{ (steps.hook.outputs.has_hook == 'true' || steps.render-api.outputs.enabled == 'true') && steps.health.outputs.has_health == 'true' }}
