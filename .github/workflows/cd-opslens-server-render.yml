@@ -122,12 +122,16 @@ jobs:
           CLEAR_CACHE: ${{ github.event.inputs.clear_cache == 'true' }}
         run: |
           set -euo pipefail
+          clear_cache="do_not_clear"
+          if [ "${CLEAR_CACHE}" = "true" ]; then
+            clear_cache="clear"
+          fi
           if [ "${USE_RENDER_API}" = "true" ]; then
             response="$(curl --fail-with-body -sS -X POST "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys" \
               -H "accept: application/json" \
               -H "authorization: Bearer ${RENDER_API_KEY}" \
               -H "content-type: application/json" \
-              --data "{\"commitId\":\"${RELEASE_SHA}\",\"clearCache\":${CLEAR_CACHE}}")"
+              --data "{\"commitId\":\"${RELEASE_SHA}\",\"clearCache\":\"${clear_cache}\"}")"
           else
             response="$(curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}")"
           fi
