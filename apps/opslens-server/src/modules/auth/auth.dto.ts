@@ -1,10 +1,13 @@
 import {
   IsBoolean,
+  IsArray,
   IsEmail,
   IsHexColor,
   IsIn,
   IsOptional,
   IsString,
+  MaxLength,
+  ArrayMinSize,
   Matches,
   MinLength
 } from "class-validator";
@@ -117,6 +120,12 @@ export class AuthChangePasswordDto {
   newPassword!: string;
 }
 
+export class AuthDeleteAccountDto {
+  @IsString()
+  @MinLength(8)
+  currentPassword!: string;
+}
+
 export class AuthUpdateNotificationPolicyDto {
   @IsBoolean()
   inAppEnabled!: boolean;
@@ -148,4 +157,87 @@ export class AuthAdminUpdateUserDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsString()
+  @MinLength(2)
+  @MaxLength(200)
+  reason!: string;
+}
+
+export class AuthAdminBulkUserStatusDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  userIds!: string[];
+
+  @IsBoolean()
+  isActive!: boolean;
+
+  @IsString()
+  @MinLength(2)
+  @MaxLength(200)
+  reason!: string;
+}
+
+export class AuthAdminBulkUserSessionsDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  userIds!: string[];
+
+  @IsString()
+  @MinLength(2)
+  @MaxLength(200)
+  reason!: string;
+}
+
+export class AuthAdminActionReasonDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(200)
+  reason!: string;
+}
+
+export class AuthInviteUserDto {
+  @IsEmail()
+  email!: string;
+
+  @IsIn(["admin", "operator", "viewer"])
+  role!: "admin" | "operator" | "viewer";
+}
+
+export class AuthAcceptInvitationDto {
+  @IsString()
+  @MinLength(32)
+  token!: string;
+
+  @IsString()
+  @MinLength(2)
+  name!: string;
+
+  @IsString()
+  @MinLength(8)
+  password!: string;
+}
+
+export class AuthSecurityEventReviewDto {
+  @IsIn(["unreviewed", "in_review", "resolved"])
+  reviewStatus!: "unreviewed" | "in_review" | "resolved";
+
+  @IsOptional()
+  @IsEmail()
+  assignee?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(500)
+  reviewNote?: string;
+}
+
+export class AuthBulkSecurityEventReviewDto extends AuthSecurityEventReviewDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  eventIds!: string[];
 }

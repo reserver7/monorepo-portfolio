@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  changeOpslensPassword,
   getOpslensNotificationPolicy,
   getOpslensMe,
   requestPasswordResetOpslens,
@@ -329,7 +328,16 @@ export const changeCurrentPassword = async (input: {
   if (!session) {
     throw new Error("로그인이 필요합니다.");
   }
-  await changeOpslensPassword(session.accessToken, input);
+  const response = await fetch("/api/opslens-auth/password", {
+    method: "PATCH",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.accessToken}`
+    },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) throw new Error(await parseOAuthBridgeError(response));
 };
 
 const requestSessionManagement = async <Response>(input: {
@@ -358,6 +366,22 @@ export const revokeSession = (sessionId: string): Promise<{ success: true }> =>
 export const revokeAllSessions = (): Promise<{ success: true }> =>
   requestSessionManagement<{ success: true }>({ method: "POST" });
 
+export const deleteCurrentAccount = async (currentPassword: string): Promise<{ success: true }> => {
+  const session = readAuthSession();
+  if (!session) throw new Error("로그인이 필요합니다.");
+  const response = await fetch("/api/opslens-auth/account", {
+    method: "DELETE",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.accessToken}`
+    },
+    body: JSON.stringify({ currentPassword })
+  });
+  if (!response.ok) throw new Error(await parseOAuthBridgeError(response));
+  return (await response.json()) as { success: true };
+};
+
 export const listSecurityActivity = async (): Promise<OpsSecurityActivity[]> => {
   const session = readAuthSession();
   if (!session) throw new Error("로그인이 필요합니다.");
@@ -385,7 +409,7 @@ export const requestEmailChange = async (newEmail: string): Promise<{ sent: bool
   return (await response.json()) as { sent: boolean; email: string };
 };
 
-export type TwoFactorSetup = { enabled: boolean; secret?: string; otpauthUri?: string };
+export type TwoFactorSetup = { enabled: boolean; secret?: string; otpauthUri?: string; expiresAt?: string };
 
 const requestTwoFactor = async <Response>(
   method: "GET" | "POST" | "DELETE",
@@ -408,7 +432,33 @@ const requestTwoFactor = async <Response>(
 
 export const getTwoFactorStatus = (): Promise<{ enabled: boolean }> => requestTwoFactor("GET");
 export const setupTwoFactor = (): Promise<TwoFactorSetup> => requestTwoFactor("POST");
+export const cancelTwoFactorSetup = async (): Promise<{ cancelled: true }> => {
+  const session = readAuthSession();
+  if (!session) throw new Error("로그인이 필요합니다.");
+  const response = await fetch("/api/opslens-auth/two-factor/setup", {
+    method: "DELETE",
+    headers: { Accept: "application/json", Authorization: `Bearer ${session.accessToken}` }
+  });
+  if (!response.ok) throw new Error(await parseOAuthBridgeError(response));
+  return (await response.json()) as { cancelled: true };
+};
 export const confirmTwoFactor = (code: string): Promise<{ enabled: true; recoveryCodes: string[] }> =>
   requestTwoFactor("POST", { code });
 export const disableTwoFactor = (code: string): Promise<{ enabled: false }> =>
   requestTwoFactor("DELETE", { code });
+
+export const regenerateRecoveryCodes = async (code: string): Promise<{ recoveryCodes: string[] }> => {
+  const session = readAuthSession();
+  if (!session) throw new Error("로그인이 필요합니다.");
+  const response = await fetch("/api/opslens-auth/two-factor/recovery-codes", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.accessToken}`
+    },
+    body: JSON.stringify({ code })
+  });
+  if (!response.ok) throw new Error(await parseOAuthBridgeError(response));
+  return (await response.json()) as { recoveryCodes: string[] };
+};

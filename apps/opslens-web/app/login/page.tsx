@@ -17,6 +17,7 @@ import {
   validateCurrentSession
 } from "@/lib/auth";
 import { resolveLocalizedError } from "@/lib/i18n/errors";
+import { isTwoFactorChallengeError } from "@/lib/auth/login-ux";
 
 type LoginFormValues = {
   email: string;
@@ -60,6 +61,9 @@ export default function LoginPage() {
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
   const [verificationLoginEmail, setVerificationLoginEmail] = useState<string | null>(null);
   const [verificationCooldown, setVerificationCooldown] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [twoFactorRequired, setTwoFactorRequired] = useState(false);
 
   const form = useAppForm<LoginFormValues>({
     mode: "onSubmit",
@@ -76,11 +80,16 @@ export default function LoginPage() {
     mutationFn: loginWithPassword,
     onSuccess: () => {
       setVerificationLoginEmail(null);
+      setTwoFactorRequired(false);
       toast.success(t("loginSuccess"));
       router.replace(nextPath);
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : "";
+      if (isTwoFactorChallengeError(message)) {
+        setTwoFactorRequired(true);
+        form.setValue("otp", "");
+      }
       if (/이메일 인증|email verification/i.test(message)) {
         setVerificationLoginEmail(form.getValues("email")?.trim() || null);
       }
@@ -174,6 +183,11 @@ export default function LoginPage() {
   useEffect(() => {
     setEntered(true);
   }, []);
+
+  useEffect(() => {
+    const email = searchParams.get("email");
+    if (email) form.setValue("email", email);
+  }, [form, searchParams]);
 
   useEffect(() => {
     if (verificationCooldown <= 0) return;
@@ -351,66 +365,93 @@ export default function LoginPage() {
                   </FormField>
 
                   <FormField label={t("password")} htmlFor="opslens-login-password">
-                    <Input
-                      id="opslens-login-password"
-                      type="password"
-                      autoComplete={authMode === "signup" ? "new-password" : "current-password"}
-                      control={form.control}
-                      name="password"
-                      rules={{
-                        required: t("passwordRequired"),
-                        minLength: {
-                          value: 8,
-                          message: t("passwordMinLength")
-                        }
-                      }}
-                      errorMessage={form.formState.errors.password?.message}
-                      onEnter={() => submitAuth()}
-                      className="bg-surface-elevated h-[56px]"
-                    />
-                  </FormField>
-
-                  {authMode === "login" ? (
-                    <FormField label={t("twoFactorCode")} htmlFor="opslens-login-otp">
+                    <Box className="flex items-end gap-2">
                       <Input
-                        id="opslens-login-otp"
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
+                        id="opslens-login-password"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete={authMode === "signup" ? "new-password" : "current-password"}
                         control={form.control}
-                        name="otp"
+                        name="password"
                         rules={{
-                          pattern: {
-                            value: /^(?:\d{6}|[A-Za-z0-9]{10})$/,
-                            message: t("twoFactorCodeInvalid")
+                          required: t("passwordRequired"),
+                          minLength: {
+                            value: 8,
+                            message: t("passwordMinLength")
                           }
                         }}
-                        errorMessage={form.formState.errors.otp?.message}
+                        errorMessage={form.formState.errors.password?.message}
                         onEnter={() => submitAuth()}
-                        className="bg-surface-elevated h-[56px]"
+                        className="bg-surface-elevated h-[56px] flex-1"
                       />
-                    </FormField>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowPassword((value) => !value)}
+                      >
+                        {showPassword ? t("hidePassword") : t("showPassword")}
+                      </Button>
+                    </Box>
+                  </FormField>
+
+                  {authMode === "login" && twoFactorRequired ? (
+                    <Box className="grid gap-2">
+                      <Typography as="p" variant="caption" color="muted">
+                        {t("twoFactorChallengeDescription")}
+                      </Typography>
+                      <FormField label={t("twoFactorCode")} htmlFor="opslens-login-otp">
+                        <Input
+                          id="opslens-login-otp"
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          autoFocus
+                          control={form.control}
+                          name="otp"
+                          rules={{
+                            required: t("twoFactorCodeRequired"),
+                            pattern: {
+                              value: /^(?:\d{6}|[A-Za-z0-9]{10})$/,
+                              message: t("twoFactorCodeInvalid")
+                            }
+                          }}
+                          errorMessage={form.formState.errors.otp?.message}
+                          onEnter={() => submitAuth()}
+                          className="bg-surface-elevated h-[56px]"
+                        />
+                      </FormField>
+                    </Box>
                   ) : null}
 
                   <Box className="min-h-[96px]">
                     {authMode === "signup" ? (
                       <FormField label={t("confirmPassword")} htmlFor="opslens-signup-confirm-password">
-                        <Input
-                          id="opslens-signup-confirm-password"
-                          type="password"
-                          autoComplete="new-password"
-                          control={form.control}
-                          name="confirmPassword"
-                          rules={{
-                            required: t("confirmPasswordRequired"),
-                            validate: (value) =>
-                              authMode !== "signup" ||
-                              value === form.getValues("password") ||
-                              t("passwordMismatch")
-                          }}
-                          errorMessage={form.formState.errors.confirmPassword?.message}
-                          onEnter={() => submitAuth()}
-                          className="bg-surface-elevated h-[56px]"
-                        />
+                        <Box className="flex items-end gap-2">
+                          <Input
+                            id="opslens-signup-confirm-password"
+                            type={showConfirmPassword ? "text" : "password"}
+                            autoComplete="new-password"
+                            control={form.control}
+                            name="confirmPassword"
+                            rules={{
+                              required: t("confirmPasswordRequired"),
+                              validate: (value) =>
+                                authMode !== "signup" ||
+                                value === form.getValues("password") ||
+                                t("passwordMismatch")
+                            }}
+                            errorMessage={form.formState.errors.confirmPassword?.message}
+                            onEnter={() => submitAuth()}
+                            className="bg-surface-elevated h-[56px] flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowConfirmPassword((value) => !value)}
+                          >
+                            {showConfirmPassword ? t("hidePassword") : t("showPassword")}
+                          </Button>
+                        </Box>
                       </FormField>
                     ) : (
                       <Box className="grid min-h-[96px] gap-2 py-2">

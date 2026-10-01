@@ -16,10 +16,16 @@ const LOGIN_ACTIONS = new Set([
   "forgot-password",
   "reset-password"
 ]);
+const AUTH_ACTIONS = new Set(["password"]);
 
-export async function POST(request: NextRequest, context: { params: Promise<{ action: string }> }) {
+async function handleAuthAction(request: NextRequest, context: { params: Promise<{ action: string }> }) {
   const { action } = await context.params;
-  if (!LOGIN_ACTIONS.has(action) && action !== "refresh" && action !== "logout") {
+  if (
+    !LOGIN_ACTIONS.has(action) &&
+    !AUTH_ACTIONS.has(action) &&
+    action !== "refresh" &&
+    action !== "logout"
+  ) {
     return NextResponse.json(createApiErrorPayload(API_ERROR_CODES.NOT_FOUND), { status: 404 });
   }
 
@@ -49,8 +55,18 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ac
   }
 
   const upstream = await fetch(`${resolveAuthApiUrl()}/auth/${action}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    method: action === "password" ? "PATCH" : "POST",
+    headers:
+      action === "password"
+        ? {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            ...(request.headers.get("authorization")
+              ? { Authorization: request.headers.get("authorization")! }
+              : {}),
+            ...(refreshToken ? { "x-opslens-refresh-token": refreshToken } : {})
+          }
+        : { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify(action === "refresh" ? { refreshToken } : body),
     cache: "no-store"
   });
@@ -66,10 +82,13 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ac
     return response;
   }
 
-  if (["signup", "resend-verification", "forgot-password", "reset-password"].includes(action)) {
+  if (["signup", "resend-verification", "forgot-password", "reset-password", "password"].includes(action)) {
     return NextResponse.json(await upstream.json());
   }
 
   const payload = (await upstream.json()) as BackendLoginResponse;
   return createSessionResponse(payload, body.rememberMe !== false);
 }
+
+export const POST = handleAuthAction;
+export const PATCH = handleAuthAction;

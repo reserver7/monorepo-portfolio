@@ -62,12 +62,29 @@ model User {
   twoFactorEnabled Boolean  @default(false)
   twoFactorSecret  String?
   twoFactorRecoveryCodes String?
+  twoFactorSetupExpiresAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   refreshTokens RefreshToken[]
   emailVerificationTokens EmailVerificationToken[]
   emailChangeTokens EmailChangeToken[]
   passwordResetTokens PasswordResetToken[]
+}
+
+model AdminInvitation {
+  id         String    @id @default(cuid())
+  email      String
+  role       AuthRole  @default(operator)
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  revokedAt  DateTime?
+  invitedBy  String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([email, expiresAt])
+  @@index([revokedAt, expiresAt])
 }
 
 model EmailVerificationToken {
@@ -374,6 +391,10 @@ model OpsAuditLog {
   targetId    String?
   severity    String   @default("info")
   summary     String
+  reviewStatus String  @default("unreviewed")
+  reviewedBy  String?
+  reviewNote  String?
+  reviewedAt  DateTime?
   beforeValue Json?
   afterValue  Json?
   metadata    Json     @default("{}")
@@ -383,5 +404,18 @@ model OpsAuditLog {
   @@index([actor])
   @@index([action])
   @@index([severity])
+  @@index([reviewStatus, severity])
+  @@index([reviewedBy])
   @@index([createdAt])
+}
+
+model OpsSecurityNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, eventId])
+  @@index([userId, readAt, createdAt])
 }

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Box, Button, Card, FormField, Input, Typography, toast } from "@repo/ui";
 import { useAppForm } from "@repo/forms";
 import { resetPassword } from "@/lib/auth";
+import { PasswordStrength } from "@/features/auth/components/password-strength";
 
 type ResetFormValues = { password: string; confirmPassword: string };
 
@@ -15,6 +16,8 @@ export default function ResetPasswordPage() {
   const t = useTranslations("auth");
   const token = searchParams.get("token") ?? "";
   const [completed, setCompleted] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const form = useAppForm<ResetFormValues>({
     mode: "onSubmit",
     defaultValues: { password: "", confirmPassword: "" }
@@ -52,7 +55,7 @@ export default function ResetPasswordPage() {
             <FormField label={t("password")} htmlFor="reset-password">
               <Input
                 id="reset-password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 control={form.control}
                 name="password"
@@ -62,18 +65,35 @@ export default function ResetPasswordPage() {
                 }}
                 errorMessage={form.formState.errors.password?.message}
               />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPassword((value) => !value)}
+              >
+                {showPassword ? t("hidePassword") : t("showPassword")}
+              </Button>
             </FormField>
             <FormField label={t("confirmPassword")} htmlFor="reset-confirm-password">
               <Input
                 id="reset-confirm-password"
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 autoComplete="new-password"
                 control={form.control}
                 name="confirmPassword"
                 rules={{ required: t("confirmPasswordRequired") }}
                 errorMessage={form.formState.errors.confirmPassword?.message}
               />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowConfirmPassword((value) => !value)}
+              >
+                {showConfirmPassword ? t("hidePassword") : t("showPassword")}
+              </Button>
             </FormField>
+            <PasswordStrength password={form.watch("password")} />
             <Button type="submit">{t("resetSubmit")}</Button>
           </form>
         ) : null}

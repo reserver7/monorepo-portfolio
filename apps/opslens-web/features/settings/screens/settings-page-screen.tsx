@@ -7,19 +7,39 @@ import { useAppForm } from "@repo/forms";
 import { useMutation, useQuery, useQueryClient } from "@repo/react-query";
 import {
   getNotificationDeliveries,
+  getOpslensInvitations,
   getOpsAuditLogs,
   getOpsSettings,
   getOpslensUsers,
+  getOpslensUserDetails,
+  getOpslensUserActivity,
+  exportOpslensUserActivityCsv,
+  getOpslensSecuritySummary,
+  getOpslensSecurityEvents,
+  getOpslensSecurityEventDetails,
+  getOpslensSecurityNotifications,
+  markOpslensSecurityNotificationRead,
+  reviewOpslensSecurityEvent,
+  bulkReviewOpslensSecurityEvents,
+  bulkUpdateOpslensUsers,
+  bulkRevokeOpslensUserSessions,
   opslensQueryKeys,
   retryPendingAlertDeliveries,
+  inviteOpslensUser,
+  resendOpslensInvitation,
+  revokeOpslensInvitation,
+  revokeOpslensUserSessions,
+  revokeOpslensUserSession,
   updateOpslensUser,
   upsertOpsSetting
 } from "@repo/opslens";
-import { Box, Button, confirm, Select, Textarea, toast, Typography } from "@repo/ui";
+import type { AuthRole } from "@repo/opslens";
+import { Box, Button, confirm, promptConfirm, Select, Textarea, toast, Typography } from "@repo/ui";
 import { OpsPageShell, OpsSectionCard } from "@/features";
 import {
   changeCurrentPassword,
   clearAuthSession,
+  deleteCurrentAccount,
   listCurrentSessions,
   listSecurityActivity,
   fetchNotificationPolicy,
@@ -32,6 +52,8 @@ import {
   requestEmailChange,
   confirmTwoFactor,
   disableTwoFactor,
+  cancelTwoFactorSetup,
+  regenerateRecoveryCodes,
   getTwoFactorStatus,
   setupTwoFactor,
   updateNotificationPolicy,
@@ -43,6 +65,8 @@ import { SETTINGS_DEFAULT_AVATAR_COLOR } from "../constants";
 import { resolveLocalizedError } from "@/lib/i18n/errors";
 import {
   AccountSummaryCard,
+  AccountDangerZone,
+  AdminInvitationPanel,
   ActiveSessionsPanel,
   EmailChangeForm,
   TwoFactorPanel,
@@ -52,6 +76,9 @@ import {
   OpsSettingsPanel,
   ProfileSecurityForm,
   UserManagementPanel,
+  AdminSecuritySummaryPanel,
+  AdminSecurityEventReviewPanel,
+  AdminSecurityNotificationPanel,
   IntegrationCatalogPanel,
   ServiceCatalogPanel,
   EscalationPolicyPanel
@@ -63,6 +90,7 @@ import { downloadCsv } from "@/features/common/utils/download-csv";
 export default function SettingsPage() {
   const tError = useTranslations("error");
   const t = useTranslations("settings.screen");
+  const tUsers = useTranslations("settings.users");
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -73,6 +101,12 @@ export default function SettingsPage() {
   const [profileName, setProfileName] = useState("User");
   const [profileEmail, setProfileEmail] = useState("-");
   const [emailDraft, setEmailDraft] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<"admin" | "operator" | "viewer">("operator");
+  const [inviteLink, setInviteLink] = useState<string>();
+  const [inviteDeliverySent, setInviteDeliverySent] = useState(false);
+  const [deleteAccountPassword, setDeleteAccountPassword] = useState("");
+  const [deleteAccountConfirmation, setDeleteAccountConfirmation] = useState("");
   const [twoFactorSetup, setTwoFactorSetup] = useState<Awaited<ReturnType<typeof setupTwoFactor>> | null>(
     null
   );
@@ -121,6 +155,24 @@ export default function SettingsPage() {
     staleTime: 30_000
   });
   const authSession = readAuthSession();
+  const [userSearch, setUserSearch] = useState("");
+  const [userRoleFilter, setUserRoleFilter] = useState<AuthRole | "all">("all");
+  const [userStatusFilter, setUserStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [userPage, setUserPage] = useState(1);
+  const [selectedUserId, setSelectedUserId] = useState<string>();
+  const [activityAction, setActivityAction] = useState("all");
+  const [activityFrom, setActivityFrom] = useState("");
+  const [activityTo, setActivityTo] = useState("");
+  const [activityPage, setActivityPage] = useState(1);
+  const [securityEventStatus, setSecurityEventStatus] = useState<
+    "all" | "unreviewed" | "in_review" | "resolved"
+  >("all");
+  const [securityEventSeverity, setSecurityEventSeverity] = useState("all");
+  const [securityEventAssignee, setSecurityEventAssignee] = useState("");
+  const [securityEventPage, setSecurityEventPage] = useState(1);
+  const [selectedSecurityEventId, setSelectedSecurityEventId] = useState<string>();
+  const [selectedSecurityEventIds, setSelectedSecurityEventIds] = useState<string[]>([]);
+  const observedHighRiskEventIds = useRef<Set<string> | null>(null);
   const sessionsQuery = useQuery({
     queryKey: opslensQueryKeys.sessions(),
     queryFn: listCurrentSessions,
@@ -140,9 +192,174 @@ export default function SettingsPage() {
     staleTime: 30_000
   });
   const usersQuery = useQuery({
-    queryKey: opslensQueryKeys.users(),
-    queryFn: () => getOpslensUsers(authSession!.accessToken),
+    queryKey: [...opslensQueryKeys.users(), userSearch, userRoleFilter, userStatusFilter, userPage],
+    queryFn: () =>
+      getOpslensUsers(authSession!.accessToken, {
+        query: userSearch,
+        role: userRoleFilter,
+        isActive: userStatusFilter === "all" ? "all" : userStatusFilter === "active",
+        page: userPage,
+        pageSize: 20
+      }),
     enabled: authSession?.user.role === "admin"
+  });
+  const securitySummaryQuery = useQuery({
+    queryKey: ["opslens", "security-summary"],
+    queryFn: () => getOpslensSecuritySummary(authSession!.accessToken),
+    enabled: authSession?.user.role === "admin",
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false
+  });
+  const securityEventsQuery = useQuery({
+    queryKey: [
+      "opslens",
+      "security-events",
+      securityEventStatus,
+      securityEventSeverity,
+      securityEventAssignee,
+      securityEventPage
+    ],
+    queryFn: () =>
+      getOpslensSecurityEvents(authSession!.accessToken, {
+        reviewStatus: securityEventStatus,
+        severity: securityEventSeverity,
+        assignee: securityEventAssignee,
+        page: securityEventPage,
+        pageSize: 10
+      }),
+    enabled: authSession?.user.role === "admin",
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false
+  });
+  const securityEventDetailsQuery = useQuery({
+    queryKey: ["opslens", "security-event-details", selectedSecurityEventId],
+    queryFn: () => getOpslensSecurityEventDetails(authSession!.accessToken, selectedSecurityEventId!),
+    enabled: authSession?.user.role === "admin" && Boolean(selectedSecurityEventId),
+    staleTime: 15_000
+  });
+  const securityNotificationsQuery = useQuery({
+    queryKey: ["opslens", "security-notifications"],
+    queryFn: () => getOpslensSecurityNotifications(authSession!.accessToken),
+    enabled: authSession?.user.role === "admin",
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false
+  });
+  const reviewSecurityEventMutation = useMutation({
+    mutationFn: ({
+      eventId,
+      input
+    }: {
+      eventId: string;
+      input: {
+        reviewStatus: "unreviewed" | "in_review" | "resolved";
+        assignee?: string;
+        reviewNote?: string;
+      };
+    }) => reviewOpslensSecurityEvent(authSession!.accessToken, eventId, input),
+    onSuccess: async () => {
+      await Promise.all([
+        securityEventsQuery.refetch(),
+        securitySummaryQuery.refetch(),
+        selectedSecurityEventId ? securityEventDetailsQuery.refetch() : Promise.resolve()
+      ]);
+      toast.success(t("securityReviewSaved"));
+    },
+    onError: (error) =>
+      toast.error(resolveLocalizedError(error, tError as never, t("securityReviewSaveFailed")))
+  });
+  const bulkReviewSecurityEventsMutation = useMutation({
+    mutationFn: (input: {
+      eventIds: string[];
+      reviewStatus: "unreviewed" | "in_review" | "resolved";
+      assignee?: string;
+      reviewNote?: string;
+    }) => bulkReviewOpslensSecurityEvents(authSession!.accessToken, input),
+    onSuccess: async () => {
+      setSelectedSecurityEventIds([]);
+      await Promise.all([
+        securityEventsQuery.refetch(),
+        securitySummaryQuery.refetch(),
+        selectedSecurityEventId ? securityEventDetailsQuery.refetch() : Promise.resolve()
+      ]);
+      toast.success(t("securityBulkReviewSaved"));
+    },
+    onError: (error) =>
+      toast.error(resolveLocalizedError(error, tError as never, t("securityBulkReviewSaveFailed")))
+  });
+  const markSecurityNotificationMutation = useMutation({
+    mutationFn: (notificationId: string) =>
+      markOpslensSecurityNotificationRead(authSession!.accessToken, notificationId),
+    onSuccess: () => securityNotificationsQuery.refetch()
+  });
+
+  useEffect(() => {
+    const isLiveView =
+      securityEventStatus === "all" &&
+      securityEventSeverity === "all" &&
+      securityEventAssignee.trim() === "" &&
+      securityEventPage === 1;
+    if (!isLiveView) {
+      observedHighRiskEventIds.current = null;
+      return;
+    }
+    const events = securityEventsQuery.data?.items;
+    if (!events) return;
+    const currentIds = new Set(
+      events
+        .filter(
+          (event) =>
+            event.reviewStatus === "unreviewed" &&
+            (event.severity === "warning" || event.severity === "critical")
+        )
+        .map((event) => event.id)
+    );
+    const previousIds = observedHighRiskEventIds.current;
+    if (previousIds) {
+      const newCount = [...currentIds].filter((id) => !previousIds.has(id)).length;
+      if (newCount > 0) toast.info(t("securityLiveAlert", { count: newCount }));
+    }
+    observedHighRiskEventIds.current = currentIds;
+  }, [
+    securityEventAssignee,
+    securityEventPage,
+    securityEventSeverity,
+    securityEventStatus,
+    securityEventsQuery.data,
+    t
+  ]);
+  const invitationsQuery = useQuery({
+    queryKey: ["opslens", "invitations"],
+    queryFn: () => getOpslensInvitations(authSession!.accessToken),
+    enabled: authSession?.user.role === "admin",
+    staleTime: 15_000
+  });
+  const userDetailsQuery = useQuery({
+    queryKey: ["opslens", "user-details", selectedUserId],
+    queryFn: () => getOpslensUserDetails(authSession!.accessToken, selectedUserId!),
+    enabled: authSession?.user.role === "admin" && Boolean(selectedUserId)
+  });
+  const userActivityQuery = useQuery({
+    queryKey: [
+      "opslens",
+      "user-activity",
+      selectedUserId,
+      activityAction,
+      activityFrom,
+      activityTo,
+      activityPage
+    ],
+    queryFn: () =>
+      getOpslensUserActivity(authSession!.accessToken, selectedUserId!, {
+        action: activityAction,
+        from: activityFrom ? new Date(`${activityFrom}T00:00:00.000Z`).toISOString() : undefined,
+        to: activityTo ? new Date(`${activityTo}T23:59:59.999Z`).toISOString() : undefined,
+        page: activityPage,
+        pageSize: 10
+      }),
+    enabled: authSession?.user.role === "admin" && Boolean(selectedUserId)
   });
   const updateUserMutation = useMutation({
     mutationFn: ({
@@ -150,7 +367,7 @@ export default function SettingsPage() {
       input
     }: {
       userId: string;
-      input: { role?: "admin" | "operator" | "viewer"; isActive?: boolean };
+      input: { role?: "admin" | "operator" | "viewer"; isActive?: boolean; reason: string };
     }) => updateOpslensUser(authSession!.accessToken, userId, input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.users() });
@@ -158,6 +375,73 @@ export default function SettingsPage() {
       toast.success(t("userUpdated"));
     },
     onError: (error) => toast.error(resolveLocalizedError(error, tError as never, t("userUpdateFailed")))
+  });
+  const revokeUserSessionsMutation = useMutation({
+    mutationFn: ({ userId, reason }: { userId: string; reason: string }) =>
+      revokeOpslensUserSessions(authSession!.accessToken, userId, reason),
+    onSuccess: () => toast.success(t("userSessionsRevoked")),
+    onError: (error) =>
+      toast.error(resolveLocalizedError(error, tError as never, t("userSessionsRevokeFailed")))
+  });
+  const bulkUpdateUsersMutation = useMutation({
+    mutationFn: (input: { userIds: string[]; isActive: boolean; reason: string }) =>
+      bulkUpdateOpslensUsers(authSession!.accessToken, input),
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.users() });
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.auditLogs() });
+      toast.success(t("bulkUsersUpdated", { count: result.updatedCount }));
+    },
+    onError: (error) => toast.error(resolveLocalizedError(error, tError as never, t("bulkUsersUpdateFailed")))
+  });
+  const bulkRevokeUserSessionsMutation = useMutation({
+    mutationFn: ({ userIds, reason }: { userIds: string[]; reason: string }) =>
+      bulkRevokeOpslensUserSessions(authSession!.accessToken, userIds, reason),
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.auditLogs() });
+      toast.success(t("bulkUserSessionsRevoked", { count: result.revokedCount }));
+    },
+    onError: (error) =>
+      toast.error(resolveLocalizedError(error, tError as never, t("bulkUserSessionsRevokeFailed")))
+  });
+  const revokeUserSessionMutation = useMutation({
+    mutationFn: ({ userId, sessionId, reason }: { userId: string; sessionId: string; reason: string }) =>
+      revokeOpslensUserSession(authSession!.accessToken, userId, sessionId, reason),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["opslens", "user-details", selectedUserId] });
+      toast.success(t("userSessionRevoked"));
+    },
+    onError: (error) =>
+      toast.error(resolveLocalizedError(error, tError as never, t("userSessionsRevokeFailed")))
+  });
+  const inviteUserMutation = useMutation({
+    mutationFn: () =>
+      inviteOpslensUser(authSession!.accessToken, { email: inviteEmail.trim(), role: inviteRole }),
+    onSuccess: async (result) => {
+      setInviteEmail("");
+      setInviteLink(result.inviteUrl);
+      setInviteDeliverySent(result.emailDelivery.sent);
+      await queryClient.invalidateQueries({ queryKey: ["opslens", "invitations"] });
+      toast.success(t("inviteSent"));
+    },
+    onError: (error) => toast.error(resolveLocalizedError(error, tError as never, t("inviteFailed")))
+  });
+  const resendInvitationMutation = useMutation({
+    mutationFn: (invitationId: string) => resendOpslensInvitation(authSession!.accessToken, invitationId),
+    onSuccess: async (result) => {
+      setInviteLink(result.inviteUrl);
+      setInviteDeliverySent(result.emailDelivery.sent);
+      await queryClient.invalidateQueries({ queryKey: ["opslens", "invitations"] });
+      toast.success(t("inviteResent"));
+    },
+    onError: (error) => toast.error(resolveLocalizedError(error, tError as never, t("inviteFailed")))
+  });
+  const revokeInvitationMutation = useMutation({
+    mutationFn: (invitationId: string) => revokeOpslensInvitation(authSession!.accessToken, invitationId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["opslens", "invitations"] });
+      toast.success(t("inviteRevoked"));
+    },
+    onError: (error) => toast.error(resolveLocalizedError(error, tError as never, t("inviteFailed")))
   });
   const integrationMutation = useMutation({
     mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
@@ -405,6 +689,24 @@ export default function SettingsPage() {
     },
     onError: (error) => toast.error(resolveLocalizedError(error, tError as never, t("twoFactorFailed")))
   });
+  const twoFactorSetupCancelMutation = useMutation({
+    mutationFn: cancelTwoFactorSetup,
+    onSuccess: async () => {
+      setTwoFactorSetup(null);
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.securityActivity() });
+      toast.success(t("twoFactorSetupCancelledToast"));
+    },
+    onError: (error) => toast.error(resolveLocalizedError(error, tError as never, t("twoFactorFailed")))
+  });
+  const recoveryCodeRegenerationMutation = useMutation({
+    mutationFn: regenerateRecoveryCodes,
+    onSuccess: async (result) => {
+      setRecoveryCodes(result.recoveryCodes);
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.securityActivity() });
+      toast.success(t("recoveryCodesRegeneratedToast"));
+    },
+    onError: (error) => toast.error(resolveLocalizedError(error, tError as never, t("twoFactorFailed")))
+  });
 
   const submitProfile = profileForm.handleSubmit((values) => {
     profileMutation.mutate({ name: values.name.trim(), avatarColor });
@@ -412,9 +714,11 @@ export default function SettingsPage() {
 
   const passwordMutation = useMutation({
     mutationFn: (values: { currentPassword: string; newPassword: string }) => changeCurrentPassword(values),
-    onSuccess: () => {
+    onSuccess: async () => {
       passwordForm.reset();
-      void queryClient.invalidateQueries({ queryKey: opslensQueryKeys.securityActivity() });
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.sessions() });
+      await queryClient.invalidateQueries({ queryKey: opslensQueryKeys.securityActivity() });
+      toast.success(t("passwordChangedToast"));
     },
     onError: (error) => {
       toast.error(resolveLocalizedError(error, tError as never, t("passwordSaveFailed")));
@@ -579,6 +883,15 @@ export default function SettingsPage() {
     onError: () => toast.error(t("sessionRevokeFailed"))
   });
 
+  const deleteAccountMutation = useMutation({
+    mutationFn: () => deleteCurrentAccount(deleteAccountPassword),
+    onSuccess: () => {
+      clearAuthSession();
+      router.replace("/login");
+    },
+    onError: (error) => toast.error(resolveLocalizedError(error, tError as never, t("deleteAccountFailed")))
+  });
+
   const isProfileDirty =
     profileForm.getValues("name").trim() !== profileName || avatarColor !== initialAvatarColor;
   const isPasswordDirty =
@@ -640,6 +953,15 @@ export default function SettingsPage() {
             logoutPending={logoutAllMutation.isPending}
             onLogoutCurrentSession={() => logoutAllMutation.mutate()}
           />
+          <AccountDangerZone
+            email={profileEmail}
+            currentPassword={deleteAccountPassword}
+            confirmation={deleteAccountConfirmation}
+            pending={deleteAccountMutation.isPending}
+            onPasswordChange={setDeleteAccountPassword}
+            onConfirmationChange={setDeleteAccountConfirmation}
+            onDelete={() => deleteAccountMutation.mutate()}
+          />
         </OpsSectionCard>
         <OpsSectionCard title={t("sessionsTitle")} description={t("sessionsDescription")}>
           <ActiveSessionsPanel
@@ -694,9 +1016,13 @@ export default function SettingsPage() {
               recoveryCodes={recoveryCodes}
               setupPending={twoFactorSetupMutation.isPending}
               actionPending={twoFactorConfirmMutation.isPending || twoFactorDisableMutation.isPending}
+              recoveryCodePending={recoveryCodeRegenerationMutation.isPending}
+              setupCancelPending={twoFactorSetupCancelMutation.isPending}
               onSetup={() => twoFactorSetupMutation.mutate()}
               onConfirm={(code) => twoFactorConfirmMutation.mutate(code)}
               onDisable={(code) => twoFactorDisableMutation.mutate(code)}
+              onRegenerate={(code) => recoveryCodeRegenerationMutation.mutate(code)}
+              onCancelSetup={() => twoFactorSetupCancelMutation.mutate()}
             />
           ) : null}
           <ProfileSecurityForm
@@ -704,6 +1030,7 @@ export default function SettingsPage() {
             avatarColor={avatarColor}
             profileControl={profileForm.control}
             passwordControl={passwordForm.control}
+            newPasswordValue={passwordForm.watch("newPassword")}
             profileNameError={profileForm.formState.errors.name?.message}
             currentPasswordError={passwordForm.formState.errors.currentPassword?.message}
             newPasswordError={passwordForm.formState.errors.newPassword?.message}
@@ -719,15 +1046,251 @@ export default function SettingsPage() {
       </Box>
 
       {authSession?.user.role === "admin" ? (
-        <OpsSectionCard title={t("usersTitle")} description={t("usersDescription")}>
-          <UserManagementPanel
-            users={usersQuery.data ?? []}
-            currentUserId={authSession.user.id}
-            isLoading={usersQuery.isLoading}
-            pendingUserId={updateUserMutation.variables?.userId}
-            onUpdate={(user, input) => updateUserMutation.mutate({ userId: user.id, input })}
-          />
-        </OpsSectionCard>
+        <>
+          <OpsSectionCard title={t("securitySummaryTitle")} description={t("securitySummaryDescription")}>
+            <AdminSecuritySummaryPanel
+              summary={securitySummaryQuery.data}
+              loading={securitySummaryQuery.isLoading}
+            />
+            <Box className="mt-4">
+              <AdminSecurityNotificationPanel
+                data={securityNotificationsQuery.data}
+                loading={securityNotificationsQuery.isLoading}
+                pendingId={markSecurityNotificationMutation.variables}
+                onSelect={(notification) => {
+                  setSelectedSecurityEventId(notification.eventId);
+                  if (!notification.readAt) markSecurityNotificationMutation.mutate(notification.id);
+                }}
+              />
+            </Box>
+            <Box className="mt-4">
+              <AdminSecurityEventReviewPanel
+                events={securityEventsQuery.data?.items ?? []}
+                totalCount={securityEventsQuery.data?.totalCount ?? 0}
+                page={securityEventsQuery.data?.page ?? securityEventPage}
+                pageSize={securityEventsQuery.data?.pageSize ?? 10}
+                loading={securityEventsQuery.isLoading}
+                reviewStatus={securityEventStatus}
+                severity={securityEventSeverity}
+                assigneeFilter={securityEventAssignee}
+                selectedEvent={
+                  securityEventsQuery.data?.items.find((event) => event.id === selectedSecurityEventId) ??
+                  securityEventDetailsQuery.data
+                }
+                details={securityEventDetailsQuery.data}
+                detailsLoading={securityEventDetailsQuery.isLoading}
+                selectedEventIds={selectedSecurityEventIds}
+                pending={reviewSecurityEventMutation.isPending}
+                bulkPending={bulkReviewSecurityEventsMutation.isPending}
+                onReviewStatusChange={(value) => {
+                  setSecurityEventStatus(value);
+                  setSecurityEventPage(1);
+                  setSelectedSecurityEventIds([]);
+                }}
+                onSeverityChange={(value) => {
+                  setSecurityEventSeverity(value);
+                  setSecurityEventPage(1);
+                  setSelectedSecurityEventIds([]);
+                }}
+                onAssigneeFilterChange={(value) => {
+                  setSecurityEventAssignee(value);
+                  setSecurityEventPage(1);
+                  setSelectedSecurityEventIds([]);
+                }}
+                onPageChange={(nextPage) => {
+                  setSecurityEventPage(nextPage);
+                  setSelectedSecurityEventIds([]);
+                }}
+                onSelect={(event) => setSelectedSecurityEventId(event.id)}
+                onToggleSelection={(eventId) =>
+                  setSelectedSecurityEventIds((current) =>
+                    current.includes(eventId) ? current.filter((id) => id !== eventId) : [...current, eventId]
+                  )
+                }
+                onToggleAll={(checked) =>
+                  setSelectedSecurityEventIds(
+                    checked ? (securityEventsQuery.data?.items ?? []).map((event) => event.id) : []
+                  )
+                }
+                onSave={(eventId, input) => reviewSecurityEventMutation.mutate({ eventId, input })}
+                onBulkSave={(input) =>
+                  bulkReviewSecurityEventsMutation.mutate({ eventIds: selectedSecurityEventIds, ...input })
+                }
+              />
+            </Box>
+          </OpsSectionCard>
+          <OpsSectionCard title={t("usersTitle")} description={t("usersDescription")}>
+            <AdminInvitationPanel
+              invitations={invitationsQuery.data ?? []}
+              email={inviteEmail}
+              role={inviteRole}
+              pending={inviteUserMutation.isPending}
+              pendingInvitationId={resendInvitationMutation.variables ?? revokeInvitationMutation.variables}
+              inviteLink={inviteLink}
+              deliverySent={inviteDeliverySent}
+              onEmailChange={setInviteEmail}
+              onRoleChange={setInviteRole}
+              onInvite={() => inviteUserMutation.mutate()}
+              onResend={(invitation) => resendInvitationMutation.mutate(invitation.id)}
+              onRevoke={(invitation) => {
+                void confirm({
+                  title: t("revokeInviteTitle"),
+                  description: t("revokeInviteDescription"),
+                  confirmText: t("revokeInviteAction"),
+                  cancelText: t("cancel"),
+                  confirmVariant: "danger"
+                }).then((confirmed) => {
+                  if (confirmed) revokeInvitationMutation.mutate(invitation.id);
+                });
+              }}
+            />
+            <UserManagementPanel
+              users={usersQuery.data?.items ?? []}
+              totalCount={usersQuery.data?.totalCount ?? 0}
+              page={usersQuery.data?.page ?? userPage}
+              pageSize={usersQuery.data?.pageSize ?? 20}
+              search={userSearch}
+              roleFilter={userRoleFilter}
+              statusFilter={userStatusFilter}
+              currentUserId={authSession.user.id}
+              isLoading={usersQuery.isLoading}
+              pendingUserId={updateUserMutation.variables?.userId}
+              onSearchChange={(value) => {
+                setUserSearch(value);
+                setUserPage(1);
+              }}
+              onRoleFilterChange={(value) => {
+                setUserRoleFilter(value);
+                setUserPage(1);
+              }}
+              onStatusFilterChange={(value) => {
+                setUserStatusFilter(value);
+                setUserPage(1);
+              }}
+              onPageChange={setUserPage}
+              selectedUserId={selectedUserId}
+              userDetails={userDetailsQuery.data}
+              userDetailsLoading={userDetailsQuery.isLoading}
+              onSelectUser={setSelectedUserId}
+              onCloseDetails={() => setSelectedUserId(undefined)}
+              activity={userActivityQuery.data}
+              activityLoading={userActivityQuery.isLoading}
+              activityAction={activityAction}
+              activityFrom={activityFrom}
+              activityTo={activityTo}
+              activityPage={activityPage}
+              onActivityActionChange={(value) => {
+                setActivityAction(value);
+                setActivityPage(1);
+              }}
+              onActivityFromChange={(value) => {
+                setActivityFrom(value);
+                setActivityPage(1);
+              }}
+              onActivityToChange={(value) => {
+                setActivityTo(value);
+                setActivityPage(1);
+              }}
+              onActivityPageChange={setActivityPage}
+              onExportActivity={async () => {
+                if (!selectedUserId) return;
+                const csv = await exportOpslensUserActivityCsv(authSession!.accessToken, selectedUserId, {
+                  action: activityAction,
+                  from: activityFrom ? new Date(`${activityFrom}T00:00:00.000Z`).toISOString() : undefined,
+                  to: activityTo ? new Date(`${activityTo}T23:59:59.999Z`).toISOString() : undefined
+                });
+                const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `user-activity-${selectedUserId}.csv`;
+                link.click();
+                URL.revokeObjectURL(url);
+              }}
+              sessionPendingId={revokeUserSessionMutation.variables?.sessionId}
+              onRevokeUserSession={(sessionId) => {
+                if (!selectedUserId) return;
+                void promptConfirm({
+                  title: t("userSessionRevokeTitle"),
+                  description: t("userSessionRevokeDescription"),
+                  confirmText: t("logoutSession"),
+                  cancelText: t("cancel"),
+                  confirmVariant: "danger",
+                  inputLabel: t("adminReasonLabel"),
+                  inputPlaceholder: t("adminReasonPlaceholder"),
+                  inputRequired: true,
+                  trimResult: true,
+                  validator: (value) => (value.trim().length < 2 ? t("adminReasonRequired") : null)
+                }).then((reason) => {
+                  if (reason) revokeUserSessionMutation.mutate({ userId: selectedUserId, sessionId, reason });
+                });
+              }}
+              bulkPending={bulkUpdateUsersMutation.isPending || bulkRevokeUserSessionsMutation.isPending}
+              onBulkUpdate={(userIds, isActive) => {
+                void promptConfirm({
+                  title: t("bulkUserStatusTitle"),
+                  description: t("bulkUserStatusDescription", { count: userIds.length }),
+                  confirmText: isActive ? tUsers("bulkActivate") : tUsers("bulkDeactivate"),
+                  cancelText: t("cancel"),
+                  confirmVariant: isActive ? "primary" : "danger",
+                  inputLabel: t("adminReasonLabel"),
+                  inputPlaceholder: t("adminReasonPlaceholder"),
+                  inputRequired: true,
+                  trimResult: true,
+                  validator: (value) => (value.trim().length < 2 ? t("adminReasonRequired") : null)
+                }).then((reason) => {
+                  if (reason) bulkUpdateUsersMutation.mutate({ userIds, isActive, reason });
+                });
+              }}
+              onBulkForceLogout={(userIds) => {
+                void promptConfirm({
+                  title: t("bulkUserSessionsRevokeTitle"),
+                  description: t("bulkUserSessionsRevokeDescription", { count: userIds.length }),
+                  confirmText: t("logoutAllSessions"),
+                  cancelText: t("cancel"),
+                  confirmVariant: "danger",
+                  inputLabel: t("adminReasonLabel"),
+                  inputPlaceholder: t("adminReasonPlaceholder"),
+                  inputRequired: true,
+                  trimResult: true,
+                  validator: (value) => (value.trim().length < 2 ? t("adminReasonRequired") : null)
+                }).then((reason) => {
+                  if (reason) bulkRevokeUserSessionsMutation.mutate({ userIds, reason });
+                });
+              }}
+              onUpdate={(user, input) => {
+                void promptConfirm({
+                  title: t("userStatusReasonTitle"),
+                  description: t("userStatusReasonDescription"),
+                  confirmText: t("confirmAction"),
+                  cancelText: t("cancel"),
+                  inputLabel: t("adminReasonLabel"),
+                  inputPlaceholder: t("adminReasonPlaceholder"),
+                  inputRequired: true,
+                  trimResult: true,
+                  validator: (value) => (value.trim().length < 2 ? t("adminReasonRequired") : null)
+                }).then((reason) => {
+                  if (reason) updateUserMutation.mutate({ userId: user.id, input: { ...input, reason } });
+                });
+              }}
+              onForceLogout={(user) => {
+                void promptConfirm({
+                  title: t("userSessionsRevokeTitle"),
+                  description: t("userSessionsRevokeDescription"),
+                  confirmText: t("logoutAllSessions"),
+                  cancelText: t("cancel"),
+                  confirmVariant: "danger",
+                  inputLabel: t("adminReasonLabel"),
+                  inputPlaceholder: t("adminReasonPlaceholder"),
+                  inputRequired: true,
+                  trimResult: true,
+                  validator: (value) => (value.trim().length < 2 ? t("adminReasonRequired") : null)
+                }).then((reason) => {
+                  if (reason) revokeUserSessionsMutation.mutate({ userId: user.id, reason });
+                });
+              }}
+            />
+          </OpsSectionCard>
+        </>
       ) : null}
 
       <OpsSectionCard title={t("integrationTitle")} description={t("integrationDescription")}>
