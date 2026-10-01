@@ -13,6 +13,11 @@ export function PasswordStrength({ password }: { password: string }) {
     /[^A-Za-z0-9]/.test(password)
   ].filter(Boolean).length;
   const level = score <= 1 ? "weak" : score <= 2 ? "medium" : "strong";
+  const strengthMessage = {
+    weak: "passwordStrengthWeak",
+    medium: "passwordStrengthMedium",
+    strong: "passwordStrengthStrong"
+  } as const;
   const width = level === "weak" ? "w-1/3" : level === "medium" ? "w-2/3" : "w-full";
   const tone = level === "weak" ? "bg-danger" : level === "medium" ? "bg-warning" : "bg-success";
 
@@ -22,7 +27,7 @@ export function PasswordStrength({ password }: { password: string }) {
         <Box className={`h-full ${width} ${tone}`} />
       </Box>
       <Typography as="p" variant="caption" color="muted" className="mt-1">
-        {t(`passwordStrength${level.charAt(0).toUpperCase()}${level.slice(1)}` as "passwordStrengthWeak")}
+        {t(strengthMessage[level])}
       </Typography>
     </Box>
   );

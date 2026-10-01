@@ -8,6 +8,12 @@ import { AUDIT_SEVERITY_TONE, formatAuditListDateTime } from "../utils/settings-
 
 type ReviewStatus = OpsSecurityEvent["reviewStatus"];
 
+const reviewStatusMessage = {
+  unreviewed: "securityReviewStatus.unreviewed",
+  in_review: "securityReviewStatus.inReview",
+  resolved: "securityReviewStatus.resolved"
+} as const;
+
 export function AdminSecurityEventReviewPanel({
   events,
   totalCount,
@@ -174,9 +180,7 @@ export function AdminSecurityEventReviewPanel({
                     {event.severity}
                   </Badge>
                   <Badge variant="secondary" size="sm">
-                    {t(
-                      `securityReviewStatus.${event.reviewStatus === "in_review" ? "inReview" : event.reviewStatus}`
-                    )}
+                    {t(reviewStatusMessage[event.reviewStatus])}
                   </Badge>
                 </Box>
               </Button>
